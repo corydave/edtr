@@ -247,6 +247,8 @@ svg.icon { width: 20px; height: 20px; flex: none; stroke: currentColor;
 .seg button + button { border-left: 1px solid var(--border); }
 /* The crop toolbar's ratio buttons keep their own widths ("Original" is longer than "1:1"). */
 #cropRatios button { flex: none; }
+/* Rows whose words differ a lot in length (Erase | Fill | Recolor): size each button to its word. */
+.seg.seg-fit button { flex: 1 1 auto; padding: 0 6px; }
 .seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-contrast); }
 .cap-seg button { display: grid; place-items: center; padding: 0 2px; min-width: 30px; }
 .hint { color: var(--text-muted); font-size: 12.5px; margin: 0; }
@@ -425,20 +427,40 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
    takes the lower part of the screen, ABOVE the tool rail, and the canvas
    shrinks to the top part - so you can see the picture and the inspector
    at the same time. Three rows, top to bottom: canvas, sheet, tool rail.
+   A grab handle at the top of the sheet sets how tall it is (the script
+   puts that height in the --sheet-h variable); when the sheet is closed,
+   only the handle shows, so it can be pulled up again.
    ===================================================================== */
+/* The grab handle at the top of the Inspector sheet. Hidden on wider
+   screens (display: none, so it cannot be tabbed to there either). It sticks
+   to the top while the sheet's contents scroll underneath it. */
+.sheet-handle { display: none; flex: none; height: 28px; align-items: center; justify-content: center;
+  position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--border);
+  cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* The grip bar itself: a short rounded line in the muted text colour. */
+.sheet-handle .grip { width: 44px; height: 5px; border-radius: 3px; background: var(--text-muted); opacity: .7; pointer-events: none; }
+.sheet-handle:hover .grip, .sheet-handle.dragging .grip { opacity: 1; }
+/* Focus ring drawn inside the handle, so the sheet's edges do not clip it. */
+.sheet-handle:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 @media (max-width: 820px) {
   /* minmax(0, 1fr) lets the canvas row shrink as small as it needs to.
-     The middle row is 0 while the sheet is closed. */
-  .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 0 56px; }
-  .app.sheet-open { grid-template-rows: minmax(0, 1fr) 45% 56px; }
+     The middle row is the sheet: 29px while it is closed (just the grab
+     handle and its top border), and --sheet-h when it is open. --sheet-h is
+     set by the script; the fallback puts the top of the sheet two thirds
+     of the way down the screen. */
+  .app { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 29px 56px; }
+  .app.sheet-open { grid-template-rows: minmax(0, 1fr) var(--sheet-h, calc(100vh / 3 - 56px)) 56px; }
   .workspace { grid-row: 1; grid-column: 1; }
   .rail { grid-row: 3; grid-column: 1; flex-direction: row; justify-content: flex-start; overflow-x: auto; overflow-y: hidden;
     padding: 0 8px; border-right: 0; border-top: 1px solid var(--border); }
   .rail hr { width: 1px; height: 28px; border: 0; border-left: 1px solid var(--border); margin: 0 4px; }
-  /* The sheet: hidden until opened, then it scrolls inside its own row. */
-  .panel { display: none; grid-row: 2; grid-column: 1; border-left: 0; border-top: 1px solid var(--border);
+  /* The sheet: it scrolls inside its own row. While it is closed only the
+     grab handle shows, so it can be tapped or pulled up again. */
+  .panel { display: flex; grid-row: 2; grid-column: 1; border-left: 0; border-top: 1px solid var(--border);
     overflow-y: auto; overscroll-behavior: contain; }
-  .panel.open { display: flex; }
+  .panel:not(.open) { overflow: hidden; }
+  .panel:not(.open) > :not(.sheet-handle) { display: none; }
+  .sheet-handle { display: flex; }
   .wordmark .version-badge { display: none; }
   .start-actions { grid-template-columns: 1fr; }
 }
@@ -739,7 +761,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     <button class="icon-btn" data-tool="pen"         title="Pen (P)"        aria-label="Pen tool"><span data-icon="pen"></span></button>
     <button class="icon-btn" data-tool="highlighter" title="Highlighter (H)" aria-label="Highlighter tool"><span data-icon="highlighter"></span></button>
     <button class="icon-btn" data-tool="eraser"      title="Eraser (Shift+E)" aria-label="Eraser tool"><span data-icon="eraser"></span></button>
-    <button class="icon-btn" data-tool="wand"        title="Magic wand erase (W)" aria-label="Magic wand tool"><span data-icon="wand"></span></button>
+    <button class="icon-btn" data-tool="wand"        title="Magic wand: erase, fill or recolor (W)" aria-label="Magic wand tool"><span data-icon="wand"></span></button>
     <hr aria-hidden="true">
     <button class="icon-btn" data-tool="step"        title="Step marker (N)" aria-label="Step marker tool"><span data-icon="step"></span></button>
     <button class="icon-btn" data-tool="cursor"      title="Cursor stamp (C)" aria-label="Cursor stamp tool"><span data-icon="cursorClick"></span></button>
@@ -789,6 +811,14 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
        SIDE PANEL - properties of the selected layer, and the layer list.
        =================================================================== -->
   <aside class="panel" id="sidePanel" aria-label="Properties and layers">
+    <!-- Phones only: the grab handle of the Inspector sheet. Drag it up or
+         down (or use the arrow keys on it) to share the screen between the
+         canvas and the Inspector; a tap opens or closes the sheet. Hidden
+         on wider screens. The script keeps the aria-value* numbers up to date. -->
+    <div class="sheet-handle" id="sheetHandle" role="separator" tabindex="0" aria-orientation="horizontal"
+      aria-label="Inspector height" aria-controls="sidePanel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+      aria-valuetext="Inspector closed"
+      title="Drag to make the Inspector taller or shorter; tap to open or close it"><span class="grip"></span></div>
     <section id="layersSection" aria-labelledby="layersTitle">
       <h2 id="layersTitle">Layers <span class="hint" id="layerCount"></span></h2>
       <ul id="layerList" aria-label="Layers, top of the list is drawn on top"></ul>
@@ -1057,10 +1087,16 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.12.1';
+const APP_VERSION = '1.14.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 const CHANGELOG = [
+  { version: '1.14.0', date: '2026-10-07', notes: [
+    'Phones: the Inspector sheet has a grab handle. Drag it up or down to share the screen between the picture and the Inspector (the picture shrinks and re-fits, it is never covered); drag it to the bottom or tap it to close the sheet to just the handle, and tap or pull it up to open it again. It starts with its top two thirds of the way down, works from the keyboard (arrow keys, Home, End, Enter), and the height is remembered in this browser.'
+  ] },
+  { version: '1.13.0', date: '2026-10-07', notes: [
+    'The magic wand can now Fill (a paint bucket) and Recolor as well as Erase. Recolor changes a color but keeps its light and dark shading; both fix blended edge pixels, so logos change color without a fringe. Alt+click puts the original colors back, and Clear all color changes undoes them all.'
+  ] },
   { version: '1.12.1', date: '2026-10-03', notes: [
     'Names of the other apps in Help (in the changelog, About and the guides) are now links that open that app.'
   ] },
@@ -1365,6 +1401,7 @@ const settings = {
   stayInTool: false,        // stay in a shape tool after drawing?
   snap: true,               // smart guides: snap to the canvas and other layers while moving
   layersHeight: null,       // height of the Layers pane in pixels (null = automatic)
+  sheet: null,              // phones: where the top of the Inspector sheet sits, as a share of the screen up from the bottom (null = 1/3)
   colorFormat: 'hex',       // how the color picker shows colors: 'hex', 'rgb' or 'cmyk'
   disabledShortcuts: []     // ids of shortcuts the user switched off
 };
@@ -1378,6 +1415,7 @@ function loadSettings() {
     if (typeof saved.snap === 'boolean') settings.snap = saved.snap;
     if (['hex', 'rgb', 'cmyk'].includes(saved.colorFormat)) settings.colorFormat = saved.colorFormat;
     if (Number.isFinite(saved.layersHeight) && saved.layersHeight > 0 && saved.layersHeight < 5000) settings.layersHeight = saved.layersHeight;
+    if (Number.isFinite(saved.sheet) && saved.sheet > 0 && saved.sheet < 1) settings.sheet = saved.sheet;
     if (Array.isArray(saved.disabledShortcuts)) settings.disabledShortcuts = saved.disabledShortcuts.filter((s) => typeof s === 'string');
   } catch (e) { /* storage unavailable - defaults are fine */ }
 }
@@ -1453,7 +1491,8 @@ const toolDefaults = {
   eraser:      { mode: 'erase', shape: 'circle', size: 40, feather: 0.3 },
   // Magic wand: tolerance 0-100 (how different a color may be and still count),
   // contiguous = only touching pixels, softEdge = blur of the cut edge in pixels.
-  wand:        { mode: 'erase', tolerance: 20, contiguous: true, softEdge: 1 },
+  // action: 'erase', 'fill' (paint bucket) or 'recolor' (keeps the shading). color: for Fill / Recolor.
+  wand:        { action: 'erase', mode: 'erase', tolerance: 20, contiguous: true, softEdge: 1, color: null },
   text:        { color: null, font: 'sans', fontSize: 36, bold: true, italic: false, align: 'left',
                  bgOn: false, bgColor: '#ffffff', padding: 10, opacity: 1 }
 };
@@ -1944,7 +1983,10 @@ function resizeStage() {
     positionTextEditor();
   }
   lastStageSize = { w: r.width, h: r.height };
-  requestRender();
+  // Draw now, not on the next frame: resizing the canvas has just wiped it,
+  // and waiting would show a blank frame (a flicker while the phone's
+  // Inspector sheet is being dragged).
+  render();
 }
 // The canvas area's size the last time resizeStage ran (in screen pixels).
 let lastStageSize = null;
@@ -3429,21 +3471,39 @@ function renderProps() {
   // --- Eraser tool: brush settings, and which image it works on.
   if (state.tool === 'wand') {
     const t = toolDefaults.wand;
+    if (!t.color) t.color = settings.color;          // Fill / Recolor start with your annotation colour
     title.textContent = 'Magic wand';
-    propsBody.append(segField('Mode', t, [
-      { key: 'mode', value: 'erase', text: 'Erase', aria: 'Erase the clicked area' },
-      { key: 'mode', value: 'restore', text: 'Restore', aria: 'Restore: bring back erased pixels in the clicked area' }], false));
+    // What a click does. The panel is rebuilt so each action shows its own settings.
+    const actRow = el('div', { class: 'seg seg-fit', role: 'group', 'aria-label': 'What a click does' });
+    for (const [value, text, full] of [['erase', 'Erase', 'Erase the clicked area'],
+      ['fill', 'Fill', 'Fill: paint the clicked area one flat colour'],
+      ['recolor', 'Recolor', 'Recolor: change the clicked area to a new colour, keeping its shading']]) {
+      actRow.append(el('button', { type: 'button', text, 'aria-label': full, title: full, 'aria-pressed': String(t.action === value),
+        onclick: () => { t.action = value; renderProps(); } }));
+    }
+    propsBody.append(el('div', { class: 'field' }, el('span', { class: 'label', text: 'Action' }), actRow));
+    if (t.action === 'erase') {
+      propsBody.append(segField('Mode', t, [
+        { key: 'mode', value: 'erase', text: 'Erase', aria: 'Erase the clicked area' },
+        { key: 'mode', value: 'restore', text: 'Restore', aria: 'Restore: bring back erased pixels in the clicked area' }], false));
+    } else {
+      propsBody.append(colorField(t.action === 'fill' ? 'Fill color' : 'New color', t, 'color', false));
+    }
     propsBody.append(rangeField('Tolerance', t, 'tolerance', false, 0, 100));
     propsBody.append(checkField('Contiguous', t, 'contiguous', false));
-    propsBody.append(rangeField('Soft edge', t, 'softEdge', false, 0, 8, 1, 1, ' px'));
+    if (t.action !== 'recolor') propsBody.append(rangeField('Soft edge', t, 'softEdge', false, 0, 8, 1, 1, ' px'));
     const target = L && L.type === 'image' ? L : null;
-    propsBody.append(el('p', { class: 'hint', text:
-      'Click an area of one color on a picture to erase it, like the white behind a logo. ' +
-      'Tolerance: higher picks more similar colors. Contiguous: only touching pixels (untick it to also get the holes inside letters). ' +
-      'Alt (Option)+click restores. Too much? Undo (Ctrl+Z), lower the tolerance and click again.' }));
-    if (target && target.erase && target.erase.length) {
-      propsBody.append(el('div', { class: 'btn-row' }, el('button', { type: 'button', class: 'btn', text: 'Clear all erasing', onclick: () => clearErasing(target) })));
-    }
+    const HINTS = {
+      erase: 'Click an area of one color on a picture to erase it, like the white behind a logo. Alt (Option)+click restores.',
+      fill: 'Click an area of one color to paint it with the fill color, like a paint bucket. Blended edge pixels are fixed too, so there is no fringe. Alt (Option)+click puts the original colors back.',
+      recolor: 'Click a color to change it to the new color while keeping its light and dark shading, and smooth edges. Untick Contiguous to change every area of that color at once. Alt (Option)+click puts the original colors back.'
+    };
+    propsBody.append(el('p', { class: 'hint', text: HINTS[t.action] +
+      ' Tolerance: higher picks more similar colors. Contiguous: only touching pixels. Too much? Undo (Ctrl+Z), lower the tolerance and click again.' }));
+    const clearRow = el('div', { class: 'btn-row' });
+    if (target && target.erase && target.erase.length) clearRow.append(el('button', { type: 'button', class: 'btn', text: 'Clear all erasing', onclick: () => clearErasing(target) }));
+    if (target && target.paint && target.paint.length) clearRow.append(el('button', { type: 'button', class: 'btn', text: 'Clear all color changes', onclick: () => clearPainting(target) }));
+    if (clearRow.children.length) propsBody.append(clearRow);
     return;
   }
   if (state.tool === 'eraser') {
@@ -3910,9 +3970,10 @@ function imageFields(L) {
   rows.push(rangeField('Distance', L, 'shadowY', true, -40, 80));
   rows.push(rangeField('Strength', L, 'shadowOpacity', true, 5, 100, 1, 100, '%'));
   // (Opacity for images is the % button in the layer action bar.)
-  if (L.erase && L.erase.length) {
+  if ((L.erase && L.erase.length) || (L.paint && L.paint.length)) {
     rows.push(el('div', { class: 'btn-row', style: 'margin-bottom:8px' },
-      el('button', { type: 'button', class: 'btn', text: 'Clear all erasing', onclick: () => clearErasing(L) })));
+      L.erase && L.erase.length ? el('button', { type: 'button', class: 'btn', text: 'Clear all erasing', onclick: () => clearErasing(L) }) : null,
+      L.paint && L.paint.length ? el('button', { type: 'button', class: 'btn', text: 'Clear all color changes', onclick: () => clearPainting(L) }) : null));
   }
   return rows;
 }
@@ -4982,9 +5043,11 @@ function imageDrawSource(layer) {
   const mask = getMask(layer);
   const radiusSrc = (layer.radius || 0) * cr.w / Math.max(1, layer.w);   // corner radius in source pixels
   const adjust = hasAdjust(layer);
-  if (!mask && radiusSrc < 0.5 && !adjust) return { img: src, sx: cr.x, sy: cr.y, sw: cr.w, sh: cr.h };
+  const painted = paintSig(layer);                // colour changes from the magic wand (Fill / Recolor)
+  if (!mask && radiusSrc < 0.5 && !adjust && !painted) return { img: src, sx: cr.x, sy: cr.y, sw: cr.w, sh: cr.h };
+  const base = painted ? paintedSource(layer) : src;   // the recoloured copy, when there is one
 
-  const key = [layer.imageId, cr.x, cr.y, cr.w, cr.h, eraseSig(layer), Math.round(radiusSrc),
+  const key = [layer.imageId, cr.x, cr.y, cr.w, cr.h, eraseSig(layer), painted, Math.round(radiusSrc),
     layer.brightness || 0, layer.contrast || 0, layer.saturation || 0].join('|');
   let s = styledCache.get(layer.id);
   if (!s || s.key !== key) {
@@ -4992,8 +5055,8 @@ function imageDrawSource(layer) {
     c.width = Math.max(1, Math.round(cr.w)); c.height = Math.max(1, Math.round(cr.h));
     const ctx = c.getContext('2d');
     // Brightness / contrast / saturation are applied while copying (section 21a).
-    if (adjust) drawAdjusted(ctx, src, cr.x, cr.y, cr.w, cr.h, c.width, c.height, layer);
-    else ctx.drawImage(src, cr.x, cr.y, cr.w, cr.h, 0, 0, c.width, c.height);
+    if (adjust) drawAdjusted(ctx, base, cr.x, cr.y, cr.w, cr.h, c.width, c.height, layer);
+    else ctx.drawImage(base, cr.x, cr.y, cr.w, cr.h, 0, 0, c.width, c.height);
     if (mask) {        // cut out the erased areas
       ctx.globalCompositeOperation = 'destination-out';
       ctx.drawImage(mask, cr.x, cr.y, cr.w, cr.h, 0, 0, c.width, c.height);
@@ -5042,7 +5105,7 @@ function drawImageLayer(ctx, layer, pxScale = 1) {
 
 /** Draw the WHOLE original picture into a rectangle, mirrored if the layer is flipped. */
 function drawFullImage(ctx, layer, rect) {
-  const src = imageStore.get(layer.imageId);
+  const src = paintedSource(layer);          // (with any Fill / Recolor changes)
   ctx.save();
   ctx.translate(rect.x + rect.w / 2, rect.y + rect.h / 2);
   ctx.scale(layer.flipX ? -1 : 1, layer.flipY ? -1 : 1);
@@ -5507,7 +5570,7 @@ const wandCache = new Map();      // wand stroke id -> its mask canvas (worked o
 /** Work out which pixels a wand click picks. Returns a canvas (source size): white where picked. */
 function wandMask(L, st) {
   if (wandCache.has(st.id)) return wandCache.get(st.id);
-  const src = imageStore.get(L.imageId);
+  const src = paintedSource(L);              // what the picture looks like now (after any recolouring)
   const W = src.width, H = src.height;
   // Only look inside the part of the picture that is shown (its crop).
   const cr = cropOf(L);
@@ -5564,6 +5627,206 @@ function wandMask(L, st) {
   wandCache.set(st.id, out);
   return out;
 }
+/* ---- Magic wand: Fill and Recolor (colour changes on a picture) ----
+   Besides Erase, the wand can change colours:
+     Fill    - the clicked area becomes one flat colour (a paint bucket).
+     Recolor - the clicked area changes to a new colour but keeps its shading,
+               so light and dark parts stay light and dark.
+     Alt (Option)+click with either one puts the ORIGINAL colours back in the
+     clicked area ("revert").
+   Like erasing, nothing is painted into the picture itself. Each click is
+   saved as a small recipe in layer.paint, and the recipes are replayed in
+   order onto a copy of the picture whenever it is drawn. The original never
+   changes, so "Clear all colour changes" gives it back exactly.
+   Erasing sits on top: colours are changed first, then the eraser mask cuts
+   holes. Restore brushes bring back the RECOLOURED pixels, not the originals.
+
+   Smooth edges. A logo's edge pixels are a blend: half blue, half white, say.
+   A plain fill would leave those blue-ish, giving a fringe. So after the
+   clicked area is found, it is grown by EDGE_BAND pixels, and every pixel in
+   that band is changed only by "how much of the clicked colour is in it".
+   That amount comes from a neat trick: draw a straight line from the clicked
+   colour C, through the pixel's colour P, out to the edge of the RGB cube.
+   If P sits halfway along that line, P is half C and half "the other
+   colour", so it gets half of the change. A pure white neighbour is at the
+   very end of the line, has none of C in it, and is left alone. Recolor uses
+   the same rule for the whole area, which is what keeps the shading.        */
+const EDGE_BAND = 2;                      // how far past the area edge (in pixels) blended edges are fixed
+const paintCache = new Map();             // layer id -> { canvas, ids, imageId }  the recoloured copy
+
+/** A short "fingerprint" of a picture's colour changes (changes whenever one is added or undone). */
+const paintSig = (L) => (L.paint && L.paint.length ? L.paint.map((o) => o.id).join(',') : '');
+
+/**
+ * The picture to draw for an image layer: the original, or a copy with the
+ * colour changes replayed onto it. Unchanged pictures cost nothing extra.
+ */
+function paintedSource(L) {
+  const src = imageStore.get(L.imageId);
+  const ops = L.paint || [];
+  if (!src || !ops.length) { paintCache.delete(L.id); return src; }
+  const ids = ops.map((o) => o.id);
+  let c = paintCache.get(L.id);
+  const samePrefix = (a, n) => a.length >= n && c.ids.slice(0, n).every((v, i) => v === a[i]);
+  if (c && c.imageId === L.imageId && c.ids.length === ids.length && samePrefix(ids, ids.length)) return c.canvas;
+  let canvas, start = 0;
+  if (c && c.imageId === L.imageId && c.ids.length < ids.length && samePrefix(ids, c.ids.length)) {
+    canvas = c.canvas; start = c.ids.length;        // one new click: just apply it on top
+  } else {
+    canvas = document.createElement('canvas');      // otherwise (after an undo, say) replay them all
+    canvas.width = src.width; canvas.height = src.height;
+    canvas.getContext('2d').drawImage(src, 0, 0);
+  }
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  for (let i = start; i < ops.length; i++) applyPaintOp(ctx, L, ops[i], src);
+  paintCache.set(L.id, { canvas, ids, imageId: L.imageId });
+  return canvas;
+}
+
+/**
+ * Flood fill from (sx, sy) over a block of pixels (px = RGBA bytes, rw x rh).
+ * Returns a Uint8Array: 1 = picked. Shared by Erase, Fill and Recolor.
+ * Tolerance 0-100 compares red, green, blue and see-through-ness; the
+ * biggest difference counts. Contiguous = only pixels touching the click.
+ */
+function floodPick(px, rw, rh, sx, sy, tol, contiguous) {
+  const at = (sy * rw + sx) * 4;
+  const r0 = px[at], g0 = px[at + 1], b0 = px[at + 2], a0 = px[at + 3];
+  // 0-100 becomes 0-255 (rounded: 100 x 2.55 is 254.99999... in computer maths).
+  const limit = Math.round(clamp(tol, 0, 100) * 2.55);
+  const close = (i) => {
+    const j = i * 4;
+    return Math.max(Math.abs(px[j] - r0), Math.abs(px[j + 1] - g0), Math.abs(px[j + 2] - b0), Math.abs(px[j + 3] - a0)) <= limit;
+  };
+  const picked = new Uint8Array(rw * rh);
+  if (contiguous) {
+    const stack = [sy * rw + sx];
+    picked[stack[0]] = 1;
+    while (stack.length) {
+      const i = stack.pop(), x = i % rw, y = (i - x) / rw;
+      if (x > 0 && !picked[i - 1] && close(i - 1)) { picked[i - 1] = 1; stack.push(i - 1); }
+      if (x < rw - 1 && !picked[i + 1] && close(i + 1)) { picked[i + 1] = 1; stack.push(i + 1); }
+      if (y > 0 && !picked[i - rw] && close(i - rw)) { picked[i - rw] = 1; stack.push(i - rw); }
+      if (y < rh - 1 && !picked[i + rw] && close(i + rw)) { picked[i + rw] = 1; stack.push(i + rw); }
+    }
+  } else {
+    for (let i = 0; i < picked.length; i++) if (close(i)) picked[i] = 1;
+  }
+  return picked;
+}
+
+/** Grow a picked area by n pixels in every direction (to reach blended edge pixels). */
+function growPick(picked, rw, rh, n) {
+  let cur = picked;
+  for (let step = 0; step < n; step++) {
+    const next = cur.slice();
+    for (let i = 0; i < cur.length; i++) {
+      if (cur[i]) continue;
+      const x = i % rw, y = (i - x) / rw;
+      if ((x > 0 && cur[i - 1]) || (x < rw - 1 && cur[i + 1]) || (y > 0 && cur[i - rw]) || (y < rh - 1 && cur[i + rw])) next[i] = 1;
+    }
+    cur = next;
+  }
+  return cur;
+}
+
+/** Soften a 0/1 area into 0-1 weights by averaging over a small square (radius r). Works in every browser. */
+function softenPick(picked, rw, rh, r) {
+  const w = new Float32Array(picked.length);
+  for (let i = 0; i < picked.length; i++) w[i] = picked[i];
+  if (r <= 0) return w;
+  // Two quick passes (across, then down) of a running average.
+  const tmp = new Float32Array(w.length), size = r * 2 + 1;
+  for (let y = 0; y < rh; y++) {
+    let sum = 0;
+    for (let x = -r; x <= r; x++) sum += w[y * rw + clamp(x, 0, rw - 1)];
+    for (let x = 0; x < rw; x++) {
+      tmp[y * rw + x] = sum / size;
+      sum += w[y * rw + clamp(x + r + 1, 0, rw - 1)] - w[y * rw + clamp(x - r, 0, rw - 1)];
+    }
+  }
+  for (let x = 0; x < rw; x++) {
+    let sum = 0;
+    for (let y = -r; y <= r; y++) sum += tmp[clamp(y, 0, rh - 1) * rw + x];
+    for (let y = 0; y < rh; y++) {
+      w[y * rw + x] = sum / size;
+      sum += tmp[clamp(y + r + 1, 0, rh - 1) * rw + x] - tmp[clamp(y - r, 0, rh - 1) * rw + x];
+    }
+  }
+  return w;
+}
+
+/**
+ * How much of colour C is in colour P, from 0 (none) to 1 (P is C).
+ * Follow the line from C through P out to the edge of the RGB cube (the
+ * "other" colour P was blended with). If P is a fraction a of the way out,
+ * P is (1 - a) parts C. See the note at the top of this section.
+ */
+function amountOf(cr, cg, cb, pr, pg, pb) {
+  let t = Infinity;                                   // how far out the edge of the cube is (P is at 1)
+  for (const [c, p] of [[cr, pr], [cg, pg], [cb, pb]]) {
+    if (p > c) t = Math.min(t, (255 - c) / (p - c));
+    else if (p < c) t = Math.min(t, c / (c - p));
+  }
+  if (!isFinite(t)) return 1;                         // P is exactly C
+  return clamp(1 - 1 / t, 0, 1);
+}
+
+/** Apply one saved colour change to the recoloured copy (ctx). */
+function applyPaintOp(ctx, L, op, src) {
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  // Work only inside the part of the picture that is shown (its crop).
+  const cr = cropOf(L);
+  const x0 = clamp(Math.floor(cr.x), 0, W), y0 = clamp(Math.floor(cr.y), 0, H);
+  const x1 = clamp(Math.ceil(cr.x + cr.w), 0, W), y1 = clamp(Math.ceil(cr.y + cr.h), 0, H);
+  const sx = Math.floor(op.x) - x0, sy = Math.floor(op.y) - y0, rw = x1 - x0, rh = y1 - y0;
+  if (rw <= 0 || rh <= 0 || sx < 0 || sy < 0 || sx >= rw || sy >= rh) return;
+  const img = ctx.getImageData(x0, y0, rw, rh), px = img.data;
+  const core = floodPick(px, rw, rh, sx, sy, op.tol, op.contiguous);
+  const soft = clamp(Math.round(op.soft || 0), 0, 8);
+  const at = (sy * rw + sx) * 4;
+  const C = [px[at], px[at + 1], px[at + 2]];          // the clicked colour
+
+  if (op.kind === 'revert') {
+    // Put the original colours back in the area (with a soft edge if asked).
+    const orig = document.createElement('canvas'); orig.width = rw; orig.height = rh;
+    const octx = orig.getContext('2d', { willReadFrequently: true });
+    octx.drawImage(src, x0, y0, rw, rh, 0, 0, rw, rh);
+    const o = octx.getImageData(0, 0, rw, rh).data;
+    const w = softenPick(growPick(core, rw, rh, EDGE_BAND), rw, rh, soft);
+    for (let i = 0; i < w.length; i++) {
+      if (!w[i]) continue;
+      const j = i * 4;
+      for (let k = 0; k < 3; k++) px[j + k] += (o[j + k] - px[j + k]) * w[i];
+    }
+    ctx.putImageData(img, x0, y0);
+    return;
+  }
+
+  const T = hexToRgb(parseHex(op.color) || '#000000');
+  const shift = [T[0] - C[0], T[1] - C[1], T[2] - C[2]];   // how far the clicked colour moves
+  const band = growPick(core, rw, rh, EDGE_BAND);
+  const w = soft > 0 ? softenPick(core, rw, rh, soft) : null;
+  for (let i = 0; i < band.length; i++) {
+    if (!band[i]) continue;
+    const j = i * 4;
+    // How much of the clicked colour this pixel holds (blended edge pixels hold less).
+    const share = amountOf(C[0], C[1], C[2], px[j], px[j + 1], px[j + 2]);
+    if (op.kind === 'fill' && core[i]) {
+      // Fill: the area itself becomes the flat colour (a soft edge blends it in).
+      const k2 = w ? w[i] : 1;
+      for (let k = 0; k < 3; k++) px[j + k] += (T[k] - px[j + k]) * k2;
+      // (where the soft edge leaves some old colour, shift that part like an edge pixel)
+      if (k2 < 1) for (let k = 0; k < 3; k++) px[j + k] = clamp(px[j + k] + shift[k] * share * (1 - k2), 0, 255);
+    } else {
+      // Recolor (whole area), or a blended edge pixel of a Fill: move it by its share of the change.
+      for (let k = 0; k < 3; k++) px[j + k] = clamp(px[j + k] + shift[k] * share, 0, 255);
+    }
+    // See-through-ness (alpha) is never changed, so soft logo edges stay soft.
+  }
+  ctx.putImageData(img, x0, y0);
+}
+
 /** Paint one wand click into a picture's eraser mask (Restore clicks rub the mask away). */
 function drawWandStroke(ctx, L, st) {
   ctx.save();
@@ -5581,6 +5844,18 @@ function wandClick(p, e) {
   }
   const opt = toolDefaults.wand;
   const [x, y] = imagePoint(L, p);
+  if (opt.action === 'fill' || opt.action === 'recolor') {
+    // Fill / Recolor: a colour-change recipe (Alt+click = put the original colours back there).
+    const kind = e.altKey ? 'revert' : opt.action;
+    const op = { id: uid(), kind, x, y, tol: opt.tolerance, contiguous: !!opt.contiguous, soft: opt.softEdge };
+    if (kind !== 'revert') op.color = opt.color || settings.color;
+    L.paint = [...(L.paint || []), op];
+    selectLayer(L.id);
+    commit(); requestRender(); renderProps();
+    announce(kind === 'revert' ? 'Original colours put back in an area of ' + L.name
+      : (kind === 'fill' ? 'Filled an area of ' : 'Recoloured an area of ') + L.name + ' with ' + op.color);
+    return;
+  }
   const mode = e.altKey ? (opt.mode === 'erase' ? 'restore' : 'erase') : opt.mode;
   const st = { id: uid(), kind: 'wand', mode, x, y, tol: opt.tolerance, contiguous: !!opt.contiguous, soft: opt.softEdge };
   L.erase = [...(L.erase || []), st];
@@ -5655,6 +5930,13 @@ function eraserMove(p) {
   stroke.pts.push(pt);
   stampStroke(mask.canvas.getContext('2d'), stroke, stroke.pts.length - 1);   // paint just the new bit
   mask.sig = eraseSig(L);
+}
+/** Remove all Fill / Recolor changes from a picture (can be undone). */
+function clearPainting(L) {
+  if (!L || !(L.paint && L.paint.length)) return;
+  L.paint = [];
+  commit(); renderProps(); requestRender();
+  announce('Color changes cleared - the original colors are back');
 }
 /** Remove all erasing from a layer (can be undone). */
 function clearErasing(L) {
@@ -7355,6 +7637,12 @@ function validateProject(data) {
       L.erase = !Array.isArray(L.erase) ? [] : L.erase.filter((st) =>
         st && typeof st.id === 'string' && (st.kind === 'wand' ? okWand(st) : okBrush(st)));
     }
+    // Magic wand colour changes (pictures only): keep only well-formed recipes.
+    if (L.paint !== undefined) {
+      L.paint = L.type !== 'image' || !Array.isArray(L.paint) ? [] : L.paint.filter((op) => op && typeof op.id === 'string' &&
+        ['fill', 'recolor', 'revert'].includes(op.kind) && num(op.x) && num(op.y) && num(op.tol) && num(op.soft) &&
+        typeof op.contiguous === 'boolean' && (op.kind === 'revert' || HEX.test(op.color || '')));
+    }
     if (L.type === 'cursor' && !CURSOR_KINDS[L.kind]) L.kind = 'pointer';
     if (L.type === 'text' && !FONTS[L.font]) L.font = 'sans';
     if (L.type === 'redact') L.block = Math.max(REDACT_MIN_BLOCK, num(L.block) ? L.block : 16);
@@ -8853,7 +9141,7 @@ const LAYERS_MIN = 60;                       // never shorter than this (px)
 /** Tallest the Layers pane may get: leave room for the actions and some properties. */
 function layersMax() {
   const panelH = $('sidePanel').clientHeight;
-  const fixed = $('layerActions').offsetHeight + $('layersSplitter').offsetHeight;
+  const fixed = $('layerActions').offsetHeight + $('layersSplitter').offsetHeight + $('sheetHandle').offsetHeight;
   return Math.max(LAYERS_MIN, panelH - fixed - 140);
 }
 /**
@@ -8913,15 +9201,162 @@ function setLayersHeight(px, save = true) {
   new ResizeObserver(() => setLayersHeight(settings.layersHeight, false)).observe($('sidePanel'));
 })();
 
-// Phone layout: the side panel becomes a bottom sheet under the canvas.
-// The "sheet-open" class on .app adds the sheet's row to the grid, so the
-// canvas row gets shorter. The canvas notices the new size by itself
-// (see the ResizeObserver in init) and re-fits the picture.
-$('panelToggle').addEventListener('click', () => {
-  const open = $('sidePanel').classList.toggle('open');
+/* ---------- Phone layout: the side panel becomes a bottom sheet under the canvas ----------
+   On a narrow screen (820px or less, the same breakpoint as the CSS) the
+   screen has three rows: the canvas, the Inspector sheet, the tool rail.
+   The "sheet-open" class on .app gives the sheet its row (as tall as the
+   CSS variable --sheet-h), so the canvas row gets shorter instead of being
+   covered. The canvas notices its new size by itself (the ResizeObserver in
+   init) and re-fits the picture.
+
+   The grab handle at the top of the sheet:
+     - drag it up or down to share the screen between the canvas and the
+       Inspector;
+     - drag it nearly all the way down, or tap it, to close the sheet to just
+       the handle; tap it again (or pull it up) to open it;
+     - from the keyboard it is a "separator": Up and Down change the height,
+       Home closes, End makes it as tall as it goes, Enter or Space opens or
+       closes it.
+   The Inspector button in the top bar (#panelToggle) opens and closes the
+   same sheet, and the two always agree.
+
+   How tall: settings.sheet says where the TOP of the sheet sits, as a share
+   of the screen measured up from the bottom. The default, 1/3, puts the top
+   of the sheet two thirds of the way down. The tool rail sits under the
+   sheet, so the sheet itself is that much minus the rail. It is saved as a
+   share (not pixels) so it still looks right after the phone is turned. */
+const PHONE = window.matchMedia('(max-width: 820px)');   // phone layout on or off
+const SHEET_HANDLE_PX = 29;       // a closed sheet: the 28px handle plus the sheet's top border
+const SHEET_MIN_PX = 120;         // the shortest an open sheet may be
+const SHEET_CANVAS_MIN_PX = 140;  // always leave at least this much canvas showing
+const SHEET_DEFAULT = 1 / 3;      // top of the sheet two thirds of the way down the screen
+
+/** Is the sheet open? (The "open" class on the side panel is the one true answer.) */
+const sheetOpen = () => $('sidePanel').classList.contains('open');
+/** Height of the tool rail under the sheet, in pixels. */
+const railHeight = () => $('toolRail').offsetHeight;
+/** Sheet height in pixels -> share of the screen from the sheet's top to the bottom. */
+const sheetShare = (px) => (px + railHeight()) / window.innerHeight;
+/** Share of the screen -> sheet height in pixels. */
+const sheetPx = (share) => share * window.innerHeight - railHeight();
+
+/** The shortest and tallest an open sheet may be, in pixels. The tallest
+    still leaves the top bar, some canvas and the tool rail in sight. */
+function sheetLimits() {
+  const canvasTop = $('workspace').getBoundingClientRect().top;   // just under the top bar
+  const max = window.innerHeight - canvasTop - SHEET_CANVAS_MIN_PX - railHeight();
+  return { min: SHEET_MIN_PX, max: Math.max(SHEET_MIN_PX, max) };
+}
+/** The open sheet's height right now, from the saved share, kept inside the limits. */
+function sheetHeight() {
+  const { min, max } = sheetLimits();
+  return Math.round(clamp(sheetPx(settings.sheet || SHEET_DEFAULT), min, max));
+}
+
+/** Size the sheet from settings.sheet, and tell screen readers how tall it is. */
+function applySheet() {
+  const handle = $('sheetHandle');
+  if (!PHONE.matches) {                 // wide screen: the normal side column, no sheet
+    document.documentElement.style.removeProperty('--sheet-h');
+    return;
+  }
+  const h = sheetHeight(), open = sheetOpen();
+  document.documentElement.style.setProperty('--sheet-h', h + 'px');
+  // The separator's value: how much of the screen is below its top edge (0 when closed).
+  const pct = open ? Math.round(sheetShare(h) * 100) : 0;
+  handle.setAttribute('aria-valuemax', String(Math.round(sheetShare(sheetLimits().max) * 100)));
+  handle.setAttribute('aria-valuenow', String(pct));
+  handle.setAttribute('aria-valuetext', open ? 'Inspector open, ' + pct + ' percent of the screen' : 'Inspector closed');
+}
+
+/** Open or close the sheet, keeping the top bar's Inspector button in step.
+    say = true also tells screen readers (used for the handle). */
+function setSheetOpen(open, say = false) {
+  $('sidePanel').classList.toggle('open', open);
   document.querySelector('.app').classList.toggle('sheet-open', open);
   $('panelToggle').setAttribute('aria-expanded', String(open));
-});
+  applySheet();
+  if (say) announce(open ? 'Inspector open' : 'Inspector closed');
+}
+
+// The Inspector button in the top bar (phones only): open or close the sheet.
+$('panelToggle').addEventListener('click', () => setSheetOpen(!sheetOpen()));
+
+// The grab handle: dragging, tapping and keys.
+(() => {
+  const handle = $('sheetHandle'), side = $('sidePanel');
+  let d = null;                     // the drag in progress: { id, y, h, moved, last }
+
+  // Finger, pen or mouse goes down on the handle: remember where it started.
+  handle.addEventListener('pointerdown', (e) => {
+    if (!PHONE.matches || e.button > 0) return;
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);      // keep getting moves even off the handle
+    handle.classList.add('dragging');
+    d = { id: e.pointerId, y: e.clientY, h: sheetOpen() ? side.offsetHeight : SHEET_HANDLE_PX, moved: false, last: null };
+  });
+
+  // While dragging: the sheet's top follows the finger.
+  handle.addEventListener('pointermove', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const up = d.y - e.clientY;                 // how far the finger has gone up
+    if (Math.abs(up) > 4) d.moved = true;       // a few pixels of wobble still counts as a tap
+    if (!d.moved) return;
+    const h = clamp(d.h + up, SHEET_HANDLE_PX, sheetLimits().max);
+    if (!sheetOpen() && h > SHEET_HANDLE_PX + 24) setSheetOpen(true);   // pulled up from closed: open it
+    // Follow the finger exactly - even below the shortest open height, so it can be pushed closed.
+    document.documentElement.style.setProperty('--sheet-h', h + 'px');
+    d.last = h;
+  });
+
+  // Finger lifted (or the browser cancelled the drag): tap, close or keep the new height.
+  const finish = (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const drag = d;
+    d = null;
+    handle.classList.remove('dragging');
+    if (!drag.moved) { setSheetOpen(!sheetOpen(), true); return; }          // a tap: open or close
+    const h = drag.last ?? drag.h;
+    if (h < SHEET_MIN_PX * 0.75) {                                         // pushed down: close it
+      if (sheetOpen()) setSheetOpen(false, true); else applySheet();
+      return;
+    }
+    settings.sheet = sheetShare(Math.max(SHEET_MIN_PX, h));               // remember it
+    saveSettings();
+    applySheet();
+  };
+  handle.addEventListener('pointerup', finish);
+  handle.addEventListener('pointercancel', finish);
+
+  // Keyboard: Up/Down about 8% of the screen at a time, Home closes, End is
+  // the tallest, Enter or Space opens or closes.
+  handle.addEventListener('keydown', (e) => {
+    const { min, max } = sheetLimits(), step = 0.08 * window.innerHeight;
+    const open = sheetOpen(), h = sheetHeight();
+    let next = null;
+    if (e.key === 'ArrowUp') next = open ? h + step : h;     // closed: Up opens it at the remembered height
+    else if (e.key === 'ArrowDown') {
+      if (open) {
+        next = h - step;
+        if (next < min) { setSheetOpen(false, true); next = null; }   // below the shortest: close it
+      }
+    }
+    else if (e.key === 'End') next = max;
+    else if (e.key === 'Home') { if (open) setSheetOpen(false, true); }
+    else if (e.key === 'Enter' || e.key === ' ') setSheetOpen(!open, true);
+    else return;                                  // any other key: not ours
+    e.preventDefault(); e.stopPropagation();      // keep the arrows from nudging a layer
+    if (next === null) return;
+    settings.sheet = sheetShare(clamp(next, min, max));
+    saveSettings();
+    if (!open) setSheetOpen(true, true); else applySheet();
+  });
+
+  // A new screen size (turning the phone, the on-screen keyboard), or
+  // crossing between the phone and wide layouts: size the sheet again.
+  window.addEventListener('resize', applySheet);
+  PHONE.addEventListener('change', applySheet);
+})();
 
 // Warn before closing the tab if there is work that has not been exported.
 let exportedSnapshot = null;
@@ -9010,6 +9445,7 @@ function init() {
   });
   renderChangelog();
   setTool('select');
+  applySheet();            // phones: size the Inspector sheet from the saved height
   new ResizeObserver(resizeStage).observe(stage);
   resizeStage();
   onDocumentShapeChanged();

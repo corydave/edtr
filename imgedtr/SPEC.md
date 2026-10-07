@@ -149,3 +149,15 @@ Perspective tilt per layer, Showcase export, brightness/contrast/saturation, alt
 ### 1.12.0 - Drag a copy, resize from the center (done)
 - Ctrl/Cmd+drag duplicates (copy made on first movement; Ctrl+Shift = axis-locked); Ctrl/Cmd on a handle = resize from center, Ctrl+Shift = evenly; handle snapping for unrotated layers.
 - Pad contents = `fitToContents(10)`. Color picker replaces the native inputs in the New canvas and Settings dialogs.
+
+### 1.13.0 - Magic wand Fill and Recolor (done)
+- Wand `action`: erase / fill / recolor. Colour changes live in `layer.paint` (`{ id, kind: 'fill'|'recolor'|'revert', x, y, tol, contiguous, soft, color }`), replayed onto a cached copy (`paintedSource`) before the eraser mask. Edge band of 2 px recoloured by "share of the clicked colour" (line from C through P to the RGB cube's edge). Alpha untouched.
+
+### 1.14.0 - Phone Inspector grab handle (done)
+- Phone layout (max-width 820px): rows canvas / sheet / rail. Sheet row = 29px closed (handle only) or `--sheet-h` open; the canvas shrinks and re-fits (ResizeObserver), never covered. `resizeStage()` now renders immediately.
+- Handle `#sheetHandle` (role separator, Up/Down 8% of the screen, Home closes, End tallest, Enter/Space toggle; tap toggles, drag below 90px closes). Matches DSKEDTR 0.14.0.
+- `settings.sheet` = top of the sheet as a share of the screen from the bottom (default 1/3; the tool rail sits under the sheet). Limits: 120px open, and keep 140px of canvas. Closed on load, as before.
+
+## Roadmap (as of 1.14.0)
+1. **Animated GIFs** - see the project doc `IMGEDTR-GIF-SPEC.md`; milestones now start at 1.15.0.
+2. **Selection system** (after the GIF milestones). A real selection: the wand gets a **Select** action, plus a lasso and a rectangle select. Marching ants; actions on a selection: Fill, Recolor, Delete (erase), Copy to a new layer, Invert, Grow/Shrink, Feather; Escape clears it. The wand's Erase / Fill / Recolor stay as one-click shortcuts. Stored as recipes like the wand clicks, so it stays non-destructive.

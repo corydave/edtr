@@ -2,6 +2,30 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.14.0 - 2026-10-07 - A grab handle for the phone Inspector
+
+- **Phones and narrow windows: the Inspector sheet has a grab handle** along its top edge, the same as DSKEDTR's.
+  - **Drag it up or down** to share the screen between the picture and the Inspector. The picture's area shrinks and the picture re-fits; the sheet never covers it.
+  - **Tap it** to open or close the sheet. **Drag it nearly to the bottom** to close it. A closed sheet leaves just the handle showing (above the tool rail), so it can be tapped or pulled up again. The Inspector button in the top bar still opens and closes it, and the two stay in step. The sheet still starts closed.
+  - **It starts with its top two thirds of the way down the screen.** It is never shorter than 120 px when open, and never so tall that the top bar, the tool rail and at least 140 px of picture are lost.
+  - **Keyboard:** the handle is a separator. Up and Down change the height by about 8% of the screen (Down below the shortest closes it), Home closes, End makes it as tall as it goes, Enter or Space opens or closes it. Screen readers hear "Inspector open, 33 percent of the screen" or "Inspector closed".
+  - **The height is remembered** in this browser (in IMGEDTR's settings), as a share of the screen, so it still fits after the phone is turned.
+- The picture is redrawn straight away when its area changes size, so it no longer flickers while the sheet moves.
+- Wide screens are unchanged: the handle only exists in the phone layout.
+
+## 1.13.0 - 2026-10-07 - Fill and Recolor with the magic wand
+
+- **The magic wand has an Action switch: Erase, Fill or Recolor.** Tolerance and Contiguous work for all three.
+  - **Fill** is a paint bucket: the clicked area becomes one flat colour (Fill color, which starts as your annotation colour).
+  - **Recolor** changes the clicked colour to a new one but keeps its shading, so lighter and darker parts stay lighter and darker. With Contiguous off, one click changes every area of that colour, such as both blue parts of the accessibility logo.
+  - **Alt (Option)+click** with Fill or Recolor puts the original colours back in the clicked area.
+- **No fringe.** A logo's edge pixels are blends (half blue, half white, say), and a plain bucket fill leaves them in the old colour. The wand grows the area by 2 px and changes each of those edge pixels by how much of the clicked colour it holds. It works that out by following the line from the clicked colour through the pixel's colour to the edge of the RGB cube. Pure neighbours (the white) are untouched. See-through-ness is never changed, so soft edges on transparent backgrounds stay soft.
+- **Nothing destructive.** Like erasing, each click is saved as a small recipe in the layer's new `paint` list and replayed in order onto a copy of the picture. **Clear all color changes** (in the wand's panel and the picture's properties) brings back the exact original, and undo works per click.
+  - Erasing sits on top of colour changes, and a Restore brush brings back the recoloured pixels.
+  - Erase clicks with the wand now read the recoloured picture.
+- **Soft edge for Fill works in every browser, Safari included.** It's done in plain JavaScript, not the browser's blur filter. (Erase's soft edge still uses the blur filter, so it stays sharp in Safari.) Recolor needs no soft edge; it blends by itself.
+- Colour-change recipes in project files are checked when a project opens: known kinds, real numbers, and a proper #rrggbb colour. Anything malformed is dropped.
+
 ## 1.12.1 - 2026-10-03 - Links to the other apps
 
 - Names of the other apps in Help (in the changelog, About and the guides) are now links that open that app. Each link opens in a new tab; this app's own name stays plain. Shared SUITE block: new `suiteLinkApps()` (called from `renderSuiteApps()`, so no app wiring needed).
