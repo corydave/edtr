@@ -23,6 +23,7 @@ Part of the tool family: TXTEDTR, PDFEDTR, IMGEDTR, SNDEDTR, VIDEDTR, SCRNCSTR, 
 - Inspector (right): Layers list, action bar, then fold-open property sections.
 - Status bar (bottom, like SNDEDTR and VIDEDTR): pointer X/Y, what is selected and its size, the artboard size.
 - Phones: the rail runs along the bottom, and the Inspector opens as a sheet above it (as in IMGEDTR); the drawing re-fits.
+  - The sheet has a grab handle (0.12.0, as in DSKEDTR): rows are canvas | sheet | rail, so dragging the handle resizes the canvas instead of covering it. Open height starts at a third of the screen, 120px to (screen height - 220px), saved as `settings.sheet` (a share of the screen). Closed = just the 29px handle row; tap or the Inspector button toggles. Keyboard: `role="separator"`, Up/Down 8%, Home closes, End tallest, Enter/Space toggle. Code: `applySheet()`, `setSheetOpen()`.
 
 ## 3. Merge Shapes rules
 

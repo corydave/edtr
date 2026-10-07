@@ -246,6 +246,17 @@ svg.shield-icon path { vector-effect: non-scaling-stroke; stroke-width: 2; }
 .splitter::before { content: ''; width: 40px; height: 4px; border-radius: 2px; background: var(--border); }
 .splitter:hover::before, .splitter.dragging::before { background: var(--brand); }
 .splitter:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+/* The grab handle at the top of the Inspector: only shown on a phone,
+   where the Inspector is a sheet above the tool rail (see SMALL SCREENS).
+   touch-action: none lets a finger drag it without scrolling the page. */
+.sheet-handle { display: none; flex: none; height: 28px; align-items: center; justify-content: center;
+  cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none;
+  background: var(--surface); border-bottom: 1px solid var(--border); }
+/* The grip: a short rounded bar in the middle, in the quiet text colour. */
+.sheet-handle .grip { width: 44px; height: 5px; border-radius: 3px; background: var(--text-muted); opacity: .55; }
+.sheet-handle:hover .grip, .sheet-handle.dragging .grip { opacity: .9; }
+/* The app's usual focus ring, drawn just inside, so the scrolling sheet never clips it. */
+.sheet-handle:focus-visible { outline-offset: -3px; }
 .layer-actions { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px;
   background: var(--surface-2); border-bottom: 1px solid var(--border); flex: none; }
 .layer-actions .icon-btn { height: 32px; min-width: 32px; padding: 0 6px; }
@@ -460,15 +471,26 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
    the drawing and its settings at the same time (as in IMGEDTR).
    ===================================================================== */
 @media (max-width: 820px) {
-  .app { height: calc(100% - 52px); grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 0 56px; }
-  .app.sheet-open { grid-template-rows: minmax(0, 1fr) 46% 56px; }
+  /* Three rows: the canvas, the Inspector sheet, the tool rail. The canvas
+     shrinks and grows as the sheet's grab handle is dragged (it is never
+     covered). --sheet-h is the open sheet's height, set by applySheet()
+     (a third of the screen to start). Closed, only the handle shows: 28px
+     plus the sheet's 1px top border. */
+  .app { height: calc(100% - 52px); grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 29px 56px; }
+  .app.sheet-open { grid-template-rows: minmax(0, 1fr) var(--sheet-h, 33vh) 56px; }
   .workspace { grid-row: 1; grid-column: 1; }
   .rail { grid-row: 3; grid-column: 1; flex-direction: row; justify-content: flex-start; overflow-x: auto; overflow-y: hidden;
     padding: 0 8px; border-right: 0; border-top: 1px solid var(--border); }
   .rail hr { width: 1px; height: 28px; border: 0; border-left: 1px solid var(--border); margin: 0 4px; }
-  .panel { display: none; grid-row: 2; grid-column: 1; border-left: 0; border-top: 1px solid var(--border);
+  .panel { display: flex; grid-row: 2; grid-column: 1; border-left: 0; border-top: 1px solid var(--border);
     overflow-y: auto; overscroll-behavior: contain; }
-  .panel.open { display: flex; }
+  /* The handle stays at the top of the sheet while its contents scroll under it. */
+  .sheet-handle { display: flex; position: sticky; top: 0; z-index: 2; }
+  /* Closed: keep just the handle, so it can be pulled up again. Everything
+     else is display:none, so the keyboard cannot reach what is not shown. */
+  .app:not(.sheet-open) .panel { overflow: hidden; }
+  .app:not(.sheet-open) .panel > :not(.sheet-handle) { display: none; }
+  .app:not(.sheet-open) .sheet-handle { border-bottom-color: transparent; }   /* the rail's top line is enough */
   #layersSection { max-height: none; flex: none; }
   #propsSection { flex: none; overflow: visible; }
   .statusbar { display: none; }
@@ -847,6 +869,13 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
        INSPECTOR - the layer list, then the properties of the selection.
        =================================================================== -->
   <aside class="panel" id="sidePanel" aria-label="Inspector: layers and properties">
+    <!-- On a phone the Inspector is a sheet above the tool rail. Drag this handle
+         up or down (or use the arrow keys on it) to give the drawing more room;
+         a tap opens or closes the sheet. Hidden on wider screens (see wireSheet). -->
+    <div class="sheet-handle" id="sheetHandle" role="separator" tabindex="0" aria-orientation="horizontal"
+         aria-label="Inspector height" aria-controls="sidePanel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+         aria-valuetext="Inspector closed"
+         title="Drag to make the Inspector taller or shorter; tap to open or close it"><span class="grip"></span></div>
     <section id="layersSection" aria-labelledby="layersTitle">
       <div class="layers-head">
         <h2 id="layersTitle">Layers <span class="hint" id="layerCount"></span></h2>
@@ -1180,10 +1209,13 @@ var VCTR_EMBEDDED = { edition: "offline", fonts: {
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.11.3';
+const APP_VERSION = '0.12.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 const CHANGELOG = [
+  { version: '0.12.0', date: '2026-10-07', notes: [
+    'On a phone, the Inspector sheet has a grab handle along its top. Drag it up or down to share the screen between the drawing and the Inspector (the drawing shrinks rather than being covered). Drag it nearly to the bottom, or tap it, to close the sheet to just the handle; tap it again to open it. It starts at a third of the screen, and the height you choose is remembered in this browser. From the keyboard: Up and Down change the height, Home closes, End makes it as tall as it goes, Enter or Space opens or closes.'
+  ] },
   { version: '0.11.3', date: '2026-10-03', notes: [
     'Names of the other apps in Help (in the changelog, About and the guides) are now links that open that app.'
   ] },
@@ -1607,6 +1639,7 @@ const settings = {
   smoothing: 25,            // Pencil: 0 = keep every wiggle exactly, 100 = very smooth
   pencilClose: true,        // Pencil: ending where you started makes a closed, filled shape
   layersHeight: null,       // height of the Layers pane in pixels (null = automatic)
+  sheet: 0,                 // phones: height of the open Inspector sheet, as a share of the screen (0 = the default: its top two thirds of the way down)
   colorFormat: 'hex',       // how the colour picker shows colours: 'hex', 'rgb' or 'cmyk'
   padding: 10,              // Pad contents: the empty margin (px) left on every side of the drawing
   openSections: {},         // which Inspector sections you opened (all start closed): { fill: true, ... }
@@ -1622,6 +1655,8 @@ function loadSettings() {
     if (Number.isFinite(saved.smoothing) && saved.smoothing >= 0 && saved.smoothing <= 100) settings.smoothing = saved.smoothing;
     if (typeof saved.pencilClose === 'boolean') settings.pencilClose = saved.pencilClose;
     if (Number.isFinite(saved.layersHeight) && saved.layersHeight > 0 && saved.layersHeight < 5000) settings.layersHeight = saved.layersHeight;
+    // The phone sheet's height: a share of the screen, somewhere sensible (5% to 95%).
+    if (Number.isFinite(saved.sheet) && saved.sheet >= 0.05 && saved.sheet <= 0.95) settings.sheet = saved.sheet;
     if (['hex', 'rgb', 'cmyk'].includes(saved.colorFormat)) settings.colorFormat = saved.colorFormat;
     if (Number.isFinite(saved.padding) && saved.padding >= 0 && saved.padding <= 2000) settings.padding = saved.padding;
     if (saved.openSections && typeof saved.openSections === 'object') {
@@ -7604,14 +7639,158 @@ function setLayersHeight(px, save = true) {
   new ResizeObserver(() => setLayersHeight(settings.layersHeight, false)).observe($('sidePanel'));
 })();
 
-// Phones: the Inspector is a sheet under the canvas, above the tool rail.
-$('panelToggle').addEventListener('click', () => {
-  const open = $('sidePanel').classList.toggle('open');
+/* ---------- Phones: the Inspector as a sheet with a grab handle ----------
+   On a narrow screen the Inspector is a sheet under the canvas, above the
+   tool rail. It starts closed (just its grab handle shows). The Inspector
+   button in the top bar opens and closes it, and so does the handle:
+     - drag the handle up or down to share the screen between the drawing
+       and the Inspector (the canvas shrinks rather than being covered);
+     - drag it nearly all the way down, or tap it, to close the sheet to
+       just the handle; tap again (or drag it up) to open it;
+     - from the keyboard it is a "separator": Up and Down change the height,
+       Home closes, End makes it as tall as it goes, Enter or Space opens
+       or closes.
+   The open height is a share of the screen (a third to start), remembered
+   in settings.sheet. The same idea as DSKEDTR.                           */
+const SHEET_PHONE = window.matchMedia('(max-width: 820px)');   // the phone layout's breakpoint (see SMALL SCREENS)
+const SHEET_HANDLE_PX = 29;          // the closed sheet: the 28px handle plus the sheet's 1px top border
+const SHEET_MIN_PX = 120;            // the shortest open sheet
+/** Is the sheet open? (The 'open' class on the Inspector says so.) */
+const sheetOpen = () => $('sidePanel').classList.contains('open');
+/**
+ * The shortest and tallest the open sheet may be, in pixels. The tallest
+ * leaves the top bar (52px), the tool rail (56px) and about 110px of
+ * drawing on screen: the screen height minus 220px, as in DSKEDTR.
+ */
+function sheetLimits() {
+  const vh = window.innerHeight;
+  return { min: SHEET_MIN_PX, max: Math.max(SHEET_MIN_PX, vh - 220) };
+}
+/**
+ * The open sheet's height as a share of the screen. Until someone picks a
+ * height (settings.sheet is 0), the sheet starts with its top two thirds of
+ * the way down the screen, like the other EDTR apps: a third of the screen,
+ * less whatever sits underneath it (the tool rail).
+ */
+function sheetShare() {
+  if (settings.sheet) return settings.sheet;
+  const vh = window.innerHeight;
+  const below = Math.max(0, vh - $('sidePanel').getBoundingClientRect().bottom);   // what is under the sheet
+  return Math.max(0.05, (vh / 3 - below) / vh);
+}
+/** Size the sheet from settings.sheet (a share of the screen) and tell screen readers how tall it is. */
+function applySheet() {
+  const handle = $('sheetHandle');
+  // On a wider screen the Inspector is a column again: no sheet height at all.
+  if (!SHEET_PHONE.matches) { document.documentElement.style.removeProperty('--sheet-h'); return; }
+  const vh = window.innerHeight, { min, max } = sheetLimits();
+  const h = Math.round(clamp(sheetShare() * vh, min, max));
+  document.documentElement.style.setProperty('--sheet-h', h + 'px');
+  // The handle's value is the sheet's height as a percent of the screen (0 when closed).
+  const open = sheetOpen(), pct = open ? Math.round(h / vh * 100) : 0;
+  handle.setAttribute('aria-valuemax', String(Math.round(max / vh * 100)));
+  handle.setAttribute('aria-valuenow', String(pct));
+  handle.setAttribute('aria-valuetext', open ? 'Inspector open, ' + pct + ' percent of the screen' : 'Inspector closed');
+}
+/**
+ * Open or close the phone sheet. Keeps the Inspector button in step.
+ * refit = false while a finger is still dragging (the fit waits for the end).
+ */
+function setSheetOpen(open, refit = true) {
+  $('sidePanel').classList.toggle('open', open);
   $('app').classList.toggle('sheet-open', open);
   $('panelToggle').setAttribute('aria-expanded', String(open));
+  applySheet();
   // The canvas just got shorter (or taller): fit the artboard into it again.
+  if (refit) refitAfterSheet();
+}
+/** After the canvas changes size: size the drawing surface to it, then show the whole artboard. */
+function refitAfterSheet() {
   requestAnimationFrame(() => { resizeStage(); if (doc) fitView(); });
-});
+}
+// The Inspector button in the top bar (phones only).
+$('panelToggle').addEventListener('click', () => setSheetOpen(!sheetOpen()));
+(() => {
+  const handle = $('sheetHandle'), panel = $('sidePanel');
+  let d = null;                                       // the drag in progress: { id, y, h, moved, last }
+  handle.addEventListener('pointerdown', (e) => {
+    if (!SHEET_PHONE.matches || e.button > 0) return;
+    e.preventDefault();                               // no text selection, no page scroll
+    handle.setPointerCapture(e.pointerId);            // keep getting moves even off the handle
+    handle.classList.add('dragging');
+    d = { id: e.pointerId, y: e.clientY, h: sheetOpen() ? panel.offsetHeight : SHEET_HANDLE_PX, moved: false, last: null };
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const up = d.y - e.clientY;                       // how far the finger has gone up
+    if (Math.abs(up) > 4) d.moved = true;             // a few pixels of wobble is still a tap
+    if (!d.moved) return;
+    const { max } = sheetLimits();
+    const h = clamp(d.h + up, SHEET_HANDLE_PX, max);
+    if (!sheetOpen() && h > SHEET_HANDLE_PX + 24) setSheetOpen(true, false);   // dragged up from closed: open it
+    // Follow the finger exactly (even below the shortest open height, so it can be pushed closed).
+    // The canvas follows too: its ResizeObserver calls resizeStage() as it changes size.
+    if (sheetOpen()) document.documentElement.style.setProperty('--sheet-h', h + 'px');
+    d.last = h;
+  });
+  handle.addEventListener('pointerup', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const drag = d, wasOpen = sheetOpen();
+    d = null;
+    handle.classList.remove('dragging');
+    if (!drag.moved) {                                 // a tap: open or close
+      setSheetOpen(!wasOpen);
+      announce(sheetOpen() ? 'Inspector open' : 'Inspector closed');
+      return;
+    }
+    const h = drag.last == null ? drag.h : drag.last;
+    if (h < SHEET_MIN_PX * 0.75) {                     // pushed (nearly) to the bottom: close it
+      setSheetOpen(false);
+      if (wasOpen) announce('Inspector closed');
+      return;
+    }
+    // Remember where it ended up, as a share of the screen, then tidy up to the limits.
+    settings.sheet = Math.max(SHEET_MIN_PX, h) / window.innerHeight;
+    saveSettings();
+    setSheetOpen(true);
+    if (!wasOpen) announce('Inspector open');
+  });
+  // The browser took the finger away (a system gesture, say): put the sheet back as it was.
+  handle.addEventListener('pointercancel', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    d = null;
+    handle.classList.remove('dragging');
+    applySheet();
+    refitAfterSheet();
+  });
+  handle.addEventListener('keydown', (e) => {
+    if (!SHEET_PHONE.matches) return;
+    const vh = window.innerHeight, step = 0.08;       // each arrow press: 8% of the screen
+    const { min, max } = sheetLimits(), open = sheetOpen();
+    const now = clamp(sheetShare() * vh, min, max) / vh;     // the height it shows now, as a share
+    // Close (if open) and say so.
+    const close = () => { if (open) { setSheetOpen(false); announce('Inspector closed'); } };
+    let next = null;
+    if (e.key === 'ArrowUp') next = open ? now + step : now;   // from closed, Up just opens it
+    else if (e.key === 'ArrowDown') { if (open && (now - step) * vh >= min) next = now - step; else close(); }
+    else if (e.key === 'End') next = max / vh;
+    else if (e.key === 'Home') close();
+    else if (e.key === 'Enter' || e.key === ' ') { setSheetOpen(!open); announce(open ? 'Inspector closed' : 'Inspector open'); }
+    else return;                                      // any other key: not ours
+    e.preventDefault();
+    e.stopPropagation();                              // keep the arrows from nudging the selection
+    if (next == null) return;
+    settings.sheet = clamp(next * vh, min, max) / vh;
+    saveSettings();
+    setSheetOpen(true);
+    if (!open) announce('Inspector open');
+  });
+  // A new screen size (turning the phone, the on-screen keyboard): size it again.
+  // The canvas follows by itself (its ResizeObserver).
+  window.addEventListener('resize', applySheet);
+  // Crossing between the phone and the wide layout.
+  SHEET_PHONE.addEventListener('change', applySheet);
+})();
 
 /* ---- Crash backups (see SuiteBackup in the SUITE BLOCK) ----
    What is saved: the same thing a project file holds. Restoring builds a
@@ -7670,6 +7849,7 @@ async function startUp() {
 /* ---- Start-up ---- */
 function init() {
   loadSettings();
+  applySheet();                          // phones: the Inspector sheet's remembered height
   initTooltips();
   fillIcons();
   for (const type of Object.keys(GALLERIES)) updateGalleryButton(type);   // the Shield and Shapes buttons show their current style

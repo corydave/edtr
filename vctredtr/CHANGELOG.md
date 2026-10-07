@@ -2,6 +2,15 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.12.0 - 2026-10-07 - A grab handle on the phone Inspector
+
+- **On a phone, the Inspector sheet has a grab handle along its top** (the same as DSKEDTR 0.14.0). Drag it up or down to share the screen between the drawing and the Inspector: the canvas shrinks rather than being covered, and the artboard is fitted into it again when you let go. Drag it nearly to the bottom, or tap it, to close the sheet to just the handle; tap it (or drag it up) to open it again. The Inspector button in the top bar still opens and closes it, and the two stay in step.
+  - It opens at a third of the screen. It is never shorter than 120px, and never so tall that it hides the top bar, the tool rail and about 110px of drawing (the screen height minus 220px).
+  - The height is remembered in this browser, as a share of the screen (`settings.sheet` in the usual settings, so blocked storage just means it is not remembered). The sheet still starts closed, as before.
+  - From the keyboard the handle is a separator ("Inspector height", 0 to 100 percent of the screen, 0 when closed): Up and Down change the height by 8% of the screen (Down below the shortest closes it), Home closes, End makes it as tall as it goes, Enter or Space opens or closes. Opening and closing are announced to screen readers.
+  - It follows the screen when it turns or changes size, and when the window crosses between the phone and the wide layout. Wider screens are unchanged (no handle).
+  - The handle stays at the top of the sheet while the Inspector scrolls under it.
+
 ## 0.11.3 - 2026-10-03 - Links to the other apps
 
 - Names of the other apps in Help (in the changelog, About and the guides) are now links that open that app. Each link opens in a new tab; this app's own name stays plain. Shared SUITE block: new `suiteLinkApps()` (called from `renderSuiteApps()`, so no app wiring needed).
