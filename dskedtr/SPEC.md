@@ -520,6 +520,39 @@ building blocks, the starter template gallery.
   ResizeObserver redrew, and the desk crept over the filmstrip. Seen in
   Dave's screen recording; reproduced by forcing the canvases to size from
   their pixel count.
+- 0.14.0, mobile and linking UX from Dave's phone testing:
+  - Phone sheet (max-width 760px): body is a fixed 100dvh grid; `.work`
+    rows are rail / desk (`minmax(0, 1fr)`) / sheet (`var(--sheet-h)`).
+    `#sheetHandle` (role separator) drags the sheet; `view.sheet` is its
+    share of the screen (default 1/3, saved with the view settings);
+    `applySheet`, `wireSheet`, `sheetLimits` (120px to window - 220px);
+    closed = `.inspector-hidden`, which on a phone keeps just the 29px
+    handle. `keepSelectionInView` after a drag. Smaller phone filmstrip.
+  - Ports: `portSpots(f)` puts the in-port 16px above the top edge and 26px
+    in from the left, the out-port 16px below the bottom edge and 26px in
+    from the right; boxes under 96px wide on screen get them 18px off the
+    corners diagonally. `portMark` draws a 11px-radius tab (chain link out,
+    arrow in; green linked, red overflow, white free). `portReach` is 16px
+    on coarse pointers. `inPortAt` (a green in-port) picks the box before.
+    Touch panning skips ports.
+  - Quick-action pill `#quickBar` (role toolbar, one Tab stop, Alt+F10):
+    `quickBarState`, `updateQuickBar` (called from `renderSelection` and
+    after every pointer drag), `placeQuickBar` (46px clear of the box,
+    above, else below, else top of the desk), `wireQuickBar`. Copy keeps
+    DSKEDTR's own copy and also fires the browser copy.
+  - Fixed `duplicateSelected` picking a copied text box before `layoutAll`.
+- 0.15.0: the pill gains Group / Ungroup (`groupSelected`,
+  `ungroupSelected`) and Arrange, a popover menu `#arrangeMenu`
+  (`moveOrder`; stays open for repeated steps; opens away from the picked
+  things, using the pill's `data-side`). Shared menu helpers
+  `openMenuFrom(menu, button, where)` and `wireMenu(menu, button)`
+  (Up/Down/Home/End, Escape closes just the menu, focus returns to its
+  button). Filmstrip `#pageMasterBtn` opens `#pageMasterMenu`
+  (`fillPageMasterMenu`, `showPageMasterBtn`, `wirePageMasterMenu`);
+  hidden while the masters show. The phone film-tools grid is 3 across.
+  `#desk` is `tabindex="0"` with a `:focus-visible` ring and an
+  `aria-describedby` key summary (axe's scrollable-region-focusable on a
+  page with no text boxes).
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,

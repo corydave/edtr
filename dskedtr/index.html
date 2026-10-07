@@ -170,6 +170,43 @@ body {
 /* The Inspector button hides the right-hand column (on a phone: the panel under the page). */
 .work.inspector-hidden { grid-template-columns: 56px 1fr; }
 .work.inspector-hidden .side { display: none; }
+/* The grab handle at the top of the Inspector: only shown on a phone,
+   where the Inspector is a sheet along the bottom (see the phone layout). */
+.sheet-handle { display: none; flex: none; height: 28px; align-items: center; justify-content: center;
+  cursor: ns-resize; touch-action: none; border-bottom: 1px solid var(--line); }
+.sheet-handle .grip { width: 44px; height: 5px; border-radius: 3px; background: var(--muted); opacity: .55; }
+.sheet-handle:hover .grip, .sheet-handle.dragging .grip { opacity: .9; }
+
+/* The quick-action pill: floats above (or below) what is picked, with the
+   things people reach for most - link or unlink text boxes, crop a picture,
+   duplicate, copy, paste and delete. Bigger buttons on a touch screen. */
+.quick-bar { position: absolute; z-index: 6; display: flex; gap: 2px; padding: 4px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.quick-bar[hidden] { display: none; }
+.quick-bar button { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 999px;
+  border: 0; background: transparent; color: var(--fg); cursor: pointer; }
+.quick-bar button:hover { background: color-mix(in srgb, var(--fg) 8%, transparent); }
+.quick-bar button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.quick-bar button.danger { color: var(--danger); }
+.quick-bar button[hidden] { display: none; }
+.quick-bar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.quick-bar .qb-sep { width: 1px; align-self: stretch; margin: 6px 2px; background: var(--line); }
+@media (pointer: coarse) { .quick-bar button { width: 42px; height: 42px; } }
+/* Small menus that open from a button: the pill's Arrange menu and the
+   filmstrip's Master menu. Each line is a big, plain button with an icon,
+   its name and (for Arrange) its key. */
+.quick-menu[popover] { position: fixed; inset: auto; margin: 0; padding: 6px; min-width: 210px; border-radius: 12px;
+  background: var(--panel); color: var(--fg); border: 1px solid var(--line); box-shadow: 0 6px 18px rgba(0,0,0,.2); }
+.quick-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.quick-menu button:hover, .quick-menu button:focus-visible { background: color-mix(in srgb, var(--fg) 8%, transparent); }
+.quick-menu button:disabled { opacity: .5; cursor: default; }
+.quick-menu svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.quick-menu svg .cover { fill: var(--panel); }
+.quick-menu .qm-key { margin-left: auto; padding-left: 12px; font-size: 12px; color: var(--muted); }
+.quick-menu .qm-tick { width: 16px; flex: none; text-align: center; font-weight: 700; color: var(--accent-text); }
+.quick-menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 4px; }
+@media (pointer: coarse) { .quick-menu button { padding: 12px 12px; } }
 #inspectorBtn { position: relative; }
 #inspectorBtn[aria-pressed="false"].has-pick::after { content: ''; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--panel); }      /* let grid columns shrink instead of pushing the page wider */
 .rail {
@@ -186,6 +223,7 @@ body {
 
 /* The scrolling desk with the page on it. */
 .desk { overflow: auto; position: relative; outline: none; }
+.desk:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }   /* drawn inside, so the frame doesn't clip it */
 /* Touch on the desk is DSKEDTR's own: one finger draws, moves and picks on
    the page (or slides the page from the grey around it), two fingers pinch
    to zoom and slide. The browser's own zoom is still there everywhere else. */
@@ -622,21 +660,29 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* Phones and narrow windows: the rail lies along the bottom and the
    Inspector moves under the page. */
 @media (max-width: 760px) {
-  body { overflow: auto; }
-  .work, .work.inspector-hidden { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+  /* The whole screen stays put: the desk shrinks and grows as the
+     Inspector sheet is dragged up and down by its handle. --sheet-h is the
+     sheet's height, set by the script (a third of the screen to start). */
+  body { height: 100%; height: 100dvh; grid-template-rows: auto minmax(0, 1fr); }
+  .work, .work.inspector-hidden { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) var(--sheet-h, 33vh); }
+  .work.inspector-hidden { grid-template-rows: auto minmax(0, 1fr) 29px; }   /* closed: just the handle */
   .rail { flex-direction: row; justify-content: center; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); order: 0; }
   .rail hr { width: 1px; height: 28px; border-top: 0; border-left: 1px solid var(--line); }
-  .centre { order: 1; }
-  .centre .desk-frame { height: 62vh; flex: none; }
-  .side { order: 2; border-left: 0; border-top: 1px solid var(--line); }
-  /* On a phone the whole window scrolls, so nothing is squeezed: the page,
-     the filmstrip and the side panel each take their full height. */
-  body { grid-template-rows: auto auto; }
-  .centre, .side { min-height: auto; }
+  .centre { order: 1; min-height: 0; }
+  .side { order: 2; border-left: 0; border-top: 1px solid var(--line); min-height: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.10); }
+  .sheet-handle { display: flex; }
+  .work.inspector-hidden .side { display: flex; }
+  .work.inspector-hidden .side > :not(.sheet-handle) { display: none; }
+  /* A smaller filmstrip, so the page gets the room. */
+  .filmstrip { padding: 4px 8px; gap: 6px; }
+  .film-tools { display: grid; grid-template-columns: repeat(3, 34px); align-content: center; gap: 2px; }
+  .film-tools .icon-btn { width: 34px; height: 30px; }
+  .thumb { padding: 2px; }
+  .thumb-svg { height: 52px; }
   .phase-tag { display: none; }
   .topbar { gap: 2px; padding: 6px 8px; }
   .brand-name, .version-badge { display: none; }   /* the mark alone: more room for buttons */
-  .toasts { bottom: 24px; }
+  .toasts { bottom: calc(var(--sheet-h, 33vh) + 12px); }
 }
 </style>
 </head>
@@ -796,8 +842,45 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <div class="preview-banner proof-banner master-banner" id="masterBanner" role="status" hidden><span id="masterWords"></span><button class="btn" id="masterBack">Back to the pages</button></div>
   <div class="preview-banner proof-banner" id="proofBanner" role="status" hidden><span>Preview: as it will print. W or Escape to go back.</span><button class="btn" id="proofStop">Back to editing</button></div>
   <div class="preview-banner" id="previewBanner" role="status" hidden><span id="previewWords"></span><button class="btn" id="previewStop">Stop preview</button></div>
+  <!-- Quick actions for what is picked (see wireQuickBar). One Tab stop;
+       Left and Right move along it; Alt+F10 jumps here from the page. -->
+  <div class="quick-bar" id="quickBar" role="toolbar" aria-label="Quick actions" hidden>
+    <button type="button" data-act="link" aria-label="Link to another box" title="Link: then pick the empty text box the text should continue in">
+      <svg viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><rect x="3.5" y="9" width="10" height="6" rx="3"/><rect x="10.5" y="9" width="10" height="6" rx="3"/></g></svg></button>
+    <button type="button" data-act="unlink" aria-label="Stop the flow here" title="Unlink: the text stops in this box; the boxes after it are emptied">
+      <svg viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><rect x="1.5" y="9" width="8.5" height="6" rx="3"/><rect x="14" y="9" width="8.5" height="6" rx="3"/></g><path d="M8 8 6 6M16 16l2 2"/></svg></button>
+    <button type="button" data-act="crop" aria-pressed="false" aria-label="Crop" title="Crop: move and size the picture inside its frame (Enter)">
+      <svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/></svg></button>
+    <button type="button" data-act="unlock" aria-label="Unlock" title="Unlock: it can be moved and picked on the page again">
+      <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></button>
+    <button type="button" data-act="group" aria-label="Group" title="Group: they move and size together (Ctrl+G)">
+      <svg viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="2" stroke-dasharray="3 2.5"/><rect x="6.5" y="6.5" width="6" height="6" rx="1"/><rect x="11.5" y="11.5" width="6" height="6" rx="1"/></svg></button>
+    <button type="button" data-act="ungroup" aria-label="Ungroup" title="Ungroup (Ctrl+Shift+G)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
+    <span class="qb-sep" aria-hidden="true"></span>
+    <button type="button" data-act="arrange" aria-haspopup="menu" aria-expanded="false" aria-controls="arrangeMenu" aria-label="Arrange" title="Arrange: bring to front, forward, backward, send to back">
+      <svg viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 5 9-5" opacity=".5"/></svg></button>
+    <button type="button" data-act="duplicate" aria-label="Duplicate" title="Duplicate (Ctrl+D)">
+      <svg viewBox="0 0 24 24"><rect x="8" y="7" width="12" height="15" rx="2"/><path d="M5 17V4a2 2 0 0 1 2-2h9"/></svg></button>
+    <button type="button" data-act="copy" aria-label="Copy" title="Copy (Ctrl+C)">
+      <svg viewBox="0 0 24 24"><rect x="8" y="2.5" width="8" height="4" rx="1"/><path d="M8 4.5H6a2 2 0 0 0-2 2V20a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6.5a2 2 0 0 0-2-2h-2"/></svg></button>
+    <button type="button" data-act="paste" aria-label="Paste" title="Paste (Ctrl+V)">
+      <svg viewBox="0 0 24 24"><rect x="8" y="2.5" width="8" height="4" rx="1"/><path d="M8 4.5H6a2 2 0 0 0-2 2V20a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6.5a2 2 0 0 0-2-2h-2M12 10v7M9 14l3 3 3-3"/></svg></button>
+    <button type="button" data-act="delete" class="danger" aria-label="Delete" title="Delete (Delete)">
+      <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4h6v3"/></svg></button>
+  </div>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs id="cbFilters"></defs></svg>
-  <main class="desk" id="desk" tabindex="-1" aria-label="Page">
+  <!-- The pill's Arrange menu: where the picked things sit in the stack. -->
+  <div class="quick-menu" id="arrangeMenu" popover role="menu" aria-label="Arrange">
+    <button type="button" role="menuitem" data-arrange="front"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="11" height="11" rx="1.5"/><rect x="10" y="10" width="11" height="11" rx="1.5" fill="currentColor"/></svg>Bring to front<span class="qm-key" data-key="front"></span></button>
+    <button type="button" role="menuitem" data-arrange="forward"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="13" width="14" height="8" rx="1.5"/><path d="M12 10V3M8.5 6.5 12 3l3.5 3.5"/></svg>Bring forward<span class="qm-key">]</span></button>
+    <button type="button" role="menuitem" data-arrange="backward"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="8" rx="1.5"/><path d="M12 14v7M8.5 17.5 12 21l3.5-3.5"/></svg>Send backward<span class="qm-key">[</span></button>
+    <button type="button" role="menuitem" data-arrange="back"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="10" y="10" width="11" height="11" rx="1.5" fill="currentColor"/><rect x="3" y="3" width="11" height="11" rx="1.5" class="cover"/></svg>Send to back<span class="qm-key" data-key="back"></span></button>
+  </div>
+  <!-- tabindex 0: the page area is a Tab stop, so the keyboard can always reach
+       it (to scroll it, and for the page's keys: arrows, Delete, Enter...),
+       even before there is a text box on it. -->
+  <main class="desk" id="desk" tabindex="0" aria-label="Page" aria-describedby="deskKeys">
     <div class="page-wrap" id="pageWrap">
       <!-- The page is drawn here. It is a picture of the stories, so
            screen readers skip it and read the story text boxes instead. -->
@@ -818,6 +901,10 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <button class="icon-btn" id="delPageBtn" aria-label="Delete this page" title="Delete this page">
         <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4h6v3"/></svg>
       </button>
+      <!-- Which master page the page showing uses: a small menu (it hides while the masters are showing). -->
+      <button class="icon-btn" id="pageMasterBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="pageMasterMenu" aria-label="Master page for this page" title="Master page for this page">
+        <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><rect x="8" y="6" width="8" height="3" rx=".5" fill="currentColor"/><path d="M8 13h8M8 16.5h5"/></svg>
+      </button>
       <!-- Master pages: the filmstrip lists them instead of the pages while this is pressed. -->
       <button class="icon-btn tb-toggle" id="masterMode" aria-pressed="false" aria-label="Master pages" title="Master pages: things that show on many pages (a masthead, page numbers)">
         <svg viewBox="0 0 24 24"><rect x="7" y="3" width="13" height="16" rx="1.5"/><path d="M4 7v12.5A1.5 1.5 0 0 0 5.5 21H16"/><path d="M10 15h7"/></svg>
@@ -825,12 +912,19 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     </div>
     <ul class="page-list" id="pageList" role="listbox" aria-label="Pages" aria-orientation="horizontal"
         aria-describedby="filmHelp"></ul>
+    <span id="deskKeys" class="sr-only">Arrow keys move what is picked, Delete removes it, Enter types in a picked text box, and Alt+F10 goes to its quick actions. Question mark lists every key.</span>
     <span id="filmHelp" class="sr-only">Left and Right go to a page. Alt with Left or Right moves the page.</span>
   </div>
   </div>
 
   <!-- ===================== INSPECTOR ===================== -->
   <div class="side" id="sidePanel">
+  <!-- On a phone the Inspector is a sheet along the bottom. Drag this handle
+       up or down (or use the arrow keys on it) to give the page more room;
+       a tap opens or closes the sheet. Hidden on wider screens. -->
+  <div class="sheet-handle" id="sheetHandle" role="separator" tabindex="0" aria-orientation="horizontal"
+       aria-label="Inspector height" aria-controls="sidePanel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33"
+       title="Drag to make the Inspector taller or shorter; tap to open or close it"><span class="grip"></span></div>
   <div class="tabs side-tabs" role="tablist" aria-label="Side panel" id="sideTabs">
     <button role="tab" id="tabInspector" aria-controls="inspectorPane" aria-selected="true">Inspector</button>
     <button role="tab" id="tabA11y" aria-controls="a11yPane" aria-selected="false" tabindex="-1">Accessibility<span class="count-badge" id="a11yTabCount" aria-hidden="true" hidden></span></button>
@@ -1184,6 +1278,9 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <p class="muted" style="font-size:12px;margin-bottom:0">Pick one, then drag on the page. Shift keeps it in proportion. Round a rectangle's corners in Look.</p>
 </div>
 
+<!-- ===================== MASTER FOR THIS PAGE (a menu from the filmstrip) ===================== -->
+<div class="quick-menu" id="pageMasterMenu" popover role="menu" aria-labelledby="pageMasterBtn"></div>
+
 <!-- ===================== GUIDES AND GRID (a popover from the top bar) ===================== -->
 <div class="pop" id="guidesPop" popover="manual" role="dialog" aria-labelledby="guidesPopTitle">
   <div class="dlg-head"><h2 id="guidesPopTitle">Units</h2>
@@ -1329,7 +1426,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <h3>1. Start</h3>
       <p>Pick <strong>New document</strong> (a Letter page) or <strong>Pick a size</strong> when DSKEDTR opens, or explore the sample. Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. Changing the size never squashes what is on the page. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
       <h3>2. Text boxes, and text that flows</h3>
-      <p>Pick the Text box tool (T) and drag on the page. Type. Headings are paragraph roles: Heading 1, Heading 2, Body and Caption, in the Inspector's Paragraph section (or Ctrl+Alt+1, 2, 0, 9). Below the role is its style: size, line and letter spacing, kerning, space above and below, alignment and colour. Changing it changes every paragraph with that role, so all your headings stay alike. When a box is too full, a red <strong>+</strong> appears. Click the small square on its right edge, then click an empty text box, even on another page: the text carries on there.</p>
+      <p>Pick the Text box tool (T) and drag on the page. Type. Headings are paragraph roles: Heading 1, Heading 2, Body and Caption, in the Inspector's Paragraph section (or Ctrl+Alt+1, 2, 0, 9). Below the role is its style: size, line and letter spacing, kerning, space above and below, alignment and colour. Changing it changes every paragraph with that role, so all your headings stay alike. When a box is too full, a red <strong>+</strong> appears. Click or tap the round chain-link tab just below its bottom-right corner (or Link in the floating pill), then click an empty text box, even on another page: the text carries on there. Unlink in the pill stops the flow again.</p>
       <h3>3. Pictures and shapes</h3>
       <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector).</p>
       <h3>4. Pages</h3>
@@ -1522,7 +1619,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.13.3';
+const APP_VERSION = '0.15.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -4140,11 +4237,32 @@ function focusStoryId() {
   return null;
 }
 
-const PORT_PX = 9;                   // a port's size on screen
-const PORT_GAP_PX = 18;              // ports sit this far (on screen) from the corners, clear of the resize handles
-/** Where a box's in-port (left edge, near the top) and out-port (right edge, near the bottom) are, turned with the box. */
-function inPortOf(f) { const g = Math.min(PORT_GAP_PX * onePx(), f.h / 3); return rotatePoint({ x: f.x, y: f.y + g }, f.rotation, centreOf(f)); }
-function outPortOf(f) { const g = Math.min(PORT_GAP_PX * onePx(), f.h / 3); return rotatePoint({ x: f.x + f.w, y: f.y + f.h - g }, f.rotation, centreOf(f)); }
+/* Ports: the round tabs that link text boxes. They sit OUTSIDE the box, so
+   they never crowd the resize handles, however small the box:
+     - the in-port just above the top edge, a little in from the top-left
+       corner (where the text comes in);
+     - the out-port just below the bottom edge, a little in from the
+       bottom-right corner (where the text goes on).
+   On a box too narrow for that, they sit off the two corners diagonally.
+   The out-port shows a chain link: tap or click it, then the box the text
+   should continue in. Sizes are in screen pixels, so they stay the same at
+   any zoom. */
+const PORT_R_PX = 11;                // a port's radius on screen
+const PORT_OUT_PX = 16;              // how far outside the edge a port sits
+const PORT_IN_PX = 26;               // and how far in from the corner
+const PORT_DIAG_PX = 18;             // on a narrow box: this far out from the corner, each way
+const PORT_NARROW_PX = 96;           // "narrow": less than this wide on screen
+/** Where a box's two ports are (page points), turned with the box. */
+function portSpots(f) {
+  const px = onePx(), narrow = f.w / px < PORT_NARROW_PX, c = centreOf(f);
+  const inP = narrow ? { x: f.x - PORT_DIAG_PX * px, y: f.y - PORT_DIAG_PX * px } : { x: f.x + PORT_IN_PX * px, y: f.y - PORT_OUT_PX * px };
+  const outP = narrow ? { x: f.x + f.w + PORT_DIAG_PX * px, y: f.y + f.h + PORT_DIAG_PX * px } : { x: f.x + f.w - PORT_IN_PX * px, y: f.y + f.h + PORT_OUT_PX * px };
+  return { in: rotatePoint(inP, f.rotation, c), out: rotatePoint(outP, f.rotation, c) };
+}
+function inPortOf(f) { return portSpots(f).in; }
+function outPortOf(f) { return portSpots(f).out; }
+/** How near a port a click or tap must land (a finger gets more room than a mouse). */
+const portReach = () => (window.matchMedia('(pointer: coarse)').matches ? 16 : PORT_R_PX + 3) * onePx();
 
 /** Text box edges (dashed, never printed), chain links and ports, overflow marks. */
 function renderFrames() {
@@ -4178,17 +4296,18 @@ function renderFrames() {
     for (let i = 0; i < chain.length; i++) {
       const a = obj(chain[i]);
       if (pageOf(a.id) !== pageIndex || a.hidden) continue;
-      // The in-port (left edge, near the top) and the out-port (right edge,
-      // near the bottom). A filled out-port means the text continues in
-      // another box. Click an out-port to pick where the text goes next.
+      // The in-port (above the top edge, near the left) and the out-port
+      // (below the bottom edge, near the right). Filled green: linked. Red:
+      // text is left over and has nowhere to go. White: free.
       const ip = inPortOf(a), op = outPortOf(a);
-      layers.frames.appendChild(port(ip.x, ip.y, i > 0, px));
-      layers.frames.appendChild(port(op.x, op.y, i + 1 < chain.length, px));
       const prev = i > 0 ? obj(chain[i - 1]) : null;
       const next = i + 1 < chain.length ? obj(chain[i + 1]) : null;
+      const over = !next && layouts[focusStory] && layouts[focusStory].overflowAt != null;
+      layers.frames.appendChild(portMark(ip.x, ip.y, 'in', prev ? 'linked' : 'open', px));
+      layers.frames.appendChild(portMark(op.x, op.y, 'out', next ? 'linked' : over ? 'over' : 'open', px));
       // Text arriving from, or going to, another page: say which page.
-      if (prev && pageOf(prev.id) !== pageIndex) pageTag(ip.x - 4 * px, ip.y, 'from p. ' + (pageOf(prev.id) + 1), 'end', px);
-      if (next && pageOf(next.id) !== pageIndex) pageTag(op.x + 8 * px, op.y, 'to p. ' + (pageOf(next.id) + 1), 'start', px);
+      if (prev && pageOf(prev.id) !== pageIndex) pageTag(ip.x - (PORT_R_PX + 4) * px, ip.y, 'from p. ' + (pageOf(prev.id) + 1), 'end', px);
+      if (next && pageOf(next.id) !== pageIndex) pageTag(op.x + (PORT_R_PX + 4) * px, op.y, 'to p. ' + (pageOf(next.id) + 1), 'start', px);
       if (next && pageOf(next.id) === pageIndex) {
         const nip = inPortOf(next);
         const x1 = op.x, y1 = op.y, x2 = nip.x, y2 = nip.y;
@@ -4219,12 +4338,28 @@ function renderFrames() {
     layers.marks.appendChild(g);
   }
 }
-function port(x, y, filled, px) {
-  const s = PORT_PX * px;
-  return svgEl('rect', {
-    x: x - s / 2, y: y - s / 2, width: s, height: s, fill: filled ? '#065f46' : '#ffffff',
-    stroke: '#065f46', 'stroke-width': 1.25, 'vector-effect': 'non-scaling-stroke'
-  });
+/**
+ * One port, drawn in screen pixels around (x, y): a round tab with a picture.
+ *   kind 'out': a chain link (it makes links);
+ *   kind 'in':  an arrow into the box (where the text arrives).
+ *   state 'linked' (green), 'over' (red: text left over, nowhere to go) or 'open' (white).
+ */
+function portMark(x, y, kind, state, px) {
+  const g = svgEl('g', { transform: 'translate(' + x + ' ' + y + ') scale(' + px + ')', 'data-port': kind });
+  const fill = state === 'linked' ? '#065f46' : state === 'over' ? '#b91c1c' : '#ffffff';
+  const ink = state === 'open' ? '#065f46' : '#ffffff';
+  g.appendChild(svgEl('circle', { r: PORT_R_PX + 1, fill: 'none', stroke: 'rgba(0,0,0,0.25)', 'stroke-width': 1 }));   // a soft ring: shows on any colour
+  g.appendChild(svgEl('circle', { r: PORT_R_PX, fill, stroke: state === 'open' ? '#065f46' : '#ffffff', 'stroke-width': 1.5 }));
+  const line = { fill: 'none', stroke: ink, 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
+  if (kind === 'out') {
+    const chain = svgEl('g', { transform: 'rotate(-45)' });                        // two links of a chain
+    chain.appendChild(svgEl('rect', Object.assign({ x: -7, y: -2.75, width: 8.5, height: 5.5, rx: 2.75 }, line)));
+    chain.appendChild(svgEl('rect', Object.assign({ x: -1.5, y: -2.75, width: 8.5, height: 5.5, rx: 2.75 }, line)));
+    g.appendChild(chain);
+  } else {
+    g.appendChild(svgEl('path', Object.assign({ d: 'M-4.5 -4.5L3.5 3.5M3.5 -2V3.5H-2' }, line)));   // an arrow in, down to the right
+  }
+  return g;
 }
 /** A small "to p. 2" label beside a port (on screen only, never printed). */
 function pageTag(x, y, text, anchor, px) {
@@ -4375,6 +4510,7 @@ function renderSelection() {
   clear(layers.caret);
   renderFrames();
   renderHandles();
+  updateQuickBar();
   const id = activeStoryId;
   if (!id || !layouts[id]) return;
   const layout = layouts[id];
@@ -4760,6 +4896,7 @@ function duplicateSelected() {
   const copies = [];
   for (const o of list) { const c = copyObject(o, 9, 9, groupMap); copies.push(c); pageObjs().push(c); reindex(); }
   syncInputs();
+  layoutAll();                                       // lay out a copied text box's story before picking it (the Inspector reads its fit)
   selectObjects(copies.map((c) => c.id));
   relayoutAndRender();
   announce('Duplicated');
@@ -6454,12 +6591,27 @@ function handleAt(p) {
 function outPortAt(p) {
   const sid = focusStoryId();
   if (!sid || !doc.stories[sid]) return null;
-  const r = (PORT_PX / 2 + 3) * onePx();
+  const r = portReach();
   for (const fid of doc.stories[sid].frames) {
     if (pageOf(fid) !== pageIndex) continue;
     const f = obj(fid);
+    if (f.hidden) continue;
     const op = outPortOf(f);
-    if (Math.abs(p.x - op.x) <= r && Math.abs(p.y - op.y) <= r) return f;
+    if (Math.hypot(p.x - op.x, p.y - op.y) <= r) return f;
+  }
+  return null;
+}
+/** A green in-port (text arrives from another box), if the point is on one: the box BEFORE it. */
+function inPortAt(p) {
+  const sid = focusStoryId();
+  if (!sid || !doc.stories[sid]) return null;
+  const r = portReach(), frames = doc.stories[sid].frames;
+  for (let i = 1; i < frames.length; i++) {
+    if (pageOf(frames[i]) !== pageIndex) continue;
+    const f = obj(frames[i]);
+    if (f.hidden) continue;
+    const ip = inPortOf(f);
+    if (Math.hypot(p.x - ip.x, p.y - ip.y) <= r) return obj(frames[i - 1]);
   }
   return null;
 }
@@ -6600,7 +6752,7 @@ function wirePointer() {
       endCrop();
     }
 
-    if (tool === 'select' && e.pointerType === 'touch' && !inPage(p) && !objectAt(p) && !handleAt(p)) {
+    if (tool === 'select' && e.pointerType === 'touch' && !inPage(p) && !objectAt(p) && !handleAt(p) && !outPortAt(p) && !inPortAt(p)) {
       drag = { kind: 'pan', x: e.clientX, y: e.clientY, left: desk.scrollLeft, top: desk.scrollTop };
       svg.setPointerCapture(e.pointerId); return;
     }
@@ -6608,6 +6760,12 @@ function wirePointer() {
       // An out-port of the shown story starts linking.
       const portFrame = outPortAt(p);
       if (portFrame) { selectObjects([portFrame.id]); startLinkPick(portFrame.id); return; }
+      // A green in-port goes back to the box the text comes from (on its page).
+      const before = inPortAt(p);
+      if (before) {
+        if (pageOf(before.id) !== pageIndex) goToPage(pageOf(before.id));
+        selectObjects([before.id]); announce('The text comes from ' + objName(before)); return;
+      }
       // A handle of the picked objects starts resizing.
       const h = handleAt(p);
       if (h) { drag = startTransform(h.name === 'rot' ? 'rotate' : 'resize', p, h.name); if (drag) svg.setPointerCapture(e.pointerId); return; }
@@ -6744,8 +6902,260 @@ function wirePointer() {
       updateInspector();
     }
   };
-  svg.addEventListener('pointerup', end);
-  svg.addEventListener('pointercancel', end);
+  // After every drag the quick-action pill comes back where it belongs.
+  svg.addEventListener('pointerup', (e) => { end(e); updateQuickBar(); });
+  svg.addEventListener('pointercancel', (e) => { end(e); updateQuickBar(); });
+}
+
+/* ---------- The quick-action pill ----------
+   A small floating bar of the commonest actions for what is picked, so a
+   phone needs no trip to the Inspector (and a mouse no trip across the
+   screen):
+     - a text box: Link (then pick the box the text continues in), or
+       Unlink when it already flows on ("Stop the flow here");
+     - a picture: Crop (pressed while cropping);
+     - anything locked: Unlock (the other buttons that would change it hide);
+     - always: Duplicate, Copy, Paste (when something has been copied) and
+       Delete.
+   It sits above what is picked, clear of the turn handle and the ports, or
+   below it when there is no room above. It hides while dragging, linking,
+   typing, cropping by drag, and in Preview. On a touch screen it also
+   offers Paste on its own when nothing is picked but something was copied.
+   From the keyboard: Alt+F10 jumps to it, Left and Right move along it,
+   Escape goes back to the page. */
+function quickBarState() {
+  // Only things that really exist right now (during an undo the picked list
+  // can briefly name a text box whose story has just gone).
+  const list = selectedIds.map(obj).filter((o) => o && (o.type !== 'text' || doc.stories[o.story]));
+  const coarse = window.matchMedia('(pointer: coarse)').matches;
+  const canPaste = !!(clip && clip.items.length);
+  if (printPreview || linkFrom || activeStoryId || (drag && drag.kind !== 'pan' && drag.kind !== 'guide')) return null;
+  if (!list.length) return coarse && canPaste && tool === 'select' ? { list, only: 'paste' } : null;
+  return { list, canPaste };
+}
+function updateQuickBar() {
+  const bar = $('quickBar');
+  if (!bar) return;
+  const st = quickBarState();
+  if (!st) {
+    if (bar.contains(document.activeElement)) $('desk').focus({ preventScroll: true });   // never leave focus on a hidden bar
+    bar.hidden = true;
+    if ($('arrangeMenu').matches(':popover-open')) $('arrangeMenu').hidePopover();
+    return;
+  }
+  const one = st.list.length === 1 ? st.list[0] : null;
+  const locked = st.list.some((o) => o.locked);
+  const story = one && one.type === 'text' ? doc.stories[one.story] : null;
+  const flowsOn = !!(story && story.frames.indexOf(one.id) < story.frames.length - 1);
+  const show = {
+    link: !st.only && !!story && !flowsOn && !locked,
+    unlink: !st.only && !!story && flowsOn && !locked,
+    crop: !st.only && !!one && one.type === 'picture' && !locked,
+    unlock: !st.only && locked,
+    // Group: two or more picked that are not already exactly one group. Ungroup: anything picked is in a group.
+    group: !st.only && st.list.length >= 2 && !st.list.every((o) => o.group && o.group === st.list[0].group),
+    ungroup: !st.only && st.list.some((o) => o.group),
+    arrange: !st.only,
+    duplicate: !st.only,
+    copy: !st.only,
+    paste: st.only === 'paste' || !!st.canPaste,
+    delete: !st.only && !locked
+  };
+  for (const b of bar.querySelectorAll('button')) b.hidden = !show[b.dataset.act];
+  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.unlock || show.group || show.ungroup) || st.only;
+  const crop = bar.querySelector('[data-act=crop]');
+  crop.setAttribute('aria-pressed', String(!!one && cropId === one.id));
+  crop.setAttribute('aria-label', one && cropId === one.id ? 'Done cropping' : 'Crop');
+  const mod = isMac ? 'Cmd' : 'Ctrl';
+  bar.querySelector('[data-act=duplicate]').title = 'Duplicate (' + mod + '+D)';
+  bar.querySelector('[data-act=copy]').title = 'Copy (' + mod + '+C)';
+  bar.querySelector('[data-act=paste]').title = 'Paste (' + mod + '+V)';
+  bar.querySelector('[data-act=group]').title = 'Group: they move and size together (' + mod + '+G)';
+  bar.querySelector('[data-act=ungroup]').title = 'Ungroup (' + mod + '+Shift+G)';
+  bar.setAttribute('aria-label', 'Quick actions' + (one ? ' for ' + objName(one) : st.list.length ? ' for ' + st.list.length + ' objects' : ''));
+  bar.hidden = false;
+  // One Tab stop: the button that last had focus, else the first one showing.
+  const shown = [...bar.querySelectorAll('button')].filter((b) => !b.hidden);
+  if (!shown.some((b) => b.tabIndex === 0)) shown.forEach((b, i) => { b.tabIndex = i ? -1 : 0; });
+  placeQuickBar(st.list);
+}
+/** Put the pill above what is picked (or below it, or at the top of the page area), inside the page area. */
+function placeQuickBar(list) {
+  const bar = $('quickBar'), frame = $('deskFrame').getBoundingClientRect(), desk = $('desk').getBoundingClientRect();
+  const w = bar.offsetWidth, h = bar.offsetHeight, o = pageOrigin();
+  let cx = desk.left + desk.width / 2, top = desk.top + 8;
+  if (list.length) {
+    const b = unionBounds(list);
+    const left = o.left + b.x * o.k, right = o.left + (b.x + b.w) * o.k, upper = o.top + b.y * o.k, lower = o.top + (b.y + b.h) * o.k;
+    cx = (left + right) / 2;
+    const clear = 46;                                   // room for the turn handle and the in-port above, the out-port below
+    if (upper - clear - h >= desk.top + 4) { top = upper - clear - h; bar.dataset.side = 'above'; }
+    else if (lower + clear + h <= desk.bottom - 4) { top = lower + clear; bar.dataset.side = 'below'; }
+    else { top = desk.top + 8; bar.dataset.side = 'top'; }
+  }
+  const x = Math.max(desk.left + 6, Math.min(desk.right - w - 6, cx - w / 2));
+  bar.style.left = Math.round(x - frame.left) + 'px';
+  bar.style.top = Math.round(top - frame.top) + 'px';
+}
+/**
+ * Open a small menu (a popover) next to the button that opens it: above or
+ * below the button (`where`), kept on screen, with the first item focused.
+ */
+function openMenuFrom(menu, button, where) {
+  if (menu.matches(':popover-open')) { menu.hidePopover(); return; }
+  menu.showPopover();
+  const r = button.getBoundingClientRect(), w = menu.offsetWidth, h = menu.offsetHeight;
+  const room = { above: r.top - 8, below: window.innerHeight - r.bottom - 8 };
+  const up = where === 'above' ? room.above >= h || room.above > room.below : room.below < h && room.above > room.below;
+  menu.style.left = Math.round(Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2))) + 'px';
+  menu.style.top = Math.round(up ? Math.max(8, r.top - h - 6) : Math.min(window.innerHeight - h - 8, r.bottom + 6)) + 'px';
+  const first = [...menu.querySelectorAll('button')].find((b) => !b.disabled && b.getAttribute('aria-checked') === 'true') || [...menu.querySelectorAll('button')].find((b) => !b.disabled);
+  if (first) first.focus();
+}
+/** Keys for a menu: Up and Down (round the ends), Home, End; Escape (the popover's own) and closing put focus back on its button. */
+function wireMenu(menu, button) {
+  menu.addEventListener('keydown', (e) => {
+    const items = [...menu.querySelectorAll('button')].filter((b) => !b.disabled), i = items.indexOf(document.activeElement);
+    let j = null;
+    if (e.key === 'ArrowDown') j = (i + 1) % items.length;
+    else if (e.key === 'ArrowUp') j = (i - 1 + items.length) % items.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = items.length - 1;
+    else if (e.key === 'Tab') { menu.hidePopover(); return; }
+    else if (e.key === 'Escape') {                    // close just the menu (the page's Escape would also unpick things)
+      e.preventDefault(); e.stopPropagation();
+      menu.hidePopover();
+      button.focus({ preventScroll: true });
+      return;
+    }
+    if (j == null) return;
+    e.preventDefault(); e.stopPropagation();
+    items[j].focus();
+  });
+  menu.addEventListener('toggle', (e) => {
+    button.setAttribute('aria-expanded', String(e.newState === 'open'));
+    if (e.newState === 'closed' && (menu.contains(document.activeElement) || document.activeElement === document.body) && !button.closest('[hidden]')) button.focus({ preventScroll: true });
+  });
+}
+
+/* ---------- Master page for the page showing (the filmstrip's menu) ----------
+   The quick way to give one page a master: the Master button beside the
+   pages lists None and every master (the one in use is ticked), then
+   "Use it for every page" and "Edit master pages". The same choice is in
+   the Inspector's Document section (nothing picked). The button hides while
+   the master pages themselves are showing. */
+function fillPageMasterMenu() {
+  const menu = $('pageMasterMenu');
+  clear(menu);
+  const pg = curPage(), masters = masterList();
+  const item = (label, run, opts = {}) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', opts.radio ? 'menuitemradio' : 'menuitem');
+    if (opts.radio) b.setAttribute('aria-checked', String(!!opts.on));
+    const tick = document.createElement('span');
+    tick.className = 'qm-tick'; tick.setAttribute('aria-hidden', 'true'); tick.textContent = opts.on ? '\u2713' : '';
+    b.append(tick, document.createTextNode(label));
+    if (opts.disabled) b.disabled = true;
+    b.addEventListener('click', () => { menu.hidePopover(); run(); });
+    menu.appendChild(b);
+  };
+  const say = (id) => announce('Page ' + (pageIndex + 1) + (id ? ' uses ' + masterById(id).name : ' uses no master page'));
+  item('None', () => { setPageMaster(pageIndex, ''); say(''); }, { radio: true, on: !pg.master });
+  for (const m of masters) item(m.name, () => { setPageMaster(pageIndex, m.id); say(m.id); }, { radio: true, on: pg.master === m.id });
+  menu.appendChild(document.createElement('hr'));
+  if (masters.length) {
+    item('Use it for every page', () => { useMasterEverywhere(pg.master || ''); announce(pg.master ? 'Every page uses ' + masterById(pg.master).name : 'No page uses a master page now'); }, { disabled: !pg.master && !doc.pages.some((x) => x.master) });
+    item('Edit master pages', toggleMasters);
+  } else {
+    item('Make a master page', toggleMasters);
+  }
+}
+function showPageMasterBtn() {
+  const b = $('pageMasterBtn');
+  b.hidden = editingMaster();
+  const m = !editingMaster() && curPage().master ? masterById(curPage().master) : null;
+  const words = 'Master page for page ' + (pageIndex + 1) + ': ' + (m ? m.name : 'none');
+  b.setAttribute('aria-label', words);
+  b.title = words;
+}
+function wirePageMasterMenu() {
+  const b = $('pageMasterBtn'), menu = $('pageMasterMenu');
+  b.addEventListener('click', () => { fillPageMasterMenu(); openMenuFrom(menu, b, 'above'); });
+  wireMenu(menu, b);
+}
+
+/** Alt+F10: move the keyboard into the pill. True if it is showing. */
+function focusQuickBar() {
+  const bar = $('quickBar');
+  if (bar.hidden) return false;
+  const b = [...bar.querySelectorAll('button')].find((x) => !x.hidden && x.tabIndex === 0) || [...bar.querySelectorAll('button')].find((x) => !x.hidden);
+  if (b) b.focus();
+  return !!b;
+}
+function wireQuickBar() {
+  const bar = $('quickBar');
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b || b.hidden) return;
+    const list = selectedIds.map(obj).filter(Boolean), one = list.length === 1 ? list[0] : null;
+    switch (b.dataset.act) {
+      case 'link': if (one) startLinkPick(one.id); break;
+      case 'unlink': if (one) unlinkAfter(one.id); break;
+      case 'crop': if (one) { if (cropId === one.id) endCrop(); else startCrop(one); } break;
+      case 'unlock': toggleFlag(list, 'locked'); break;
+      case 'group': groupSelected(); break;
+      case 'ungroup': ungroupSelected(); break;
+      case 'arrange': openMenuFrom($('arrangeMenu'), b, bar.dataset.side === 'below' ? 'below' : 'above'); break;
+      case 'duplicate': duplicateSelected(); break;
+      case 'copy': {
+        // DSKEDTR's own copy first (always works, so Paste can use it), then
+        // the browser's copy as well, so Ctrl+V and other tabs see it too. If
+        // the browser does copy, its copy handler says "Copied"; if not, we do.
+        if (!copySelection()) break;
+        let viaBrowser = false;
+        const mark = () => { viaBrowser = true; };
+        document.addEventListener('copy', mark, { capture: true, once: true });
+        try { document.execCommand('copy'); } catch (err) { /* not allowed here: our own copy is enough */ }
+        document.removeEventListener('copy', mark, { capture: true });
+        if (!viaBrowser) announce('Copied ' + (clip.items.length === 1 ? objName(clip.items[0]) : clip.items.length + ' objects'));
+        updateQuickBar();
+        break;
+      }
+      case 'paste': pasteClip(); break;
+      case 'delete': deleteObjects(selectedIds.slice()); $('desk').focus({ preventScroll: true }); break;
+    }
+    if (bar.hidden && bar.contains(document.activeElement)) $('desk').focus({ preventScroll: true });
+  });
+  // Arrow keys along the bar; Escape back to the page.
+  bar.addEventListener('keydown', (e) => {
+    const shown = [...bar.querySelectorAll('button')].filter((x) => !x.hidden), i = shown.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); $('desk').focus({ preventScroll: true }); return; }
+    let j = null;
+    if (e.key === 'ArrowRight') j = (i + 1) % shown.length;
+    else if (e.key === 'ArrowLeft') j = (i - 1 + shown.length) % shown.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = shown.length - 1;
+    if (j == null) return;
+    e.preventDefault(); e.stopPropagation();
+    shown.forEach((x, n) => { x.tabIndex = n === j ? 0 : -1; });
+    shown[j].focus();
+  });
+  // The Arrange menu: each line moves the picked things in the stack. It
+  // stays open, so "forward, forward, forward" is three taps; a tap
+  // anywhere else (or Escape) closes it.
+  const menu = $('arrangeMenu');
+  const modKey = isMac ? 'Cmd' : 'Ctrl';
+  menu.querySelector('[data-key=front]').textContent = modKey + '+]';
+  menu.querySelector('[data-key=back]').textContent = modKey + '+[';
+  for (const item of menu.querySelectorAll('[data-arrange]')) item.addEventListener('click', () => {
+    moveOrder(item.dataset.arrange);
+    announce({ front: 'Brought to front', forward: 'Brought forward', backward: 'Sent backward', back: 'Sent to back' }[item.dataset.arrange]);
+  });
+  wireMenu(menu, bar.querySelector('[data-act=arrange]'));
+  // Keep the bar with what is picked as the page scrolls or the window changes.
+  $('desk').addEventListener('scroll', () => { if (!bar.hidden) placeQuickBar(selectedIds.map(obj).filter(Boolean)); }, { passive: true });
+  window.addEventListener('resize', updateQuickBar);
 }
 
 function rectFrom(a, b) {
@@ -6987,6 +7397,7 @@ function updateHoverCursor(p) {
     const h = handleAt(p);
     if (h) { svg.style.cursor = CURSORS[h.name]; return; }
     if (outPortAt(p)) { svg.style.cursor = 'alias'; return; }
+    if (inPortAt(p)) { svg.style.cursor = 'pointer'; return; }
     if (objectAt(p)) { svg.style.cursor = 'move'; return; }
     const g = guideAt(p);
     svg.style.cursor = g ? (g.axis === 'v' ? 'col-resize' : 'row-resize') : '';
@@ -7835,6 +8246,7 @@ function renderFilmstrip() {
   const cur = $('thumb-' + curPage().id);
   if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   $('delPageBtn').disabled = !masters && doc.pages.length < 2;
+  showPageMasterBtn();
   // The three buttons act on masters while the masters are showing.
   const what = masters ? 'master page' : 'page';
   for (const [id, words] of [['addPageBtn', 'Add a ' + what + (masters ? '' : ' after this one')], ['dupPageBtn', 'Duplicate this ' + what], ['delPageBtn', 'Delete this ' + what]]) {
@@ -8239,12 +8651,13 @@ function wireGuides() {
 const VIEW_KEY = 'dskedtr-view';
 const GRID_SIZES = [[9, '1/8 inch'], [18, '1/4 inch'], [36, '1/2 inch'], [72, '1 inch'], [14.173, '5 mm'], [28.346, '1 cm']];
 // Units: inches where people mostly measure in inches (US English, or plain "en"), centimetres elsewhere.
-const view = { rulers: true, guides: true, grid: false, snap: true, gridSize: 18, inspector: true,
+const view = { rulers: true, guides: true, grid: false, snap: true, gridSize: 18, inspector: true, sheet: 1 / 3,
   units: /^en(-(US|LR))?([^a-z-]|$)/i.test(navigator.language || 'en-US') ? 'in' : 'cm' };
 try {
   const saved = JSON.parse(localStorage.getItem(VIEW_KEY) || '{}');
   for (const k of ['rulers', 'guides', 'grid', 'snap', 'inspector']) if (typeof saved[k] === 'boolean') view[k] = saved[k];
   if (GRID_SIZES.some(([v]) => v === saved.gridSize)) view.gridSize = saved.gridSize;
+  if (typeof saved.sheet === 'number' && saved.sheet >= 0.1 && saved.sheet <= 0.9) view.sheet = saved.sheet;   // the phone sheet's height
   if (typeof saved.units === 'string' && Object.hasOwn(UNITS, saved.units)) view.units = saved.units;
 } catch (err) { /* storage blocked or damaged: the defaults are fine */ }
 function saveView() {
@@ -8258,7 +8671,117 @@ function setInspector(on) {
   document.querySelector('.work').classList.toggle('inspector-hidden', !on);
   $('inspectorBtn').setAttribute('aria-pressed', String(on));
   showInspectorDot();
+  applySheet();
   requestAnimationFrame(() => { scheduleRulers(); showPage(); });
+}
+
+/* ---------- The Inspector as a sheet on a phone ----------
+   On a narrow screen the Inspector sits along the bottom, under the page,
+   starting a third of the way up (the top of the sheet is two thirds of the
+   way down). Its grab handle:
+     - drag it up or down to share the screen between the page and the
+       Inspector (the page shrinks rather than being covered);
+     - drag it nearly all the way down, or tap it, to close the sheet to just
+       the handle; tap again (or drag it up) to open it;
+     - from the keyboard it is a "separator": Up and Down change the height,
+       Home closes, End makes it as tall as it goes, Enter or Space opens
+       or closes.
+   The height is remembered in this browser, as a share of the screen. */
+const PHONE = window.matchMedia('(max-width: 760px)');
+const SHEET_HANDLE_PX = 29;          // the closed sheet: just the handle (and its border)
+const SHEET_MIN_PX = 120;            // the shortest open sheet
+/** The shortest and tallest the open sheet may be, in pixels: it always leaves the top bar, the tools and some page. */
+function sheetLimits() {
+  const vh = window.innerHeight;
+  return { min: SHEET_MIN_PX, max: Math.max(SHEET_MIN_PX, vh - 220) };
+}
+/** Size the sheet from view.sheet (a share of the screen) and tell screen readers how tall it is. */
+function applySheet() {
+  const handle = $('sheetHandle');
+  if (!PHONE.matches) { document.documentElement.style.removeProperty('--sheet-h'); return; }
+  const vh = window.innerHeight, { min, max } = sheetLimits();
+  const h = Math.round(Math.max(min, Math.min(max, view.sheet * vh)));
+  document.documentElement.style.setProperty('--sheet-h', h + 'px');
+  const pct = view.inspector ? Math.round(h / vh * 100) : 0;
+  handle.setAttribute('aria-valuenow', String(pct));
+  handle.setAttribute('aria-valuetext', view.inspector ? 'Inspector open, ' + pct + ' percent of the screen' : 'Inspector closed');
+}
+function wireSheet() {
+  const handle = $('sheetHandle'), side = $('sidePanel');
+  let d = null;                                       // the drag in progress: { id, y, h, moved }
+  handle.addEventListener('pointerdown', (e) => {
+    if (!PHONE.matches || e.button > 0) return;
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add('dragging');
+    d = { id: e.pointerId, y: e.clientY, h: view.inspector ? side.offsetHeight : SHEET_HANDLE_PX, moved: false };
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const up = d.y - e.clientY;                       // how far the finger has gone up
+    if (Math.abs(up) > 4) d.moved = true;
+    if (!d.moved) return;
+    const { max } = sheetLimits();
+    const h = Math.max(SHEET_HANDLE_PX, Math.min(max, d.h + up));
+    if (!view.inspector && h > SHEET_HANDLE_PX + 24) setInspector(true);   // dragged up from closed: open it
+    // Follow the finger exactly (even below the shortest open height, so it can be pushed closed).
+    document.documentElement.style.setProperty('--sheet-h', h + 'px');
+    d.last = h;
+  });
+  const finish = (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const drag = d;
+    d = null;
+    handle.classList.remove('dragging');
+    if (!drag.moved) {                                 // a tap: open or close
+      setInspector(!view.inspector);
+      announce(view.inspector ? 'Inspector open' : 'Inspector closed');
+      return;
+    }
+    const h = drag.last || drag.h;
+    if (h < SHEET_MIN_PX * 0.75) { setInspector(false); announce('Inspector closed'); return; }   // pushed down: close it
+    view.sheet = Math.max(SHEET_MIN_PX, h) / window.innerHeight;
+    saveView();
+    applySheet();
+    keepSelectionInView();
+  };
+  handle.addEventListener('pointerup', finish);
+  handle.addEventListener('pointercancel', finish);
+  handle.addEventListener('keydown', (e) => {
+    const vh = window.innerHeight, step = 0.08;
+    const { min, max } = sheetLimits();
+    let next = null;
+    if (e.key === 'ArrowUp') next = view.inspector ? view.sheet + step : view.sheet;
+    else if (e.key === 'ArrowDown') {
+      if (!view.inspector) return;
+      next = view.sheet - step;
+      if (next * vh < min) { e.preventDefault(); setInspector(false); announce('Inspector closed'); return; }
+    }
+    else if (e.key === 'End') next = max / vh;
+    else if (e.key === 'Home') { e.preventDefault(); setInspector(false); announce('Inspector closed'); return; }
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setInspector(!view.inspector); announce(view.inspector ? 'Inspector open' : 'Inspector closed'); return; }
+    if (next == null) return;
+    e.preventDefault();
+    view.sheet = Math.max(min, Math.min(max, next * vh)) / vh;
+    if (!view.inspector) setInspector(true);
+    saveView();
+    applySheet();
+  });
+  // A new screen size (turning the phone, the on-screen keyboard): size it again.
+  window.addEventListener('resize', applySheet);
+  PHONE.addEventListener('change', () => { applySheet(); requestAnimationFrame(() => { scheduleRulers(); showPage(); }); });
+  applySheet();
+}
+/** After the page area changes size, scroll so the picked object is still in sight. */
+function keepSelectionInView() {
+  const list = selectedIds.map(obj).filter(Boolean);
+  if (!list.length) return;
+  requestAnimationFrame(() => {
+    const b = unionBounds(list), o = pageOrigin(), desk = $('desk'), r = desk.getBoundingClientRect();
+    const top = o.top + b.y * o.k, bottom = o.top + (b.y + b.h) * o.k;
+    if (bottom > r.bottom - 24) desk.scrollTop += Math.min(bottom - r.bottom + 48, top - r.top - 24);
+    else if (top < r.top + 24) desk.scrollTop -= r.top + 24 - top;
+  });
 }
 function showInspectorDot() {
   $('inspectorBtn').classList.toggle('has-pick', !!(selectedIds.length || activeStoryId));
@@ -8748,7 +9271,8 @@ function wireChrome() {
     ['Enter', 'Type in the picked text box; with a drawing tool, add one in the middle'],
     ['Escape', 'Stop typing and pick the box; or drop the selection'],
     ['Double-click a text box', 'Type in it'],
-    ['Out-port (the square on a text box’s right edge)', 'Click it, then click an empty box: the text continues there'],
+    ['Out-port (the round chain-link tab below a text box’s bottom-right corner)', 'Click or tap it, then an empty box: the text continues there. The Link button in the floating pill does the same'],
+    ['Alt + F10', 'Jump to the floating pill of quick actions for what is picked: link, crop, group, arrange, duplicate, copy, paste, delete (Left and Right move along it, Escape goes back)'],
     ['Up / Down, Home / End', 'While typing: move by the lines on the page, across linked boxes'],
     [mod + ' + ' + alt + ' + 1 / 2 / 0 / 9', 'While typing: Heading 1, Heading 2, Body, Caption'],
     [mod + ' + B, ' + mod + ' + I, ' + mod + ' + U', 'While typing: bold, italic, underline for the highlighted words (or what you type next)'],
@@ -8793,6 +9317,8 @@ function wireChrome() {
       if (e.code === 'Quote' && !e.shiftKey) { e.preventDefault(); setView('grid', !view.grid); return; }
     }
     if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyR') { e.preventDefault(); setView('rulers', !view.rulers); return; }
+    // Alt+F10: to the quick-action pill (the usual key for "the toolbar for this").
+    if (e.altKey && e.key === 'F10' && !e.ctrlKey && !e.metaKey) { if (focusQuickBar()) e.preventDefault(); return; }
     const typing = t.closest && t.closest('textarea, input, select, [contenteditable="true"]');
     if (typing) return;                               // story text boxes handle their own keys
     // Keys that act on the page only when the page (or nothing) has focus,
@@ -11110,6 +11636,18 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.15.0", date: "2026-10-07", title: "", notes: [
+    "Arrange in the quick pill. A stack-of-layers button opens a small menu: Bring to front, Bring forward, Send backward, Send to back (with their keys). It stays open, so stepping something forward three times is three taps; tap elsewhere or press Escape to close it.",
+    "Group and Ungroup in the pill. With two or more things picked, the pill offers Group; with a group (or anything in one) picked, Ungroup. Several picked things also get Arrange, Duplicate, Copy, Paste and Delete.",
+    "A Master button in the filmstrip (the page with a masthead, beside Add, Duplicate and Delete). It lists None and every master page, with the one this page uses ticked, plus \"Use it for every page\" and \"Edit master pages\" (or \"Make a master page\" when there are none yet). The same choice is still in the Inspector's Document section.",
+    "The page area is now a Tab stop, with a focus ring, so the keyboard can always reach it (to scroll, and for the page's own keys), even on a page with no text boxes yet."
+  ] },
+  { version: "0.14.0", date: "2026-10-07", title: "", notes: [
+    "On a phone, the Inspector is a sheet with a grab handle. It starts two thirds of the way down the screen. Drag the handle up or down to share the screen between the page and the Inspector; the page shrinks instead of being covered, and the window itself no longer scrolls. Drag it to the bottom (or tap it) to close it to just the handle; tap again to open it. From the keyboard the handle takes Up, Down, Home, End, Enter and Space. The height is remembered in this browser. The filmstrip is smaller on a phone too.",
+    "New link tabs on text boxes. The in-port and out-port are now round tabs outside the box: the in-port just above the top edge, a little in from the left corner; the out-port just below the bottom edge, a little in from the right corner (on a very small box they sit off the corners). They never crowd the resize handles, and a finger gets extra room around them. The out-port shows a chain link: white when free, red when text is left over, green when the text flows on. The in-port's arrow turns green when text arrives from another box; tap it to go to that box.",
+    "A floating pill of quick actions above (or below) whatever is picked: Link or Unlink for a text box, Crop for a picture, Unlock for something locked, then Duplicate, Copy, Paste (once something is copied) and Delete. It steps aside while you drag, link or type. On a touch screen, a Paste pill appears when nothing is picked but something is copied. Alt+F10 jumps to it from the keyboard; Left and Right move along it; Escape goes back to the page.",
+    "Fixed: duplicating a text box (Ctrl+D or Duplicate) raised an error behind the scenes because the copy was picked before its text was laid out."
+  ] },
   { version: "0.13.3", date: "2026-10-07", title: "", notes: [
     "Fixed: on a Chromebook the page crept down over the filmstrip after the splash closed. The rulers are drawn with one dot per screen pixel, and Chrome on ChromeOS let that dot count make the desk taller; each redraw then made it taller again. The desk's frame now never grows past its space (and clips anything that tries), and the rulers are sized only by their place in the layout."
   ] },
@@ -11763,6 +12301,9 @@ async function start() {
   wireRulers();
   wireZoomGestures();
   wireShapes();
+  wireSheet();
+  wireQuickBar();
+  wirePageMasterMenu();
   wireClipboard();
   wireStyleEditor();
   wireChars();

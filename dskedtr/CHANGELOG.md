@@ -1,5 +1,53 @@
 # DSKEDTR changelog
 
+## 0.15.0 - 2026-10-07
+
+- **Arrange in the quick pill.** A stack-of-layers button opens a small menu:
+  Bring to front, Bring forward, Send backward, Send to back (with their
+  keys). It stays open, so stepping something forward three times is three
+  taps; tap elsewhere or press Escape to close it.
+- **Group and Ungroup in the pill.** With two or more things picked, the
+  pill offers Group; with a group (or anything in one) picked, Ungroup.
+  Several picked things also get Arrange, Duplicate, Copy, Paste and
+  Delete.
+- **A Master button in the filmstrip** (the page with a masthead, beside
+  Add, Duplicate and Delete). It lists None and every master page, with the
+  one this page uses ticked, plus "Use it for every page" and "Edit master
+  pages" (or "Make a master page" when there are none yet). The same choice
+  is still in the Inspector's Document section.
+- **The page area is now a Tab stop**, with a focus ring, so the keyboard
+  can always reach it (to scroll, and for the page's own keys), even on a
+  page with no text boxes yet.
+
+## 0.14.0 - 2026-10-07
+
+- **On a phone, the Inspector is a sheet with a grab handle.** It starts two
+  thirds of the way down the screen. Drag the handle up or down to share
+  the screen between the page and the Inspector; the page shrinks instead
+  of being covered, and the window itself no longer scrolls. Drag it to the
+  bottom (or tap it) to close it to just the handle; tap again to open it.
+  From the keyboard the handle takes Up, Down, Home, End, Enter and Space.
+  The height is remembered in this browser. The filmstrip is smaller on a
+  phone too.
+- **New link tabs on text boxes.** The in-port and out-port are now round
+  tabs outside the box: the in-port just above the top edge, a little in
+  from the left corner; the out-port just below the bottom edge, a little in
+  from the right corner (on a very small box they sit off the corners). They
+  never crowd the resize handles, and a finger gets extra room around them.
+  The out-port shows a chain link: white when free, red when text is left
+  over, green when the text flows on. The in-port's arrow turns green when
+  text arrives from another box; tap it to go to that box.
+- **A floating pill of quick actions** above (or below) whatever is picked:
+  Link or Unlink for a text box, Crop for a picture, Unlock for something
+  locked, then Duplicate, Copy, Paste (once something is copied) and
+  Delete. It steps aside while you drag, link or type. On a touch screen,
+  a Paste pill appears when nothing is picked but something is copied.
+  Alt+F10 jumps to it from the keyboard; Left and Right move along it;
+  Escape goes back to the page.
+- Fixed: duplicating a text box (Ctrl+D or Duplicate) raised an error
+  behind the scenes because the copy was picked before its text was laid
+  out.
+
 ## 0.13.3 - 2026-10-07
 
 - **Fixed: on a Chromebook the page crept down over the filmstrip** after the
