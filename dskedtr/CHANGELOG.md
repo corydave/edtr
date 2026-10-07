@@ -1,5 +1,130 @@
 # DSKEDTR changelog
 
+## 0.21.1 - 2026-10-07
+
+- **Rows and columns anywhere in a table.** While you type in a cell, the
+  floating pill appears above the table with six buttons for that cell:
+  insert a row above or below, insert a column left or right, delete its
+  row, delete its column. A mouse press or tap on them leaves the cursor
+  in its cell, so you can keep typing. From the keyboard, Alt+F10 jumps
+  from the cell to the pill and Escape goes back to the cell. (The Table
+  section's buttons already worked beside the cell being typed in; with
+  the table picked they work at the end, and the section now says how to
+  reach the middle.)
+
+## 0.21.0 - 2026-10-07
+
+- **Folds.** Page setup has a Folds list: half-fold, tent fold, tri-fold,
+  Z-fold, gate fold and quarter-fold. Folds show on the page as violet
+  dash-dot lines marked "Fold" (never printed), things snap to them like
+  guides, and with crop marks the PDF gets dashed fold marks outside the
+  trim. Picking a fold that is usually made from a wide sheet turns the
+  page to landscape (and says so). The tri-fold brochure and greeting card
+  templates use folds now instead of plain guides.
+- **Booklets.** The Export dialog has a new "Arrange the pages" choice.
+  Booklet puts two pages on each side of a sheet in the order that reads
+  right once the stack is folded and stapled (8 and 1, then 2 and 7...),
+  adding blank pages at the end to make a multiple of four. The dialog
+  says how many sheets and how to print them (both sides, flipping on the
+  short edge). The bleed and crop marks work here too, with a fold mark at
+  the spine.
+- **Copies to cut apart.** Two or four copies of each page on a sheet,
+  touching so one cut separates them, with cut marks at every cut. On
+  Letter or A4 paper they are made a little smaller when they don't fit
+  (the dialog says by how much); Exact size keeps them full size on a
+  sheet just big enough, for a print shop. Text and links stay real in
+  every copy.
+- Project files are now version 11.
+
+## 0.20.0 - 2026-10-07
+
+- **Templates.** The New button now opens a New dialog: a blank Letter
+  page, a blank page of any size (Page setup), or one of six templates,
+  each an original design with sample words and empty picture frames:
+  a flyer, a two-page newsletter (a master page with page numbers, a
+  story in two columns that continues on page 2, a sidebar, a pull quote
+  and an events table), a tri-fold brochure (both sides, with guides on
+  the folds), a certificate, a greeting card folded in half, and a sign.
+  Each is drawn small in the dialog by the same code that draws the page.
+  The splash's second choice is now Start from a template. Every template
+  opens with all its text fitting and nothing for the checker to fix
+  except its empty picture frames.
+- **Building blocks.** A new rail button (K) opens a gallery of
+  ready-made pieces to add to the page showing, in the document's own
+  styles: a pull quote, a sidebar, a coupon, event details (a table), a
+  picture with a caption, a section heading, a masthead (placed at the top
+  margin), a contact strip (at the bottom margin) and a page border (just
+  outside the margins). A block with several parts arrives as a group, in
+  one undo step.
+- Paste and building blocks share one way of adding things to a page, so
+  a pasted or added table gets the next free name (Table 2, Table 3...).
+
+## 0.19.0 - 2026-10-07
+
+- **Tables.** A new Table tool on the rail (B): drag on the page for a
+  table that size, or click for one that fits its words. It starts with
+  three rows and three columns, the first a header row, and the cursor in
+  the first cell. Tab goes to the next cell, row by row (Shift+Tab back);
+  after the last cell, Tab goes on to the next story as before, so the
+  keyboard is never trapped. Each row grows to fit what is typed in it; a
+  table never hides text. Every cell is a small text box of its own, so
+  roles, bold, links, fonts and page numbers all work in cells.
+- **The Table section** of the Inspector: the number of rows and columns;
+  insert a row above or below, or a column left or right, of the cell you
+  are typing in (or add one at the end); delete a row or column; this
+  column's width; the space inside cells; even column widths; the header
+  row and banded rows, with their colours. The lines and the colour behind
+  the cells are in Look, with opacity and a drop shadow.
+- **On the page:** double-click a cell (or press Enter with the table
+  picked) to type in it; Escape picks the whole table. Drag the line
+  between two columns, or the green tab above it, to share their width.
+  Resizing the table makes every row or column bigger or smaller in step.
+  The floating pill can add a row or a column. A table with no lines shows
+  its grid faintly (never printed).
+- **Accessible from the start.** A screen reader hears where each cell is
+  ("Table 1, row 2 of 4, column 3 of 3 (Room)": its column's heading), and
+  the table is one item in the reading order, read row by row. The header
+  row is bold through its style, so Ctrl+B can still un-bold a word there.
+  The checker suggests a header row when a table has none.
+- **Everywhere else:** the PDF has the cells as real, selectable text (with
+  working links), the lines and shading as vector drawing; PNG export,
+  thumbnails, master pages, copy and paste (other apps get the words with
+  tabs between cells), duplicate, undo, facing pages and saving all work
+  with tables.
+- Project files are now version 10.
+
+## 0.18.0 - 2026-10-07
+
+- **Facing pages.** Page setup has a new "For printing" part. Tick Facing
+  pages for a booklet or magazine: page 1 stands alone on the right, then
+  pages 2 and 3, 4 and 5 and so on show side by side as spreads. The left
+  and right margins become inside and outside, mirrored on left-hand pages.
+  Click the other page of a spread to work on it (the spread stays still),
+  or drag something across the spine to move it onto that page. A text box
+  can link to a box on the other page with one click. The page you are on
+  has a thin green outline; the filmstrip pairs the spreads; zoom to fit
+  shows the whole spread.
+- **Bleed.** Also in Page setup: how far colour and pictures may run past
+  the page edge, to be trimmed off (0.125 in is usual). A red dashed line
+  shows it on the page (open at the spine of a spread).
+- **Crop marks and the bleed in the PDF.** The Export dialog can include
+  the bleed and add crop marks. The PDF pages then get room around them,
+  with the page marked as the trim box and the bleed as the bleed box, the
+  way print shops expect. Anything in the grey staging area is still cut
+  off.
+- Project files are now version 9.
+
+## 0.17.0 - 2026-10-07
+
+- **Columns inside one text box.** Text flow, in the Inspector, now has
+  Columns (1 to 6) and the Gap between them (a quarter of an inch to
+  start). The text fills the first column from the top, then the next,
+  then goes on to the next linked box. Dashed lines show the gaps on the
+  page (they never print). Text wrap works inside each column, a click
+  lands in the column under the pointer, and "Continued on page..." sits at
+  the foot of the last column.
+- Project files are now version 8.
+
 ## 0.16.0 - 2026-10-07
 
 - **A tidier filmstrip.** Its own buttons are now just **+** and **Master

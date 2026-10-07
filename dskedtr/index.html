@@ -311,6 +311,7 @@ input[type="number"], select {
 .btn:hover { border-color: var(--muted); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.row.two > .field { flex: 1 1 0; min-width: 0; margin-top: 0; }   /* two fields side by side (Columns and the gap) */
 .fit-ok { color: var(--accent-text); font-weight: 600; }
 .fit-bad { color: var(--danger); font-weight: 600; }
 :root[data-theme="dark"] .fit-bad { color: #fca5a5; }
@@ -372,6 +373,9 @@ input[type="text"], textarea.field-text {
 .quick-bar button[aria-disabled="true"] { opacity: .35; cursor: default; }
 .quick-bar button[aria-disabled="true"]:hover { background: transparent; }
 .page-list { display: flex; gap: 10px; list-style: none; margin: 0; padding: 4px; overflow-x: auto; flex: 1; min-width: 0; }
+/* Facing pages: each spread's two pages sit close together (2 with 3, 4 with 5...), with more room between spreads. */
+.page-list.facing > li:nth-child(even) { margin-left: 12px; }
+.page-list.facing > li:nth-child(odd):not(:first-child) { margin-left: -8px; }
 .thumb { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
 .thumb-master { display: inline-block; max-width: 4.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 10px; font-weight: 700; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-text); }
 .thumb[aria-selected="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
@@ -444,6 +448,19 @@ legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
 .dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .dlg-head h2 { margin: 0; }
 .help-dialog { max-width: 720px; padding: 16px 0 0; }
+/* The New dialog and the Building blocks gallery: cards with a small picture of each. */
+.tpl-dialog { max-width: 880px; max-height: calc(100dvh - 32px); overflow: auto; padding: 16px; }
+.tpl-sub { margin: 14px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.tpl-note { margin: 4px 0 0; font-size: 13px; }
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 8px; }
+.tpl-card { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 8px; min-height: 44px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--fg); }
+.tpl-card:hover { border-color: var(--accent-text); }
+.tpl-card:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.tpl-thumb { display: grid; place-items: center; height: 124px; background: var(--bg); border-radius: 6px; padding: 6px; }
+.tpl-thumb svg { max-width: 100%; max-height: 112px; width: auto; height: auto; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.tpl-name { font-weight: 700; }
+.tpl-detail { font-size: 12px; color: var(--muted); }
 .help-dialog .dlg-head { padding: 0 16px 8px; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding: 0 16px; overflow-x: auto; scrollbar-width: thin; }
 .tabs button { border: 0; background: none; padding: 10px 12px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; color: var(--fg); }
@@ -723,7 +740,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <div class="tb-scroll" role="group" aria-label="File, edit and view">
   <!-- New, Open and Save project, where the other apps have them. -->
   <div class="tb-group" role="group" aria-label="File">
-    <button class="icon-btn" id="newBtn" aria-label="New document" title="New document">
+    <button class="icon-btn" id="newBtn" aria-label="New document" aria-haspopup="dialog" title="New document: a blank page or a template">
       <svg viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 12v6M9 15h6"/></svg>
     </button>
     <button class="icon-btn" id="openBtn" aria-label="Open" title="Open a project or add a picture (Ctrl+O)">
@@ -834,6 +851,14 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <button class="icon-btn" data-tool="picture" aria-pressed="false" aria-label="Picture" title="Picture: click to add one, drag to draw a frame (F)">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/></svg>
     </button>
+    <!-- Tables: drag on the page for one that size, or click for one that fits its words. -->
+    <button class="icon-btn" data-tool="table" aria-pressed="false" aria-label="Table" title="Table: drag on the page to draw one, or click for one (B)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M3 14.75h18M9 4v16M15 4v16"/></svg>
+    </button>
+    <!-- Building blocks: ready-made pieces (a pull quote, a sidebar, a coupon...) added to the page. -->
+    <button class="icon-btn" id="blocksBtn" aria-haspopup="dialog" aria-label="Building blocks" title="Building blocks: a pull quote, sidebar, coupon, page border and more (K)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg>
+    </button>
     <!-- The file picker the Picture tool opens (hidden; it is only ever opened by a button or key). -->
     <input type="file" id="pictureInput" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp" multiple hidden>
     <hr>
@@ -867,6 +892,23 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <svg viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="2" stroke-dasharray="3 2.5"/><rect x="6.5" y="6.5" width="6" height="6" rx="1"/><rect x="11.5" y="11.5" width="6" height="6" rx="1"/></svg></button>
     <button type="button" data-act="ungroup" aria-label="Ungroup" title="Ungroup (Ctrl+Shift+G)">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
+    <button type="button" data-act="addRow" aria-label="Add a row" title="Add a row at the bottom of the table">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="11" rx="1.5"/><path d="M3 8.5h18M9 3v11M15 3v11M12 16.5v5M9.5 19h5"/></svg></button>
+    <button type="button" data-act="addCol" aria-label="Add a column" title="Add a column at the right of the table">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="18" rx="1.5"/><path d="M8.5 3v18M3 9h11M3 15h11M16.5 12h5M19 9.5v5"/></svg></button>
+    <!-- Typing in a table's cell: that cell's row and column (anywhere in the table, not just the end). -->
+    <button type="button" data-act="rowAbove" aria-label="Insert a row above" title="Insert a row above this cell">
+      <svg viewBox="0 0 24 24"><rect x="3" y="10" width="18" height="11" rx="1.5"/><path d="M3 15.5h18M9 10v11M15 10v11M12 2.5v5M9.5 5h5"/></svg></button>
+    <button type="button" data-act="rowBelow" aria-label="Insert a row below" title="Insert a row below this cell">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="11" rx="1.5"/><path d="M3 8.5h18M9 3v11M15 3v11M12 16.5v5M9.5 19h5"/></svg></button>
+    <button type="button" data-act="rowDel" class="danger" aria-label="Delete this row" title="Delete the row this cell is in">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M3 9h18M3 15h18M9 10.5l6 3M15 10.5l-6 3"/></svg></button>
+    <button type="button" data-act="colLeft" aria-label="Insert a column to the left" title="Insert a column left of this cell">
+      <svg viewBox="0 0 24 24"><rect x="10" y="3" width="11" height="18" rx="1.5"/><path d="M15.5 3v18M10 9h11M10 15h11M2.5 12h5M5 9.5v5"/></svg></button>
+    <button type="button" data-act="colRight" aria-label="Insert a column to the right" title="Insert a column right of this cell">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="18" rx="1.5"/><path d="M8.5 3v18M3 9h11M3 15h11M16.5 12h5M19 9.5v5"/></svg></button>
+    <button type="button" data-act="colDel" class="danger" aria-label="Delete this column" title="Delete the column this cell is in">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M9 3v18M15 3v18M10.5 9l3 6M13.5 9l-3 6"/></svg></button>
     <span class="qb-sep" aria-hidden="true"></span>
     <button type="button" data-act="arrange" aria-haspopup="menu" aria-expanded="false" aria-controls="arrangeMenu" aria-label="Arrange" title="Arrange: bring to front, forward, backward, send to back">
       <svg viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 5 9-5" opacity=".5"/></svg></button>
@@ -999,6 +1041,54 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       </div>
     </section>
 
+    <!-- A table (or the table whose cell is being typed in): rows, columns, header, shading -->
+    <section id="secTable" hidden>
+      <h2><button class="fold" data-fold="tableBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Table</span></button></h2>
+      <div class="fold-body" id="tableBody" hidden>
+      <p id="tableInfo" class="muted reserve2"></p>
+      <div class="row two">
+        <label class="field">Number of rows<input type="number" id="tblRows" min="1" max="100" step="1" inputmode="numeric"></label>
+        <label class="field">Number of columns<input type="number" id="tblCols" min="1" max="20" step="1" inputmode="numeric"></label>
+      </div>
+      <!-- These work next to the cell being typed in (or, with the table picked, at the end).
+           A mouse press doesn't take focus, so the cursor stays in its cell. -->
+      <div role="group" aria-labelledby="capTblRows" style="margin-top:8px">
+        <span class="tool-caption" id="capTblRows">Rows</span>
+        <div class="row" style="margin-top:0">
+          <button class="btn tbl-btn" id="tblRowAbove">Insert above</button>
+          <button class="btn tbl-btn" id="tblRowBelow">Insert below</button>
+          <button class="btn tbl-btn" id="tblRowDel">Delete row</button>
+        </div>
+      </div>
+      <div role="group" aria-labelledby="capTblCols" style="margin-top:8px">
+        <span class="tool-caption" id="capTblCols">Columns</span>
+        <div class="row" style="margin-top:0">
+          <button class="btn tbl-btn" id="tblColLeft">Insert left</button>
+          <button class="btn tbl-btn" id="tblColRight">Insert right</button>
+          <button class="btn tbl-btn" id="tblColDel">Delete column</button>
+        </div>
+      </div>
+      <div class="row two">
+        <label class="field" id="tblColWRow"><span>This column’s width (<span class="u-short">in</span>)</span><input type="number" id="tblColW" class="u-input" min="0"></label>
+        <label class="field"><span>Space inside cells (<span class="u-short">in</span>)</span><input type="number" id="tblPad" class="u-input" min="0"></label>
+      </div>
+      <div class="btn-row"><button class="btn tbl-btn" id="tblEven">Even column widths</button></div>
+      <label class="check"><input type="checkbox" id="tblHeader"> Header row: bold and shaded, read as the column headings</label>
+      <div class="color-row">
+        <input type="color" id="tblHeadFill" aria-label="Header row colour">
+        <input type="text" id="tblHeadFillHex" aria-label="Header row colour as a hex code" maxlength="7" spellcheck="false">
+        <span></span>
+      </div>
+      <label class="check"><input type="checkbox" id="tblBanded"> Banded rows: every other row shaded</label>
+      <div class="color-row">
+        <input type="color" id="tblBandFill" aria-label="Band colour">
+        <input type="text" id="tblBandFillHex" aria-label="Band colour as a hex code" maxlength="7" spellcheck="false">
+        <span></span>
+      </div>
+      <p class="muted" style="font-size:12px">The lines and the colour behind the cells are in Look. On the page, drag a line between two columns (or the green tab above it) to share their width differently.</p>
+      </div>
+    </section>
+
     <!-- A picture frame: the picture, how it sits in the frame, the frame's shape -->
     <section id="secPicture" hidden>
       <h2><button class="fold" data-fold="pictureBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Picture</span><span class="fold-note" id="pictureNote"></span></button></h2>
@@ -1035,6 +1125,11 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <section id="secLink" hidden>
       <h2><button class="fold" data-fold="linkBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Text flow</span></button></h2>
       <div class="fold-body" id="linkBody" hidden>
+      <!-- Columns inside this box: the text fills one, then the next. -->
+      <div class="row two">
+        <label class="field">Columns<input type="number" id="boxCols" min="1" max="6" step="1" inputmode="numeric"></label>
+        <label class="field"><span>Gap between (<span class="u-short">in</span>)</span><input type="number" id="boxGutter" class="u-input" min="0"></label>
+      </div>
       <label class="field">Continues in<select id="flowSelect"></select></label>
       <div class="row">
         <button class="btn" id="linkPickBtn" title="Then click an empty text box on the page">Pick a box on the page</button>
@@ -1375,9 +1470,25 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <div class="grid4">
         <label class="field">Top<input type="number" id="psMtop" class="u-input" min="0"></label>
         <label class="field">Bottom<input type="number" id="psMbottom" class="u-input" min="0"></label>
-        <label class="field">Left (inside)<input type="number" id="psMleft" class="u-input" min="0"></label>
-        <label class="field">Right (outside)<input type="number" id="psMright" class="u-input" min="0"></label>
+        <label class="field"><span id="psMleftLabel">Left</span><input type="number" id="psMleft" class="u-input" min="0"></label>
+        <label class="field"><span id="psMrightLabel">Right</span><input type="number" id="psMright" class="u-input" min="0"></label>
       </div>
+    </fieldset>
+    <fieldset>
+      <legend>For printing</legend>
+      <label class="check"><input type="checkbox" id="psFacing"> Facing pages: left and right pages side by side, like a booklet or magazine (the left and right margins become inside and outside)</label>
+      <label class="field" style="margin-top:8px"><span>Bleed (<span class="u-short">in</span>): how far colour and pictures may run past the edge, to be trimmed off (0.125 in is usual; 0 for none)</span><input type="number" id="psBleed" class="u-input" min="0"></label>
+      <!-- Folds: dash-dot lines on the page (never printed), fold marks in the PDF with crop marks. -->
+      <label class="field" style="margin-top:8px">Folds: where the paper will be folded<select id="psFold">
+        <option value="">None</option>
+        <option value="half">Half-fold: in half, side to side (a card)</option>
+        <option value="tent">Tent fold: in half, top to bottom (a table tent)</option>
+        <option value="tri">Tri-fold: three equal panels (a brochure)</option>
+        <option value="z">Z-fold: three panels folded like a Z</option>
+        <option value="gate">Gate fold: two flaps that meet in the middle</option>
+        <option value="quarter">Quarter-fold: in half, then in half again (a small card)</option>
+      </select></label>
+      <p class="muted" id="psFoldNote" style="font-size:12px;margin:4px 0 0"></p>
     </fieldset>
     <fieldset>
       <legend>When the size changes</legend>
@@ -1446,11 +1557,13 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <div role="tabpanel" id="paneStart" aria-labelledby="tabStart" tabindex="0" hidden>
       <p style="margin-top:0">DSKEDTR makes things to print or share as a PDF: newsletters, flyers, posters, programs, booklets. Here is a newsletter from start to finish.</p>
       <h3>1. Start</h3>
-      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Pick a size</strong> when DSKEDTR opens, or explore the sample. Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. Changing the size never squashes what is on the page. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
+      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card or a sign), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border. Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
       <h3>2. Text boxes, and text that flows</h3>
-      <p>Pick the Text box tool (T) and drag on the page. Type. Headings are paragraph roles: Heading 1, Heading 2, Body and Caption, in the Inspector's Paragraph section (or Ctrl+Alt+1, 2, 0, 9). Below the role is its style: size, line and letter spacing, kerning, space above and below, alignment and colour. Changing it changes every paragraph with that role, so all your headings stay alike. When a box is too full, a red <strong>+</strong> appears. Click or tap the round chain-link tab just below its bottom-right corner (or Link in the floating pill), then click an empty text box, even on another page: the text carries on there. Unlink in the pill stops the flow again.</p>
+      <p>Pick the Text box tool (T) and drag on the page. Type. Headings are paragraph roles: Heading 1, Heading 2, Body and Caption, in the Inspector's Paragraph section (or Ctrl+Alt+1, 2, 0, 9). Below the role is its style: size, line and letter spacing, kerning, space above and below, alignment and colour. Changing it changes every paragraph with that role, so all your headings stay alike. When a box is too full, a red <strong>+</strong> appears. Click or tap the round chain-link tab just below its bottom-right corner (or Link in the floating pill), then click an empty text box, even on another page: the text carries on there. Unlink in the pill stops the flow again. A text box can also split into columns (up to six, with the gap you choose): Text flow, in the Inspector. The text fills one column, then the next, then the next linked box.</p>
       <h3>3. Pictures and shapes</h3>
       <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector).</p>
+      <h3>Tables</h3>
+      <p>The Table tool (B) draws a table: drag for one that size, or click for one that fits its words. Type in a cell; Tab goes to the next one, row by row. Each row grows to fit what is in it. The Inspector's Table section adds and deletes rows and columns (beside the cell you are typing in), turns the header row and banded rows on or off, and sets their colours; Look sets the lines. While you type in a cell, the floating pill above the table inserts a row above or below it, or a column left or right of it, or deletes its row or column. Drag the line between two columns, or the green tab above it, to change their widths. Screen readers read a table's cells row by row, and the header row tells them what each column holds.</p>
       <h3>4. Pages</h3>
       <p>The filmstrip along the bottom shows every page. + adds one after the page showing (with master pages, it asks which one the new page uses). Click or tap a page for its buttons: move it left or right, its master page, duplicate, delete. You can also drag pages into order, or use Alt with Left or Right.</p>
       <h3>5. Reading order</h3>
@@ -1486,6 +1599,22 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <label class="check"><input type="radio" name="expFormat" value="pdf" checked> A PDF of every page, for printing and sharing</label>
       <label class="check"><input type="radio" name="expFormat" value="png"> A PNG picture of the page showing</label>
     </fieldset>
+    <!-- For printing: how pages go on the paper, the bleed, and marks to trim along. -->
+    <div id="expPrintRow">
+      <label class="field">Arrange the pages<select id="expLayout">
+        <option value="pages">One page on each sheet</option>
+        <option value="booklet">Booklet: two pages on each side of a sheet, in folding order</option>
+        <option value="up2">Two copies of each page on a sheet, to cut apart</option>
+        <option value="up4">Four copies of each page on a sheet, to cut apart</option>
+      </select></label>
+      <label class="field" id="expPaperRow" style="margin-top:8px" hidden>Paper<select id="expPaper">
+        <option value="letter">Letter (8.5 × 11 in), made smaller if they don’t fit</option>
+        <option value="a4">A4, made smaller if they don’t fit</option>
+        <option value="exact">Exact size, with room for the cut marks (for a print shop)</option>
+      </select></label>
+      <label class="check" id="expBleedRow"><input type="checkbox" id="expBleed" checked> <span id="expBleedText">Include the bleed</span></label>
+      <label class="check" id="expMarksRow"><input type="checkbox" id="expMarks"> Crop marks, for trimming (the PDF pages get a margin around them for the marks; folds get dashed marks)</label>
+    </div>
     <label class="field" id="expDpiRow" style="margin-top:8px" hidden>Sharpness
       <select id="expDpi">
         <option value="96">For screens (96 pixels per inch)</option>
@@ -1505,6 +1634,33 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <button class="btn primary" value="export">Export</button>
     </div>
   </form>
+</dialog>
+
+<!-- ===================== NEW: blank pages and templates ===================== -->
+<dialog id="newDialog" class="tpl-dialog" aria-labelledby="newTitle">
+  <div class="dlg-head">
+    <h2 id="newTitle">New document</h2>
+    <button class="icon-btn" id="newClose" aria-label="Close" title="Close">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <h3 class="tpl-sub" id="newBlankHead">Blank</h3>
+  <div class="tpl-grid" id="newBlankGrid" role="group" aria-labelledby="newBlankHead"></div>
+  <h3 class="tpl-sub" id="newTplHead">Templates</h3>
+  <p class="muted tpl-note">Original designs with sample words and empty picture frames, ready for your own.</p>
+  <div class="tpl-grid" id="newTplGrid" role="group" aria-labelledby="newTplHead"></div>
+</dialog>
+
+<!-- ===================== BUILDING BLOCKS ===================== -->
+<dialog id="blocksDialog" class="tpl-dialog" aria-labelledby="blocksTitle" aria-describedby="blocksNote">
+  <div class="dlg-head">
+    <h2 id="blocksTitle">Building blocks</h2>
+    <button class="icon-btn" id="blocksClose" aria-label="Close" title="Close">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <p class="muted tpl-note" id="blocksNote">Pick one to add it to this page, in your document's styles. A block with several parts arrives as a group: it moves as one, and Ctrl+click picks one part.</p>
+  <div class="tpl-grid" id="blocksGrid" role="group" aria-labelledby="blocksTitle"></div>
 </dialog>
 
 <!-- ===================== ARE YOU SURE? ===================== -->
@@ -1641,7 +1797,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.16.0';
+const APP_VERSION = '0.21.1';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -2035,6 +2191,15 @@ function styleOf(role) {
   const key = Object.hasOwn(ROLES, role) ? role : 'body';
   return (doc.styles && doc.styles[key]) || DEFAULT_STYLES[key];
 }
+/**
+ * How paragraph p of a story looks: its role's style, made bold in a
+ * table's header row (section 4d). Bold comes from the style, not from
+ * formatting on the letters, so Ctrl+B can still make header words NOT bold.
+ */
+function roleStyle(story, p) {
+  const s = styleOf(story.roles[p]);
+  return s.font !== 'bold' && isHeaderStory(story) ? Object.assign({}, s, { font: 'bold' }) : s;
+}
 
 /* ======================================================================
    4. THE DOCUMENT
@@ -2102,14 +2267,9 @@ function sampleDocument() {
   ];
   // A paragraph's optional third entry formats words in it: [[words, format], ...] (section 4b).
   const story = (id, paras, frames) => {
-    const runs = [];
-    let at = 0;
-    for (const [, text, marks] of paras) {
-      for (const [words, f] of marks || []) { const i = text.indexOf(words); if (i >= 0) runs.push(Object.assign({ s: at + i, e: at + i + words.length }, f)); }
-      at += text.length + 1;
-    }
-    const s = { id, frames, text: paras.map((p) => p[1]).join('\n'), roles: paras.map((p) => p[0]) };
-    if (runs.length) s.runs = runs.sort((a, b) => a.s - b.s);
+    const sp = storyParts(paras);                    // (section 17)
+    const s = { id, frames, text: sp.text, roles: sp.roles };
+    if (sp.runs.length) s.runs = sp.runs;
     return s;
   };
   return {
@@ -2208,7 +2368,13 @@ let objPage = new Map();             // id -> index of its page
 /** Rebuild the lookups (after adding, deleting, moving pages or undoing). */
 function reindex() {
   objIndex = new Map(); objPage = new Map();
-  allPages().forEach((pg, i) => { for (const o of pg.objects) { objIndex.set(o.id, o); objPage.set(o.id, i); } });
+  allPages().forEach((pg, i) => {
+    for (const o of pg.objects) {
+      objIndex.set(o.id, o); objPage.set(o.id, i);
+      // A table's cells are text boxes too (section 4d): found by id, on the table's page.
+      if (o.type === 'table') for (const c of tableCells(o)) { objIndex.set(c.id, c); objPage.set(c.id, i); }
+    }
+  });
 }
 /** The object with this id (on any page), or undefined. */
 function obj(id) { return objIndex.get(id); }
@@ -2268,14 +2434,67 @@ function moveObj(o, dx, dy) {
   if (o.type === 'line') { o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy; }
   else { o.x += dx; o.y += dy; }
 }
-/** The area inside the margins. */
-function marginBox() {
-  const m = PAGE.margins;
-  return { x: m.left, y: m.top, w: PAGE.width - m.left - m.right, h: PAGE.height - m.top - m.bottom };
+/* ---------- Facing pages (section 4c) ----------
+   doc.page.facing: the document is a booklet or magazine. Page 1 is a
+   right-hand page on its own; after it the pages pair up into spreads,
+   2 with 3, 4 with 5... The left margin is then the INSIDE one (by the
+   spine) and the right margin the OUTSIDE one, so on a left-hand page they
+   swap sides. doc.page.bleed: how far colour and pictures may run past
+   the page edge, to be trimmed off after printing (0: no bleed). */
+const isFacing = () => !!PAGE.facing;
+/** Is page pi a left-hand page of a spread (page 2, 4, 6...)? */
+const isLeftHand = (pi) => isFacing() && !isMasterIndex(pi) && pi % 2 === 1;
+/** The other page of page pi's spread, or null (page 1, the last page alone, masters, single pages). */
+function spreadPartner(pi) {
+  if (!isFacing() || isMasterIndex(pi)) return null;
+  const q = pi % 2 === 1 ? pi + 1 : pi - 1;
+  return q >= 0 && q < doc.pages.length ? q : null;
 }
-const TYPE_NAMES = { text: 'Text box', rect: 'Rectangle', ellipse: 'Ellipse', line: 'Line', picture: 'Picture', path: 'Merged shape' };
+/** Where the partner page sits, in page points across from page pi (to its right or its left). */
+const partnerOffset = (pi) => (pi % 2 === 1 ? PAGE.width : -PAGE.width);
+/* Folds (doc.page.fold): where a printed sheet will be folded, as parts
+   of the page's width (v) and height (h), so they stay right when the
+   size changes. Shown as dash-dot lines (never printed), snapped to like
+   guides, and marked outside the trim in the PDF with the crop marks. */
+const FOLDS = {
+  half:    { name: 'Half-fold', v: [1 / 2], h: [], wide: true, tip: 'Outside: the back on the left half, the front on the right. Inside: a second page.' },
+  tent:    { name: 'Tent fold', v: [], h: [1 / 2], tip: 'The top half is upside down once folded: turn its text box half a turn (rotation 180).' },
+  tri:     { name: 'Tri-fold', v: [1 / 3, 2 / 3], h: [], wide: true, tip: 'Page 1 is the outside (the cover is the right panel), page 2 the inside.' },
+  z:       { name: 'Z-fold', v: [1 / 3, 2 / 3], h: [], wide: true, tip: 'Folds back and forth, so the panels read left to right on each side.' },
+  gate:    { name: 'Gate fold', v: [1 / 4, 3 / 4], h: [], wide: true, tip: 'The two outer flaps fold in to meet in the middle.' },
+  quarter: { name: 'Quarter-fold', v: [1 / 2], h: [1 / 2], tip: 'Folded twice: the panels on the top half end up upside down (rotation 180).' }
+};
+/** The fold lines of this document's pages, in points: { v: [x...], h: [y...] }. */
+function foldLines() {
+  const f = FOLDS[PAGE.fold];
+  return f ? { v: f.v.map((k) => k * PAGE.width), h: f.h.map((k) => k * PAGE.height) } : { v: [], h: [] };
+}
+/** Draw the fold lines into an SVG group (dash-dot, violet, labelled "Fold" just above the page). */
+function foldLinesEl(target) {
+  const f = foldLines(), px = onePx();
+  for (const x of f.v) target.appendChild(svgEl('path', { d: 'M' + x + ' 0V' + PAGE.height, stroke: '#7c3aed', 'stroke-width': 1, 'stroke-dasharray': '7 3 1.5 3', fill: 'none', 'vector-effect': 'non-scaling-stroke' }));
+  for (const y of f.h) target.appendChild(svgEl('path', { d: 'M0 ' + y + 'H' + PAGE.width, stroke: '#7c3aed', 'stroke-width': 1, 'stroke-dasharray': '7 3 1.5 3', fill: 'none', 'vector-effect': 'non-scaling-stroke' }));
+  for (const x of f.v) {
+    const t = svgEl('text', { x, y: -6 * px, 'text-anchor': 'middle', 'font-size': 10 * px, 'font-family': 'system-ui, sans-serif', 'font-weight': 700, fill: '#7c3aed' });
+    t.textContent = 'Fold';                          // our own word, never document text
+    target.appendChild(t);
+  }
+  for (const y of f.h) {
+    const t = svgEl('text', { x: -6 * px, y: y + 3.5 * px, 'text-anchor': 'end', 'font-size': 10 * px, 'font-family': 'system-ui, sans-serif', 'font-weight': 700, fill: '#7c3aed' });
+    t.textContent = 'Fold';
+    target.appendChild(t);
+  }
+}
+/** The area inside the margins (of page pi; on a left-hand page the inside margin is on the right). */
+function marginBox(pi = pageIndex) {
+  const m = PAGE.margins;
+  return { x: isLeftHand(pi) ? m.right : m.left, y: m.top, w: PAGE.width - m.left - m.right, h: PAGE.height - m.top - m.bottom };
+}
+const TYPE_NAMES = { text: 'Text box', rect: 'Rectangle', ellipse: 'Ellipse', line: 'Line', picture: 'Picture', path: 'Merged shape', table: 'Table' };
 /** A friendly name for any object. A text box is named by its story unless it was renamed. */
 function objName(o) {
+  const t = cellTable(o);
+  if (t) { const at = cellPlace(o); return objName(t) + (at ? ', row ' + (at.r + 1) + ', column ' + (at.c + 1) : ''); }
   if (o.type === 'text') {
     if (o.name) return o.name;
     const s = doc.stories[o.story];
@@ -2288,6 +2507,80 @@ function objName(o) {
 function groupMembers(o) {
   if (!o.group) return [o];
   return pageObjs().filter((x) => x.group === o.group);
+}
+
+/* ---------- Tables (section 4d) ----------
+   A table is one object on the page (type 'table') holding a grid of
+   cells. Each cell is a small text box of its own, with its own story, so
+   everything text can do (roles, bold, links, fonts, page numbers) works
+   in a cell too. The cells are NOT in page.objects: they live inside the
+   table and move, copy and delete with it.
+     t.cols      each column's width in points (together: the table's width)
+     t.rows      each row's smallest height in points (0: just fit the words)
+     t.cells     [[cell, cell...], ...] row by row; a cell is
+                 { id, type: 'text', story, cellOf: the table's id, inset }
+                 plus its place on the page, worked out by layoutTable
+     t.header    the first row is a header row: bold, shaded, and read as
+                 the column headings
+     t.banded    every other row below the header is shaded
+     t.headerFill, t.bandFill   those two shades
+     t.fill      the colour behind the other cells (null: none)
+     t.stroke, t.strokeWidth    the lines between and around the cells
+     t.pad       the room between a cell's lines and its words
+     t.fitH      the height the table had when it was last laid out: when
+                 t.h is different, it was resized, and the rows grow or
+                 shrink to match (section 5e)
+   A row is always tall enough for its words: a table never hides text.
+   Tables don't turn (a turned grid of cells is hard to type in). */
+const TABLE_MAX_ROWS = 100, TABLE_MAX_COLS = 20;
+const TABLE_MIN_COL = 12;                            // dragging a column line stops when a column is this narrow
+/** Every cell of a table, row by row. */
+const tableCells = (t) => t.cells.flat();
+/** The table a cell belongs to (null for anything that is not a cell). */
+function cellTable(o) { return o && o.cellOf ? obj(o.cellOf) || null : null; }
+/** Is this story the words of a table cell? */
+function isCellStory(id) {
+  const st = doc.stories[id];
+  return !!(st && cellTable(obj(st.frames[0])));
+}
+/** Is this story in a table's header row? */
+function isHeaderStory(story) {
+  const cell = obj(story.frames[0]), t = cellTable(cell);
+  return !!(t && t.header && t.cells[0].some((x) => x.id === cell.id));
+}
+/** Where a cell is in its table: { r, c } (null when it isn't a cell). */
+function cellPlace(cell) {
+  const t = cellTable(cell);
+  if (!t) return null;
+  for (let r = 0; r < t.cells.length; r++) {
+    const c = t.cells[r].findIndex((x) => x.id === cell.id);
+    if (c >= 0) return { r, c };
+  }
+  return null;
+}
+/** A new empty cell for table t, with its own new story. */
+function makeCell(t) {
+  const id = newId('o');
+  const cell = { id, type: 'text', story: null, cellOf: t.id, x: t.x, y: t.y, w: 1, h: 1, inset: t.pad };
+  objIndex.set(id, cell);                            // reserve the id at once
+  cell.story = makeStory(id, '').id;
+  return cell;
+}
+/** A new table of rows x cols filling rectangle r (r.h 0: each row just fits its words). */
+function makeTable(id, r, rows, cols) {
+  const t = {
+    id, type: 'table', name: TYPE_NAMES.table + ' ' + (countOf('table') + 1), x: r.x, y: r.y, w: r.w, h: r.h || 1,
+    cols: new Array(cols).fill(r.w / cols), rows: new Array(rows).fill(r.h > 0 ? r.h / rows : 0), cells: [],
+    header: true, banded: false, headerFill: '#d1fae5', bandFill: '#f1f5f9', fill: null,
+    stroke: '#475569', strokeWidth: 0.75, pad: 4
+  };
+  for (let i = 0; i < rows; i++) { const row = []; for (let j = 0; j < cols; j++) row.push(makeCell(t)); t.cells.push(row); }
+  return t;
+}
+/** The cell of table t under point p (or null). */
+function tableCellAt(t, p) {
+  for (const c of tableCells(t)) if (p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h) return c;
+  return null;
 }
 
 /* ======================================================================
@@ -2355,7 +2648,7 @@ function sliceRuns(story, a, b) {
 function paraStyleAt(story, pos) {
   let p = 0;
   for (let i = 0; i < pos && i < story.text.length; i++) if (story.text.charCodeAt(i) === 10) p++;
-  return styleOf(story.roles[p]);
+  return roleStyle(story, p);
 }
 /**
  * How one letter looks: its paragraph's style with its own format on top.
@@ -2534,6 +2827,24 @@ function breakLine(text, m, paraStart, start, paraEnd, maxWidth) {
  * position along it. overflowAt is where the text that doesn't fit starts
  * (or null when everything fits).
  */
+/* ---------- Columns inside one text box (section 5d) ----------
+   A text box can split its text into 2 to 6 columns side by side, with a
+   gap (o.gutter, in points) between them. The text fills the first column
+   from the top, then the next, then goes on to the next linked box. The
+   columns share the box's height and are all the same width. */
+const DEFAULT_GUTTER = 18;                           // a quarter of an inch
+/** How many columns a text box has (1 when it has none set). */
+function boxCols(f) { return Math.max(1, Math.min(6, Math.round(f.cols || 1))); }
+/** The left and right edges (page points, in the box's own upright directions) of column ci. */
+function columnLimits(f, ci) {
+  const n = boxCols(f), inner = f.w - 2 * f.inset;
+  // The gap can't eat the columns: each column keeps at least 12 points.
+  const g = n > 1 ? Math.min(f.gutter == null ? DEFAULT_GUTTER : f.gutter, Math.max(0, (inner - 12 * n) / (n - 1))) : 0;
+  const w = Math.max(1, (inner - g * (n - 1)) / n);
+  const L = f.x + f.inset + ci * (w + g);
+  return { L, R: L + w };
+}
+
 function layoutStory(story, ctx) {
   const frames = story.frames.map(obj);
   const text = story.text;
@@ -2546,6 +2857,7 @@ function layoutStory(story, ctx) {
   const roomBottom = (i) => (frames[i].contNext && i + 1 < frames.length && pageOfFrame(i + 1) !== pageOfFrame(i) ? noteH : 0);
   let fi = 0;
   let f = frames[0];
+  let ci = 0;                          // the column of box f that lines go into (0 = the first)
   let y = f.y + f.inset + roomTop(0); // where the next line's top goes
   let firstInFrame = true;
   let overflowAt = null;
@@ -2557,7 +2869,7 @@ function layoutStory(story, ctx) {
   paraLoop:
   for (let p = 0; p < paras.length; p++) {
     const paraEnd = paraStart + paras[p].length;
-    const role = styleOf(story.roles[p]);
+    const role = roleStyle(story, p);
     const m = measureParagraph(text, paraStart, paraEnd, role, fmts, ctx);
     let pos = paraStart;
     let firstLineOfPara = true;
@@ -2570,10 +2882,13 @@ function layoutStory(story, ctx) {
       for (;;) {
         if (!f) { overflowAt = pos; break paraLoop; }
         before = (firstLineOfPara && !firstInFrame) ? role.spaceBefore : 0;
-        const bottom = f.y + f.h - f.inset - roomBottom(fi) + 0.01;
+        // "Continued on page..." takes room only at the bottom of the LAST column.
+        const lastCol = ci === boxCols(f) - 1;
+        const bottom = f.y + f.h - f.inset - (lastCol ? roomBottom(fi) : 0) + 0.01;
+        const lim = columnLimits(f, ci);              // this column's left and right edges
         const obs = wrapObstacles(f, wrapCache);
         if (!obs.length) {
-          seg = { x: f.x + f.inset, w: f.w - 2 * f.inset };
+          seg = { x: lim.L, w: lim.R - lim.L };
           end = breakLine(text, m, paraStart, pos, paraEnd, seg.w);
           met = lineMetrics(m, pos - paraStart, end - paraStart, role);
           if (y + before + met.lineH <= bottom) break;
@@ -2583,10 +2898,12 @@ function layoutStory(story, ctx) {
             // "forced": a word too long for the width had to be cut in two.
             const forced = e < paraEnd && e > pos && !/[ \t-]/.test(text[e - 1]);
             return { end: e, forced, met: lineMetrics(m, pos - paraStart, e - paraStart, role) };
-          }, Math.max(36, role.size * 6));
+          }, Math.max(36, role.size * 6), lim);
           if (placed) { ({ seg, end, met } = placed); y = placed.top - before; break; }
         }
-        fi++; f = frames[fi];
+        // No room left here: the next column of this box, else the next box.
+        if (!lastCol) { ci++; y = f.y + f.inset; firstInFrame = true; continue; }
+        fi++; f = frames[fi]; ci = 0;
         if (f) { y = f.y + f.inset + roomTop(fi); firstInFrame = true; }
       }
       y += before;
@@ -2624,7 +2941,7 @@ function layoutStory(story, ctx) {
         }
       }
       lines.push({
-        frame: f.id, para: p, start: pos, end, isParaEnd: end === paraEnd,
+        frame: f.id, col: ci, para: p, start: pos, end, isParaEnd: end === paraEnd,
         x0, top: y, height: lineH,
         baseline: y + (lineH - (asc + desc)) / 2 + asc, asc, desc,
         xs, m, paraStart, role
@@ -2729,6 +3046,7 @@ function wrapShapes(o) {
  */
 function wrapObstacles(f, cache) {
   if (cache && cache.has(f.id)) return cache.get(f.id);
+  if (f.cellOf) return [];                           // a table's cell: its row was measured without any wrap
   const out = [];
   const pi = pageOf(f.id);
   const page = pageNo(pi);
@@ -2785,8 +3103,9 @@ function obstacleBlocks(ob, y0, y1) {
   return out;
 }
 /** The widest free stretch of box f's line from y0 to y1 (at least minW wide): { x, w }, or null. */
-function freeSegment(f, obs, y0, y1, minW) {
-  const L = f.x + f.inset, R = f.x + f.w - f.inset;
+function freeSegment(f, obs, y0, y1, minW, lim) {
+  // lim: one column's edges (section 5d); without it, the whole box.
+  const L = lim ? lim.L : f.x + f.inset, R = lim ? lim.R : f.x + f.w - f.inset;
   minW = Math.min(minW, R - L);
   const blocked = obs.flatMap((ob) => obstacleBlocks(ob, y0, y1)).sort((p, q) => p[0] - q[0]);
   let best = null, x = L;
@@ -2807,21 +3126,21 @@ function freeSegment(f, obs, y0, y1, minW) {
  * happens (the line moves down instead). Returns { top, seg, end, met }
  * or null when the box has no room left.
  */
-function placeWrappedLine(f, obs, top, bottom, fit, minW) {
-  const fullW = f.w - 2 * f.inset;
+function placeWrappedLine(f, obs, top, bottom, fit, minW, lim) {
+  const fullW = lim ? lim.R - lim.L : f.w - 2 * f.inset;   // the column's width (or the whole box's)
   let estH = null;
   for (let y = top; ; y += WRAP_STEP) {
     if (estH != null && y + estH > bottom) return null;
-    // First guess the line's height from a line as wide as the whole box.
-    if (estH == null) { estH = fit(f.w - 2 * f.inset).met.lineH; if (y + estH > bottom) return null; }
-    const seg = freeSegment(f, obs, y, y + estH, minW);
+    // First guess the line's height from a line as wide as the whole column.
+    if (estH == null) { estH = fit(fullW).met.lineH; if (y + estH > bottom) return null; }
+    const seg = freeSegment(f, obs, y, y + estH, minW, lim);
     if (!seg) continue;
     let r = fit(seg.w);
     if (r.forced && seg.w < fullW - 0.5) continue;      // a word wouldn't fit beside it: look lower
     if (r.met.lineH > estH + 0.01) {
       // Taller than guessed (bigger letters on it): check the taller stretch too.
       estH = r.met.lineH;
-      const seg2 = freeSegment(f, obs, y, y + estH, minW);
+      const seg2 = freeSegment(f, obs, y, y + estH, minW, lim);
       if (!seg2) continue;
       if (seg2.w < seg.w - 0.01 || seg2.x !== seg.x) {
         r = fit(seg2.w);
@@ -2929,7 +3248,51 @@ const layouts = {};
 const masterLayouts = new Map();                     // "story|page" -> a master story laid out for one page (its page numbers)
 function layoutAll() {
   masterLayouts.clear();
+  // Tables first: they decide where (and how big) their cells are.
+  for (const pg of allPages()) for (const o of pg.objects) if (o.type === 'table') layoutTable(o);
   for (const id in doc.stories) layouts[id] = layoutStory(doc.stories[id]);
+}
+
+/* ---------- 5e. Tables: the rows and columns ----------
+   The columns keep their widths (all in step when the table is made wider
+   or narrower). Each row is as tall as the most words in any of its cells,
+   and never less than its smallest height (t.rows). Every cell is first
+   laid out in a very tall box, to measure its words; then it gets its
+   row's height, and is laid out again (by layoutAll) where it really is. */
+function layoutTable(t) {
+  const R = t.cells.length, C = t.cols.length;
+  const sumW = t.cols.reduce((a, b) => a + b, 0);
+  if (sumW > 0 && Math.abs(sumW - t.w) > 0.01) t.cols = t.cols.map((w) => w * t.w / sumW);
+  const xs = [t.x];
+  for (let c = 0; c < C; c++) xs.push(xs[c] + t.cols[c]);
+  // How tall does each row need to be for its words?
+  const need = new Array(R).fill(0);
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) {
+      const cell = t.cells[r][c];
+      Object.assign(cell, { x: xs[c], y: t.y, w: t.cols[c], h: 1e6, inset: t.pad });
+      const story = doc.stories[cell.story];
+      if (!story) continue;
+      const lines = layoutStory(story).lines;
+      const last = lines[lines.length - 1];
+      need[r] = Math.max(need[r], (last ? last.top + last.height : t.y + t.pad) - t.y + t.pad);
+    }
+  }
+  let heights = need.map((h, r) => Math.max(h, t.rows[r] || 0));
+  // Resized (its height isn't the one it was laid out at): every row grows or shrinks in step.
+  const total = heights.reduce((a, b) => a + b, 0);
+  if (t.fitH != null && Math.abs(t.h - t.fitH) > 0.01 && total > 0) {
+    const k = t.h / total;
+    t.rows = heights.map((h) => Math.round(h * k * 100) / 100);
+    heights = need.map((h, r) => Math.max(h, t.rows[r]));
+  }
+  // Each cell in its place.
+  let y = t.y;
+  for (let r = 0; r < R; r++) {
+    for (let c = 0; c < C; c++) Object.assign(t.cells[r][c], { y, h: heights[r] });
+    y += heights[r];
+  }
+  t.h = t.fitH = y - t.y;
 }
 /** A master's story as it shows on page pi (the same lines, with that page's numbers). */
 function masterLayout(storyId, pi) {
@@ -2986,8 +3349,25 @@ function posAtPoint(story, frameId, px, py) {
     if (fi < firstFrameWithText) return 0;
     return layout.overflowAt != null ? layout.overflowAt : story.text.length;
   }
-  let ln = inFrame[inFrame.length - 1];
-  for (const cand of inFrame) { if (py < cand.top + cand.height) { ln = cand; break; } }
+  // A box with columns: first find the column under the point (the middle of
+  // each gap is the dividing line), then the line in that column.
+  let pick = inFrame;
+  const f = obj(frameId), n = boxCols(f);
+  if (n > 1) {
+    let c = n - 1;
+    for (let i = 0; i < n - 1; i++) {
+      if (px < (columnLimits(f, i).R + columnLimits(f, i + 1).L) / 2) { c = i; break; }
+    }
+    const inCol = inFrame.filter((ln) => ln.col === c);
+    if (inCol.length) pick = inCol;
+    else {
+      // An empty column: after the text when it comes after it, else before.
+      const earlier = inFrame.filter((ln) => ln.col < c);
+      return earlier.length ? earlier[earlier.length - 1].end : inFrame[0].start;
+    }
+  }
+  let ln = pick[pick.length - 1];
+  for (const cand of pick) { if (py < cand.top + cand.height) { ln = cand; break; } }
   return posOnLineAt(ln, px - ln.x0, story);
 }
 
@@ -3008,6 +3388,14 @@ function storyName(story) {
 }
 
 function storyLabel(story) {
+  // A table's cell: where it is in the table, and its column's heading.
+  const cell = obj(story.frames[0]), t = cellTable(cell), at = t ? cellPlace(cell) : null;
+  if (at) {
+    const head = t.header && at.r > 0 ? doc.stories[t.cells[0][at.c].story] : null;
+    const headWords = head && head.text.trim() ? ' (' + storyName(head) + ')' : '';
+    return 'Page ' + (pageOf(t.id) + 1) + ', ' + objName(t) + ', ' + (t.header && at.r === 0 ? 'header row' : 'row ' + (at.r + 1) + ' of ' + t.cells.length) +
+      ', column ' + (at.c + 1) + ' of ' + t.cols.length + headWords + ': ' + (story.text.trim() ? storyName(story) : 'empty');
+  }
   const pi = pageOf(story.frames[0]);
   const order = pageNo(pi) ? pageNo(pi).readingOrder : [];
   const n = order.indexOf(story.id) + 1;
@@ -3047,7 +3435,9 @@ function syncInputs() {
 function orderInputsInDom() {
   const wrap = $('pageWrap');
   // Page by page, each page in its reading order; master pages' text last.
-  const pageStories = doc.pages.flatMap((pg) => pg.readingOrder).filter((id) => doc.stories[id] && inputs[id]);
+  // (A table in the order stands for its cells' stories, row by row: Tab goes from cell to cell.)
+  const pageStories = doc.pages.flatMap((pg) => pg.readingOrder.flatMap((id) => (obj(id) && obj(id).type === 'table' ? tableCells(obj(id)).map((c) => c.story) : [id])))
+    .filter((id) => doc.stories[id] && inputs[id]);
   const masterStories = Object.keys(doc.stories).filter((id) => inputs[id] && isMasterIndex(pageOf(doc.stories[id].frames[0])));
   const want = pageStories.concat(masterStories);
   const have = [...wrap.querySelectorAll('.story-input')].map((ta) => ta.dataset.story);
@@ -3479,7 +3869,7 @@ function formatText(story, a, b, change) {
   const fmts = charFormats(story);
   let p = countNewlines(story.text, 0, a);
   for (let i = a; i < b; i++) {
-    fmts[i] = change(fmts[i], styleOf(story.roles[p]), i);
+    fmts[i] = change(fmts[i], roleStyle(story, p), i);
     if (story.text.charCodeAt(i) === 10) p++;
   }
   packRuns(story, fmts);
@@ -3544,7 +3934,7 @@ function selectionLook(t) {
   let p = countNewlines(text, 0, t.a), letters = 0;
   for (let i = t.a; i < t.b; i++) {
     if (text.charCodeAt(i) === 10) { p++; continue; }
-    const look = charLook(styleOf(story.roles[p]), fmts[i]);
+    const look = charLook(roleStyle(story, p), fmts[i]);
     letters++;
     if (!look.bold) out.bold = false;
     if (!look.italic) out.italic = false;
@@ -3961,7 +4351,7 @@ let linkFrom = null;                 // a text box waiting for "click the box to
 const onePx = () => 1 / (zoom * PX_PER_PT);
 
 function setupSvg() {
-  for (const name of ['paper', 'grid', 'margins', 'content', 'guides', 'textsel', 'frames', 'marks', 'caret', 'handles', 'snap', 'overlay']) {
+  for (const name of ['spread', 'paper', 'grid', 'margins', 'content', 'guides', 'textsel', 'frames', 'marks', 'caret', 'handles', 'snap', 'overlay']) {
     layers[name] = svgEl('g', { 'data-layer': name });
     svg.appendChild(layers[name]);
   }
@@ -3986,7 +4376,7 @@ function setupSvg() {
    read by screen readers, and the Accessibility checker leaves them alone.
    The page itself still starts at (0, 0): staging positions are simply
    negative, or past the page's width or height. */
-function stage() { return { x: Math.max(144, PAGE.width * 0.5), y: Math.max(144, PAGE.height * 0.25) }; }
+function stage() { return { x: isFacing() ? PAGE.width + 72 : Math.max(144, PAGE.width * 0.5), y: Math.max(144, PAGE.height * 0.25) }; }
 /** Where the page's top-left corner is on screen, and screen pixels per point. */
 function pageOrigin() {
   const r = svg.getBoundingClientRect(), k = zoom * PX_PER_PT, s = stage();
@@ -4035,6 +4425,71 @@ function renderMargins() {
   layers.margins.appendChild(svgEl('rect', {
     x: m.x, y: m.y, width: m.w, height: m.h, fill: 'none', stroke: '#93c5fd', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke'
   }));
+  const q = spreadPartner(pageIndex);
+  // In a spread, the page you are working on gets a thin outline, so it is clear which of the two it is.
+  if (q != null) layers.margins.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height, fill: 'none', stroke: '#065f46', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' }));
+  bleedLine(layers.margins, q == null ? null : partnerOffset(pageIndex) > 0 ? 'right' : 'left');
+  foldLinesEl(layers.margins);
+  renderSpread();
+}
+/**
+ * The bleed edge, a red dashed line around a page (never printed): colour
+ * and pictures that should reach the page edge go out to it. spine: the
+ * side ('left' or 'right') that meets the other page of a spread, where
+ * nothing is trimmed, so the line stays open there.
+ */
+function bleedLine(target, spine) {
+  const b = PAGE.bleed || 0;
+  if (!b) return;
+  const W = PAGE.width, H = PAGE.height;
+  const L = spine === 'left' ? 0 : -b, R = spine === 'right' ? W : W + b;
+  // Top, outer side and bottom (and the other side too when there is no spine).
+  let d = 'M' + L + ' ' + (-b) + 'H' + R;
+  d += spine === 'right' ? 'M' + R + ' ' + (H + b) : 'V' + (H + b);
+  d += 'H' + L;
+  if (spine !== 'left') d += 'V' + (-b);
+  target.appendChild(svgEl('path', { d, fill: 'none', stroke: '#ef4444', 'stroke-width': 0.75, 'stroke-dasharray': '4 3', 'vector-effect': 'non-scaling-stroke' }));
+}
+/**
+ * Facing pages: the other page of the spread, drawn beside the page you
+ * are working on (to its right or left), with its master's things and
+ * margins. It is a live picture: click it (or drag something onto it) to
+ * work on that page. It is clipped to its own page, so whatever waits in
+ * its grey staging area never lands on top of this page.
+ */
+function renderSpread() {
+  const layer = layers.spread;
+  if (!layer) return;
+  clear(layer);
+  const q = spreadPartner(pageIndex);
+  if (q == null) return;
+  const off = partnerOffset(pageIndex);
+  const g = svgEl('g', { transform: 'translate(' + off + ' 0)' });
+  const clipId = 'spreadClip';
+  const defs = svgEl('defs', {});
+  const cp = svgEl('clipPath', { id: clipId });
+  cp.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height }));
+  defs.appendChild(cp);
+  g.appendChild(defs);
+  g.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height, fill: '#ffffff', filter: 'url(#paperShadow)' }));
+  const content = svgEl('g', { 'data-layer': 'spreadContent', 'clip-path': 'url(#' + clipId + ')' });
+  g.appendChild(content);
+  renderContent(content, q);
+  // Its margins and bleed (guides: hidden in Preview, like this page's).
+  const guides = svgEl('g', { 'data-layer': 'margins' });
+  const m = marginBox(q);
+  guides.appendChild(svgEl('rect', { x: m.x, y: m.y, width: m.w, height: m.h, fill: 'none', stroke: '#93c5fd', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+  bleedLine(guides, off > 0 ? 'left' : 'right');      // its spine is on the side facing this page
+  foldLinesEl(guides);
+  g.appendChild(guides);
+  layer.appendChild(g);
+}
+/** The point p (on this page) on the partner page, or null when it isn't over the partner page. */
+function partnerPoint(p) {
+  const q = spreadPartner(pageIndex);
+  if (q == null) return null;
+  const off = partnerOffset(pageIndex), x = p.x - off;
+  return x >= 0 && x <= PAGE.width && p.y >= 0 && p.y <= PAGE.height ? { q, x, y: p.y } : null;
 }
 
 /**
@@ -4080,6 +4535,8 @@ function renderContent(target, pi) {
         for (const run of textPaths[o.id]) g.appendChild(svgEl('path', { d: run.d, fill: run.fill }));
         target.appendChild(g);
       }
+    } else if (o.type === 'table') {
+      target.appendChild(withEffects(tableElement(o, textPaths), o, prefix));
     } else if (o.type === 'picture') {
       target.appendChild(withEffects(pictureElement(o, prefix), o, prefix));
     } else {
@@ -4249,6 +4706,40 @@ function shapeElement(o) {
   return svgEl('rect', Object.assign({ x: o.x, y: o.y, width: o.w, height: o.h }, cornerAttrs(o), fill, stroke));
 }
 /** A rectangle's rounded corners: the radius, never more than half its shorter side. */
+/* ---------- Drawing a table (section 4d) ----------
+   The same pieces for the desk, the PNG and the PDF: each row's colour,
+   then the lines between the cells, then each cell's letters. */
+/** Where the column and row edges are: { xs, ys }, left to right and top to bottom. */
+function tableEdges(t) {
+  const xs = [t.x], ys = [t.y];
+  for (const w of t.cols) xs.push(xs[xs.length - 1] + w);
+  for (const row of t.cells) ys.push(ys[ys.length - 1] + (row.length ? row[0].h : 0));
+  return { xs, ys };
+}
+/** The colour behind row r: the header's, a band's, or the table's own (null: none). */
+function rowFill(t, r) {
+  if (t.header && r === 0) return t.headerFill;
+  if (t.banded && (r - (t.header ? 1 : 0)) % 2 === 1) return t.bandFill;
+  return t.fill || null;
+}
+/** Every line of the grid (the edge too), as SVG path data. */
+function tableLinesD(t) {
+  const { xs, ys } = tableEdges(t);
+  const L = r2(xs[0]), R = r2(xs[xs.length - 1]), T = r2(ys[0]), B = r2(ys[ys.length - 1]);
+  return ys.map((y) => 'M' + L + ' ' + r2(y) + 'H' + R).join('') + xs.map((x) => 'M' + r2(x) + ' ' + T + 'V' + B).join('');
+}
+/** A table on the desk (or a thumbnail): rows, lines, then the letters of every cell. */
+function tableElement(t, textPaths) {
+  const g = svgEl('g', {});
+  const { xs, ys } = tableEdges(t);
+  t.cells.forEach((row, r) => {
+    const fill = rowFill(t, r);
+    if (fill) g.appendChild(svgEl('rect', { x: xs[0], y: ys[r], width: xs[xs.length - 1] - xs[0], height: ys[r + 1] - ys[r], fill }));
+  });
+  if (t.stroke && t.strokeWidth > 0) g.appendChild(svgEl('path', { d: tableLinesD(t), fill: 'none', stroke: t.stroke, 'stroke-width': t.strokeWidth, 'stroke-linecap': 'square' }));
+  for (const cell of tableCells(t)) for (const run of textPaths[cell.id] || []) g.appendChild(svgEl('path', { d: run.d, fill: run.fill }));
+  return g;
+}
 const cornerRadius = (o) => Math.max(0, Math.min(o.radius || 0, o.w / 2, o.h / 2));
 function cornerAttrs(o) { const r = cornerRadius(o); return r ? { rx: r, ry: r } : {}; }
 
@@ -4301,6 +4792,21 @@ function renderFrames() {
       stroke: active || target ? '#065f46' : '#94a3b8', 'stroke-width': active || target ? 1.25 : 0.75,
       'stroke-dasharray': active ? 'none' : '3 3', 'vector-effect': 'non-scaling-stroke'
     }), o));
+    // Columns: a dashed line down each side of every gap between them.
+    const n = boxCols(o);
+    if (n > 1) {
+      let d = '';
+      for (let i = 0; i < n - 1; i++) {
+        const a = columnLimits(o, i).R, b = columnLimits(o, i + 1).L;
+        for (const x of (b - a > 0.5 ? [a, b] : [a])) d += 'M' + x + ' ' + (o.y + o.inset) + 'V' + (o.y + o.h - o.inset);
+      }
+      layers.frames.appendChild(withRot(svgEl('path', { d, fill: 'none', stroke: active ? '#065f46' : '#94a3b8', 'stroke-width': 0.75, 'stroke-dasharray': '2 3', 'vector-effect': 'non-scaling-stroke' }), o));
+    }
+  }
+  // A table without lines: its grid, dashed and faint (never printed), so the cells can be found.
+  for (const o of pageObjs()) {
+    if (o.type !== 'table' || o.hidden || (o.stroke && o.strokeWidth > 0)) continue;
+    layers.frames.appendChild(svgEl('path', { d: tableLinesD(o), fill: 'none', stroke: '#94a3b8', 'stroke-width': 0.75, 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke' }));
   }
   // Empty picture frames: a pale box with a cross, until a picture goes in.
   for (const o of pageObjs()) {
@@ -4313,7 +4819,11 @@ function renderFrames() {
     g.appendChild(svgEl('path', { d: 'M' + (cx - dx) + ' ' + (cy - dy) + 'L' + (cx + dx) + ' ' + (cy + dy) + 'M' + (cx + dx) + ' ' + (cy - dy) + 'L' + (cx - dx) + ' ' + (cy + dy), stroke: '#cbd5e1', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
     layers.frames.appendChild(g);
   }
-  if (focusStory && doc.stories[focusStory]) {
+  if (focusStory && doc.stories[focusStory] && isCellStory(focusStory)) {
+    // Typing in a table: the cell gets a green outline (cells have no ports: they never link).
+    const cell = obj(doc.stories[focusStory].frames[0]);
+    if (pageOf(cell.id) === pageIndex) layers.frames.appendChild(svgEl('rect', { x: cell.x, y: cell.y, width: cell.w, height: cell.h, fill: 'none', stroke: '#10b981', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke' }));
+  } else if (focusStory && doc.stories[focusStory]) {
     const chain = doc.stories[focusStory].frames;
     for (let i = 0; i < chain.length; i++) {
       const a = obj(chain[i]);
@@ -4426,7 +4936,7 @@ function handlePoints() {
     { name: 'sw', x: xs.w, y: ys.s }, { name: 'w', x: xs.w, y: ys.m }
   ];
   if (one) {
-    pts.push({ name: 'rot', x: xs.c, y: ys.n - ROT_HANDLE_PX * onePx() });
+    if (one.type !== 'table') pts.push({ name: 'rot', x: xs.c, y: ys.n - ROT_HANDLE_PX * onePx() });   // tables don't turn
     const c = centreOf(one);
     return pts.map((p) => Object.assign(p, rotatePoint(p, one.rotation, c)));
   }
@@ -4448,6 +4958,13 @@ function renderHandles() {
   if (list.length > 1) {
     const b = unionBounds(list);
     layers.handles.appendChild(svgEl('rect', { x: b.x, y: b.y, width: b.w, height: b.h, fill: 'none', stroke: '#065f46', 'stroke-width': 1, 'stroke-dasharray': '4 3', 'vector-effect': 'non-scaling-stroke' }));
+  }
+  // One table picked: a green tab above each line between two columns. Drag it (or the line) to share their width differently.
+  const tbl = list.length === 1 && list[0].type === 'table' && !list[0].locked ? list[0] : null;
+  if (tbl) {
+    for (const x of tableEdges(tbl).xs.slice(1, -1)) {
+      layers.handles.appendChild(svgEl('rect', { x: x - 3 * px, y: tbl.y - 16 * px, width: 6 * px, height: 12 * px, rx: 3 * px, fill: '#065f46', stroke: '#ffffff', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+    }
   }
   const s = HANDLE_PX * px;
   const pts = handlePoints();
@@ -4493,6 +5010,7 @@ function snapName(axis, at) {
   const m = marginBox(), near = (a, b) => Math.abs(a - b) < 0.01;
   const page = axis === 'x' ? PAGE.width : PAGE.height;
   const lo = axis === 'x' ? m.x : m.y, size = axis === 'x' ? m.w : m.h;
+  if (foldLines()[axis === 'x' ? 'v' : 'h'].some((f) => near(at, f))) return 'Fold';
   if (near(at, page / 2)) return 'Middle of the page';
   if (near(at, lo + size / 2)) return 'Middle of the margins';
   if (near(at, lo) || near(at, lo + size)) return 'Margin';
@@ -4645,6 +5163,8 @@ function createObject(type, r) {
   if (type === 'text') {
     o = { id, type: 'text', story: null, x: r.x, y: r.y, w: r.w, h: r.h, inset: 3 };
     o.story = makeStory(id, '').id;
+  } else if (type === 'table') {
+    o = makeTable(id, r, 3, 3);                      // three rows (the first a header row) and three columns
   } else if (type === 'line') {
     o = { id, type: 'line', name: 'Line ' + (countOf('line') + 1), x1: r.x1, y1: r.y1, x2: r.x2, y2: r.y2,
           stroke: '#1b1f24', strokeWidth: 1, decorative: true, alt: '' };
@@ -4660,6 +5180,11 @@ function createObject(type, r) {
     relayoutAndRender();
     startEditing(o.story, 0);
     announce('New text box. Type to fill it.');
+  } else if (type === 'table') {
+    selectedIds = [];
+    relayoutAndRender();
+    startEditing(o.cells[0][0].story, 0);
+    announce('New table: 3 rows and 3 columns, the first row a header row. Type in the first cell; Tab goes to the next cell. Rows and columns are in the Inspector\'s Table section.');
   } else {
     selectObjects([id]);
     setTool('select');
@@ -4673,6 +5198,7 @@ function createObject(type, r) {
 function isLinkTarget(fromId, toId) {
   const from = obj(fromId), to = obj(toId);
   if (!from || !to || to.type !== 'text' || to.id === from.id || to.story === from.story) return false;
+  if (from.cellOf || to.cellOf) return false;        // a table's cells never link
   if (isMasterIndex(pageOf(fromId)) !== isMasterIndex(pageOf(toId))) return false;   // a master's text stays on masters
   const s = doc.stories[to.story];
   return s.frames.length === 1 && s.text === '';
@@ -4732,6 +5258,7 @@ function cancelLinkPick() {
 /** Remove objects from wherever they are (no undo step: callers record one). */
 function removeObjects(list) {
   for (const o of list) {
+    if (o.type === 'table') for (const c of tableCells(o)) delete doc.stories[c.story];   // a table takes its cells' words with it
     if (o.type === 'text') {
       const s = doc.stories[o.story];
       if (!s) continue;
@@ -4785,7 +5312,20 @@ function copyObject(o, dx, dy, groupMap) {
     ns.roles = ft.roles;
     if (ft.runs.length) ns.runs = ft.runs;
     c.story = ns.id;
-  } else if (c.name && /^(Rectangle|Ellipse|Line) \d+$/.test(c.name)) {
+  } else if (c.type === 'table') {
+    // Every cell: a new id, and a copy of its words (with their roles and formatting).
+    for (const cell of tableCells(c)) {
+      const src = doc.stories[cell.story];
+      cell.id = newId('o');
+      objIndex.set(cell.id, cell);
+      cell.cellOf = c.id;
+      const ns = makeStory(cell.id, src ? src.text : '');
+      if (src) { ns.roles = src.roles.slice(); if (src.runs) ns.runs = JSON.parse(JSON.stringify(src.runs)); }
+      cell.story = ns.id;
+    }
+    if (/^Table \d+$/.test(c.name || '')) c.name = TYPE_NAMES.table + ' ' + (countOf('table') + 1);
+  }
+  if (c.type !== 'text' && c.type !== 'table' && c.name && /^(Rectangle|Ellipse|Line) \d+$/.test(c.name)) {
     c.name = TYPE_NAMES[c.type] + ' ' + (countOf(c.type) + 1);
   }
   return c;
@@ -4817,6 +5357,11 @@ function copySelection() {
   const items = list.map((o) => {
     const c = JSON.parse(JSON.stringify(o));
     if (o.type === 'text') { const ft = frameText(o); c.copiedText = ft.text; c.copiedRoles = ft.roles; c.copiedRuns = ft.runs; }
+    if (o.type === 'table') {
+      // Each cell's words go with it; other apps get the words with tabs between cells (a spreadsheet takes them as a grid).
+      c.cellText = tableCells(o).map((cell) => { const st = doc.stories[cell.story]; return { text: st.text, roles: st.roles.slice(), runs: st.runs ? JSON.parse(JSON.stringify(st.runs)) : [] }; });
+      c.copiedText = o.cells.map((row) => row.map((cell) => doc.stories[cell.story].text.replace(/\s+/g, ' ').trim()).join('\t')).join('\n');
+    }
     return c;
   });
   const groups = {}, pics = {};
@@ -4834,26 +5379,44 @@ function copySelection() {
 function pasteClip() {
   if (!clip || !clip.items.length) return;
   recordUndo('other');
+  // Pasted onto the page it came from: a little down and to the right, each time further.
+  const off = clip.pageId === curPage().id ? 18 * ++clip.pastes : 0;
+  const made = placeItems(clip, off, ' copy');
+  reindex();
+  syncInputs();
+  setTool('select');
+  layoutAll();                                       // lay out new stories first: picking a text box shows its story's fit
+  selectObjects(made.map((o) => o.id));
+  relayoutAndRender();
+  updateInspector();
+  announce('Pasted ' + (made.length === 1 ? objName(made[0]) : made.length + ' objects'));
+}
+/**
+ * Put copies of src.items on the page showing, moved by `off` both ways:
+ * new ids, new stories with the copied words, new groups (named with
+ * `suffix` added), pictures brought back if they are gone. Used by Paste
+ * and by building blocks (section 17). Returns the new objects. (No undo
+ * step and no redraw: callers do those.)
+ */
+function placeItems(src, off, suffix) {
   // Pictures that are no longer in this document come back from the copy.
   const imageMap = {};
-  for (const [id, im] of Object.entries(clip.images)) {
+  for (const [id, im] of Object.entries(src.images || {})) {
     if (imageFiles[id] && imageFiles[id].blob === im.blob) { imageMap[id] = id; continue; }
     const nid = images[id] ? newId('i') : id;
     images[nid] = Object.assign({}, im.meta, { id: nid });
     imageFiles[nid] = { blob: im.blob, url: URL.createObjectURL(im.blob) };
     imageMap[id] = nid;
   }
-  // Pasted onto the page it came from: a little down and to the right, each time further.
-  const off = clip.pageId === curPage().id ? 18 * ++clip.pastes : 0;
   const groupMap = {}, made = [];
-  for (const c of clip.items) {
+  for (const c of src.items) {
     const o = JSON.parse(JSON.stringify(c));
     delete o.copiedText; delete o.copiedRoles; delete o.copiedRuns;
     o.id = newId('o');
     objIndex.set(o.id, o);
     moveObj(o, off, off);
     if (o.group) {
-      if (!groupMap[o.group]) { const g = newId('g'); doc.groups[g] = { id: g, name: (clip.groups[o.group] || 'Group') + ' copy' }; groupMap[o.group] = g; }
+      if (!groupMap[o.group]) { const g = newId('g'); doc.groups[g] = { id: g, name: (src.groups[o.group] || 'Group') + suffix }; groupMap[o.group] = g; }
       o.group = groupMap[o.group];
     }
     if (o.type === 'text') {
@@ -4863,18 +5426,28 @@ function pasteClip() {
       if (c.copiedRuns && c.copiedRuns.length) s.runs = JSON.parse(JSON.stringify(c.copiedRuns));
       o.story = s.id;
     }
+    if (o.type === 'table') {
+      // New cells with new ids, each with a copy of the words it had.
+      const texts = c.cellText || [];
+      tableCells(o).forEach((cell, k) => {
+        const src = texts[k] || { text: '', roles: ['body'], runs: [] };
+        cell.id = newId('o');
+        objIndex.set(cell.id, cell);
+        cell.cellOf = o.id;
+        const s = makeStory(cell.id, src.text);
+        s.roles = src.roles.slice();
+        while (s.roles.length < s.text.split('\n').length) s.roles.push('body');
+        if (src.runs && src.runs.length) s.runs = JSON.parse(JSON.stringify(src.runs));
+        cell.story = s.id;
+      });
+      delete o.cellText;
+      if (/^Table \d+$/.test(o.name || '')) o.name = TYPE_NAMES.table + ' ' + (countOf('table') + 1);
+    }
     if (o.type === 'picture' && o.image) o.image = imageMap[o.image] || null;
     pageObjs().push(o);
     made.push(o);
   }
-  reindex();
-  syncInputs();
-  setTool('select');
-  layoutAll();                                       // lay out new stories first: picking a text box shows its story's fit
-  selectObjects(made.map((o) => o.id));
-  relayoutAndRender();
-  updateInspector();
-  announce('Pasted ' + (made.length === 1 ? objName(made[0]) : made.length + ' objects'));
+  return made;
 }
 /** Text copied from somewhere else becomes a new text box in the middle of the page. */
 function pasteTextAsBox(raw) {
@@ -5021,9 +5594,66 @@ function nudgeSelected(dx, dy) {
 
 /** Turn the picked object(s) to an angle in degrees (lines can't be turned; drag their ends). */
 function setRotation(o, deg) {
+  if (o.type === 'table') return;                    // tables don't turn (section 4d)
   let a = ((deg % 360) + 540) % 360 - 180;           // keep it between -180 and 180
   if (Math.abs(a) < 0.01) a = 0;
   o.rotation = a;
+}
+
+/* ---------- Tables: rows and columns (section 4d) ----------
+   Each change is one undo step. A new column takes an even share of the
+   width (the others make room: the table keeps its width); a deleted one
+   gives its width back to the others. Rows and columns that go take their
+   words with them (undo brings them back). */
+function tableAddRow(t, at) {
+  if (t.cells.length >= TABLE_MAX_ROWS) { announce('A table can have up to ' + TABLE_MAX_ROWS + ' rows.'); return; }
+  recordUndo('other');
+  t.cells.splice(at, 0, t.cols.map(() => makeCell(t)));
+  t.rows.splice(at, 0, 0);
+  afterTableChange(t, 'Row added: ' + t.cells.length + ' rows');
+}
+function tableDeleteRow(t, r) {
+  if (t.cells.length < 2) return;
+  recordUndo('other');
+  for (const c of t.cells[r]) delete doc.stories[c.story];
+  t.cells.splice(r, 1);
+  t.rows.splice(r, 1);
+  afterTableChange(t, 'Row deleted: ' + t.cells.length + (t.cells.length === 1 ? ' row' : ' rows'));
+}
+function tableAddCol(t, at) {
+  if (t.cols.length >= TABLE_MAX_COLS) { announce('A table can have up to ' + TABLE_MAX_COLS + ' columns.'); return; }
+  recordUndo('other');
+  t.cols.splice(at, 0, t.w / t.cols.length);         // (then every column shrinks in step to the table's width)
+  for (const row of t.cells) row.splice(at, 0, makeCell(t));
+  afterTableChange(t, 'Column added: ' + t.cols.length + ' columns');
+}
+function tableDeleteCol(t, c) {
+  if (t.cols.length < 2) return;
+  recordUndo('other');
+  t.cols.splice(c, 1);
+  for (const row of t.cells) { delete doc.stories[row[c].story]; row.splice(c, 1); }
+  afterTableChange(t, 'Column deleted: ' + t.cols.length + (t.cols.length === 1 ? ' column' : ' columns'));
+}
+/** Rows and columns from the two number fields: added or taken away at the end, as one undo step. */
+function setTableSize(t, rows, cols) {
+  rows = Math.max(1, Math.min(TABLE_MAX_ROWS, rows)); cols = Math.max(1, Math.min(TABLE_MAX_COLS, cols));
+  if (rows === t.cells.length && cols === t.cols.length) return;
+  recordUndo('other');
+  while (t.cols.length < cols) { t.cols.push(t.w / t.cols.length); for (const row of t.cells) row.push(makeCell(t)); }
+  while (t.cols.length > cols) { t.cols.pop(); for (const row of t.cells) delete doc.stories[row.pop().story]; }
+  while (t.cells.length < rows) { t.cells.push(t.cols.map(() => makeCell(t))); t.rows.push(0); }
+  while (t.cells.length > rows) { for (const c of t.cells.pop()) delete doc.stories[c.story]; t.rows.pop(); }
+  afterTableChange(t, rows + (rows === 1 ? ' row, ' : ' rows, ') + cols + (cols === 1 ? ' column' : ' columns'));
+}
+/** After rows or columns change: new cells get their typing areas; a cell being typed in that went picks the table. */
+function afterTableChange(t, message) {
+  const typed = activeStoryId;
+  reindex();
+  syncInputs();
+  if (typed && !doc.stories[typed]) { setTool('select'); selectObjects([t.id]); }
+  relayoutAndRender();
+  updateInspector();
+  if (message) announce(message);
 }
 
 /* ---------- Groups, hiding, locking, names ---------- */
@@ -5114,7 +5744,8 @@ function startEditing(storyId, pos) {
 
 /** Escape while typing: stop typing and pick the box the cursor was in. */
 function stopEditingToFrame(storyId) {
-  const fid = activeFrameId() || doc.stories[storyId].frames[0];
+  let fid = activeFrameId() || doc.stories[storyId].frames[0];
+  if (cellTable(obj(fid))) fid = obj(fid).cellOf;    // a table's cell: pick the whole table
   inputs[storyId].blur();
   activeStoryId = null;
   setTool('select');
@@ -6281,7 +6912,8 @@ function wireShapes() {
 /** Everything on page `pi` that should be read, in no particular order. */
 function orderItems(pi) {
   // (Things out in the staging area are not read: a story counts when one of its boxes is on a page.)
-  const stories = Object.keys(doc.stories).filter((id) => pageOf(doc.stories[id].frames[0]) === pi && doc.stories[id].frames.some((f) => obj(f) && onPageArea(obj(f))));
+  // (A table is read as one item, its cells row by row: cells' stories aren't items of their own.)
+  const stories = Object.keys(doc.stories).filter((id) => !isCellStory(id) && pageOf(doc.stories[id].frames[0]) === pi && doc.stories[id].frames.some((f) => obj(f) && onPageArea(obj(f))));
   return stories.concat(pageNo(pi).objects.filter((o) => o.type !== 'text' && !o.decorative && !o.hidden && !(o.type === 'picture' && !o.image) && onPageArea(o)).map((o) => o.id));
 }
 /** The page an item (story or shape) is read on. */
@@ -6296,6 +6928,7 @@ function itemName(id) {
     return storyName(s) + (s.frames.length > 1 ? ' (' + s.frames.length + ' boxes)' : '');
   }
   const o = obj(id);
+  if (o.type === 'table') return o.name + ' (' + o.cells.length + ' rows, ' + o.cols.length + ' columns)';
   return o.alt ? o.alt : o.name + ' (needs alt text)';
 }
 
@@ -6359,7 +6992,7 @@ function renderOrderList(force) {
     badge.className = 'badge'; badge.textContent = String(i + 1); badge.setAttribute('aria-hidden', 'true');
     const sr = document.createElement('span');
     sr.className = 'sr-only';
-    sr.textContent = (i + 1) + ' of ' + order.length + ', ' + (doc.stories[id] ? 'story' : 'shape') + ': ';
+    sr.textContent = (i + 1) + ' of ' + order.length + ', ' + (doc.stories[id] ? 'story' : obj(id) && obj(id).type === 'table' ? 'table' : 'shape') + ': ';
     const text = document.createElement('span');
     text.textContent = itemName(id);
     li.append(badge, sr, text);
@@ -6586,10 +7219,11 @@ function lockedHint(p) {
   toast(msg, 4500);
 }
 /** The topmost TEXT box under a point (locked boxes still take typing). */
-function textFrameAt(p) {
-  const objs = pageObjs();
+function textFrameAt(p, pi = pageIndex) {
+  const objs = pageNo(pi).objects;
   for (let i = objs.length - 1; i >= 0; i--) {
     const o = objs[i];
+    if (o.type === 'table' && !o.hidden) { const cell = tableCellAt(o, p); if (cell) return cell; continue; }   // a table's cell
     if (o.type !== 'text' || o.hidden) continue;
     const q = toLocal(o, p);
     if (q.x >= o.x && q.x <= o.x + o.w && q.y >= o.y && q.y <= o.y + o.h) return o;
@@ -6608,6 +7242,35 @@ function nearestFrameOf(story, p) {
     if (d < bestD) { bestD = d; best = f; }
   }
   return best;
+}
+/**
+ * The line between two columns of the one picked table, if the point is on
+ * it (or on its green tab above the table): { t, i } where the line is
+ * after column i. A finger gets more room than a mouse.
+ */
+function tableColAt(p) {
+  if (selectedIds.length !== 1 || activeStoryId) return null;
+  const t = obj(selectedIds[0]);
+  if (!t || t.type !== 'table' || t.locked || t.hidden) return null;
+  const px = onePx(), reach = (window.matchMedia('(pointer: coarse)').matches ? 10 : 4) * px;
+  const xs = tableEdges(t).xs;
+  for (let i = 1; i < xs.length - 1; i++) {
+    if (Math.abs(p.x - xs[i]) <= reach && p.y >= t.y - 18 * px && p.y <= t.y + t.h) return { t, i: i - 1 };
+  }
+  return null;
+}
+/** Dragging the line after column i: the two columns beside it share their width differently. */
+function moveTableCol(d, p) {
+  const t = d.t, i = d.i;
+  const pair = t.cols[i] + t.cols[i + 1];
+  if (pair < 2 * TABLE_MIN_COL) return;
+  const left = t.x + t.cols.slice(0, i).reduce((a, b) => a + b, 0);
+  const w = Math.max(TABLE_MIN_COL, Math.min(pair - TABLE_MIN_COL, p.x - left));
+  if (Math.abs(w - t.cols[i]) < 0.01) return;
+  t.cols[i] = w; t.cols[i + 1] = pair - w;
+  d.changed = true;
+  relayoutAndRender();
+  updateInspector();
 }
 function handleAt(p) {
   const r = (HANDLE_PX / 2 + 3) * onePx();
@@ -6666,6 +7329,8 @@ function snapTargets(skip) {
   const xs = [0, PAGE.width / 2, PAGE.width, m.x, m.x + m.w, m.x + m.w / 2];
   const ys = [0, PAGE.height / 2, PAGE.height, m.y, m.y + m.h, m.y + m.h / 2];
   if (view.guides) { xs.push(...doc.guides.v); ys.push(...doc.guides.h); }
+  const folds = foldLines();                         // folds pull like guides (section 4c)
+  xs.push(...folds.v); ys.push(...folds.h);
   for (const o of pageObjs()) {
     if (skip.has(o.id) || o.hidden) continue;
     const b = bounds(o);
@@ -6747,12 +7412,23 @@ function wirePointer() {
     const active = document.activeElement;
     if (active && active.closest && active.closest('.inspector, .filmstrip')) desk.focus({ preventScroll: true });
 
-    // Waiting for "click the box to flow into"?
+    // Waiting for "click the box to flow into"? (It can be on the other page of the spread.)
     if (linkFrom) {
-      const f = textFrameAt(p);
+      const pp = partnerPoint(p);
+      const f = textFrameAt(p) || (pp ? textFrameAt(pp, pp.q) : null);
       const from = linkFrom;
       cancelLinkPick();
       if (f) linkFrames(from, f.id); else announce('Linking cancelled.');
+      return;
+    }
+
+    // Facing pages: a click on the other page of the spread (where nothing of
+    // this page is) makes it the page you work on, and picks what is there.
+    const across = partnerPoint(p);
+    if (across && !objectAt(p) && !handleAt(p) && !outPortAt(p) && !inPortAt(p)) {
+      goToPage(across.q);
+      const there = tool === 'select' ? objectAt({ x: across.x, y: across.y }) : null;
+      if (there) { selectObjects(groupMembers(there).filter((x) => !x.hidden).map((x) => x.id)); announceSelection(); }
       return;
     }
 
@@ -6796,7 +7472,14 @@ function wirePointer() {
       // A handle of the picked objects starts resizing.
       const h = handleAt(p);
       if (h) { drag = startTransform(h.name === 'rot' ? 'rotate' : 'resize', p, h.name); if (drag) svg.setPointerCapture(e.pointerId); return; }
+      // A line between two columns of the picked table: drag it.
+      const tc = tableColAt(p);
+      if (tc) { drag = { kind: 'tableCol', t: tc.t, i: tc.i, snap: snapshot(), changed: false }; svg.setPointerCapture(e.pointerId); return; }
       const o = objectAt(p);
+      if (o && o.type === 'table' && clicks >= 2) {       // double-click a table: type in the cell clicked
+        const cell = tableCellAt(o, p);
+        if (cell) { drag = textClick(cell, p, 1, false); svg.setPointerCapture(e.pointerId); return; }
+      }
       if (o && o.type === 'picture' && clicks >= 2) {     // double-click a picture: crop it (or fill an empty frame)
         startCrop(o); return;
       }
@@ -6874,6 +7557,7 @@ function wirePointer() {
     drag.lastClient = { x: e.clientX, y: e.clientY };
     const p = toPage(e);
     if (drag.kind === 'guide') { moveGuide(drag, p, e); return; }
+    if (drag.kind === 'tableCol') { moveTableCol(drag, p); return; }
     if (drag.kind === 'cropMove' || drag.kind === 'cropScale') { moveCrop(drag, p, e); return; }
     if (drag.kind === 'text') {
       const story = doc.stories[drag.id];
@@ -6913,6 +7597,14 @@ function wirePointer() {
     if (d.kind === 'pan') { desk.classList.remove('panning'); return; }
     renderSnap([], null);
     if (d.kind === 'guide') { finishGuideDrag(d); return; }
+    if (d.kind === 'tableCol') {
+      if (d.changed) {
+        pushUndo(d.snap); lastUndoKind = '';
+        announce('Column ' + (d.i + 1) + ' is ' + fmtU(d.t.cols[d.i]) + ' wide, column ' + (d.i + 2) + ' ' + fmtU(d.t.cols[d.i + 1]));
+      }
+      updateInspector();
+      return;
+    }
     if (d.kind === 'cropMove' || d.kind === 'cropScale') { if (d.changed) { pushUndo(d.snap); lastUndoKind = ''; } updateInspector(); return; }
     if (d.kind === 'marquee') {
       updateInspector();
@@ -6921,6 +7613,7 @@ function wirePointer() {
     }
     if (d.kind === 'create') { finishCreate(d); return; }
     if (d.kind === 'move' || d.kind === 'resize' || d.kind === 'rotate') {
+      if (d.changed && d.kind === 'move') carryAcrossSpread();
       if (d.changed) { pushUndo(d.snap); lastUndoKind = ''; }
       if (d.copied) { relayoutAndRender(); announce('Copied ' + (selectedIds.length === 1 ? objName(obj(selectedIds[0])) : selectedIds.length + ' objects')); }
       if (!d.changed && d.narrowTo) { selectObjects([d.narrowTo]); announceSelection(); }
@@ -6956,7 +7649,13 @@ function quickBarState() {
   const list = selectedIds.map(obj).filter((o) => o && (o.type !== 'text' || doc.stories[o.story]));
   const coarse = window.matchMedia('(pointer: coarse)').matches;
   const canPaste = !!(clip && clip.items.length);
-  if (printPreview || linkFrom || activeStoryId || (drag && drag.kind !== 'pan' && drag.kind !== 'guide')) return null;
+  if (printPreview || linkFrom || (drag && drag.kind !== 'pan' && drag.kind !== 'guide')) return null;
+  // Typing in a table's cell (section 4d): the pill sits over the table and offers
+  // that cell's row and column. Typing anywhere else: no pill.
+  if (activeStoryId) {
+    const box = doc.stories[activeStoryId] ? obj(doc.stories[activeStoryId].frames[0]) : null, t = cellTable(box);
+    return t ? { list: [t], cell: cellPlace(box), only: 'cell' } : null;
+  }
   if (!list.length) return coarse && canPaste && tool === 'select' ? { list, only: 'paste' } : null;
   return { list, canPaste };
 }
@@ -6979,6 +7678,15 @@ function updateQuickBar() {
     unlink: !st.only && !!story && flowsOn && !locked,
     crop: !st.only && !!one && one.type === 'picture' && !locked,
     unlock: !st.only && locked,
+    // Typing in a cell: rows and columns beside it (never the last row or column away, never past the limits).
+    rowAbove: st.only === 'cell' && !locked && st.list[0].cells.length < TABLE_MAX_ROWS,
+    rowBelow: st.only === 'cell' && !locked && st.list[0].cells.length < TABLE_MAX_ROWS,
+    rowDel: st.only === 'cell' && !locked && st.list[0].cells.length > 1,
+    colLeft: st.only === 'cell' && !locked && st.list[0].cols.length < TABLE_MAX_COLS,
+    colRight: st.only === 'cell' && !locked && st.list[0].cols.length < TABLE_MAX_COLS,
+    colDel: st.only === 'cell' && !locked && st.list[0].cols.length > 1,
+    addRow: !st.only && !!one && one.type === 'table' && !locked,
+    addCol: !st.only && !!one && one.type === 'table' && !locked,
     // Group: two or more picked that are not already exactly one group. Ungroup: anything picked is in a group.
     group: !st.only && st.list.length >= 2 && !st.list.every((o) => o.group && o.group === st.list[0].group),
     ungroup: !st.only && st.list.some((o) => o.group),
@@ -6989,7 +7697,7 @@ function updateQuickBar() {
     delete: !st.only && !locked
   };
   for (const b of bar.querySelectorAll('button')) b.hidden = !show[b.dataset.act];
-  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.unlock || show.group || show.ungroup) || st.only;
+  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.unlock || show.group || show.ungroup || show.addRow) || st.only;
   const crop = bar.querySelector('[data-act=crop]');
   crop.setAttribute('aria-pressed', String(!!one && cropId === one.id));
   crop.setAttribute('aria-label', one && cropId === one.id ? 'Done cropping' : 'Crop');
@@ -6999,7 +7707,8 @@ function updateQuickBar() {
   bar.querySelector('[data-act=paste]').title = 'Paste (' + mod + '+V)';
   bar.querySelector('[data-act=group]').title = 'Group: they move and size together (' + mod + '+G)';
   bar.querySelector('[data-act=ungroup]').title = 'Ungroup (' + mod + '+Shift+G)';
-  bar.setAttribute('aria-label', 'Quick actions' + (one ? ' for ' + objName(one) : st.list.length ? ' for ' + st.list.length + ' objects' : ''));
+  bar.setAttribute('aria-label', 'Quick actions' + (st.cell ? ' for ' + objName(one) + ', row ' + (st.cell.r + 1) + ', column ' + (st.cell.c + 1)
+    : one ? ' for ' + objName(one) : st.list.length ? ' for ' + st.list.length + ' objects' : ''));
   bar.hidden = false;
   // One Tab stop: the button that last had focus, else the first one showing.
   const shown = [...bar.querySelectorAll('button')].filter((b) => !b.hidden);
@@ -7121,6 +7830,9 @@ function focusQuickBar() {
 }
 function wireQuickBar() {
   const bar = $('quickBar');
+  // The row and column buttons keep the cursor in its cell: a mouse press (or tap) on them doesn't take focus.
+  const CELL_ACTS = ['rowAbove', 'rowBelow', 'rowDel', 'colLeft', 'colRight', 'colDel'];
+  bar.addEventListener('mousedown', (e) => { const b = e.target.closest('button'); if (b && CELL_ACTS.includes(b.dataset.act)) e.preventDefault(); });
   bar.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || b.hidden) return;
@@ -7130,6 +7842,24 @@ function wireQuickBar() {
       case 'unlink': if (one) unlinkAfter(one.id); break;
       case 'crop': if (one) { if (cropId === one.id) endCrop(); else startCrop(one); } break;
       case 'unlock': toggleFlag(list, 'locked'); break;
+      case 'addRow': if (one && one.type === 'table') tableAddRow(one, one.cells.length); break;
+      case 'rowAbove': case 'rowBelow': case 'rowDel': case 'colLeft': case 'colRight': case 'colDel': {
+        // Beside the cell being typed in. (A mouse press doesn't take focus, so the cursor stays in its cell.)
+        const st = quickBarState();
+        if (!st || !st.cell) break;
+        const t = st.list[0], at = st.cell, fromKeys = bar.contains(document.activeElement);
+        if (b.dataset.act === 'rowAbove') tableAddRow(t, at.r);
+        else if (b.dataset.act === 'rowBelow') tableAddRow(t, at.r + 1);
+        else if (b.dataset.act === 'rowDel') tableDeleteRow(t, at.r);
+        else if (b.dataset.act === 'colLeft') tableAddCol(t, at.c);
+        else if (b.dataset.act === 'colRight') tableAddCol(t, at.c + 1);
+        else tableDeleteCol(t, at.c);
+        updateQuickBar();
+        // From the keyboard: stay in the pill (its next button, if this one went away with the cell).
+        if (fromKeys && (b.hidden || bar.hidden)) { if (!focusQuickBar()) $('desk').focus({ preventScroll: true }); }
+        break;
+      }
+      case 'addCol': if (one && one.type === 'table') tableAddCol(one, one.cols.length); break;
       case 'group': groupSelected(); break;
       case 'ungroup': ungroupSelected(); break;
       case 'arrange': openMenuFrom($('arrangeMenu'), b, bar.dataset.side === 'below' ? 'below' : 'above'); break;
@@ -7156,7 +7886,12 @@ function wireQuickBar() {
   // Arrow keys along the bar; Escape back to the page.
   bar.addEventListener('keydown', (e) => {
     const shown = [...bar.querySelectorAll('button')].filter((x) => !x.hidden), i = shown.indexOf(document.activeElement);
-    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); $('desk').focus({ preventScroll: true }); return; }
+    if (e.key === 'Escape') {
+      e.preventDefault(); e.stopPropagation();
+      if (activeStoryId && inputs[activeStoryId]) inputs[activeStoryId].focus({ preventScroll: true });   // typing in a cell: back to it
+      else $('desk').focus({ preventScroll: true });
+      return;
+    }
     let j = null;
     if (e.key === 'ArrowRight') j = (i + 1) % shown.length;
     else if (e.key === 'ArrowLeft') j = (i - 1 + shown.length) % shown.length;
@@ -7180,8 +7915,30 @@ function wireQuickBar() {
   });
   wireMenu(menu, bar.querySelector('[data-act=arrange]'));
   // Keep the bar with what is picked as the page scrolls or the window changes.
-  $('desk').addEventListener('scroll', () => { if (!bar.hidden) placeQuickBar(selectedIds.map(obj).filter(Boolean)); }, { passive: true });
+  $('desk').addEventListener('scroll', () => { const st = quickBarState(); if (!bar.hidden && st) placeQuickBar(st.list); }, { passive: true });
   window.addEventListener('resize', updateQuickBar);
+}
+
+/**
+ * Facing pages: after a drag, things whose middle ended up on the other page
+ * of the spread move onto that page (their place stays the same on screen),
+ * and that page becomes the one you work on.
+ */
+function carryAcrossSpread() {
+  const q = spreadPartner(pageIndex);
+  if (q == null || !selectedIds.length) return;
+  const list = selectedIds.map(obj).filter(Boolean);
+  const b = unionBounds(list), off = partnerOffset(pageIndex);
+  const cx = b.x + b.w / 2 - off, cy = b.y + b.h / 2;
+  if (cx < 0 || cx > PAGE.width || cy < 0 || cy > PAGE.height) return;
+  const from = curPage(), to = doc.pages[q], ids = new Set(list.map((o) => o.id));
+  from.objects = from.objects.filter((o) => !ids.has(o.id));
+  for (const o of list) { moveObj(o, -off, 0); to.objects.push(o); }
+  reindex();
+  const keep = list.map((o) => o.id);
+  goToPage(q);
+  selectObjects(keep);
+  announce((list.length === 1 ? objName(list[0]) : list.length + ' objects') + ' moved to page ' + (q + 1));
 }
 
 function rectFrom(a, b) {
@@ -7285,7 +8042,8 @@ function finishCreate(d) {
     return;
   }
   if (!d.moved || r.w < 9 || r.h < 9) {
-    r = d.type === 'text' ? { x: a.x, y: a.y, w: 144, h: 72 } : { x: a.x, y: a.y, w: 72, h: 72 };
+    // A click: a table as wide as the margins allow (up to 5 inches), each row just fitting its words.
+    r = d.type === 'text' ? { x: a.x, y: a.y, w: 144, h: 72 } : d.type === 'table' ? { x: a.x, y: a.y, w: Math.min(360, marginBox().w), h: 0 } : { x: a.x, y: a.y, w: 72, h: 72 };
   }
   createObject(d.type, r);
 }
@@ -7422,8 +8180,10 @@ function updateHoverCursor(p) {
   if (tool === 'select') {
     const h = handleAt(p);
     if (h) { svg.style.cursor = CURSORS[h.name]; return; }
+    if (tableColAt(p)) { svg.style.cursor = 'col-resize'; return; }
     if (outPortAt(p)) { svg.style.cursor = 'alias'; return; }
     if (inPortAt(p)) { svg.style.cursor = 'pointer'; return; }
+    if (partnerPoint(p) && !objectAt(p)) { svg.style.cursor = 'pointer'; return; }   // the other page of the spread: click to work on it
     if (objectAt(p)) { svg.style.cursor = 'move'; return; }
     const g = guideAt(p);
     svg.style.cursor = g ? (g.axis === 'v' ? 'col-resize' : 'row-resize') : '';
@@ -7484,7 +8244,9 @@ function updateInspector() {
   const picked = selectedIds.map(obj).filter(Boolean);
   const typing = !!(activeStoryId && doc.stories[activeStoryId]);
   const one = picked.length === 1 ? picked[0] : null;
-  const geomObj = typing ? obj(activeFrameId()) : one;
+  const typedBox = typing ? obj(activeFrameId()) : null;
+  const typedTable = cellTable(typedBox);            // typing in a table's cell: the table is what is placed and sized
+  const geomObj = typing ? (typedTable || typedBox) : one;
 
   show('secDoc', !typing && !picked.length && !editingMaster());
   show('secMaster', !typing && !picked.length && editingMaster());
@@ -7493,7 +8255,10 @@ function updateInspector() {
   show('secGeom', !!geomObj);
   show('secLink', !!(geomObj && geomObj.type === 'text'));
   show('secShape', !!(one && one.type !== 'text' && !typing));
-  show('secMeaning', !!(one && one.type !== 'text' && !typing));
+  show('secMeaning', !!(one && one.type !== 'text' && one.type !== 'table' && !typing));   // a table is read through its cells
+  const tableObj = typedTable || (one && one.type === 'table' && !typing ? one : null);
+  show('secTable', !!tableObj);
+  if (tableObj) fillTable(tableObj, typedTable ? typedBox : null);
   show('secPicture', !!(one && one.type === 'picture' && !typing));
   if (one && one.type === 'picture' && !typing) fillPicture(one);
   show('secArrange', picked.length > 0 && !typing);
@@ -7503,7 +8268,7 @@ function updateInspector() {
   show('secChars', typing);
   show('secPara', typing);
   const storyId = typing ? activeStoryId : (one && one.type === 'text' ? one.story : null);
-  show('secStory', !!storyId);
+  show('secStory', !!storyId && !isCellStory(storyId));   // (a cell's words always fit)
 
   if (!typing && !picked.length && !editingMaster()) {
     fillPageMaster();
@@ -7529,7 +8294,7 @@ function updateInspector() {
   renderLayers();
   show('unlockAllRow', pageObjs().some((o) => o.locked));
   if (typing) { fillChars(); fillParagraph(); }
-  if (storyId) fillStory(storyId);
+  if (storyId && !isCellStory(storyId)) fillStory(storyId);
   renderGuideList();
 }
 
@@ -7543,6 +8308,9 @@ function fillGeometry(o) {
     setText('geomInfo', s.frames.length > 1
       ? (n > 1 ? 'Text flows in from box ' + (n - 1) + '. ' : '') + (n < s.frames.length ? 'It continues in box ' + (n + 1) + '.' : 'Last box in the chain.')
       : 'Not linked to another box.');
+  } else if (o.type === 'table') {
+    setText('geomHeading', o.name);
+    setText('geomInfo', o.cells.length + ' rows, ' + o.cols.length + ' columns. Screen readers read its cells row by row.');
   } else {
     setText('geomHeading', o.name);
     setText('geomInfo', o.decorative ? 'Decoration: screen readers skip it.' : (o.alt ? 'Read as: “' + o.alt + '”' : 'Needs alt text.'));
@@ -7553,7 +8321,7 @@ function fillGeometry(o) {
   setText('lY', (isLine ? 'Start Y' : 'Y') + u);
   setText('lW', (isLine ? 'End X' : 'Width') + u);
   setText('lH', (isLine ? 'End Y' : 'Height') + u);
-  show('rotRow', !isLine);
+  show('rotRow', !isLine && o.type !== 'table');      // (tables don't turn)
   if (!isLine) setField($('fR'), Math.round((o.rotation || 0) * 10) / 10);
   const v = isLine ? [o.x1, o.y1, o.x2, o.y2] : [o.x, o.y, o.w, o.h];
   ['fX', 'fY', 'fW', 'fH'].forEach((id, i) => setField($(id), toU(v[i])));
@@ -7581,6 +8349,40 @@ function fillFlow(o) {
   $('unlinkBtn').disabled = !next;
   $('contPrev').checked = !!o.contPrev;
   $('contNext').checked = !!o.contNext;
+  setField($('boxCols'), boxCols(o));
+  setField($('boxGutter'), toU(o.gutter == null ? DEFAULT_GUTTER : o.gutter));
+  $('boxGutter').disabled = boxCols(o) < 2;          // no gap to set with one column
+}
+/**
+ * The Table section. cell: the cell being typed in (rows and columns go in
+ * next to it), or null with the table picked (they go at the end).
+ */
+function fillTable(t, cell) {
+  $('secTable').dataset.obj = t.id;
+  const at = cell ? cellPlace(cell) : null;
+  setText('tableInfo', at ? 'Typing in row ' + (at.r + 1) + ', column ' + (at.c + 1) + '. Rows and columns go in beside this cell.'
+    : 'Rows and columns go in at the end. To add or delete one in the middle, double-click a cell in it: these buttons, and the floating pill above the table, then work beside that cell.');
+  setField($('tblRows'), t.cells.length);
+  setField($('tblCols'), t.cols.length);
+  // With a cell: above or below it, left or right of it. Without: only "add", at the end.
+  $('tblRowAbove').hidden = $('tblColLeft').hidden = !at;
+  setText('tblRowBelow', at ? 'Insert below' : 'Add a row');
+  setText('tblColRight', at ? 'Insert right' : 'Add a column');
+  setText('tblRowDel', at ? 'Delete row' : 'Delete last row');
+  setText('tblColDel', at ? 'Delete column' : 'Delete last column');
+  $('tblRowDel').disabled = t.cells.length < 2;
+  $('tblColDel').disabled = t.cols.length < 2;
+  $('tblRowBelow').disabled = $('tblRowAbove').disabled = t.cells.length >= TABLE_MAX_ROWS;
+  $('tblColRight').disabled = $('tblColLeft').disabled = t.cols.length >= TABLE_MAX_COLS;
+  show('tblColWRow', !!at);
+  if (at) setField($('tblColW'), toU(t.cols[at.c]));
+  setField($('tblPad'), toU(t.pad));
+  $('tblHeader').checked = !!t.header;
+  $('tblBanded').checked = !!t.banded;
+  setField($('tblHeadFill'), t.headerFill); setField($('tblHeadFillHex'), t.headerFill);
+  setField($('tblBandFill'), t.bandFill); setField($('tblBandFillHex'), t.bandFill);
+  $('tblHeadFill').disabled = $('tblHeadFillHex').disabled = !t.header;
+  $('tblBandFill').disabled = $('tblBandFillHex').disabled = !t.banded;
 }
 function describeBox(o, what) {
   return what + (pageOf(o.id) !== pageIndex ? ' on page ' + (pageOf(o.id) + 1) : '') + ' at ' + toU(o.x) + ', ' + toU(o.y) + ' ' + unit().short + ' (' + toU(o.w) + ' × ' + toU(o.h) + ')';
@@ -7618,7 +8420,7 @@ function fillLook(o) {
   $('decoCheck').checked = !!o.decorative;
   show('altRow', !o.decorative);
   setField($('altText'), o.alt || '');
-  const needsAlt = !o.decorative && !o.alt.trim();
+  const needsAlt = o.type !== 'table' && !o.decorative && !(o.alt || '').trim();
   setText('altWarn', needsAlt ? 'Needs alt text, or mark it as decoration.' : '');
   setText('meaningNote', needsAlt ? 'needs alt text' : '');
 }
@@ -7839,7 +8641,96 @@ function wireInspector() {
     if (want) linkFrames(o.id, want);
   });
   $('linkPickBtn').addEventListener('click', () => { const id = $('secGeom').dataset.obj; if (id) startLinkPick(id); });
+  // Columns (1 to 6) and the gap between them.
+  $('boxCols').addEventListener('input', () => {
+    const o = obj($('secGeom').dataset.obj), v = parseInt($('boxCols').value, 10);
+    if (!o || o.type !== 'text' || !isFinite(v) || v < 1 || v > 6) return;
+    if (v === boxCols(o)) return;
+    recordUndo('field:' + o.id + 'cols');
+    if (v > 1) o.cols = v; else delete o.cols;
+    relayoutAndRender(); updateInspector();
+    announce(v > 1 ? v + ' columns' : 'One column');
+  });
+  $('boxGutter').addEventListener('input', () => {
+    const o = obj($('secGeom').dataset.obj), v = parseFloat($('boxGutter').value);
+    if (!o || o.type !== 'text' || !isFinite(v) || v < 0) return;
+    recordUndo('field:' + o.id + 'gutter');
+    o.gutter = Math.min(288, fromU(v));
+    relayoutAndRender(); updateInspector();
+  });
   $('unlinkBtn').addEventListener('click', () => { const id = $('secGeom').dataset.obj; if (id) unlinkAfter(id); });
+
+  // Table (section 4d): what to change, and the cell being typed in (if any).
+  const tableNow = () => {
+    const t = obj($('secTable').dataset.obj);
+    if (!t || t.type !== 'table') return null;
+    const box = activeStoryId && doc.stories[activeStoryId] ? obj(doc.stories[activeStoryId].frames[0]) : null;
+    return { t, at: box && box.cellOf === t.id ? cellPlace(box) : null };
+  };
+  // A mouse press on these buttons leaves the cursor in its cell (as Undo does).
+  for (const b of document.querySelectorAll('.tbl-btn')) b.addEventListener('mousedown', (e) => { if (activeStoryId) e.preventDefault(); });
+  const tableButton = (id, act) => $(id).addEventListener('click', () => { const n = tableNow(); if (n && !n.t.locked) act(n.t, n.at); else if (n) announce('Locked: unlock it in the layers list to change it.'); });
+  tableButton('tblRowAbove', (t, at) => tableAddRow(t, at ? at.r : 0));
+  tableButton('tblRowBelow', (t, at) => tableAddRow(t, at ? at.r + 1 : t.cells.length));
+  tableButton('tblRowDel', (t, at) => tableDeleteRow(t, at ? at.r : t.cells.length - 1));
+  tableButton('tblColLeft', (t, at) => tableAddCol(t, at ? at.c : 0));
+  tableButton('tblColRight', (t, at) => tableAddCol(t, at ? at.c + 1 : t.cols.length));
+  tableButton('tblColDel', (t, at) => tableDeleteCol(t, at ? at.c : t.cols.length - 1));
+  tableButton('tblEven', (t) => {
+    recordUndo('other');
+    t.cols = t.cols.map(() => t.w / t.cols.length);
+    relayoutAndRender(); updateInspector();
+    announce('Every column is ' + fmtU(t.cols[0]) + ' wide');
+  });
+  // Rows and Columns: on "change" (not while a number is half typed: 1 on the way to 12 would delete rows).
+  for (const id of ['tblRows', 'tblCols']) {
+    $(id).addEventListener('change', () => {
+      const n = tableNow(), v = parseInt($(id).value, 10);
+      if (!n || !isFinite(v)) { updateInspector(); return; }
+      if (n.t.locked) { announce('Locked: unlock it in the layers list to change it.'); updateInspector(); return; }
+      setTableSize(n.t, id === 'tblRows' ? v : n.t.cells.length, id === 'tblCols' ? v : n.t.cols.length);
+    });
+  }
+  // This column's width: the table grows or shrinks by the difference.
+  $('tblColW').addEventListener('input', () => {
+    const n = tableNow(), v = parseFloat($('tblColW').value);
+    if (!n || !n.at || !isFinite(v) || n.t.locked) return;
+    const w = Math.max(TABLE_MIN_COL, Math.min(PAGE.width * 2, fromU(v)));
+    recordUndo('field:' + n.t.id + 'colw');
+    n.t.w += w - n.t.cols[n.at.c];
+    n.t.cols[n.at.c] = w;
+    relayoutAndRender(); updateInspector();
+  });
+  $('tblPad').addEventListener('input', () => {
+    const n = tableNow(), v = parseFloat($('tblPad').value);
+    if (!n || !isFinite(v) || v < 0 || n.t.locked) return;
+    recordUndo('field:' + n.t.id + 'pad');
+    n.t.pad = Math.min(72, fromU(v));
+    relayoutAndRender(); updateInspector();
+  });
+  for (const [id, key, words] of [['tblHeader', 'header', 'Header row'], ['tblBanded', 'banded', 'Banded rows']]) {
+    $(id).addEventListener('change', () => {
+      const n = tableNow(); if (!n) return;
+      if (n.t.locked) { announce('Locked: unlock it in the layers list to change it.'); updateInspector(); return; }
+      recordUndo('other');
+      n.t[key] = $(id).checked;
+      relayoutAndRender(); updateInspector();
+      announce(words + ($(id).checked ? ' on' : ' off'));
+    });
+  }
+  for (const [id, key] of [['tblHeadFill', 'headerFill'], ['tblBandFill', 'bandFill']]) {
+    const setColour = (v, kind) => {
+      const n = tableNow(); if (!n || n.t.locked) return;
+      recordUndo(kind + n.t.id + key);
+      n.t[key] = v;
+      relayoutAndRender(); updateInspector();
+    };
+    $(id).addEventListener('input', () => setColour($(id).value, 'field:'));
+    $(id + 'Hex').addEventListener('change', () => {
+      const v = cleanHex($(id + 'Hex').value);
+      if (v) setColour(v, 'field:'); else { announce('Use a colour like #065f46.'); updateInspector(); }
+    });
+  }
 
   // Look: colours (picker or hex), none, outline width
   const picked = () => obj(selectedIds[0]);
@@ -7999,6 +8890,7 @@ const LAYER_ICONS = {
   line: '<path d="M5 19L19 5"/>',
   picture: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/>',
   path: '<path d="M12 3c5 0 9 3.5 8 8.5S14 21 9.5 20.5 3 16 3.5 11 7 3 12 3z"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M3 14.75h18M9 4v16M15 4v16"/>',
   group: '<rect x="3" y="3" width="11" height="11" rx="1.5"/><rect x="10" y="10" width="11" height="11" rx="1.5"/>',
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M3 3l18 18M10.6 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 4M6.6 6.6C3.9 8.4 2 12 2 12s3.5 7 10 7c1.8 0 3.4-.5 4.8-1.3"/>',
@@ -8233,11 +9125,12 @@ function renderFilmstrip() {
   const over = pagesWithOverflow();
   const masters = editingMaster();
   const shown = masters ? masterList().map((m, i) => [m, doc.pages.length + i]) : doc.pages.map((pg, i) => [pg, i]);
-  const sig = JSON.stringify([doc.pages.map((p) => [p.id, p.master]), masterList().map((m) => [m.id, m.name]), pageIndex, [...over], PAGE.width, PAGE.height]);
+  const sig = JSON.stringify([doc.pages.map((p) => [p.id, p.master]), masterList().map((m) => [m.id, m.name]), pageIndex, [...over], PAGE.width, PAGE.height, isFacing()]);
   if (sig === filmSig) return;
   filmSig = sig;
   const hadFocus = list.contains(document.activeElement);
   list.setAttribute('aria-label', masters ? 'Master pages' : 'Pages');
+  list.classList.toggle('facing', !masters && isFacing());
   clear(list);
   shown.forEach(([pg, i]) => {
     const li = document.createElement('li');
@@ -8502,6 +9395,11 @@ function openPageSetup() {
   $('psH').value = toU(PAGE.height);
   d.querySelector('input[name="psOrient"][value="' + (PAGE.width > PAGE.height ? 'landscape' : 'portrait') + '"]').checked = true;
   for (const side of ['top', 'right', 'bottom', 'left']) $('psM' + side).value = toU(PAGE.margins[side]);
+  $('psFacing').checked = isFacing();
+  $('psBleed').value = toU(PAGE.bleed || 0);
+  $('psFold').value = PAGE.fold && FOLDS[PAGE.fold] ? PAGE.fold : '';
+  setText('psFoldNote', '');
+  setupMarginLabels();
   d.querySelector('input[name="psMode"][value="keep"]').checked = true;
   d.querySelector('input[name="psAnchor"][value="0,0"]').checked = true;
   setupDims();
@@ -8509,6 +9407,12 @@ function openPageSetup() {
   d.showModal();
 }
 
+/** Facing pages call the left and right margins inside and outside. */
+function setupMarginLabels() {
+  const f = $('psFacing').checked;
+  setText('psMleftLabel', f ? 'Inside' : 'Left');
+  setText('psMrightLabel', f ? 'Outside' : 'Right');
+}
 /** Keep the size list, the width/height fields and the orientation in step. */
 function setupDims(from) {
   const sizeSel = $('psSize');
@@ -8534,6 +9438,14 @@ function wirePageSetup() {
   sel.addEventListener('change', () => setupDims('size'));
   for (const r of document.querySelectorAll('input[name="psOrient"]')) r.addEventListener('change', () => setupDims('orient'));
   $('psW').addEventListener('input', () => setupDims('dims'));
+  $('psFacing').addEventListener('change', setupMarginLabels);
+  // A brochure or card is usually folded from a wide sheet: picking one of those folds turns the page wide (it can be turned back).
+  $('psFold').addEventListener('change', () => {
+    const f = FOLDS[$('psFold').value];
+    const land = document.querySelector('input[name="psOrient"][value="landscape"]');
+    if (f && f.wide && !land.checked) { land.checked = true; setupDims('orient'); setText('psFoldNote', 'Turned to landscape, the usual way for this fold. Change it back above if you like.'); }
+    else setText('psFoldNote', f ? f.tip : '');
+  });
   $('psH').addEventListener('input', () => setupDims('dims'));
   for (const r of document.querySelectorAll('input[name="psAnchor"]')) r.addEventListener('change', () => {
     document.querySelector('input[name="psMode"][value="keep"]').checked = true;
@@ -8555,7 +9467,13 @@ function wirePageSetup() {
     if (m.left + m.right >= w || m.top + m.bottom >= h) { e.preventDefault(); $('psError').textContent = 'The margins are wider than the page.'; return; }
     const mode = document.querySelector('input[name="psMode"]:checked').value;
     const anchor = document.querySelector('input[name="psAnchor"]:checked').value.split(',').map(Number);
-    applyPageSetup({ size: sel.value, width: w, height: h, margins: m }, mode, anchor);
+    const bleed = inch('psBleed', 0, 72);
+    if (bleed == null) { e.preventDefault(); $('psError').textContent = 'Please check the bleed.'; return; }
+    const next = { size: sel.value, width: w, height: h, margins: m };
+    if ($('psFacing').checked) next.facing = true;
+    if (bleed > 0) next.bleed = bleed;
+    if (FOLDS[$('psFold').value]) next.fold = $('psFold').value;
+    applyPageSetup(next, mode, anchor);
   });
 }
 
@@ -9327,7 +10245,9 @@ function cancelPointerWork() {
 }
 function fitZoom() {
   const desk = $('desk');
-  const z = Math.min((desk.clientWidth - 64) / (PAGE.width * PX_PER_PT), (desk.clientHeight - 64) / (PAGE.height * PX_PER_PT));
+  // Facing pages: fit the whole spread (two pages side by side), on every page, so the zoom doesn't jump.
+  const across = isFacing() && !editingMaster() ? 2 * PAGE.width : PAGE.width;
+  const z = Math.min((desk.clientWidth - 64) / (across * PX_PER_PT), (desk.clientHeight - 64) / (PAGE.height * PX_PER_PT));
   setZoom(Math.max(0.25, Math.min(2, z)));
   showPage();
 }
@@ -9335,7 +10255,9 @@ function fitZoom() {
 function showPage() {
   const desk = $('desk'), d = desk.getBoundingClientRect(), o = pageOrigin();
   const w = PAGE.width * o.k, h = PAGE.height * o.k;
-  desk.scrollLeft += o.left + w / 2 - (d.left + desk.clientWidth / 2);
+  // With a partner page beside it, centre the spread (so moving between its two pages keeps it still).
+  const q = spreadPartner(pageIndex), mid = q == null ? w / 2 : w / 2 + partnerOffset(pageIndex) * o.k / 2;
+  desk.scrollLeft += o.left + mid - (d.left + desk.clientWidth / 2);
   desk.scrollTop += h + 48 < desk.clientHeight ? o.top + h / 2 - (d.top + desk.clientHeight / 2) : o.top - d.top - 24;
 }
 
@@ -9351,6 +10273,7 @@ function createInMiddle(type) {
   }
   if (type === 'line') createObject('line', { x1: cx - 54, y1: cy, x2: cx + 54, y2: cy });
   else if (type === 'text') createObject('text', { x: cx - 72, y: cy - 36, w: 144, h: 72 });
+  else if (type === 'table') { const w = Math.min(360, marginBox().w); createObject('table', { x: cx - w / 2, y: cy - 36, w, h: 0 }); }
   else createObject(type, { x: cx - 36, y: cy - 36, w: 72, h: 72 });
 }
 
@@ -9430,11 +10353,14 @@ function wireChrome() {
     ['Guides', 'Drag out of a ruler, or add them in the guides and grid panel (the arrow beside Guides in the top bar: one at a time, quick sets such as Middle, Thirds or Tri-fold, or columns); they snap to the middle of the page; drag one off the page to remove it'],
     ['Inspector headings', 'Click or Enter to open or fold a section; Up / Down between headings; ' + (isMac ? 'Option' : 'Alt') + ' + Page Up / Page Down from anywhere in the Inspector'],
     ['Layers list', 'Up / Down pick, Right / Left open or close a group, F2 rename, H hide, L lock, ' + alt + ' + Up / Down forward or backward'],
-    ['Enter', 'Type in the picked text box; with a drawing tool, add one in the middle'],
+    ['Enter', 'Type in the picked text box (or a picked table\'s first cell); with a drawing tool, add one in the middle'],
+    ['B', 'Table tool: drag on the page for a table that size, or click for one'],
+    ['K', 'Building blocks: a pull quote, sidebar, coupon, event details, page border and more'],
+    ['Tab, Shift + Tab in a table', 'The next or the cell before, row by row (after the last cell: on to the next story). Escape picks the whole table'],
     ['Escape', 'Stop typing and pick the box; or drop the selection'],
-    ['Double-click a text box', 'Type in it'],
+    ['Double-click a text box', 'Type in it (a table: in the cell clicked)'],
     ['Out-port (the round chain-link tab below a text box’s bottom-right corner)', 'Click or tap it, then an empty box: the text continues there. The Link button in the floating pill does the same'],
-    ['Alt + F10', 'Jump to the floating pill of quick actions for what is picked: link, crop, group, arrange, duplicate, copy, paste, delete (Left and Right move along it, Escape goes back)'],
+    ['Alt + F10', 'Jump to the floating pill of quick actions for what is picked: link, crop, group, arrange, duplicate, copy, paste, delete; while typing in a table, its rows and columns (Left and Right move along it, Escape goes back)'],
     ['Up / Down, Home / End', 'While typing: move by the lines on the page, across linked boxes'],
     [mod + ' + ' + alt + ' + 1 / 2 / 0 / 9', 'While typing: Heading 1, Heading 2, Body, Caption'],
     [mod + ' + B, ' + mod + ' + I, ' + mod + ' + U', 'While typing: bold, italic, underline for the highlighted words (or what you type next)'],
@@ -9462,7 +10388,7 @@ function wireChrome() {
   }
 
   // Keys when not typing in a story or a field.
-  const TOOL_KEYS = { v: 'select', t: 'text', r: 'rect', o: 'ellipse', l: 'line', f: 'picture', n: 'order' };
+  const TOOL_KEYS = { v: 'select', t: 'text', r: 'rect', o: 'ellipse', l: 'line', f: 'picture', b: 'table', n: 'order' };
   document.addEventListener('keydown', (e) => {
     const t = e.target;
     if (document.querySelector('dialog[open]')) return;   // shortcuts stand down while a dialog is open
@@ -9523,6 +10449,7 @@ function wireChrome() {
     if (TOOL_KEYS[k] && !e.shiftKey) { setTool(TOOL_KEYS[k]); return; }
     if (k === 'w' && !e.shiftKey) { setPrintPreview(true); return; }
     if (k === 'u' && !e.shiftKey) { openShapeGallery('tool', null); return; }   // U: the Shapes gallery
+    if (k === 'k' && !e.shiftKey) { openBlocks(); return; }                       // K: building blocks
     if (e.key === ']') { moveOrder('forward'); return; }
     if (e.key === '[') { moveOrder('backward'); return; }
     if (e.key === 'Escape') {
@@ -9557,7 +10484,8 @@ function wireChrome() {
       if (cropId) { endCrop(); return; }
       if (one && one.type === 'text') { startEditing(one.story, doc.stories[one.story].text.length); return; }
       if (one && one.type === 'picture') { startCrop(one); return; }
-      if (['text', 'rect', 'ellipse', 'line', 'picture', 'shape'].includes(tool)) createInMiddle(tool);
+      if (one && one.type === 'table') { const c = one.cells[0][0]; startEditing(c.story, doc.stories[c.story].text.length); return; }   // type in its first cell
+      if (['text', 'rect', 'ellipse', 'line', 'picture', 'shape', 'table'].includes(tool)) createInMiddle(tool);
     }
   });
   document.addEventListener('keyup', (e) => {
@@ -10601,7 +11529,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 7;                         // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames)
+const PROJECT_VERSION = 11;                        // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames; 8: columns in a text box; 9: facing pages, bleed; 10: tables; 11: folds)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -10644,6 +11572,570 @@ function confirmDialog(title, message, okLabel) {
 async function okToReplace(what) {
   if (!hasUnsavedWork()) return true;
   return confirmDialog(what + '?', 'This replaces the document that is open now. Anything not saved as a project or exported will be lost.', what);
+}
+
+/* ======================================================================
+   17. TEMPLATES AND BUILDING BLOCKS
+   Starting points made in code, with original words written for DSKEDTR.
+   docMaker builds a whole document (the same shape a project file holds),
+   so a template opens like any document. A building block is made the
+   same way on a scratch page, then added to the page showing the way a
+   paste is (placeItems). Templates and blocks are only ordinary text
+   boxes, shapes, lines, empty picture frames and tables: nothing special
+   to save, print or check. Their pictures in the galleries are drawn by
+   the desk's own drawing code (previewSVG).
+   ====================================================================== */
+
+/**
+ * Paragraphs -> a story's { text, roles, runs }. Each paragraph is
+ * [role, text, marks]; marks are [[words, format], ...], formatting those
+ * words in that paragraph ('*': the whole paragraph). See section 4b.
+ */
+function storyParts(paras) {
+  const runs = [];
+  let at = 0;
+  for (const [, text, marks] of paras) {
+    for (const [words, f] of marks || []) {
+      const w = words === '*' ? text : words, i = text.indexOf(w);
+      if (i >= 0 && w) runs.push(Object.assign({ s: at + i, e: at + i + w.length }, f));
+    }
+    at += text.length + 1;
+  }
+  return { text: paras.map((p) => p[1]).join('\n'), roles: paras.map((p) => p[0]), runs: runs.sort((a, b) => a.s - b.s) };
+}
+
+/**
+ * A small kit for building a document in code. Rectangles are [x, y, w, h]
+ * in points; looks are { fill, stroke, strokeWidth, name, ... }. Shapes are
+ * decoration unless a look says otherwise; picture frames start empty.
+ */
+function docMaker(page) {
+  const d = blankDocument(page);
+  d.pages = [];
+  let n = 1;
+  const nid = (prefix) => prefix + (n++);
+  const story = (frameId, paras) => {
+    const sp = storyParts(paras), id = nid('s');
+    d.stories[id] = { id, frames: [frameId], text: sp.text, roles: sp.roles };
+    if (sp.runs.length) d.stories[id].runs = sp.runs;
+    return id;
+  };
+  const box = (r) => ({ x: r[0], y: r[1], w: r[2], h: r[3] });
+  const look = (l) => Object.assign({ fill: null, stroke: null, strokeWidth: 0, decorative: true, alt: '' }, l || {});
+  return {
+    d,
+    page(master) { const pg = { id: nid('p'), objects: [], readingOrder: [], readingOrderAuto: true }; if (master) pg.master = master.id; d.pages.push(pg); return pg; },
+    master(name) { const m = { id: nid('m'), name, objects: [], readingOrder: [], readingOrderAuto: true }; d.masters.push(m); return m; },
+    /** Change how a role looks in this document (section 3). */
+    style(role, patch) { Object.assign(d.styles[role], patch); },
+    text(pg, r, paras, extra) {
+      const id = nid('o');
+      const o = Object.assign({ id, type: 'text', story: null }, box(r), { inset: 3 }, extra || {});
+      o.story = story(id, paras);
+      pg.objects.push(o);
+      return o;
+    },
+    /** Another box for the text of box `from` to flow on into. */
+    flow(pg, from, r, extra) {
+      const id = nid('o');
+      const o = Object.assign({ id, type: 'text', story: from.story }, box(r), { inset: 3 }, extra || {});
+      d.stories[from.story].frames.push(id);
+      pg.objects.push(o);
+      return o;
+    },
+    rect(pg, r, l) { const o = Object.assign({ id: nid('o'), type: 'rect', name: 'Rectangle' }, box(r), look(l)); pg.objects.push(o); return o; },
+    ellipse(pg, r, l) { const o = Object.assign({ id: nid('o'), type: 'ellipse', name: 'Ellipse' }, box(r), look(l)); pg.objects.push(o); return o; },
+    line(pg, pts, l) {
+      const o = Object.assign({ id: nid('o'), type: 'line', name: 'Line', x1: pts[0], y1: pts[1], x2: pts[2], y2: pts[3] }, look(Object.assign({ stroke: TEXT_COLOUR, strokeWidth: 1 }, l)));
+      pg.objects.push(o);
+      return o;
+    },
+    picture(pg, r, name, shape, l) {
+      const o = Object.assign({ id: nid('o'), type: 'picture', name, frameShape: shape || 'rect' }, box(r),
+        { image: null, s: 1, ox: 0, oy: 0, fit: 'fill', stroke: null, strokeWidth: 0, decorative: false, alt: '' }, l || {});
+      pg.objects.push(o);
+      return o;
+    },
+    /** A table at [x, y, w]: rows of cells, each plain words or paragraphs (as for text). */
+    table(pg, r, rows, opts) {
+      const id = nid('o'), C = rows[0].length;
+      const t = Object.assign({ id, type: 'table', name: TYPE_NAMES.table + ' 1', x: r[0], y: r[1], w: r[2], h: 1, cols: new Array(C).fill(r[2] / C), rows: rows.map(() => 0), cells: [],
+        header: true, banded: false, headerFill: '#d1fae5', bandFill: '#f1f5f9', fill: null, stroke: '#475569', strokeWidth: 0.75, pad: 4 }, opts || {});
+      t.cells = rows.map((row) => row.map((words) => {
+        const cid = nid('o');
+        return { id: cid, type: 'text', story: story(cid, typeof words === 'string' ? [['body', words]] : words), cellOf: id, x: t.x, y: t.y, w: 1, h: 1, inset: t.pad };
+      }));
+      pg.objects.push(t);
+      return t;
+    },
+    group(name, list) { const g = nid('g'); d.groups[g] = { id: g, name }; for (const o of list) o.group = g; },
+    done() { d.nextId = n; return d; }
+  };
+}
+
+const letterPage = () => ({ size: 'letter', width: 612, height: 792, margins: { top: 54, right: 54, bottom: 54, left: 54 } });
+const letterWide = (m) => ({ size: 'letter', width: 792, height: 612, margins: { top: m, right: m, bottom: m, left: m } });
+/** Every word of a paragraph in format f (a mark for storyParts). */
+const allIn = (f) => [['*', f]];
+
+/* ---------- The templates ---------- */
+const TEMPLATES = [
+  { key: 'flyer', name: 'Flyer', detail: 'One page: a big headline, a photo and the details', make() {
+    const k = docMaker(letterPage());
+    k.d.title = 'Fall Book Swap';
+    k.style('h1', { family: 'archivo', size: 54, leading: 1.0, colour: '#ffffff' });
+    k.style('h2', { family: 'archivo', size: 16, colour: '#065f46', spaceBefore: 8 });
+    k.style('body', { size: 13, leading: 1.4 });
+    k.style('caption', { size: 10.5 });
+    const pg = k.page();
+    k.rect(pg, [0, 0, 612, 252], { name: 'Headline band', fill: '#065f46' });
+    k.text(pg, [54, 66, 504, 176], [
+      ['caption', 'Free for all ages', allIn({ b: true, c: '#a7f3d0', sz: 13 })],
+      ['h1', 'Fall Book Swap'],
+      ['body', 'Saturday, November 14 · 10 a.m. to 2 p.m.', allIn({ c: '#ffffff', sz: 18 })]
+    ]);
+    k.picture(pg, [54, 276, 504, 216], 'Flyer photo');
+    k.text(pg, [54, 512, 300, 180], [
+      ['h2', 'How it works'],
+      ['body', 'Bring the books you have finished with and leave with new ones to read. Every book you drop off earns a ticket for one you take home.'],
+      ['body', 'Books left at the end go to the school library and the children’s hospital.']
+    ]);
+    const panel = k.rect(pg, [372, 512, 186, 180], { name: 'Details panel', fill: '#ecfdf5' });
+    const det = k.text(pg, [372, 512, 186, 180], [
+      ['h2', 'Where'], ['body', 'Lakeside Community Center, 42 Elm Street'],
+      ['h2', 'Bring'], ['body', 'Up to ten books in good shape']
+    ], { inset: 12 });
+    k.group('Details', [panel, det]);
+    k.line(pg, [54, 712, 558, 712], { name: 'Footer rule', stroke: '#065f46', strokeWidth: 1.5 });
+    k.text(pg, [54, 718, 504, 24], [['caption', 'Questions? Call 555-0142 or ask at the library desk.']]);
+    return k.done();
+  } },
+  { key: 'newsletter', name: 'Newsletter', detail: 'Two pages: a masthead, a story in columns, events', make() {
+    const k = docMaker(letterPage());
+    k.d.title = 'The Riverside Report, Spring 2027';
+    k.style('h1', { family: 'fraunces', size: 40, colour: '#065f46' });
+    k.style('h2', { family: 'fraunces', size: 15, colour: '#065f46' });
+    k.style('body', { family: 'literata', size: 10, leading: 1.4 });
+    const m = k.master('Master A');
+    k.line(m, [54, 744, 558, 744], { name: 'Footer rule', stroke: '#065f46', strokeWidth: 0.75 });
+    k.text(m, [54, 748, 504, 20], [['caption', 'The Riverside Report · Spring 2027 · Page ' + FIELD_CHARS.page + ' of ' + FIELD_CHARS.pages]]);
+    const p1 = k.page(m), p2 = k.page(m);
+    k.text(p1, [54, 54, 504, 72], [['h1', 'The Riverside Report'], ['caption', 'Spring 2027 · News from the Riverside Neighborhood Association']]);
+    k.line(p1, [54, 132, 558, 132], { name: 'Rule under the title', stroke: '#065f46', strokeWidth: 3 });
+    const main = k.text(p1, [54, 150, 330, 400], [
+      ['h2', 'Neighbors fill forty bags at the park cleanup'],
+      ['body', 'More than sixty neighbors turned out on a cool Saturday morning in March to clear winter litter from Riverside Park. Volunteers of every age worked along the river path, around the playground and under the big willows by the footbridge.'],
+      ['body', 'By noon the group had filled forty bags of trash and twelve bags of recycling, pulled a shopping cart and two tires out of the shallows, and raked the leaves off the community garden beds so they are ready for spring planting.'],
+      ['body', 'Students from Riverside Middle School earned service hours for their work, and the hardware store on Mill Street lent rakes, gloves and wheelbarrows. The bakery next door kept everyone going with coffee and warm rolls.'],
+      ['body', 'Organizers say the turnout was the biggest in the six years the cleanup has run. Sign-in sheets counted twenty-three households, two scout troops and a running club that jogged the path collecting litter as they went.'],
+      ['body', 'Several volunteers noticed that most of the trash gathers where storm drains empty into the river. The board will ask the city to put screens on the two largest drains before the summer storms arrive, and will share the answer in the next issue.'],
+      ['h2', 'What comes next'],
+      ['body', 'The next cleanup is set for the second Saturday in June, when the focus moves to the boat launch and the trail along the east bank. Gloves and bags will be provided. Wear sturdy shoes and bring a water bottle.'],
+      ['body', 'If your group would like to adopt a stretch of the river path for the summer, the association will supply a sign with your group’s name and a starter kit of tools. Talk to any board member, or leave a note in the box at the library.']
+    ], { cols: 2, gutter: 18, contNext: true });
+    const side = k.rect(p1, [402, 150, 156, 236], { name: 'Sidebar background', fill: '#ecfdf5' });
+    const sideText = k.text(p1, [402, 150, 156, 236], [
+      ['h2', 'In this issue'],
+      ['body', 'Park cleanup · page 1', [['Park cleanup', { b: true }]]],
+      ['body', 'New crosswalk · page 1', [['New crosswalk', { b: true }]]],
+      ['body', 'Meet the board · page 2', [['Meet the board', { b: true }]]],
+      ['body', 'Upcoming events · page 2', [['Upcoming events', { b: true }]]]
+    ], { inset: 10 });
+    k.group('Sidebar', [side, sideText]);
+    const q1 = k.line(p1, [402, 404, 558, 404], { name: 'Rule above', stroke: '#065f46', strokeWidth: 2 });
+    const qt = k.text(p1, [402, 410, 156, 88], [
+      ['body', '“We filled forty bags before lunch.”', allIn({ i: true, sz: 15, c: '#065f46' })],
+      ['caption', 'Dana Ortiz, cleanup volunteer']
+    ]);
+    const q2 = k.line(p1, [402, 502, 558, 502], { name: 'Rule below', stroke: '#065f46', strokeWidth: 2 });
+    k.group('Pull quote', [q1, qt, q2]);
+    k.text(p1, [402, 516, 156, 212], [
+      ['h2', 'A safer crossing on Mill Street'],
+      ['body', 'After two years of requests, the city has painted a new crosswalk at Mill and Third, with flashing lights that walkers can turn on with a button.'],
+      ['body', 'Thank you to everyone who signed the petition and came to the traffic meeting in January.']
+    ]);
+    k.picture(p1, [54, 566, 330, 146], 'Cleanup day photo');
+    k.text(p1, [54, 714, 330, 24], [['caption', 'Volunteers at the footbridge. Photo: your name here.']]);
+    k.flow(p2, main, [54, 54, 330, 250], { cols: 2, gutter: 18, contPrev: true });
+    k.text(p2, [402, 54, 156, 250], [
+      ['h2', 'Meet the board'],
+      ['body', 'Priya Shah, president', [['Priya Shah', { b: true }]]],
+      ['body', 'Tom Becker, treasurer', [['Tom Becker', { b: true }]]],
+      ['body', 'Lena Ford, secretary', [['Lena Ford', { b: true }]]],
+      ['body', 'Marcus Hill, events', [['Marcus Hill', { b: true }]]],
+      ['body', 'Board meetings are open to everyone who lives or works in the neighborhood.']
+    ]);
+    k.text(p2, [54, 322, 504, 28], [['h2', 'Upcoming events']]);
+    k.table(p2, [54, 354, 504], [
+      ['Date', 'Event', 'Where'],
+      ['April 12', 'Plant swap', 'Community garden'],
+      ['May 3', 'Bike safety day', 'Library parking lot'],
+      ['June 14', 'River cleanup', 'Boat launch'],
+      ['July 4', 'Porch music night', 'Front porches on Elm Street']
+    ], { cols: [96, 240, 168], banded: true });
+    const panel = k.rect(p2, [54, 600, 504, 110], { name: 'Contact panel', fill: '#065f46' });
+    const contact = k.text(p2, [54, 600, 504, 110], [
+      ['h2', 'Get involved', allIn({ c: '#ffffff' })],
+      ['body', 'The association meets the first Tuesday of each month at 7 p.m. in the library community room. Everyone who lives or works in the neighborhood is welcome.', allIn({ c: '#ffffff' })],
+      ['body', 'Write to us at hello@riverside.example', allIn({ c: '#ffffff' })]
+    ], { inset: 14 });
+    k.group('Get involved', [panel, contact]);
+    return k.done();
+  } },
+  { key: 'trifold', name: 'Tri-fold brochure', detail: 'Two sides of a wide page, folded in three', make() {
+    const k = docMaker(letterWide(36));
+    k.d.title = 'Riverbend Nature Center';
+    k.d.page.fold = 'tri';                            // the two folds (section 4c)
+    k.style('h1', { family: 'zilla', size: 30, leading: 1.05 });
+    k.style('h2', { family: 'zilla', size: 15, colour: '#1e3a8a', spaceBefore: 8 });
+    // The outside: the inside flap (left), the back (middle), the cover (right).
+    const out = k.page(), inside = k.page();
+    k.text(out, [36, 36, 192, 540], [
+      ['h2', 'What you’ll find'],
+      ['body', 'Three miles of trails'], ['body', 'A boardwalk across the marsh'], ['body', 'A bird blind on the river'], ['body', 'Programs for every age'],
+      ['h2', 'Hours'],
+      ['body', 'Tuesday to Sunday, 9 a.m. to 5 p.m.'], ['body', 'Closed Mondays and holidays'],
+      ['h2', 'Admission'],
+      ['body', 'Free for everyone. Donations help pay for programs and trail care.']
+    ]);
+    k.picture(out, [300, 54, 192, 168], 'Map to the center');
+    k.text(out, [300, 238, 192, 220], [
+      ['h2', 'Find us'],
+      ['body', '1200 Riverbend Road, Greenfield'], ['body', 'Phone 555-0187'], ['body', 'riverbend.example'],
+      ['caption', 'Parking is free. The visitor center and the main trails are wheelchair accessible.']
+    ]);
+    k.rect(out, [528, 0, 264, 612], { name: 'Cover panel', fill: '#1e3a8a' });
+    k.text(out, [564, 54, 192, 210], [
+      ['h1', 'Riverbend Nature Center', allIn({ c: '#ffffff' })],
+      ['body', 'Trails, programs and a place to slow down', allIn({ c: '#dbeafe', sz: 13 })]
+    ]);
+    k.picture(out, [576, 300, 168, 168], 'Cover photo', 'ellipse', { stroke: '#ffffff', strokeWidth: 3 });
+    k.text(out, [564, 520, 192, 40], [['caption', 'Open all year', allIn({ c: '#ffffff', b: true })]]);
+    // The inside: a story across two panels, then programs.
+    const story = k.text(inside, [36, 36, 192, 540], [
+      ['h2', 'Welcome to Riverbend'],
+      ['body', 'Riverbend Nature Center looks after eighty acres of meadow, woods and wetland along the Green River. Three miles of trails loop through every kind of habitat, and most are flat enough for strollers and wheelchairs.'],
+      ['h2', 'On the trails'],
+      ['body', 'Start at the visitor center, where a large map shows which trails are open and what has been seen lately. The Meadow Loop is short and sunny, with benches every few hundred feet. The Heron Trail follows the river to a quiet bay where great blue herons fish in the early morning.'],
+      ['body', 'The boardwalk crosses the marsh on a raised wooden path. In spring, listen for peepers; in summer, look for dragonflies and turtles sunning on logs.'],
+      ['h2', 'For families'],
+      ['body', 'Borrow a free discovery backpack at the front desk. Each one holds binoculars, a magnifying glass and a guide to the plants and animals you are most likely to find. Return it before you leave so the next family can use it.'],
+      ['h2', 'For schools'],
+      ['body', 'Our naturalists lead field trips for every grade, matched to the science standards for that year. Programs run about two hours and can be held in English or Spanish. Call ahead to book a date: spring fills up early.'],
+      ['h2', 'Be a good guest'],
+      ['body', 'Please stay on the trails, keep dogs on a short leash and take home everything you bring. Feeding the wildlife is not allowed: it makes animals sick and less wary of people.']
+    ]);
+    k.flow(inside, story, [300, 36, 192, 540]);
+    // A photo at the foot of the middle panel: the story stops above it (text wrap, section 5b).
+    k.picture(inside, [300, 396, 192, 180], 'Boardwalk photo', 'rect', { wrap: { mode: 'topBottom', gap: 9 } });
+    k.text(inside, [564, 36, 192, 100], [['h2', 'Programs this season'], ['body', 'Free with admission. Meet at the visitor center.']]);
+    k.table(inside, [564, 140, 192], [
+      ['Program', 'When'], ['Bird walk', 'Saturdays, 8 a.m.'], ['Pond study', 'Wednesdays, 4 p.m.'], ['Night hike', 'Last Friday of the month'], ['Story time', 'Sundays, 11 a.m.']
+    ], { cols: [78, 114], headerFill: '#dbeafe', stroke: '#1e3a8a' });
+    k.picture(inside, [564, 380, 192, 196], 'Trail photo');
+    return k.done();
+  } },
+  { key: 'certificate', name: 'Certificate', detail: 'A wide page with a border, a seal and signatures', make() {
+    const k = docMaker(letterWide(54));
+    k.d.title = 'Certificate of Achievement';
+    k.style('h1', { family: 'fraunces', size: 44, colour: '#78350f', align: 'center' });
+    k.style('h2', { family: 'fraunces', size: 30, align: 'center', spaceBefore: 0 });
+    k.style('body', { family: 'literata', size: 14, leading: 1.4, align: 'center' });
+    k.style('caption', { size: 11, align: 'center' });
+    const pg = k.page();
+    const b1 = k.rect(pg, [24, 24, 744, 564], { name: 'Outer border', stroke: '#b45309', strokeWidth: 6 });
+    const b2 = k.rect(pg, [38, 38, 716, 536], { name: 'Inner border', stroke: '#b45309', strokeWidth: 1.5 });
+    k.group('Border', [b1, b2]);
+    k.text(pg, [96, 82, 600, 24], [['caption', 'Lakeside Elementary School', allIn({ b: true })]]);
+    k.text(pg, [96, 108, 600, 64], [['h1', 'Certificate of Achievement']]);
+    k.text(pg, [96, 194, 600, 28], [['body', 'This certificate is proudly presented to']]);
+    k.text(pg, [146, 226, 500, 46], [['h2', 'Student Name']]);
+    k.line(pg, [196, 276, 596, 276], { name: 'Name line', stroke: '#78350f', strokeWidth: 1 });
+    k.text(pg, [146, 290, 500, 64], [['body', 'for outstanding effort, curiosity and kindness all year long']]);
+    const s1 = k.ellipse(pg, [356, 380, 80, 80], { name: 'Seal', fill: '#fbbf24', stroke: '#b45309', strokeWidth: 2 });
+    const s2 = k.ellipse(pg, [364, 388, 64, 64], { name: 'Seal ring', stroke: '#b45309', strokeWidth: 1 });
+    k.group('Seal', [s1, s2]);
+    k.line(pg, [120, 480, 300, 480], { name: 'Signature line 1' });
+    k.line(pg, [492, 480, 672, 480], { name: 'Signature line 2' });
+    k.text(pg, [120, 486, 180, 22], [['caption', 'Principal']]);
+    k.text(pg, [492, 486, 180, 22], [['caption', 'Teacher']]);
+    return k.done();
+  } },
+  { key: 'card', name: 'Greeting card', detail: 'A wide page folded in half: outside, then inside', make() {
+    const k = docMaker(letterWide(36));
+    k.d.title = 'Thank-you card';
+    k.d.page.fold = 'half';                           // the fold (section 4c)
+    k.style('h1', { family: 'comfortaa', size: 40, colour: '#9a3412', align: 'center' });
+    k.style('h2', { family: 'comfortaa', size: 20, colour: '#9a3412', align: 'center' });
+    k.style('body', { family: 'andika', size: 14, leading: 1.45, align: 'center' });
+    k.style('caption', { family: 'andika', size: 11, align: 'center' });
+    // Outside: the back on the left half, the front on the right half.
+    const out = k.page(), inside = k.page();
+    k.text(out, [36, 540, 324, 30], [['caption', 'Made with care by Room 12']]);
+    k.rect(out, [396, 0, 396, 612], { name: 'Front panel', fill: '#fef3c7' });
+    k.picture(out, [474, 96, 240, 240], 'Front picture', 'ellipse');
+    k.text(out, [432, 366, 324, 110], [['h1', 'Thank you!']]);
+    // Inside: the message on the right half (the left stays clear to write on).
+    k.text(inside, [432, 186, 324, 300], [
+      ['h2', 'You made our day'],
+      ['body', 'Thank you for visiting our class and reading with us. We loved the story about the lighthouse, and we have been drawing boats ever since.'],
+      ['body', 'Please come back soon!'],
+      ['caption', 'With thanks from everyone in Room 12']
+    ]);
+    return k.done();
+  } },
+  { key: 'sign', name: 'Sign', detail: 'Big, high-contrast words that read from across a room', make() {
+    const k = docMaker(letterWide(54));
+    k.d.title = 'Registration sign';
+    k.style('h1', { family: 'archivo', size: 76, leading: 1.0, colour: '#1e3a8a', align: 'center' });
+    k.style('body', { size: 28, leading: 1.3, align: 'center' });
+    k.style('caption', { size: 16, align: 'center' });
+    const pg = k.page();
+    k.rect(pg, [0, 0, 792, 110], { name: 'Top band', fill: '#1e3a8a' });
+    k.text(pg, [54, 38, 684, 40], [['caption', 'Lakeside Community Center', allIn({ c: '#ffffff', b: true, sz: 20 })]]);
+    k.text(pg, [54, 160, 684, 110], [['h1', 'Registration']]);
+    k.line(pg, [246, 340, 546, 340], { name: 'Arrow', stroke: '#1e3a8a', strokeWidth: 16, arrows: 'end', decorative: false, alt: 'Arrow pointing right' });
+    k.text(pg, [54, 390, 684, 100], [['body', 'This way to Room 104, at the end of the hall']]);
+    k.text(pg, [54, 520, 684, 30], [['caption', 'Doors open at 8:30 a.m.']]);
+    return k.done();
+  } }
+];
+
+/* ---------- The building blocks ----------
+   Each is made at (0, 0) inside a box as wide as the page's margins (m.w);
+   size(m) says how big it is, and place where it goes: 'centre' of the
+   margins, 'top' or 'bottom' of them, or 'fill' (built around the margins). */
+const BLOCKS = [
+  { key: 'pullquote', name: 'Pull quote', detail: 'A line from the story, big, between two rules', size: () => [216, 106], make(k, pg) {
+    const a = k.line(pg, [0, 1, 216, 1], { name: 'Rule above', stroke: '#065f46', strokeWidth: 2 });
+    const t = k.text(pg, [0, 8, 216, 92], [
+      ['body', '“A sentence from the story that makes people want to read it.”', allIn({ i: true, sz: 16, c: '#065f46' })],
+      ['caption', 'Who said it, and who they are']
+    ]);
+    const b = k.line(pg, [0, 105, 216, 105], { name: 'Rule below', stroke: '#065f46', strokeWidth: 2 });
+    k.group('Pull quote', [a, t, b]);
+  } },
+  { key: 'sidebar', name: 'Sidebar', detail: 'A tinted box for a tip, a fact or a list', size: () => [180, 216], make(k, pg) {
+    const r = k.rect(pg, [0, 0, 180, 216], { name: 'Sidebar background', fill: '#ecfdf5' });
+    const t = k.text(pg, [0, 0, 180, 216], [
+      ['h2', 'Did you know?'],
+      ['body', 'A sidebar holds something extra: a tip, a fact or a short list. Readers take it in at a glance.'],
+      ['body', 'Change its colour in Look.']
+    ], { inset: 12 });
+    k.group('Sidebar', [r, t]);
+  } },
+  { key: 'coupon', name: 'Coupon', detail: 'An offer in a double border, to cut out', size: () => [252, 144], make(k, pg) {
+    const a = k.rect(pg, [0, 0, 252, 144], { name: 'Coupon border', fill: '#fffbeb', stroke: TEXT_COLOUR, strokeWidth: 2 });
+    const b = k.rect(pg, [6, 6, 240, 132], { name: 'Coupon inner border', stroke: TEXT_COLOUR, strokeWidth: 0.75 });
+    const t = k.text(pg, [12, 12, 228, 120], [
+      ['h2', 'Save 20%'],
+      ['body', 'on any order over $25'],
+      ['caption', 'Show this coupon at the counter. Offer ends December 31.']
+    ]);
+    k.group('Coupon', [a, b, t]);
+  } },
+  { key: 'details', name: 'Event details', detail: 'When, where, cost and what to bring, in a table', size: () => [288, 96], make(k, pg) {
+    const label = (w) => [['body', w, allIn({ b: true })]];
+    k.table(pg, [0, 0, 288], [
+      [label('When'), 'Saturday, May 8, 10 a.m.'],
+      [label('Where'), 'Riverside Park pavilion'],
+      [label('Cost'), 'Free'],
+      [label('Bring'), 'Water and a hat']
+    ], { header: false, cols: [72, 216], stroke: '#cbd5e1' });
+  } },
+  { key: 'picture', name: 'Picture with caption', detail: 'A picture frame with a caption under it', size: () => [216, 182], make(k, pg) {
+    const p = k.picture(pg, [0, 0, 216, 144], 'Picture');
+    const t = k.text(pg, [0, 150, 216, 32], [['caption', 'Say what the picture shows, and who is in it.']]);
+    k.group('Picture and caption', [p, t]);
+  } },
+  { key: 'heading', name: 'Section heading', detail: 'A heading with a rule under it, margin to margin', size: (m) => [m.w, 36], make(k, pg, m) {
+    const t = k.text(pg, [0, 0, m.w, 30], [['h2', 'Section heading']]);
+    const l = k.line(pg, [0, 34, m.w, 34], { name: 'Heading rule', stroke: '#065f46', strokeWidth: 1.5 });
+    k.group('Section heading', [t, l]);
+  } },
+  { key: 'masthead', name: 'Masthead', detail: 'A newsletter’s name and issue line, at the top', place: 'top', size: (m) => [m.w, 78], make(k, pg, m) {
+    const t = k.text(pg, [0, 0, m.w, 68], [['h1', 'Newsletter name'], ['caption', 'Issue date · Who it is for']]);
+    const l = k.line(pg, [0, 76, m.w, 76], { name: 'Masthead rule', stroke: '#065f46', strokeWidth: 3 });
+    k.group('Masthead', [t, l]);
+  } },
+  { key: 'contact', name: 'Contact strip', detail: 'How to reach you, on a band at the bottom', place: 'bottom', size: (m) => [m.w, 64], make(k, pg, m) {
+    const r = k.rect(pg, [0, 0, m.w, 64], { name: 'Contact band', fill: '#065f46' });
+    const t = k.text(pg, [0, 0, m.w, 64], [
+      ['h2', 'Get in touch', allIn({ c: '#ffffff' })],
+      ['body', 'Phone 555-0100 · hello@example.org · 12 Main Street', allIn({ c: '#ffffff' })]
+    ], { inset: 10 });
+    k.group('Contact strip', [r, t]);
+  } },
+  { key: 'border', name: 'Page border', detail: 'A double line around the page, just outside the margins', place: 'fill', size: (m) => [m.w, m.h], make(k, pg, m) {
+    // As far outside the margins as there is room for (at most a quarter inch), never off the page.
+    const e = Math.max(2, Math.min(18, m.left - 6, m.top - 6, m.right - 6, m.bottom - 6));
+    const a = k.rect(pg, [-e, -e, m.w + 2 * e, m.h + 2 * e], { name: 'Border', stroke: '#065f46', strokeWidth: 3 });
+    const b = k.rect(pg, [-e + 6, -e + 6, m.w + 2 * e - 12, m.h + 2 * e - 12], { name: 'Inner border', stroke: '#065f46', strokeWidth: 0.75 });
+    k.group('Page border', [a, b]);
+  } }
+];
+
+/**
+ * Make a building block for the page showing, in this document's styles:
+ * { d: its scratch document, objects: on the page where they will go,
+ * view: the part of the page to show in its picture (null: all of it) }.
+ */
+function buildBlock(bl) {
+  const mb = marginBox();
+  const m = { w: mb.w, h: mb.h, left: mb.x, top: mb.y, right: PAGE.width - mb.x - mb.w, bottom: PAGE.height - mb.y - mb.h };
+  const k = docMaker(JSON.parse(JSON.stringify(PAGE)));
+  k.d.styles = JSON.parse(JSON.stringify(doc.styles));
+  const pg = k.page();
+  bl.make(k, pg, m);
+  const [w, h] = bl.size(m);
+  const place = bl.place || 'centre';
+  const at = place === 'top' || place === 'fill' ? [mb.x, mb.y] : place === 'bottom' ? [mb.x, mb.y + mb.h - h] : [mb.x + (mb.w - w) / 2, mb.y + (mb.h - h) / 2];
+  for (const o of pg.objects) moveObj(o, at[0], at[1]);
+  return { d: k.done(), objects: pg.objects, view: place === 'fill' ? null : { x: at[0] - 12, y: at[1] - 12, w: w + 24, h: h + 24 } };
+}
+/** Add a building block to the page showing: one undo step, then it is picked (as a group). */
+function addBlock(bl) {
+  if (printPreview) setPrintPreview(false);
+  if (focusedStoryId) stopEditingToFrame(focusedStoryId);
+  const { d, objects } = buildBlock(bl);
+  const copyStory = (st) => ({ text: st.text, roles: st.roles.slice(), runs: st.runs ? JSON.parse(JSON.stringify(st.runs)) : [] });
+  // The same form Copy makes, so placeItems can add them.
+  const items = objects.map((o) => {
+    const c = JSON.parse(JSON.stringify(o));
+    if (o.type === 'text') { const st = copyStory(d.stories[o.story]); c.copiedText = st.text; c.copiedRoles = st.roles; c.copiedRuns = st.runs; }
+    if (o.type === 'table') c.cellText = tableCells(o).map((cell) => copyStory(d.stories[cell.story]));
+    return c;
+  });
+  const groups = {};
+  for (const id in d.groups) groups[id] = d.groups[id].name;
+  recordUndo('other');
+  const made = placeItems({ items, groups, images: {} }, 0, '');
+  reindex();
+  syncInputs();
+  setTool('select');
+  layoutAll();
+  selectObjects(made.map((o) => o.id));
+  relayoutAndRender();
+  updateInspector();
+  announce(bl.name + ' added' + (made.length > 1 ? ', as a group (Ctrl+click picks one part)' : '') + '. Replace the sample words with your own.');
+}
+
+/**
+ * Draw page pi of document d into a new <svg> (for the galleries). The
+ * document showing is set aside for a moment, d is laid out and drawn by
+ * the desk's own code, then everything is put back as it was. view: the
+ * part of the page to show (the whole page when null).
+ */
+function previewSVG(d, pi, view, label) {
+  const v = view || { x: 0, y: 0, w: d.page.width, h: d.page.height };
+  const out = svgEl('svg', { viewBox: [v.x, v.y, v.w, v.h].map(r2).join(' '), width: r2(v.w), height: r2(v.h), 'aria-hidden': 'true', focusable: 'false' });
+  out.appendChild(svgEl('rect', { x: v.x, y: v.y, width: v.w, height: v.h, fill: '#ffffff' }));
+  const g = svgEl('g', { 'data-thumb': label });
+  out.appendChild(g);
+  const keep = {};
+  for (const key of Object.keys(doc)) keep[key] = doc[key];
+  const keepPage = PAGE;
+  try {
+    for (const key of Object.keys(doc)) delete doc[key];
+    Object.assign(doc, d);
+    PAGE = doc.page;
+    reindex();
+    layoutAll();
+    renderContent(g, pi);
+    // Empty picture frames: a pale box, as on the desk (they never print).
+    for (const o of pageObjectsWithMaster(pi)) {
+      if (o.type === 'picture' && !o.image && !o.hidden) g.appendChild(withRot(frameShapeEl(o, { fill: '#e2e8f0', stroke: '#94a3b8', 'stroke-width': 1 }), o));
+    }
+  } finally {
+    for (const key of Object.keys(doc)) delete doc[key];
+    Object.assign(doc, keep);
+    PAGE = keepPage;
+    reindex();
+    layoutAll();
+    for (const id in layouts) if (!doc.stories[id]) delete layouts[id];   // forget the preview's stories
+  }
+  return out;
+}
+/** A blank page's picture: the paper and its margins. */
+function blankThumb(w, h) {
+  const out = svgEl('svg', { viewBox: '0 0 ' + w + ' ' + h, width: w, height: h, 'aria-hidden': 'true', focusable: 'false' });
+  out.appendChild(svgEl('rect', { x: 0, y: 0, width: w, height: h, fill: '#ffffff' }));
+  out.appendChild(svgEl('rect', { x: 54, y: 54, width: w - 108, height: h - 108, fill: 'none', stroke: '#93c5fd', 'stroke-width': 3 }));
+  return out;
+}
+/** One card in a gallery: a picture (or room for one), a name and a line about it. */
+function galleryCard(name, detail, thumb, run, key) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'tpl-card';
+  if (key) b.dataset.key = key;
+  const pic = document.createElement('span');
+  pic.className = 'tpl-thumb';
+  if (thumb) pic.append(thumb);
+  const n = document.createElement('span'); n.className = 'tpl-name'; n.textContent = name;
+  const dd = document.createElement('span'); dd.className = 'tpl-detail'; dd.textContent = detail;
+  b.append(pic, n, dd);
+  b.addEventListener('click', run);
+  return b;
+}
+
+/** The New dialog: a blank page, a blank page of any size, or a template. */
+async function openNewDialog() {
+  if (focusedStoryId) stopEditingToFrame(focusedStoryId);
+  const blank = $('newBlankGrid'), grid = $('newTplGrid');
+  if (!grid.childElementCount) {
+    blank.append(
+      galleryCard('Blank page', 'One Letter page, 8.5 × 11 in', blankThumb(612, 792), () => startNew(newDocument)),
+      galleryCard('Pick a size', 'A4, legal, tabloid, half letter, landscape…', blankThumb(792, 612), () => startNew(newDocumentPickSize)));
+    for (const t of TEMPLATES) grid.append(galleryCard(t.name, t.detail, null, () => startNew(() => newFromTemplate(t)), t.key));
+  }
+  if (!$('newDialog').open) $('newDialog').showModal();
+  blank.querySelector('button').focus();
+  // Each template's first page, drawn small (once), after its fonts are in.
+  const todo = TEMPLATES.filter((t) => !grid.querySelector('[data-key="' + t.key + '"] .tpl-thumb').firstChild);
+  if (!todo.length) return;
+  const docs = todo.map((t) => t.make());
+  try { await loadFamilies(docs.flatMap(familiesIn).filter((f) => Object.hasOwn(FAMILIES, f))); } catch (err) { /* a stand-in font draws them */ }
+  todo.forEach((t, i) => {
+    const box = grid.querySelector('[data-key="' + t.key + '"] .tpl-thumb');
+    if (!box.firstChild) box.append(previewSVG(docs[i], 0, null, 'tpl-' + t.key));
+  });
+}
+/** A choice in the New dialog: close it, ask before replacing unsaved work, then start. */
+async function startNew(run) {
+  $('newDialog').close();
+  if (await okToReplace('Start a new document')) await run();
+}
+/** A new document from a template (its fonts loaded first, so it opens looking right). */
+async function newFromTemplate(t) {
+  const d = t.make();
+  try { await loadFamilies(familiesIn(d).filter((f) => Object.hasOwn(FAMILIES, f))); } catch (err) { /* a stand-in font until it loads */ }
+  fileBaseName = '';
+  loadDocument(d, {});
+  backup.markSafe();
+  setTool('select');
+  announce('New ' + t.name.toLowerCase() + ', ' + d.pages.length + (d.pages.length === 1 ? ' page' : ' pages') + '. Replace the sample words, and fill the picture frames with your own pictures.');
+}
+
+/** The Building blocks gallery (drawn each time in this document's styles, for the page showing). */
+function openBlocks() {
+  if (printPreview) setPrintPreview(false);
+  if (focusedStoryId) stopEditingToFrame(focusedStoryId);
+  const grid = $('blocksGrid');
+  if (!grid.childElementCount) for (const bl of BLOCKS) grid.append(galleryCard(bl.name, bl.detail, null, () => { $('blocksDialog').close(); addBlock(bl); }, bl.key));
+  for (const bl of BLOCKS) {
+    const box = grid.querySelector('[data-key="' + bl.key + '"] .tpl-thumb');
+    clear(box);
+    const b = buildBlock(bl);
+    box.append(previewSVG(b.d, 0, b.view, 'blk-' + bl.key));
+  }
+  $('blocksDialog').showModal();
+  grid.querySelector('button').focus();
+}
+function wireTemplates() {
+  $('newClose').addEventListener('click', () => $('newDialog').close());
+  $('blocksClose').addEventListener('click', () => $('blocksDialog').close());
+  $('blocksBtn').addEventListener('click', openBlocks);
 }
 
 /* ---------- Putting a whole document on the desk ---------- */
@@ -10877,6 +12369,10 @@ function checkDocument(raw, known, knownFonts) {
   const margins = { top: num(m.top, 0, 432), right: num(m.right, 0, 432), bottom: num(m.bottom, 0, 432), left: num(m.left, 0, 432) };
   if (margins.left + margins.right >= width || margins.top + margins.bottom >= height) bad('That project has margins wider than its page.');
   out.page = { size: typeof pg.size === 'string' && Object.hasOwn(PAGE_SIZES, pg.size) ? pg.size : 'custom', width, height, margins };
+  // Facing pages and the bleed (version 9).
+  if (bool(pg.facing)) out.page.facing = true;
+  if (pg.bleed != null && num(pg.bleed, 0, 72) > 0) out.page.bleed = num(pg.bleed, 0, 72);
+  if (typeof pg.fold === 'string' && Object.hasOwn(FOLDS, pg.fold)) out.page.fold = pg.fold;   // (version 11)
 
   // Styles: each role's look, every value checked (anything missing or odd: the default).
   const rs = raw.styles && typeof raw.styles === 'object' ? raw.styles : {};
@@ -10921,6 +12417,11 @@ function checkDocument(raw, known, knownFonts) {
       if (o.type === 'path') points += o.contours.reduce((n, c) => n + c.pts.length, 0);
       if (points > 500000) bad('That project has shapes with too many points.');
       if (o.type === 'text') textFrames.push(o);
+      if (o.type === 'table') for (const c of tableCells(o)) {
+        // A table's cells: text boxes too, each name used once in the whole file.
+        if (objectIds.has(c.id) || ++count > 20000) bad('That project has a damaged table.');
+        objectIds.add(c.id); textFrames.push(c);
+      }
       objects.push(o);
     }
     const order = Array.isArray(rp.readingOrder) ? rp.readingOrder.filter((x) => typeof x === 'string' && ID_RE.test(x)).slice(0, 25000) : [];
@@ -10946,6 +12447,10 @@ function checkDocument(raw, known, knownFonts) {
       if (o.type === 'path') points += o.contours.reduce((n, c) => n + c.pts.length, 0);
       if (points > 500000) bad('That project has shapes with too many points.');
       if (o.type === 'text') { textFrames.push(o); masterFrames.add(o.id); }
+      if (o.type === 'table') for (const c of tableCells(o)) {
+        if (objectIds.has(c.id) || ++count > 20000) bad('That project has a damaged table.');
+        objectIds.add(c.id); textFrames.push(c); masterFrames.add(c.id);
+      }
       objects.push(o);
     }
     const m = { id, name: cleanText(rm.name, 40).trim() || 'Master', objects, readingOrder: [], readingOrderAuto: true };
@@ -10999,6 +12504,8 @@ function checkDocument(raw, known, knownFonts) {
     }
   }
   for (const t of textFrames) if (!out.stories[t.story]) bad('That project has a text box whose text is missing.');
+  // A table cell's words are its own: never shared with another cell or a text box.
+  for (const t of textFrames) if (t.cellOf && out.stories[t.story].frames.length !== 1) bad('That project has a damaged table.');
 
   // Groups only for objects that are on a page.
   const used = new Set(out.pages.flatMap((p) => p.objects.map((o) => o.group).filter(Boolean)));
@@ -11017,10 +12524,10 @@ function checkDocument(raw, known, knownFonts) {
 function checkObject(r, known, groups) {
   if (!r || typeof r !== 'object') bad('That project has a damaged object.');
   const o = { id: checkId(r.id), type: r.type };
-  if (!['text', 'rect', 'ellipse', 'line', 'picture', 'path'].includes(r.type)) bad('That project has a kind of object DSKEDTR does not know.');
+  if (!['text', 'rect', 'ellipse', 'line', 'picture', 'path', 'table'].includes(r.type)) bad('That project has a kind of object DSKEDTR does not know.');
   // Fields every kind can have.
   if (typeof r.name === 'string' && r.name) o.name = cleanText(r.name, 120);
-  if (r.type !== 'line' && r.rotation != null) { const a = num(r.rotation, -360, 360); if (a) o.rotation = a; }
+  if (r.type !== 'line' && r.type !== 'table' && r.rotation != null) { const a = num(r.rotation, -360, 360); if (a) o.rotation = a; }
   if (bool(r.hidden)) o.hidden = true;
   if (bool(r.locked)) o.locked = true;
   if (typeof r.group === 'string' && Object.hasOwn(groups, r.group)) o.group = r.group;
@@ -11038,6 +12545,9 @@ function checkObject(r, known, groups) {
     o.story = checkId(r.story);
     if (bool(r.contPrev)) o.contPrev = true;
     if (bool(r.contNext)) o.contNext = true;
+    // Columns (version 8): a whole number 2 to 6, and the gap in points.
+    if (r.cols != null) { const c = Math.round(num(r.cols, 1, 6)); if (c > 1) o.cols = c; }
+    if (r.gutter != null) o.gutter = num(r.gutter, 0, 288);
   } else if (r.type === 'line') {
     o.x1 = num(r.x1, -POS, POS); o.y1 = num(r.y1, -POS, POS); o.x2 = num(r.x2, -POS, POS); o.y2 = num(r.y2, -POS, POS);
     if (['start', 'end', 'both'].includes(r.arrows)) o.arrows = r.arrows;
@@ -11060,6 +12570,29 @@ function checkObject(r, known, groups) {
     o.ox = num(r.ox, -1e6, 1e6); o.oy = num(r.oy, -1e6, 1e6);
     o.fit = ['fill', 'fit', 'custom'].includes(r.fit) ? r.fit : 'custom';
     look(false);
+  } else if (r.type === 'table') {
+    // Tables (version 10): a rectangular grid of cells, each naming its own story.
+    box();
+    const rows = Array.isArray(r.rows) ? r.rows : [], cells = Array.isArray(r.cells) ? r.cells : [];
+    if (!Array.isArray(r.cols) || !r.cols.length || r.cols.length > TABLE_MAX_COLS || !cells.length || cells.length > TABLE_MAX_ROWS) bad('That project has a damaged table.');
+    o.cols = r.cols.map((v) => num(v, 0.1, POS));
+    o.rows = cells.map((_, i) => (rows[i] == null ? 0 : num(rows[i], 0, POS)));
+    o.pad = r.pad == null ? 4 : num(r.pad, 0, 72);
+    o.cells = cells.map((row) => {
+      if (!Array.isArray(row) || row.length !== o.cols.length) bad('That project has a damaged table.');
+      return row.map((c) => {
+        if (!c || typeof c !== 'object') bad('That project has a damaged table.');
+        return { id: checkId(c.id), type: 'text', story: checkId(c.story), cellOf: o.id, x: o.x, y: o.y, w: 1, h: 1, inset: o.pad };
+      });
+    });
+    o.header = bool(r.header);
+    o.banded = bool(r.banded);
+    o.headerFill = colour(r.headerFill) || '#d1fae5';
+    o.bandFill = colour(r.bandFill) || '#f1f5f9';
+    o.fill = colour(r.fill);
+    o.stroke = colour(r.stroke);
+    o.strokeWidth = r.strokeWidth == null ? 0 : num(r.strokeWidth, 0, 200);
+    o.fitH = o.h;                                    // laid out at the size it was saved at
   } else if (r.type === 'path') {
     box();
     o.w0 = num(r.w0, 0.01, POS); o.h0 = num(r.h0, 0.01, POS);
@@ -11323,7 +12856,8 @@ function rgb01(hex) {
  * this page (their page numbers are this page's), and "Continued" lines.
  */
 function linesByFrame(pi) {
-  const onPage = new Set(pageNo(pi).objects.map((o) => o.id));
+  // (A table's cells count as being on its page.)
+  const onPage = new Set(pageNo(pi).objects.flatMap((o) => (o.type === 'table' ? tableCells(o).map((c) => c.id) : [o.id])));
   const out = {};
   const add = (frame, ln, story) => (out[frame] || (out[frame] = [])).push({ ln, story });
   for (const id in doc.stories) {
@@ -11334,6 +12868,10 @@ function linesByFrame(pi) {
   const m = masterFor(pi);
   if (m) {
     for (const o of m.objects) {
+      if (o.type === 'table') {
+        for (const c of tableCells(o)) if (doc.stories[c.story]) for (const ln of masterLayout(c.story, pi).lines) add(c.id, ln, doc.stories[c.story]);
+        continue;
+      }
       if (o.type !== 'text' || !doc.stories[o.story]) continue;
       for (const ln of masterLayout(o.story, pi).lines) if (ln.frame === o.id) add(o.id, ln, doc.stories[o.story]);
     }
@@ -11344,7 +12882,8 @@ function linesByFrame(pi) {
 const printedObjects = (pi) => pageObjectsWithMaster(pi).filter((o) => !o.hidden && onPageArea(o));
 
 /* ---------- The PDF ---------- */
-async function exportPDF(name) {
+/** opts: { bleed: include the bleed, marks: crop marks } (section 4c). */
+async function exportPDF(name, opts = {}) {
   if (!window.PDFLib || !window.fontkit) {
     toast('PDF export needs pdf-lib, which did not load. Check the internet connection and reload (the one-file edition has it inside).', 7000);
     return false;
@@ -11383,15 +12922,44 @@ async function exportPDF(name) {
   const pdfImages = {};                            // picture id -> embedded picture (each stored once)
   const shadowBitmaps = {};                        // pictures decoded once, for drawing shadows
 
-  for (let pi = 0; pi < doc.pages.length; pi++) {
-    const page = pdf.addPage([PAGE.width, PAGE.height]);
+  // How the pages go on the sheets of paper (section 4c): one per sheet,
+  // a booklet, or copies to cut apart, with the bleed and marks.
+  const H = PAGE.height;
+  const kit = { pdf, L, op, fonts, hexFor, pdfImages, shadowBitmaps };
+  for (const sh of printPlan(opts).sheets) {
+    const page = pdf.addPage([sh.w, sh.h]);
+    if (sh.trim) page.setTrimBox(...sh.trim);        // the finished size, for the print shop
+    if (sh.bleedBox) page.setBleedBox(...sh.bleedBox);
     const ops = [];
-    // PDF pages count up from the BOTTOM; ours count down from the top.
-    // Flipping once here lets every number below be the same as on the desk.
-    ops.push(L.concatTransformationMatrix(1, 0, 0, -1, 0, PAGE.height));
+    for (const pl of sh.places) {
+      ops.push(L.pushGraphicsState());
+      // PDF pages count up from the BOTTOM; ours count down from the top.
+      // One flip (and a scale, for copies made smaller to fit) lets every
+      // number inside be the same as on the desk.
+      ops.push(L.concatTransformationMatrix(pl.s, 0, 0, -pl.s, pl.x, pl.y + H * pl.s));
+      // Everything is cut off at the bleed (or at the page's edge): what
+      // waits in the grey staging area never prints.
+      ops.push(L.rectangle(...pl.clip), L.clip(), L.endPath());
+      const toSheet = (x, y) => [pl.x + x * pl.s, pl.y + (H - y) * pl.s];   // a point on the page -> on the sheet (for links)
+      await pdfPageContent(ops, pl.pi, page, kit, toSheet);
+      ops.push(L.popGraphicsState());
+    }
+    if (sh.marks.length) pdfMarks(ops, L, sh.marks);
+    page.pushOperators(...ops);
+  }
+  for (const id in shadowBitmaps) shadowBitmaps[id].close();
+  const bytes = await pdf.save();
+  downloadBlob(new Blob([bytes], { type: 'application/pdf' }), name + '.pdf');
+  return true;
+}
+
+/** Everything printed on page pi, drawn into ops (already flipped and clipped). toSheet: page point -> sheet point, for link areas. */
+async function pdfPageContent(ops, pi, page, kit, toSheet) {
+  const { pdf, L, op, fonts, hexFor, pdfImages, shadowBitmaps } = kit;
+  {
     const text = linesByFrame(pi);
     for (const o of printedObjects(pi)) {
-      if (o.type !== 'text' && o.shadow) await pdfShadow(ops, o, pdf, page, L, shadowBitmaps);
+      if (o.type !== 'text' && o.shadow) await pdfShadow(ops, o, pdf, page, L, shadowBitmaps, o.type === 'table' ? pageTextPaths(pi) : {});
       ops.push(L.pushGraphicsState());
       if (o.type !== 'text' && o.opacity != null && o.opacity < 1) ops.push(L.setGraphicsState(pdfOpacity(page, pdf, o.opacity)));
       if (o.rotation && o.type !== 'line') {
@@ -11400,17 +12968,122 @@ async function exportPDF(name) {
         ops.push(L.concatTransformationMatrix(cos, sin, -sin, cos, c.x - c.x * cos + c.y * sin, c.y - c.x * sin - c.y * cos));
       }
       if (o.type === 'text') pdfText(ops, text[o.id] || [], fonts, hexFor, page, pdf, L, op);
+      else if (o.type === 'table') pdfTable(ops, o, text, fonts, hexFor, page, pdf, L, op);
       else if (o.type === 'picture') await pdfPicture(ops, o, pdf, page, pdfImages, L);
       else pdfShape(ops, o, L, op);
       ops.push(L.popGraphicsState());
-      if (o.type === 'text') pdfLinks(o, text[o.id] || [], page, pdf, L);
+      if (o.type === 'text') pdfLinks(o, text[o.id] || [], page, pdf, L, toSheet);
+      if (o.type === 'table') for (const c of tableCells(o)) pdfLinks(c, text[c.id] || [], page, pdf, L, toSheet);
     }
-    page.pushOperators(...ops);
   }
-  for (const id in shadowBitmaps) shadowBitmaps[id].close();
-  const bytes = await pdf.save();
-  downloadBlob(new Blob([bytes], { type: 'application/pdf' }), name + '.pdf');
-  return true;
+}
+
+/**
+ * How the pages go onto sheets of paper in the PDF (section 4c).
+ *   opts.layout  'pages' (one page per sheet), 'booklet', 'up2' or 'up4'
+ *   opts.bleed   include the bleed (one page per sheet, and booklets)
+ *   opts.marks   crop marks (copies to cut apart always get cut marks)
+ *   opts.paper   'letter', 'a4' or 'exact' (for copies)
+ * Returns { sheets, note }. Each sheet: { w, h, trim, bleedBox, places, marks },
+ * in PDF points from its bottom-left corner. A place puts page pi's
+ * top-left corner (the trim) at x, y + its height, at scale s, cut off at
+ * clip ([x, y, w, h] on the page). Marks are lines { x1, y1, x2, y2, fold }.
+ */
+function printPlan(opts) {
+  const W = PAGE.width, H = PAGE.height, N = doc.pages.length;
+  const LEN = 18;                                    // a mark is a quarter inch long
+  const folds = foldLines();
+  const marks = [];
+  // Crop marks at the corners of the rectangle (x, y, w, h), starting `gap` outside it, so they never show once trimmed.
+  const corners = (x, y, w, h, gap) => {
+    for (const [cx, sx] of [[x, -1], [x + w, 1]]) for (const [cy, sy] of [[y, -1], [y + h, 1]]) {
+      marks.push({ x1: cx + sx * gap, y1: cy, x2: cx + sx * (gap + LEN), y2: cy }, { x1: cx, y1: cy + sy * gap, x2: cx, y2: cy + sy * (gap + LEN) });
+    }
+  };
+  // Marks above and below a vertical line at x (between y and y + h), and beside a horizontal one.
+  const upDown = (x, y, h, gap, fold) => marks.push({ x1: x, y1: y + h + gap, x2: x, y2: y + h + gap + LEN, fold }, { x1: x, y1: y - gap, x2: x, y2: y - gap - LEN, fold });
+  const sideways = (y, x, w, gap, fold) => marks.push({ x1: x - gap, y1: y, x2: x - gap - LEN, y2: y, fold }, { x1: x + w + gap, y1: y, x2: x + w + gap + LEN, y2: y, fold });
+  // The folds of one page placed at (x, y) at scale s (its rows of copies share the marks outside the grid).
+  const foldMarks = (x, y, w, h, s, gap) => {
+    for (const fx of folds.v) upDown(x + fx * s, y, h, gap, true);
+    for (const fy of folds.h) sideways(y + h - fy * s, x, w, gap, true);
+  };
+  const sheets = [];
+  let note = '';
+  const layout = opts.layout || 'pages';
+  if (layout === 'pages' || layout === 'booklet') {
+    // The bleed (b) is extra paper all round; crop marks need room of their own outside it (e is the whole extra).
+    const b = opts.bleed ? (PAGE.bleed || 0) : 0;
+    const gap = Math.max(b, 9);                      // marks start just outside the bleed
+    const e = opts.marks ? gap + LEN + 6 : b;
+    if (layout === 'pages') {
+      for (let pi = 0; pi < N; pi++) {
+        marks.length = 0;
+        if (opts.marks) { corners(e, e, W, H, gap); foldMarks(e, e, W, H, 1, gap); }
+        sheets.push({ w: W + 2 * e, h: H + 2 * e, trim: e ? [e, e, W, H] : null, bleedBox: b ? [e - b, e - b, W + 2 * b, H + 2 * b] : null,
+          places: [{ pi, x: e, y: e, s: 1, clip: [-b, -b, W + 2 * b, H + 2 * b] }], marks: marks.slice() });
+      }
+    } else {
+      // A booklet (saddle-stitched): M pages (blank ones added to make a multiple of 4), two on each side of a
+      // sheet, in the order that reads right once the stack is folded: M and 1, then 2 and M-1, then M-2 and 3...
+      const M = Math.max(4, Math.ceil(N / 4) * 4);
+      for (let i = 0; i < M / 2; i++) {
+        const [left, right] = i % 2 === 0 ? [M - i, i + 1] : [i + 1, M - i];   // page numbers, counting from 1
+        marks.length = 0;
+        if (opts.marks) { corners(e, e, 2 * W, H, gap); upDown(e + W, e, H, gap, true); }   // the spine is a fold
+        const places = [];
+        // No bleed at the spine, where the two pages meet.
+        if (left <= N) places.push({ pi: left - 1, x: e, y: e, s: 1, clip: [-b, -b, W + b, H + 2 * b] });
+        if (right <= N) places.push({ pi: right - 1, x: e + W, y: e, s: 1, clip: [0, -b, W + b, H + 2 * b] });
+        sheets.push({ w: 2 * W + 2 * e, h: H + 2 * e, trim: e ? [e, e, 2 * W, H] : null, bleedBox: b ? [e - b, e - b, 2 * W + 2 * b, H + 2 * b] : null, places, marks: marks.slice() });
+      }
+    }
+    return { sheets, note };
+  }
+  // Copies to cut apart: two (side by side, or one above the other) or four (two by two),
+  // touching, so one cut between them does. Cut marks outside the group.
+  const E = 6 + LEN + 6;                             // room for the cut marks round the group
+  const grids = layout === 'up4' ? [[2, 2]] : W <= H ? [[2, 1], [1, 2]] : [[1, 2], [2, 1]];
+  let best = null;
+  if (opts.paper === 'exact') {
+    const [c, r] = grids[0];
+    best = { c, r, s: 1, sw: c * W + 2 * E, sh: r * H + 2 * E };
+  } else {
+    const paper = opts.paper === 'a4' ? [595.28, 841.89] : [612, 792];
+    for (const [c, r] of grids) for (const [sw, sh] of [paper, [paper[1], paper[0]]]) {
+      const s = Math.min(1, (sw - 2 * E) / (c * W), (sh - 2 * E) / (r * H));
+      if (!best || s > best.s + 1e-6) best = { c, r, s, sw, sh };
+    }
+  }
+  const { c, r, s, sw, sh } = best;
+  const gw = c * W * s, gh = r * H * s, x0 = (sw - gw) / 2, y0 = (sh - gh) / 2;
+  marks.length = 0;
+  for (let k = 0; k <= c; k++) upDown(x0 + k * W * s, y0, gh, 6, false);
+  for (let k = 0; k <= r; k++) sideways(y0 + k * H * s, x0, gw, 6, false);
+  for (let ci = 0; ci < c; ci++) for (const fx of folds.v) upDown(x0 + ci * W * s + fx * s, y0, gh, 6, true);
+  for (let ri = 0; ri < r; ri++) for (const fy of folds.h) sideways(y0 + gh - ri * H * s - fy * s, x0, gw, 6, true);
+  for (let pi = 0; pi < N; pi++) {
+    const places = [];
+    for (let ri = 0; ri < r; ri++) for (let ci = 0; ci < c; ci++) places.push({ pi, x: x0 + ci * W * s, y: y0 + (r - 1 - ri) * H * s, s, clip: [0, 0, W, H] });
+    sheets.push({ w: sw, h: sh, trim: null, bleedBox: null, places, marks: marks.slice() });
+  }
+  const paperName = opts.paper === 'a4' ? 'A4' : 'Letter';
+  note = opts.paper === 'exact' ? 'Each sheet is just big enough for the copies and their cut marks.'
+    : s < 0.999 ? 'They are made smaller (' + Math.round(s * 100) + '%) to fit on ' + paperName + ' paper; Exact size keeps them full size.'
+    : 'Full size, on ' + paperName + ' paper.';
+  return { sheets, note };
+}
+
+/** Crop, cut and fold marks: thin black lines (folds dashed), the usual kind a print shop trims and folds along. */
+function pdfMarks(ops, L, marks) {
+  ops.push(L.pushGraphicsState(), L.setLineWidth(0.25), L.setStrokingGrayscaleColor(0));
+  for (const m of marks.filter((m) => !m.fold)) ops.push(L.moveTo(m.x1, m.y1), L.lineTo(m.x2, m.y2), L.stroke());
+  const folds = marks.filter((m) => m.fold);
+  if (folds.length) {
+    ops.push(L.setDashPattern([3, 2], 0));
+    for (const m of folds) ops.push(L.moveTo(m.x1, m.y1), L.lineTo(m.x2, m.y2), L.stroke());
+  }
+  ops.push(L.popGraphicsState());
 }
 
 /** The outline of a shape, in PDF path operators (moveTo, curves, closePath). */
@@ -11469,6 +13142,23 @@ function pdfShape(ops, o, L, op) {
   if (hasFill && hasStroke) ops.push(op(eo ? N.FillEvenOddAndStroke : N.FillNonZeroAndStroke));
   else if (hasFill) ops.push(op(eo ? N.FillEvenOdd : N.FillNonZero));
   else ops.push(L.stroke());
+}
+
+/** A table: each row's colour, the lines of the grid, then every cell's words as real text (row by row, the order they are read in). */
+function pdfTable(ops, t, text, fonts, hexFor, page, pdf, L, op) {
+  const { xs, ys } = tableEdges(t);
+  const left = xs[0], right = xs[xs.length - 1];
+  t.cells.forEach((row, r) => {
+    const fill = rowFill(t, r);
+    if (fill) ops.push(L.setFillingRgbColor(...rgb01(fill)), L.rectangle(left, ys[r], right - left, ys[r + 1] - ys[r]), op(L.PDFOperatorNames.FillNonZero));
+  });
+  if (t.stroke && t.strokeWidth > 0) {
+    ops.push(L.setStrokingRgbColor(...rgb01(t.stroke)), L.setLineWidth(t.strokeWidth), L.setLineCap(L.LineCapStyle.Projecting));
+    for (const y of ys) ops.push(L.moveTo(left, y), L.lineTo(right, y));
+    for (const x of xs) ops.push(L.moveTo(x, ys[0]), L.lineTo(x, ys[ys.length - 1]));
+    ops.push(L.stroke());
+  }
+  for (const c of tableCells(t)) pdfText(ops, text[c.id] || [], fonts, hexFor, page, pdf, L, op);
 }
 
 /** A picture: clipped to its frame's shape, at full resolution, then the frame's outline. */
@@ -11573,7 +13263,7 @@ function pdfOpacity(page, pdf, opacity) {
  * at 2 pixels per point) and placed under the object as a soft,
  * see-through PNG picture. The object itself stays sharp vector drawing.
  */
-async function pdfShadow(ops, o, pdf, page, L, bitmaps) {
+async function pdfShadow(ops, o, pdf, page, L, bitmaps, texts = {}) {
   const s = o.shadow, b = bounds(o), sw = o.strokeWidth || 0;
   const pad = s.blur * 2 + sw + 2;
   const x0 = b.x - pad, y0 = b.y - pad, wPt = b.w + 2 * pad, hPt = b.h + 2 * pad;
@@ -11583,7 +13273,7 @@ async function pdfShadow(ops, o, pdf, page, L, bitmaps) {
   const a = document.createElement('canvas'); a.width = W; a.height = H;
   const ag = a.getContext('2d');
   ag.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
-  await drawObjectOn(ag, o, {}, bitmaps);
+  await drawObjectOn(ag, o, texts, bitmaps);          // (texts: a table's words cast a shadow too, as on the desk)
   // ...then only its shadow: the object is drawn off the canvas, its shadow lands on it.
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const cg = c.getContext('2d');
@@ -11621,14 +13311,16 @@ function pdfGlyphShape(ops, cmds, dx, dy, L) {
  * screen readers announce. A turned box gets the area around its turned
  * letters. Only addresses cleanLink allows ever get here.
  */
-function pdfLinks(o, lines, page, pdf, L) {
+function pdfLinks(o, lines, page, pdf, L, toSheet) {
+  // toSheet: a point on the page -> where it lands on the PDF's sheet (one page per sheet, a booklet, copies).
+  const map = toSheet || ((x, y) => [x, PAGE.height - y]);
   const c = centreOf(o);
   for (const { ln, story } of lines) {
     for (const lk of lineLinks(ln, story.text)) {
       // The four corners, turned like the box, then flipped (PDF pages count up from the bottom).
       const corners = [[lk.x1, ln.top], [lk.x2, ln.top], [lk.x2, ln.top + ln.height], [lk.x1, ln.top + ln.height]]
         .map(([x, y]) => (o.rotation ? rotatePoint({ x, y }, o.rotation, c) : { x, y }))
-        .map((q) => [q.x, PAGE.height - q.y]);
+        .map((q) => map(q.x, q.y));
       const xs = corners.map((q) => q[0]), ys = corners.map((q) => q[1]);
       const annot = pdf.context.obj({
         Type: 'Annot', Subtype: 'Link', F: 4, Border: [0, 0, 0],
@@ -11713,6 +13405,11 @@ async function drawObjectOn(g, o, texts, bitmaps) {
     };
     if (o.type === 'text') {
       for (const run of texts[o.id] || []) { g.fillStyle = run.fill; g.fill(new Path2D(run.d)); }
+    } else if (o.type === 'table') {
+      const { xs, ys } = tableEdges(o);
+      o.cells.forEach((row, r) => { const fill = rowFill(o, r); if (fill) { g.fillStyle = fill; g.fillRect(xs[0], ys[r], xs[xs.length - 1] - xs[0], ys[r + 1] - ys[r]); } });
+      if (o.stroke && o.strokeWidth > 0) { g.strokeStyle = o.stroke; g.lineWidth = o.strokeWidth; g.lineCap = 'square'; g.stroke(new Path2D(tableLinesD(o))); }
+      for (const c of tableCells(o)) for (const run of texts[c.id] || []) { g.fillStyle = run.fill; g.fill(new Path2D(run.d)); }
     } else if (o.type === 'line') {
       const lp = lineParts(o);
       const p = new Path2D(); p.moveTo(lp.x1, lp.y1); p.lineTo(lp.x2, lp.y2);
@@ -11749,6 +13446,7 @@ async function exportPNG(name, ppi) {
 async function openExport() {
   if (focusedStoryId) stopEditingToFrame(focusedStoryId);
   $('expName').value = baseName();
+  $('expPaper').value = /^a\d/.test(PAGE.size) ? 'a4' : 'letter';    // A4 for A-sizes, Letter otherwise
   updateExportDialog();
   const notes = (await a11yIssues()).filter((i) => i.level !== 'tip').map((i) => i.text);
   $('expWarn').replaceChildren(...notes.map((n) => { const li = document.createElement('li'); li.textContent = n; return li; }));
@@ -11757,18 +13455,36 @@ async function openExport() {
 }
 function updateExportDialog() {
   const png = document.querySelector('input[name="expFormat"]:checked').value === 'png';
+  const layout = $('expLayout').value, copies = layout === 'up2' || layout === 'up4';
   $('expDpiRow').hidden = !png;
+  $('expPrintRow').hidden = png;                     // arranging, bleed and crop marks are for the PDF only
+  $('expPaperRow').hidden = !copies;
+  $('expBleedRow').hidden = !(PAGE.bleed > 0) || copies;   // copies side by side can't each have a bleed
+  $('expMarksRow').hidden = copies;                  // copies always get cut marks
+  if (PAGE.bleed > 0) setText('expBleedText', 'Include the bleed (' + toU(PAGE.bleed) + ' ' + unit().short + ' past each edge)');
   if (png) {
     const k = Number($('expDpi').value) / 72;
     $('expNote').textContent = 'Page ' + (pageIndex + 1) + ' as a picture: ' + Math.round(PAGE.width * k) + ' × ' + Math.round(PAGE.height * k) + ' pixels.';
+    return;
+  }
+  const n = doc.pages.length;
+  const tagged = ' Text stays real text: it can be selected, searched and copied. The PDF is not tagged yet, so screen readers won’t get your headings, reading order or alt text from it.';
+  if (layout === 'booklet') {
+    const m = Math.ceil(n / 4) * 4;
+    $('expNote').textContent = n + (n === 1 ? ' page' : ' pages') + (m > n ? ', plus ' + (m - n) + ' blank at the end' : '') + ', on ' + m / 4 + (m === 4 ? ' sheet' : ' sheets') +
+      ', two pages on each side. Print on both sides, flipping on the short edge, then fold the stack in the middle and staple along the fold.' + (isFacing() ? '' : ' (Facing pages, in Page setup, shows the spreads as they will read.)');
+  } else if (copies) {
+    const plan = printPlan({ layout, paper: $('expPaper').value });
+    $('expNote').textContent = (layout === 'up2' ? 'Two' : 'Four') + ' copies of each page on its own sheet, with cut marks. ' + plan.note;
   } else {
-    const n = doc.pages.length;
-    $('expNote').textContent = (n === 1 ? 'The page' : 'All ' + n + ' pages') + ' at real size. Text stays real text: it can be selected, searched and copied. The PDF is not tagged yet, so screen readers won’t get your headings, reading order or alt text from it.';
+    $('expNote').textContent = (n === 1 ? 'The page' : 'All ' + n + ' pages') + ' at real size.' + tagged;
   }
 }
 function wireExport() {
   for (const r of document.querySelectorAll('input[name="expFormat"]')) r.addEventListener('change', updateExportDialog);
   $('expDpi').addEventListener('change', updateExportDialog);
+  $('expLayout').addEventListener('change', updateExportDialog);
+  $('expPaper').addEventListener('change', updateExportDialog);
   $('exportBtn').addEventListener('click', openExport);
   $('exportForm').addEventListener('submit', async (e) => {
     if (e.submitter && e.submitter.value === 'cancel') return;
@@ -11776,7 +13492,8 @@ function wireExport() {
     const png = document.querySelector('input[name="expFormat"]:checked').value === 'png';
     toast(png ? 'Making the picture…' : 'Making the PDF…', 2000);
     try {
-      const done = png ? await exportPNG(name, Number($('expDpi').value)) : await exportPDF(name);
+      const done = png ? await exportPNG(name, Number($('expDpi').value))
+        : await exportPDF(name, { bleed: PAGE.bleed > 0 && $('expBleed').checked, marks: $('expMarks').checked, layout: $('expLayout').value, paper: $('expPaper').value });
       if (done) {
         markSaved();                                 // you have your work: the crash backup can go
         toast('Exported ' + name + (png ? '.png' : '.pdf') + '.');
@@ -11796,6 +13513,38 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.21.1", date: "2026-10-07", title: "", notes: [
+    "Rows and columns anywhere in a table. While you type in a cell, the floating pill appears above the table with six buttons for that cell: insert a row above or below, insert a column left or right, delete its row, delete its column. A mouse press or tap on them leaves the cursor in its cell, so you can keep typing. From the keyboard, Alt+F10 jumps from the cell to the pill and Escape goes back to the cell. (The Table section's buttons already worked beside the cell being typed in; with the table picked they work at the end, and the section now says how to reach the middle.)"
+  ] },
+  { version: "0.21.0", date: "2026-10-07", title: "", notes: [
+    "Folds. Page setup has a Folds list: half-fold, tent fold, tri-fold, Z-fold, gate fold and quarter-fold. Folds show on the page as violet dash-dot lines marked \"Fold\" (never printed), things snap to them like guides, and with crop marks the PDF gets dashed fold marks outside the trim. Picking a fold that is usually made from a wide sheet turns the page to landscape (and says so). The tri-fold brochure and greeting card templates use folds now instead of plain guides.",
+    "Booklets. The Export dialog has a new \"Arrange the pages\" choice. Booklet puts two pages on each side of a sheet in the order that reads right once the stack is folded and stapled (8 and 1, then 2 and 7...), adding blank pages at the end to make a multiple of four. The dialog says how many sheets and how to print them (both sides, flipping on the short edge). The bleed and crop marks work here too, with a fold mark at the spine.",
+    "Copies to cut apart. Two or four copies of each page on a sheet, touching so one cut separates them, with cut marks at every cut. On Letter or A4 paper they are made a little smaller when they don't fit (the dialog says by how much); Exact size keeps them full size on a sheet just big enough, for a print shop. Text and links stay real in every copy.",
+    "Project files are now version 11."
+  ] },
+  { version: "0.20.0", date: "2026-10-07", title: "", notes: [
+    "Templates. The New button now opens a New dialog: a blank Letter page, a blank page of any size (Page setup), or one of six templates, each an original design with sample words and empty picture frames: a flyer, a two-page newsletter (a master page with page numbers, a story in two columns that continues on page 2, a sidebar, a pull quote and an events table), a tri-fold brochure (both sides, with guides on the folds), a certificate, a greeting card folded in half, and a sign. Each is drawn small in the dialog by the same code that draws the page. The splash's second choice is now Start from a template. Every template opens with all its text fitting and nothing for the checker to fix except its empty picture frames.",
+    "Building blocks. A new rail button (K) opens a gallery of ready-made pieces to add to the page showing, in the document's own styles: a pull quote, a sidebar, a coupon, event details (a table), a picture with a caption, a section heading, a masthead (placed at the top margin), a contact strip (at the bottom margin) and a page border (just outside the margins). A block with several parts arrives as a group, in one undo step.",
+    "Paste and building blocks share one way of adding things to a page, so a pasted or added table gets the next free name (Table 2, Table 3...)."
+  ] },
+  { version: "0.19.0", date: "2026-10-07", title: "", notes: [
+    "Tables. A new Table tool on the rail (B): drag on the page for a table that size, or click for one that fits its words. It starts with three rows and three columns, the first a header row, and the cursor in the first cell. Tab goes to the next cell, row by row (Shift+Tab back); after the last cell, Tab goes on to the next story as before, so the keyboard is never trapped. Each row grows to fit what is typed in it; a table never hides text. Every cell is a small text box of its own, so roles, bold, links, fonts and page numbers all work in cells.",
+    "The Table section of the Inspector: the number of rows and columns; insert a row above or below, or a column left or right, of the cell you are typing in (or add one at the end); delete a row or column; this column's width; the space inside cells; even column widths; the header row and banded rows, with their colours. The lines and the colour behind the cells are in Look, with opacity and a drop shadow.",
+    "On the page: double-click a cell (or press Enter with the table picked) to type in it; Escape picks the whole table. Drag the line between two columns, or the green tab above it, to share their width. Resizing the table makes every row or column bigger or smaller in step. The floating pill can add a row or a column. A table with no lines shows its grid faintly (never printed).",
+    "Accessible from the start. A screen reader hears where each cell is (\"Table 1, row 2 of 4, column 3 of 3 (Room)\": its column's heading), and the table is one item in the reading order, read row by row. The header row is bold through its style, so Ctrl+B can still un-bold a word there. The checker suggests a header row when a table has none.",
+    "Everywhere else: the PDF has the cells as real, selectable text (with working links), the lines and shading as vector drawing; PNG export, thumbnails, master pages, copy and paste (other apps get the words with tabs between cells), duplicate, undo, facing pages and saving all work with tables.",
+    "Project files are now version 10."
+  ] },
+  { version: "0.18.0", date: "2026-10-07", title: "", notes: [
+    "Facing pages. Page setup has a new \"For printing\" part. Tick Facing pages for a booklet or magazine: page 1 stands alone on the right, then pages 2 and 3, 4 and 5 and so on show side by side as spreads. The left and right margins become inside and outside, mirrored on left-hand pages. Click the other page of a spread to work on it (the spread stays still), or drag something across the spine to move it onto that page. A text box can link to a box on the other page with one click. The page you are on has a thin green outline; the filmstrip pairs the spreads; zoom to fit shows the whole spread.",
+    "Bleed. Also in Page setup: how far colour and pictures may run past the page edge, to be trimmed off (0.125 in is usual). A red dashed line shows it on the page (open at the spine of a spread).",
+    "Crop marks and the bleed in the PDF. The Export dialog can include the bleed and add crop marks. The PDF pages then get room around them, with the page marked as the trim box and the bleed as the bleed box, the way print shops expect. Anything in the grey staging area is still cut off.",
+    "Project files are now version 9."
+  ] },
+  { version: "0.17.0", date: "2026-10-07", title: "", notes: [
+    "Columns inside one text box. Text flow, in the Inspector, now has Columns (1 to 6) and the Gap between them (a quarter of an inch to start). The text fills the first column from the top, then the next, then goes on to the next linked box. Dashed lines show the gaps on the page (they never print). Text wrap works inside each column, a click lands in the column under the pointer, and \"Continued on page...\" sits at the foot of the last column.",
+    "Project files are now version 8."
+  ] },
   { version: "0.16.0", date: "2026-10-07", title: "", notes: [
     "A tidier filmstrip. Its own buttons are now just + and Master pages (the way into the master page editor).",
     "+ asks which master page. With master pages in the document, + opens a short menu: \"No master page\" or one of the masters, with the page showing's own master already picked. With none, it simply adds a page.",
@@ -12064,7 +13813,7 @@ function wireShell() {
   SuiteInstall.button($('installBtn'), (outcome) => { if (outcome === 'accepted') toast('Installing DSKEDTR.'); });
   // File buttons.
   for (const id of ['newBtn', 'openBtn', 'saveBtn', 'exportBtn']) $(id).addEventListener('mousedown', (e) => e.preventDefault());
-  $('newBtn').addEventListener('click', async () => { if (await okToReplace('Start a new document')) newDocument(); });
+  $('newBtn').addEventListener('click', openNewDialog);   // a blank page or a template (section 17)
   $('openBtn').addEventListener('click', chooseFileToOpen);
   $('saveBtn').addEventListener('click', saveProject);
   $('fileInput').addEventListener('change', () => { const f = $('fileInput').files; if (f && f.length) openFiles(f); });
@@ -12093,7 +13842,7 @@ async function startUp() {
     appId: 'dskedtr',
     actions: [
       { label: 'New document', detail: 'One Letter page, 8.5 × 11 in', run: newDocument, primary: true },
-      { label: 'Pick a size', detail: 'A4, legal, tabloid, half letter, landscape…', run: newDocumentPickSize },
+      { label: 'Start from a template', detail: 'Flyer, newsletter, brochure, certificate, card, sign; or pick a size', run: openNewDialog },
       { label: 'Open a project', detail: 'A .dskedtr file', run: chooseFileToOpen },
       { label: 'Explore the sample', detail: 'A two-page school newsletter', run: loadSample }
     ],
@@ -12221,6 +13970,10 @@ async function a11yIssues() {
     if (staged.length) add('tip', staged.length + (staged.length === 1 ? ' thing is' : ' things are') + ' out in the staging area (' + staged.slice(0, 3).map(objName).join(', ') + (staged.length > 3 ? '…' : '') + '). Things there are not printed, exported or read.', pi, staged[0].id, null);
     for (const o of doc.pages[pi].objects) {
       if (o.hidden || o.type === 'text' || !onPageArea(o)) continue;
+      if (o.type === 'table') {
+        if (!o.header && o.cells.length > 1) add('tip', objName(o) + ' has no header row. A header row (Table, in the Inspector) tells screen-reader users what each column holds.', pi, o.id, 'table');
+        continue;
+      }
       if (o.type === 'picture' && !o.image) {
         add('tip', 'Empty picture frame "' + objName(o) + '": it won’t print until it has a picture.', pi, o.id, 'picture');
         continue;
@@ -12365,11 +14118,11 @@ function renderA11y() {
 function goToIssue(issue) {
   if (issue.page != null && issue.page !== pageIndex) goToPage(issue.page);
   if (focusedStoryId) stopEditingToFrame(focusedStoryId);
-  selectObjects(issue.id && obj(issue.id) ? [issue.id] : []);
+  selectObjects(issue.id && obj(issue.id) ? [cellTable(obj(issue.id)) ? obj(issue.id).cellOf : issue.id] : []);   // (a cell: its table)
   relayoutAndRender();
   updateInspector();
   selectSideTab('tabInspector');
-  const fold = { doc: 'docBody', meaning: 'meaningBody', story: 'storyBody', picture: 'pictureBody' }[issue.go];
+  const fold = { doc: 'docBody', meaning: 'meaningBody', story: 'storyBody', picture: 'pictureBody', table: 'tableBody' }[issue.go];
   if (issue.go === 'para' && issue.id) {
     // Low contrast: start typing in that box, so its Paragraph style can be changed.
     const o = obj(issue.id);
@@ -12478,6 +14231,7 @@ async function start() {
   wireChars();
   wireMasters();
   wireWrap();
+  wireTemplates();
   wireA11y();
   wireAltDialog();
   wirePictureInput();

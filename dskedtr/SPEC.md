@@ -139,7 +139,9 @@ colour is never the only difference: the icon's drawing and the name carry it.
 - A warning when a picture is too low-resolution for its printed size.
 - Alt text on every picture and meaningful shape or group (required; see
   Accessibility).
-- Tables.
+- Tables (0.19.0).
+- Templates and building blocks (0.20.0).
+- Folds, booklet printing, 2-up and 4-up with cut marks (0.21.0).
 - Group, ungroup, lock, hide, flip, rotate, z-order.
 - Exact X, Y, width, height and rotation in the Inspector.
 - Format painter.
@@ -228,7 +230,8 @@ model from phase 0, not a checker bolted on at the end.
   quote, label. The starter styles come with roles already set.
 - Document title and language, plus a language on any passage in another
   language.
-- Tables have header rows.
+- Tables have header rows (0.19.0: on by default, read as the column
+  headings; the checker suggests one when a table has none).
 
 **Alt text is required**
 - Placing a picture opens its alt text field at once.
@@ -451,7 +454,7 @@ Phase 1 is built in milestones, each stopping for Dave's review:
 Master pages with odd/even, page numbers and "continued" lines (done,
 0.12.0, below). Facing pages, columns in a box, "continued" lines, page numbers,
 tables, bleed and crop marks, booklet printing, 2-up/4-up, fold presets,
-building blocks, the starter template gallery.
+building blocks, the starter template gallery (all done by 0.21.0, below).
 
 - 0.10.0, text wrap: any non-text object can have `wrap: { mode, gap }`,
   mode `box`, `tight` or `topBottom` (absent = none), gap in points.
@@ -567,6 +570,105 @@ building blocks, the starter template gallery.
   on Escape, or when focus leaves the filmstrip (`focusThumbQuietly` puts
   focus back without reopening it). Covers WCAG 2.5.7 (a single-pointer
   alternative to dragging pages).
+- 0.17.0: columns in a text box (section 5d): `o.cols` (2 to 6; absent =
+  1) and `o.gutter` (points; `DEFAULT_GUTTER` 18). `boxCols(f)`,
+  `columnLimits(f, ci)` (equal columns; the gap shrinks so each column keeps
+  12 pt). `layoutStory` steps column by column (`ci`), lines carry `col`;
+  "Continued from" room only in the first column, "Continued on" only in
+  the last. `freeSegment` and `placeWrappedLine` take the column's edges
+  (`lim`). `posAtPoint` picks the column first (the middle of each gap
+  divides). `renderFrames` draws the gaps dashed. Inspector: `#boxCols`,
+  `#boxGutter` in Text flow. Project version 8. Not yet: a line between
+  columns, columns of different widths.
+- 0.18.0: facing pages and bleed (section 4c). `doc.page.facing`,
+  `doc.page.bleed` (points, 0 to 72). `isFacing`, `isLeftHand(pi)` (page
+  2, 4...), `spreadPartner(pi)`, `partnerOffset(pi)` (+W or -W),
+  `marginBox(pi)` (left = inside, mirrored on left-hand pages). `stage()`
+  is W + 72 wide each side with facing pages. New first layer `spread`:
+  `renderSpread()` draws the partner (paper, content clipped to its page,
+  margins, bleed) beside the page; `partnerPoint(p)`; a click there goes
+  to that page and picks what is under the pointer; a link pick can land
+  there (`textFrameAt(p, pi)`); `carryAcrossSpread()` after a move drag.
+  `fitZoom` fits 2W; `showPage` centres the spread. `bleedLine(target,
+  spine)`; active page outline. Filmstrip `.page-list.facing` pairs.
+  PDF: `exportPDF(name, { bleed, marks })`: page W + 2e (e = b, or
+  max(b, 9) + 18 + 6 with marks), TrimBox and BleedBox, the flip shifted by
+  e, a clip at the bleed, `pdfCropMarks`, link rects shifted by e. Project
+  version 9. Not yet: master pages drawn as spreads, objects spanning the
+  spine (one object on two pages), PNG with bleed.
+- 0.19.0: tables (sections 4d and 5e). Object type `table`: `cols`
+  (widths), `rows` (smallest heights, 0 = fit), `cells[r][c]` = `{ id,
+  type: 'text', story, cellOf, inset }` kept inside the table (not in
+  `page.objects`), `header`, `banded`, `headerFill`, `bandFill`, `fill`,
+  `stroke`, `strokeWidth`, `pad`, `fitH` (the height last laid out: a
+  different `h` means a resize, and rows scale in step). `reindex`
+  registers cells in `objIndex`/`objPage`; `layoutAll` runs `layoutTable`
+  first (scale `cols` to `w`; measure each cell in a 1e6-tall box; row =
+  max(need, min); place cells); cells ignore wrap. Header bold through
+  `roleStyle(story, p)` (replaces `styleOf(story.roles[p])` in layout,
+  `paraStyleAt`, `formatText`, `selectionLook`). Drawing: `tableEdges`,
+  `rowFill`, `tableLinesD`, `tableElement` (desk), a `drawObjectOn` branch
+  (PNG), `pdfTable` (+ `pdfLinks` per cell; `pdfShadow` takes texts).
+  `linesByFrame` counts cells as on their page (and a master's tables).
+  `textFrameAt` returns the cell under the point; `isLinkTarget` refuses
+  cells; `stopEditingToFrame` picks the table. Reading order: the table is
+  one item; `orderInputsInDom` expands it to its cells' stories, so Tab
+  goes cell to cell; `storyLabel` names row, column and the column's
+  heading. `tableColAt`/`moveTableCol` (drag kind `tableCol`; tabs drawn
+  above column lines); no rotate handle, `setRotation` ignores tables.
+  `tableAddRow/DeleteRow/AddCol/DeleteCol`, `setTableSize`,
+  `afterTableChange`. Inspector `#secTable` (`fillTable`); Look applies;
+  Meaning and Story hidden. Pill `addRow`, `addCol`. Rail tool `table`
+  (B). Loader: `checkObject` 'table' (at most 100 x 20, rectangular, no
+  rotation), cells join `textFrames` and `objectIds`, and a cell's story
+  must have exactly that one frame. Checker tip: no header row. Project
+  version 10. Not yet: merged cells, row heights by dragging, cell
+  shading per cell, vertical alignment in cells, a table across pages,
+  tagged PDF tables.
+- 0.20.0: templates and building blocks (section 17). `storyParts(paras)`
+  (paragraphs `[role, text, marks]`, marks `[[words or '*', format]]`;
+  the sample uses it too). `docMaker(page)`: `page(master)`, `master`,
+  `style(role, patch)`, `text`, `flow` (link a box), `rect`, `ellipse`,
+  `line`, `picture` (empty frame), `table(pg, [x, y, w], rows, opts)`,
+  `group`, `done()`. `TEMPLATES` (flyer, newsletter, trifold, certificate,
+  card, sign; each `make()` returns a document), `newFromTemplate(t)`
+  (loads its fonts first). `BLOCKS` (`size(m)`, `place` centre / top /
+  bottom / fill, `make(k, pg, m)` at the origin of the margin box);
+  `buildBlock` (in this document's styles, placed on the page showing),
+  `addBlock` (as Copy items through `placeItems`, one undo step).
+  `placeItems(src, off, suffix)` is the body of the old `pasteClip`.
+  `previewSVG(d, pi, view, label)` sets the open document aside, lays out
+  and draws `d` with `renderContent`, then restores it (and drops the
+  preview's layouts). `#newDialog` (`openNewDialog`, `startNew`) replaces
+  New's straight-to-blank; `#blocksDialog` (`openBlocks`), rail
+  `#blocksBtn`, key K. Templates are checked in tests through
+  `checkDocument`. Not yet: user-saved templates, more blocks (calendar,
+  tear-off tabs, mailing panel), colour schemes to restyle a template.
+- 0.21.0: folds and printing layouts (section 4c). `doc.page.fold` (a key
+  of `FOLDS`: half, tent, tri, z, gate, quarter; fractions of the page,
+  `wide` ones turn the Page setup to landscape); `foldLines()`,
+  `foldLinesEl(target)` (violet dash-dot, "Fold" labels, also on the
+  spread partner); folds join `snapTargets`, `snapName` says "Fold".
+  Export: `printPlan(opts)` -> `{ sheets: [{ w, h, trim, bleedBox, places:
+  [{ pi, x, y, s, clip }], marks }], note }` for `layout` pages / booklet /
+  up2 / up4 (`paper` letter / a4 / exact). Booklet: M = pages rounded up
+  to 4, side i holds [M - i, i + 1] (even i) or [i + 1, M - i], no bleed at
+  the spine, a fold mark there. Copies: grids 2x1 or 1x2 (2-up), 2x2
+  (4-up), the best scale on either paper orientation, cut marks outside
+  the group at every cut, fold marks per column or row. `exportPDF` draws
+  each place with one flip-and-scale matrix and its clip, then
+  `pdfPageContent` (the old object loop) and `pdfMarks` (folds dashed
+  [3 2]); `pdfLinks` takes a page-to-sheet mapping. Project version 11.
+  Not yet: creep for thick booklets, imposition for 4-page folded
+  sheets (quarter-fold cards with turned panels), cutting a page into
+  tiles for a poster, printing straight from the browser.
+- 0.21.1: the cell pill. `quickBarState()` returns `{ list: [table], cell:
+  { r, c }, only: 'cell' }` while typing in a cell (any other typing: no
+  pill); pill buttons `rowAbove`, `rowBelow`, `rowDel`, `colLeft`,
+  `colRight`, `colDel` call `tableAddRow/DeleteRow/AddCol/DeleteCol`
+  beside the cell; a mousedown on them is cancelled so the textarea keeps
+  focus; Escape in the pill returns to the cell's textarea; the desk's
+  scroll handler places the pill from the state's list.
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,
