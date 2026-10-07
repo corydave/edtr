@@ -169,6 +169,10 @@ Merging is done by three-bvh-csg, with `useCDTClipping` on. That gives closed (w
 
 Each object has one colour, except a mesh made by Union from differently coloured parts (or imported with colours): it keeps a colour per corner (the `color` attribute, flagged `vertexColors` on the object and in projects). Picking a colour paints it one colour again. Merges carry `position`, `normal`, `uv` and `color`; shapes without a colour list or uv get them filled in first, so every brush has the same data.
 
+## Phones and tablets
+
+At 820 px wide or less the tool rail moves under the 3D view and the Inspector becomes a sheet between them, in its own grid row (`.app.sheet-open`: `minmax(0, 1fr) auto var(--sheet-h) 56px`), so the 3D view shrinks rather than being covered; tablets (600 px and up) keep a slim status bar. The **grab handle** at the top of the sheet (the same as DSKEDTR's) resizes it: drag it, or use Up/Down/Home/End/Enter on it (a `role="separator"`). It starts at a third of the screen, stays at least 120 px and always leaves the top bar, rail and 120 px of the view; a tap, or a drag nearly to the bottom, closes it to just the handle. The height is saved as a share of the screen in `settings.sheet` (`wireSheetHandle`, `applySheet`).
+
 ## Keyboard and screen readers
 
 - The 3D view is a focusable `role="application"` region, so screen readers pass the arrow keys through. Arrow keys move the selection along the grid axis closest to "right" and "forward" on screen, Page Up/Down move it up and down, End drops it to the floor, Alt+arrows turn the view, + and - zoom.

@@ -1,5 +1,15 @@
 # 3DEDTR changelog
 
+## 0.15.0 - 2026-10-07 - A handle for the Inspector sheet
+
+The same grab handle as DSKEDTR 0.14.0, so the suite's phone sheets work alike.
+
+- **Phones and tablets (820 px wide or less):** a grab handle (a short grip bar) at the top of the Inspector sheet. Drag it up or down to share the screen between the 3D view and the Inspector. The sheet keeps its own row in the layout (`grid-template-rows: minmax(0, 1fr) auto var(--sheet-h) 56px`), so the 3D view shrinks rather than being covered, and its ResizeObserver resizes the drawing and the camera's proportions as it goes.
+- **Sizes:** it starts at a third of the screen (the old sheet took 46% of the area under the top bar). It is at least 120 px when open, and never so tall that the top bar, the tool rail, the status bar and timeline (when they show) and 120 px of the 3D view are lost. The height is remembered in this browser as a share of the screen (`settings.sheet` in `3dedtr-settings`), so it suits the phone turned either way, and it is worked out again when the window changes size.
+- **Open and closed:** a tap on the handle opens or closes the sheet; dragging it nearly to the bottom closes it. Closed, only the handle stays (29 px), so it can be pulled up again. The Inspector button, Escape in the sheet and "Skip to the Inspector" work as before and stay in step. The sheet still starts closed and opens by itself after the first shape.
+- **Keyboard and screen readers:** the handle is a `role="separator"` with `aria-valuenow` and `aria-valuetext` as a percent of the screen ("Inspector open, 33 percent of the screen" / "Inspector closed"). Up and Down change the height by 8% of the screen (Down below the shortest closes), Home closes, End makes it as tall as it goes, Enter or Space opens or closes; those keys never reach the app's shortcuts. Opening and closing are announced.
+- **Desktop:** unchanged (the handle is hidden, so it is not in the Tab order).
+
 ## 0.14.0 - 2026-10-04 - Edit mode
 
 The step of Blender's donut tutorial that makes the icing drip: editing an object's points.
