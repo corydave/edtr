@@ -92,6 +92,12 @@ Tab in the 3D view (with single-key shortcuts on), or **Edit points** in the Ins
 - **Moving:** `editStartMove` records every point and how much it follows (1 when picked; with Proportional editing, `falloff()` of the distance to the nearest picked point within the reach), then `editApplyMove(d)` moves them by a world distance turned into the object's own space. Used by the gizmo (on `editPivot`, the middle of the picked points), G (a plane facing the camera; X/Y/Z keep one direction; snap applies), the arrow keys and the typed middle.
 - **Keeping it:** `editCommit` writes the points back as the object's own triangles (a shape becomes a mesh), rebuilds Shrink/Wall/Smooth, and commits one undo step. Undo/Redo re-attach to the same object by id (`reattachEdit`), keeping the picked points when the count matches.
 - **Deleting:** points and every face using them, or just faces whose corners are all picked (then unused points go). The surface is left open - Wall makes it printable again.
+- **Building (0.16.0):** every tool hands new `{ pos, col, tris }` to `editReplace`, which drops unused points, renumbers and commits one undo step.
+  - `editExtrude`: faces with every corner picked are copied onto new points and joined to the old ones by side walls along the region's border (each wall wound to match the faces on both sides); with no whole face, picked edges (open ones first) each grow a strip. E with the pointer over the view starts a grab flagged `extrude` (no Proportional pull), and cancelling it undoes the extrusion and puts the picks back.
+  - `editMergeCentre` (M) and `editMergeClose` (a grid of boxes as wide as the distance, then union-find); `editMergeFinish` drops faces that fold to a line and pairs of faces on the same three points.
+  - `editFill` (Shift+F): picked open edges are chained into rims; a rim of 3 or 4 gets one face, a longer one a fan round a new middle point. Otherwise 3 or 4 picked points make a face, ordered round their middle and turned towards the camera.
+  - Loops (`editLoopFrom`): the triangles are put back into quads with `quadsOf` (as Smooth does); from an edge, the walk goes straight on through every point with exactly four edges, to the one edge that shares no piece with the incoming one. Alt+click picks the visible edge nearest the pointer (`editLoopClick`); L uses two picked neighbours.
+- **Copy and paste (objects):** `copySelection` keeps `describe()` of each picked object with its group's id and its world and local matrices (`clip`, in this tab only); `pasteClip` makes fresh ids, puts each copy back in its group if that group still exists (otherwise into the scene at its world place), moves it 10 mm per paste and carries its keyframes along (`keysFollow`). Only from the 3D view or the Scene list, so copying text elsewhere is untouched.
 
 ## Animated GLB
 
@@ -188,7 +194,7 @@ At 820 px wide or less the tool rail moves under the 3D view and the Inspector b
 
 ## Known gaps (later versions)
 
-- Mirroring; Edit mode has no extrude, merge-points or new faces yet
+- Mirroring; Edit mode has no knife, bevel or edge slide yet, and loops need four-sided pieces (they stop at triangles and poles)
 - A shell (hollow) tool, and compressed glTF
 - Overlapping shapes in an imported SVG stay overlapping solids (Merge, or Join, cleans them)
 - Raised bevelled text sunk into a plate less deep than its bevel leaves tiny slivers when merged (a CSG limit): sink it at least as deep as the bevel, or use bevel 0

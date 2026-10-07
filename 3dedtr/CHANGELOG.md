@@ -1,5 +1,15 @@
 # 3DEDTR changelog
 
+## 0.16.0 - 2026-10-07 - Copy and paste; Extrude, Merge, Fill and loops
+
+- **Copy, cut and paste objects:** Ctrl+C, Ctrl+X, Ctrl+V (Cmd on a Mac) with the 3D view or the Scene list focused. Each paste lands 10 mm further right than the last; after a cut, the first paste goes back to the same spot. A copied part of a group pastes back into that group (or, if the group is gone, into the scene where it was). Keyframes come along. Copying text in a box or the Help panel works as usual. The copies live in this tab only (not the computer's clipboard).
+- **Extrude (E)**, as in Blender: faces with every corner picked are pulled out as a block with new side walls; with only edges picked (say the open rim of the icing), each edge grows a new strip. The new points are picked. With the pointer over the 3D view, E starts dragging them at once - click to keep, Escape to take the whole extrusion back (and your earlier picks). From the keyboard, E then the arrow keys.
+- **Merge (M)** the picked points into one, at their middle; **Merge close points** (Inspector, with a distance, default 0.1 mm) joins points that almost touch - the picked ones, or all of them. Faces that fold flat are dropped.
+- **Fill (Shift+F)**: a hole whose rim points are picked gets a lid (one face for 3 or 4 sides, a fan round a new middle point for more); otherwise three or four picked points get a new face, facing the camera.
+- **Loops:** Alt+click an edge to pick the whole ring it lies on (round a torus's tube: 21 points; along it: 64). From the keyboard: pick two points side by side, then L. Loops follow four-sided pieces and stop at triangles and poles.
+- **Inspector:** a new Edit mode section, *Extrude, merge and fill*, with all of these as buttons.
+- **Checked:** a 20 mm box with its top extruded 5 mm is exactly 10,000 mm³ and closed; extruding in place then Merge close points gives back the same 12 points; Merge on the top makes an exact pyramid; an open-topped box extruded by its rim and Filled is closed again; the donut's half (bottom deleted) Filled is closed; Escape after E restores the points and picks; copy/cut/paste/undo and typing Ctrl+V in the Name box behave.
+
 ## 0.15.1 - 2026-10-07 - DSKEDTR joins the family
 
 - **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.

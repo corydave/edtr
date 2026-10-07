@@ -1369,10 +1369,15 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.15.1';
+const APP_VERSION = '0.16.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 const CHANGELOG = [
+  { version: '0.16.0', date: '2026-10-07', notes: [
+    'Copy, cut and paste: Ctrl+C, Ctrl+X and Ctrl+V (Cmd on a Mac) in the 3D view or the Scene list. Each paste lands 10 mm to the right of the last; after a cut, the first paste goes back where it was. What you copied stays ready to paste even after the original changes or goes.',
+    'Edit mode builds now: Extrude (E) pulls the picked faces out as new geometry - or, with just an edge picked, grows a new strip from it - and drags it straight away with the pointer over the 3D view (click keeps it, Escape takes it all back). Merge (M) makes the picked points one, at their middle; Merge close points tidies up points almost on top of each other. Fill (Shift+F) closes a hole whose rim is picked, or makes a face from three or four points.',
+    'Loops: Alt+click an edge to pick the whole ring of points it is on - right round a donut\'s tube, or along it. From the keyboard, pick two points side by side and press L. All of these are in the Inspector too (Extrude, merge and fill).'
+  ] },
   { version: '0.15.1', date: '2026-10-07', notes: [
     'More apps and the splash\'s row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes.',
     'With nine apps in the family, the splash\'s row shows the eight others on one line on a computer, and 4 + 4 on a phone.'
@@ -5268,7 +5273,9 @@ function setupPicking() {
     }
   }, { capture: true });
   // The box, drawn while dragging (in page pixels, over the 3D view).
+  canvas.addEventListener('pointerleave', () => { stagePointer = false; });
   canvas.addEventListener('pointermove', (e) => {
+    stagePointer = true;
     if (edit && edit.grab) { grabMove(e); return; }
     if (!press || !press.box || press.id !== e.pointerId) return;
     const box = $('editBox'), r = canvas.getBoundingClientRect();     // (the 3D view fills its frame, where the box sits)
@@ -6336,7 +6343,8 @@ let editGroup = null;            // the points and edges drawn over the object (
 let editPivot = null;            // where the Move tool's arrows sit: the middle of the picked points
 let editBoxOnce = false;         // B was pressed: the next drag draws a box
 // Proportional editing, kept while the app is open (as in Blender).
-let editProp = { on: false, radius: 10, falloff: 'smooth' };
+let editProp = { on: false, radius: 10, falloff: 'smooth', mergeDist: 0.1 };   // (mergeDist: Merge close points, mm)
+let stagePointer = false;        // is the pointer over the 3D view? (E then starts dragging the new points, as in Blender)
 const FALLOFFS = [['smooth', 'Smooth'], ['sphere', 'Round'], ['linear', 'Straight'], ['sharp', 'Sharp']];
 /** How much a point at distance d follows, with Proportional editing (1 at the picked points, 0 at the radius). */
 function falloff(d, r, kind) {
@@ -6370,7 +6378,7 @@ function enterEdit(m = selection[0]) {
   editIndex();
   if (!editGroup) {
     // The first time: open the Inspector's picking and moving sections (after that, they stay as you leave them).
-    openSections.add('Pick points'); openSections.add('Move the picked points');
+    openSections.add('Pick points'); openSections.add('Move the picked points'); openSections.add('Extrude, merge and fill');
     editGroup = new THREE.Group(); editGroup.name = 'edit points';
     editGroup.matrixAutoUpdate = false;
     editGroup.update = syncEditOverlay;                // (called before every drawing, like the selection boxes)
@@ -6586,6 +6594,7 @@ function editPointAt(cx, cy) {
   return best;
 }
 function editClick(e) {
+  if (e.altKey) { editLoopClick(e); return; }          // Alt+click: a whole loop (section "Loops")
   const i = editPointAt(e.clientX, e.clientY);
   const add = e.shiftKey || pickSeveral;
   if (i < 0) { if (!add && edit.sel.some(Boolean)) { edit.sel.fill(0); editColours(); announce('No points picked'); } return; }
@@ -6656,7 +6665,7 @@ function editCycle(step) {
 
 /* ---- Moving points ---- */
 /** Get ready to move the picked points: where every point starts, and how much each one follows. */
-function editStartMove() {
+function editStartMove(noProp = false) {
   const picked = [];
   for (let i = 0; i < edit.n; i++) if (edit.sel[i]) picked.push(i);
   if (!picked.length) return false;
@@ -6664,7 +6673,7 @@ function editStartMove() {
   const W = (i) => editWorld(i, new THREE.Vector3());
   const pickedW = picked.map(W);
   for (const i of picked) weight[i] = 1;
-  if (editProp.on && editProp.radius > 0) {
+  if (editProp.on && editProp.radius > 0 && !noProp) {     // (an extrusion moves just its new points)
     const r = editProp.radius, box = new THREE.Box3().setFromPoints(pickedW).expandByScalar(r);
     const p = new THREE.Vector3();
     for (let i = 0; i < edit.n; i++) {
@@ -6726,12 +6735,13 @@ function editAttachGizmo() {
 /* ---- G: grab and drag ---- */
 // While grabbing: the points follow the pointer across the screen; X, Y or Z keeps them to one direction;
 // the mouse wheel or Page Up / Page Down sizes the Proportional circle; a click or Enter keeps it, Escape or a right-click cancels.
-function startGrab() {
+function startGrab(extrude = false) {
   if (edit.grab) return;
-  if (!editStartMove()) { toast('Pick some points first, then G moves them.'); return; }
+  if (!editStartMove(extrude)) { toast('Pick some points first, then G moves them.'); return; }
   const mid = editMiddle();
   const normal = camera.getWorldDirection(new THREE.Vector3());
-  edit.grab = { mid, plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, mid), from: null, axis: null };
+  // extrude: this grab follows E (Extrude), so cancelling it takes the extrusion away too.
+  edit.grab = { mid, plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, mid), from: null, axis: null, extrude };
   $('stage').classList.add('grabbing-points');
   gizmo.detach();
   editGrabRing();
@@ -6773,6 +6783,12 @@ function cancelGrab() {
   editShowMoved(true);
   editBannerText();
   attachGizmo();
+  if (g && g.extrude) {
+    undo();                                       // (the extrusion was its own undo step)
+    if (g.selBefore && g.selBefore.length === edit.n) { edit.sel = g.selBefore; editColours(); }
+    announce('Extrude cancelled');
+    return;
+  }
   if (g) announce('Grab cancelled');
 }
 /** Change the Proportional circle's size (while grabbing, the followers are worked out again). */
@@ -6781,7 +6797,7 @@ function editSetRadius(r) {
   if (edit && edit.grab) {
     const d = edit.grab.d;
     edit.w.pos.set(edit.move.start);
-    editStartMove();
+    editStartMove(!!edit.grab.extrude);
     if (d) editApplyMove(d);
     editGrabRing();
   }
@@ -6883,6 +6899,21 @@ function renderEditProps(body) {
   move.body.append(el('p', 'hint', 'Proportional editing: points near the picked ones follow them, less the further away they are - pick one point on the icing\'s edge, turn this on and pull it down for a drip. Reach is how far the pull spreads (while grabbing with G: the mouse wheel or Page Up / Page Down).'));
   body.append(move.box);
   // Deleting.
+  // Building: new faces, fewer points, loops.
+  const build = section('Extrude, merge and fill', false);
+  const rowB = el('div', 'btn-row');
+  rowB.append(button('Extrude (E)', () => editExtrude(), 'Pull the picked faces (or edges) out as new geometry; the new points are picked, ready to move'),
+    button('Merge (M)', editMergeCentre, 'Make the picked points one point, at their middle'),
+    button('Fill (Shift+F)', editFill, 'Close a hole whose rim is picked, or make a face between three or four picked points'),
+    button('Loop (L)', editLoopPicked, 'With two points side by side picked: pick the whole ring they are on (with a mouse: Alt+click an edge)'));
+  build.body.append(rowB);
+  const close = el('div', 'btn-row');
+  close.append(button('Merge close points', () => editMergeClose(editProp.mergeDist),
+    'Join points that are closer together than the distance below (the picked ones, or all of them with none picked)'));
+  build.body.append(close, field('Closer than (mm)', numberBox({ value: editProp.mergeDist, min: 0.001, max: 100, step: 0.1,
+    label: 'Merge close points: closer than, in mm', onSet: (v) => { editProp.mergeDist = v; } })));
+  build.body.append(el('p', 'hint', 'Extrude grows new faces out of the picked ones - a handle from a mug\'s side, or a longer drip from the icing\'s rim (pick its edge points). With the pointer over the 3D view, E drags them straight away: click to keep, Escape to take it all back. Loop picks a ring right round the shape (Alt+click an edge with a mouse).'));
+  body.append(build.box);
   const del = section('Delete', false);
   const row3 = el('div', 'btn-row');
   row3.append(button('Delete points', () => editDelete(false), 'Delete the picked points and every face that uses them (X or Delete)'),
@@ -6895,6 +6926,298 @@ function renderEditProps(body) {
 }
 /** Draw the Inspector again and put focus back on the same control (see watchFocus). */
 function renderPropsKeepFocus() { const w = watchFocus(); renderProps(); w(); }
+
+/* ---- Building: Extrude, Merge, Fill and Loop (0.16.0) ----
+   They all work on edit.w = { pos, col, tris } (see enterEdit): a list of
+   points and the triangles made from them, three point numbers each. */
+
+/**
+ * Put new points and triangles in place of the old ones, as one undo step.
+ * w: { pos: [x, y, z ...], col: [r, g, b ...] or null, tris: [a, b, c ...] }
+ * sel: which points are picked afterwards (one 0 or 1 per point).
+ * Points no triangle uses any more are dropped, and the rest numbered afresh.
+ */
+function editReplace(w, sel, words) {
+  const n = w.pos.length / 3, used = new Int32Array(n).fill(-1);
+  const P = [], C = w.col ? [] : null, S = [], T = [];
+  for (const v of w.tris) {
+    if (used[v] < 0) {
+      used[v] = P.length / 3;
+      P.push(w.pos[v * 3], w.pos[v * 3 + 1], w.pos[v * 3 + 2]);
+      if (C) C.push(w.col[v * 3], w.col[v * 3 + 1], w.col[v * 3 + 2]);
+      S.push(sel[v] ? 1 : 0);
+    }
+    T.push(used[v]);
+  }
+  edit.w = { pos: new Float32Array(P), col: C ? new Float32Array(C) : null, tris: new Uint32Array(T) };
+  edit.n = P.length / 3;
+  edit.sel = new Uint8Array(S);
+  editOverlay();                                 // (draws the new points and edges)
+  editCommit(words);
+}
+/** Copy point i to the end of the lists (with its colour); returns the new point's number. */
+function editCopyPoint(i, P, C) {
+  P.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
+  if (C) C.push(C[i * 3], C[i * 3 + 1], C[i * 3 + 2]);
+  return P.length / 3 - 1;
+}
+/** Every edge of every triangle, the way round that triangle runs it: a list of [from, to]. */
+function editEdges(tris) {
+  const out = [];
+  for (let k = 0; k < tris.length; k += 3) for (let e = 0; e < 3; e++) out.push([tris[k + e], tris[k + (e + 1) % 3]]);
+  return out;
+}
+const edgeKey = (a, b) => (a < b ? a + ',' + b : b + ',' + a);   // the same key either way round
+
+/**
+ * E: Extrude, as in Blender. Faces whose corners are all picked are pulled
+ * out as a block: they get new points of their own, joined back to the
+ * rest by new side walls. With no whole face picked, picked edges (two
+ * picked points side by side) grow a new strip of faces instead - the way
+ * to lengthen an open edge, like the icing's rim. The new points are
+ * picked afterwards, ready to move (G or the arrows).
+ */
+function editExtrude() {
+  const sel = edit.sel, tris = Array.from(edit.w.tris);
+  const P = Array.from(edit.w.pos), C = edit.w.col ? Array.from(edit.w.col) : null;
+  const region = [];                                     // triangle numbers (k / 3) with every corner picked
+  for (let k = 0; k < tris.length; k += 3) if (sel[tris[k]] && sel[tris[k + 1]] && sel[tris[k + 2]]) region.push(k);
+  const fresh = new Map();                               // old point -> its new copy
+  const copyOf = (v) => { if (!fresh.has(v)) fresh.set(v, editCopyPoint(v, P, C)); return fresh.get(v); };
+  const sides = [];
+  let what;
+  if (region.length) {
+    // The region's own edges, the way its triangles run them. An edge whose
+    // reverse is not in the region is on its border: it gets a side wall.
+    const inRegion = new Set();
+    for (const k of region) for (let e = 0; e < 3; e++) inRegion.add(tris[k + e] + '>' + tris[k + (e + 1) % 3]);
+    for (const k of region) {
+      for (let e = 0; e < 3; e++) {
+        const a = tris[k + e], b = tris[k + (e + 1) % 3];
+        if (inRegion.has(b + '>' + a)) continue;         // inside the region: no wall
+        // The wall a, b, b', a' - wound so it matches the face outside (b -> a) and the moved face (a' -> b').
+        const a2 = copyOf(a), b2 = copyOf(b);
+        sides.push(a, b, b2, a, b2, a2);
+      }
+    }
+    for (const k of region) for (let e = 0; e < 3; e++) tris[k + e] = copyOf(tris[k + e]);   // the faces move to the copies
+    what = region.length + (region.length === 1 ? ' face' : ' faces');
+  } else {
+    // No whole face: picked edges. Open (border) edges first - that is nearly always what is meant.
+    const count = new Map();
+    const edges = editEdges(tris).filter(([a, b]) => sel[a] && sel[b]);
+    for (const [a, b] of editEdges(tris)) count.set(edgeKey(a, b), (count.get(edgeKey(a, b)) || 0) + 1);
+    const open = edges.filter(([a, b]) => count.get(edgeKey(a, b)) === 1);
+    const use = [], seen = new Set();
+    for (const [a, b] of open.length ? open : edges) { const key = edgeKey(a, b); if (!seen.has(key)) { seen.add(key); use.push([a, b]); } }
+    if (!use.length) { toast('To extrude, pick a face (all its corners) or two points side by side (an edge).', 5000); return; }
+    // A new strip along each edge: b, a, a', b' (wound to match the face beside it, which runs a -> b).
+    for (const [a, b] of use) { const a2 = copyOf(a), b2 = copyOf(b); sides.push(b, a, a2, b, a2, b2); }
+    what = use.length + (use.length === 1 ? ' edge' : ' edges');
+  }
+  const newSel = new Uint8Array(P.length / 3);
+  for (const v of fresh.values()) newSel[v] = 1;          // only the new points are picked now
+  editReplace({ pos: P, col: C, tris: tris.concat(sides) }, newSel,
+    'Extruded ' + what + ': ' + fresh.size + ' new points, picked. Move them out with G, the arrows or the Move tool.');
+  return true;
+}
+
+/**
+ * M: Merge the picked points into one, at their middle (Blender's Merge at
+ * Center). Faces that lose a corner that way are dropped.
+ */
+function editMergeCentre() {
+  const picked = [];
+  for (let i = 0; i < edit.n; i++) if (edit.sel[i]) picked.push(i);
+  if (picked.length < 2) { toast('Pick two or more points to merge them.'); return; }
+  const into = new Int32Array(edit.n).map((_, i) => i), keep = picked[0];
+  const P = Array.from(edit.w.pos), C = edit.w.col ? Array.from(edit.w.col) : null;
+  for (let k = 0; k < 3; k++) {
+    P[keep * 3 + k] = picked.reduce((t, i) => t + edit.w.pos[i * 3 + k], 0) / picked.length;
+    if (C) C[keep * 3 + k] = picked.reduce((t, i) => t + edit.w.col[i * 3 + k], 0) / picked.length;
+  }
+  for (const i of picked) into[i] = keep;
+  editMergeFinish(into, P, C, 'Merged ' + picked.length + ' points into one, at their middle.');
+}
+/**
+ * Merge close points: every picked point (every point, with none picked)
+ * within `dist` mm of another becomes one point (Blender's Merge by
+ * Distance) - for tidying up after edits, or closing a seam.
+ */
+function editMergeClose(dist) {
+  const any = edit.sel.includes(1), pos = edit.w.pos, n = edit.n;
+  const into = new Int32Array(n).map((_, i) => i);
+  const find = (i) => { while (into[i] !== i) { into[i] = into[into[i]]; i = into[i]; } return i; };
+  // Points go into boxes `dist` wide, so each one is only checked against its neighbours' boxes.
+  const cell = Math.max(dist, 1e-6), grid = new Map(), key = (x, y, z) => x + ',' + y + ',' + z;
+  for (let i = 0; i < n; i++) {
+    if (any && !edit.sel[i]) continue;
+    const gx = Math.floor(pos[i * 3] / cell), gy = Math.floor(pos[i * 3 + 1] / cell), gz = Math.floor(pos[i * 3 + 2] / cell);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+      for (const j of grid.get(key(gx + dx, gy + dy, gz + dz)) || []) {
+        const d2 = (pos[i * 3] - pos[j * 3]) ** 2 + (pos[i * 3 + 1] - pos[j * 3 + 1]) ** 2 + (pos[i * 3 + 2] - pos[j * 3 + 2]) ** 2;
+        if (d2 <= dist * dist) into[find(i)] = find(j);
+      }
+    }
+    const k = key(gx, gy, gz);
+    if (!grid.has(k)) grid.set(k, []);
+    grid.get(k).push(i);
+  }
+  let merged = 0;
+  for (let i = 0; i < n; i++) { into[i] = find(i); if (into[i] !== i) merged++; }
+  if (!merged) { toast('No points are within ' + fmt(dist) + ' mm of each other' + (any ? ' among the picked ones.' : '.')); return; }
+  editMergeFinish(into, Array.from(pos), edit.w.col ? Array.from(edit.w.col) : null,
+    'Merged ' + merged + (merged === 1 ? ' point' : ' points') + ' into ' + (any ? 'their neighbours' : 'the points beside them') + ' (within ' + fmt(dist) + ' mm).');
+}
+/** Point i becomes point into[i]; faces that fold to a line, and pairs of faces back to back, go. */
+function editMergeFinish(into, P, C, words) {
+  const tris = [], seen = new Map();
+  const src = edit.w.tris;
+  for (let k = 0; k < src.length; k += 3) {
+    const a = into[src[k]], b = into[src[k + 1]], c = into[src[k + 2]];
+    if (a === b || b === c || a === c) continue;          // folded to a line
+    const key = [a, b, c].sort((x, y) => x - y).join(',');
+    if (seen.has(key)) { seen.get(key).dead = true; continue; }   // two faces on the same three points: a paper-thin fin
+    const t = { a, b, c, dead: false };
+    seen.set(key, t);
+    tris.push(t);
+  }
+  const out = [];
+  for (const t of tris) if (!t.dead) out.push(t.a, t.b, t.c);
+  if (!out.length) { toast('That would leave no faces at all.'); return; }
+  const sel = new Uint8Array(P.length / 3);
+  for (let i = 0; i < into.length; i++) if (edit.sel[i]) sel[into[i]] = 1;
+  editReplace({ pos: P, col: C, tris: out }, sel, words);
+}
+
+/**
+ * Shift+F: Fill, as Blender's F. A hole whose rim points are picked gets a
+ * lid (fanned round a new middle point when it has more than four sides);
+ * otherwise three or four picked points get a face, facing the camera.
+ */
+function editFill() {
+  const sel = edit.sel, tris = Array.from(edit.w.tris), pos = edit.w.pos;
+  const P = Array.from(pos), C = edit.w.col ? Array.from(edit.w.col) : null;
+  // Open edges with both ends picked, the way their one face runs them (a -> b). A lid runs them back (b -> a).
+  const count = new Map();
+  for (const [a, b] of editEdges(tris)) count.set(edgeKey(a, b), (count.get(edgeKey(a, b)) || 0) + 1);
+  const next = new Map();
+  for (const [a, b] of editEdges(tris)) if (sel[a] && sel[b] && count.get(edgeKey(a, b)) === 1) next.set(a, b);
+  const lids = [], done = new Set();
+  let holes = 0;
+  for (const start of next.keys()) {
+    if (done.has(start)) continue;
+    const loop = [];
+    let v = start;
+    while (v !== undefined && !done.has(v)) { done.add(v); loop.push(v); v = next.get(v); }
+    if (v !== start || loop.length < 3) continue;        // not a closed rim
+    holes++;
+    if (loop.length === 3) lids.push(loop[2], loop[1], loop[0]);
+    else if (loop.length === 4) lids.push(loop[3], loop[2], loop[1], loop[3], loop[1], loop[0]);
+    else {
+      // A new middle point, and one triangle from each rim edge to it.
+      const mid = P.length / 3;
+      for (let k = 0; k < 3; k++) {
+        P.push(loop.reduce((t, i) => t + pos[i * 3 + k], 0) / loop.length);
+        if (C) C.push(loop.reduce((t, i) => t + edit.w.col[i * 3 + k], 0) / loop.length);
+      }
+      for (let i = 0; i < loop.length; i++) lids.push(loop[(i + 1) % loop.length], loop[i], mid);
+    }
+  }
+  if (!holes) {
+    const picked = [];
+    for (let i = 0; i < edit.n; i++) if (sel[i]) picked.push(i);
+    if (picked.length !== 3 && picked.length !== 4) {
+      toast('To fill, pick every point round a hole\'s rim - or three or four points for one new face.', 5000);
+      return;
+    }
+    // Order the points round their middle, then turn the face towards the camera.
+    const V = picked.map((i) => new THREE.Vector3(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]));
+    const mid = V.reduce((t, v) => t.add(v), new THREE.Vector3()).multiplyScalar(1 / V.length);
+    const n = new THREE.Vector3().subVectors(V[1], V[0]).cross(new THREE.Vector3().subVectors(V[2], V[0])).normalize();
+    const u = new THREE.Vector3().subVectors(V[0], mid).normalize(), w = n.clone().cross(u);
+    const order = picked.map((i, k) => ({ i, a: Math.atan2(V[k].clone().sub(mid).dot(w), V[k].clone().sub(mid).dot(u)) }))
+      .sort((x, y) => x.a - y.a).map((o) => o.i);
+    // Which way is the camera, in the object's own space?
+    const eye = camera.position.clone().applyMatrix4(edit.m.matrixWorld.clone().invert()).sub(mid);
+    if (n.dot(eye) < 0) order.reverse();
+    if (order.length === 3) lids.push(order[0], order[1], order[2]);
+    else lids.push(order[0], order[1], order[2], order[0], order[2], order[3]);
+  }
+  editReplace({ pos: P, col: C, tris: tris.concat(lids) }, new Uint8Array(P.length / 3).map((_, i) => (i < edit.n ? sel[i] : 0)),
+    holes ? 'Filled ' + holes + (holes === 1 ? ' hole.' : ' holes.') : 'Made a new face between the picked points.');
+}
+
+/* ---- Loops: a ring of points right round a shape (a torus's tube, say) ----
+   Loops follow four-sided pieces (quads), so the triangles are put back
+   into the pieces they were made from (quadsOf, as Smooth does). From an
+   edge, the loop goes straight on through each point that has four edges:
+   to the one edge that shares no piece with the edge it came in on. */
+function editLoopFrom(a, b) {
+  const polys = quadsOf(edit.w.pos, edit.w.tris);
+  // The pieces' own edges (not the diagonals inside a quad), and which pieces use each edge.
+  const nb = Array.from({ length: edit.n }, () => new Set()), faces = new Map();
+  polys.forEach((p, f) => p.forEach((v, i) => {
+    const w = p[(i + 1) % p.length];
+    nb[v].add(w); nb[w].add(v);
+    const key = edgeKey(v, w);
+    if (!faces.has(key)) faces.set(key, new Set());
+    faces.get(key).add(f);
+  }));
+  if (!nb[a].has(b)) return null;                        // not a real edge (a diagonal, say)
+  const loop = new Set([a, b]);
+  // Walk one way from `to`, having come from `from`; stop on reaching where it began, or a point without four edges.
+  const walk = (from, to) => {
+    for (let guard = 0; guard < edit.n; guard++) {
+      if (nb[to].size !== 4) return;
+      const inFaces = faces.get(edgeKey(from, to));
+      const ahead = [...nb[to]].filter((c) => c !== from && ![...faces.get(edgeKey(to, c))].some((f) => inFaces.has(f)));
+      if (ahead.length !== 1) return;
+      const c = ahead[0];
+      if (loop.has(c)) return;                           // round to the start: the loop is closed
+      loop.add(c);
+      from = to; to = c;
+    }
+  };
+  walk(a, b);
+  walk(b, a);
+  return loop;
+}
+/** Alt+click: the loop through the edge nearest the pointer (Shift+Alt+click adds it to the picked points). */
+function editLoopClick(e) {
+  // Every point on the screen once (not once per edge), and whether it can be seen, worked out only when needed.
+  const S = Array.from({ length: edit.n }, (_, i) => editScreen(i)), seen = new Map();
+  const visible = (i) => { if (!seen.has(i)) seen.set(i, editVisible(i)); return seen.get(i); };
+  let best = null, bd = 12;                              // within 12 pixels of the pointer
+  const tris = edit.w.tris, done = new Set();
+  for (let k = 0; k < tris.length; k += 3) {
+    for (let j = 0; j < 3; j++) {
+      const a = tris[k + j], b = tris[k + (j + 1) % 3], key = edgeKey(a, b);
+      if (done.has(key)) continue;                       // (each edge once is enough)
+      done.add(key);
+      if (!S[a].front || !S[b].front) continue;
+      const d = distToSeg([e.clientX, e.clientY], [S[a].x, S[a].y], [S[b].x, S[b].y]);
+      if (d < bd && visible(a) && visible(b)) { bd = d; best = [a, b]; }
+    }
+  }
+  if (!best) { if (!e.shiftKey) { edit.sel.fill(0); editColours(); } return; }
+  const loop = editLoopFrom(best[0], best[1]);
+  if (!loop) { toast('That line runs across a piece (a diagonal): click an edge between two pieces.'); return; }
+  if (!e.shiftKey && !pickSeveral) edit.sel.fill(0);
+  for (const v of loop) edit.sel[v] = 1;
+  editColours();
+  announce('Picked a loop of ' + loop.size + ' points. ' + editCountWords());
+}
+/** L (and the Inspector's Loop button): the loop through two picked points side by side. */
+function editLoopPicked() {
+  const picked = [];
+  for (let i = 0; i < edit.n; i++) if (edit.sel[i]) picked.push(i);
+  const loop = picked.length === 2 ? editLoopFrom(picked[0], picked[1]) : null;
+  if (!loop) { toast('Pick two points side by side (joined by an edge, not across a piece), then Loop picks the ring they are on. With a mouse: Alt+click an edge.', 6000); return; }
+  for (const v of loop) edit.sel[v] = 1;
+  editColours();
+  announce('Picked a loop of ' + loop.size + ' points. ' + editCountWords());
+}
 
 /* ---- Proportional editing on or off (O, or the Inspector) ---- */
 function setProportional(on, rerender = true) {
@@ -6948,6 +7271,15 @@ function editKey(e, onStage) {
     case 'KeyG': startGrab(); return true;
     case 'KeyX': editDelete(false); return true;
     case 'KeyO': setProportional(!editProp.on); return true;
+    // Building (0.16.0). E with the pointer over the 3D view drags the new points straight away (Escape takes it all back).
+    case 'KeyE': {
+      const before = edit.sel.slice();                 // (Escape puts these picks back, with the extrusion undone)
+      if (editExtrude() && stagePointer) { startGrab(true); if (edit.grab) edit.grab.selBefore = before; }
+      return true;
+    }
+    case 'KeyM': editMergeCentre(); return true;
+    case 'KeyL': editLoopPicked(); return true;
+    case 'KeyF': if (e.shiftKey) { editFill(); return true; } return false;   // (F on its own frames the picked points)
     case 'KeyB':
       editBoxOnce = true; gizmo.detach(); requestRender();
       announce('Box select: drag a box round points. Shift adds to the picked points, Ctrl takes them away.');
@@ -7048,6 +7380,57 @@ function duplicateSelection() {
   setSelection(copies, false);
   commit();
   announce(copies.length === 1 ? 'Made ' + copies[0].name : 'Made ' + copies.length + ' copies');
+}
+/* ---- Copy, cut and paste (Ctrl/Cmd + C, X, V) ----
+   The copies are kept inside the app, in this tab (not on the computer's
+   clipboard): a description of each picked object, as an undo step keeps
+   it, plus where it was in the world. Pasting makes fresh objects from
+   them - so you can copy, change or delete the original, even start a new
+   scene, and still paste what you copied. Each paste lands 10 mm further
+   to the right than the last, so copies never hide on top of each other. */
+let clip = null;        // { items: [{ d, parentId, world, local }], pastes } or null
+function copySelection(cut = false) {
+  if (!selection.length) { toast('Pick something to copy first.'); return; }
+  if (edit) { toast('Copy and paste work on whole objects: finish editing points first (Tab or Done).'); return; }
+  clip = {
+    pastes: cut ? -1 : 0,                                  // (after a cut, the first paste goes back where it was)
+    items: selection.map((m) => {
+      m.updateMatrix(); m.updateMatrixWorld(true);
+      return {
+        d: describe(m),                                    // (its geometry is never changed in place, so sharing it is safe)
+        parentId: groupOf(m) ? groupOf(m).userData.id : null,
+        world: m.matrixWorld.clone(),                      // where it is in the world, for pasting outside its group
+        local: m.matrix.clone()                            // its place in its group (or the scene)
+      };
+    })
+  };
+  const words = clip.items.length === 1 ? selection[0].name : clip.items.length + ' objects';
+  if (cut) { deleteSelection(); announce('Cut ' + words + '. Ctrl+V pastes it back.'); }
+  else announce('Copied ' + words + '. Ctrl+V pastes a copy.');
+}
+function pasteClip() {
+  if (!clip) { toast('Nothing copied yet: pick something and press Ctrl+C (Cmd+C on a Mac).'); return; }
+  if (edit) exitEdit(false);
+  clip.pastes++;
+  const shift = new THREE.Vector3(10 * clip.pastes, 0, 0);    // 10 mm to the right per paste
+  const made = clip.items.map((c) => {
+    const d = freshIds(c.d);                               // new ids for it and, for a group, all its parts
+    d.name = copyName(c.d.name);
+    const copy = createItem(d);
+    // Back into its group if that group is still there; otherwise into the scene, where it was in the world.
+    const group = c.parentId ? allItems().find((o) => o.userData.id === c.parentId && isGroup(o)) : null;
+    if (group) insertItem(copy, group, group.children.length);
+    else {
+      insertItem(copy, modelGroup, objects.length);
+      if (c.parentId) { c.world.decompose(copy.position, copy.quaternion, copy.scale); }   // (out of a group that is gone)
+    }
+    moveWorld(copy, shift);
+    keysFollow(copy, c.local);                             // its keyframes move over with it, so it doesn't jump back
+    return copy;
+  });
+  setSelection(made, false);
+  commit();
+  announce('Pasted ' + (made.length === 1 ? made[0].name : made.length + ' objects') + ', ' + fmt(shift.x) + ' mm to the right of the original.');
 }
 /** A name for a copy: the same name with the next free number ("Log 2", "Log 3"). */
 function copyName(name) {
@@ -11095,6 +11478,7 @@ const SHORTCUTS = [
   ['Objects (3D view focused)', [['Arrows', 'Move along the grid, the way the arrows point on screen'], ['Shift+Arrows', 'Move ten times as far'],
     ['Page Up / Page Down', 'Move up and down'], ['End', 'Drop to the floor'], ['[ / ]', 'Pick the previous or next object'],
     ['Ctrl+A', 'Select everything'], ['Escape', 'Select nothing'], ['Ctrl+D', 'Duplicate'], ['Delete', 'Delete'],
+    ['Ctrl+C / Ctrl+X / Ctrl+V', 'Copy, cut and paste (Cmd on a Mac); each paste lands 10 mm to the right'],
     ['Ctrl+G', 'Group the picked objects'], ['Ctrl+Shift+G', 'Ungroup'],
     ['Enter / Shift+Enter', 'Into a group (its first part) / back out to the group'],
     ['P, then Enter', 'Put the selection on top of whatever is below it']]],
@@ -11105,6 +11489,9 @@ const SHORTCUTS = [
     ['Arrows / Page Up / Page Down', 'Move the picked points a step (Shift: ten)'],
     ['O', 'Proportional editing: nearby points follow too (mouse wheel or Page Up / Down while grabbing: how far)'],
     ['X / Delete', 'Delete the picked points (and their faces)'], ['Shift+Delete', 'Delete just the faces between picked points'],
+    ['E', 'Extrude: pull the picked faces (or edges) out as new geometry, then drag it (click keeps, Escape takes it back)'],
+    ['M', 'Merge the picked points into one, at their middle'], ['Shift+F', 'Fill a hole whose rim is picked, or make a face from 3 or 4 points'],
+    ['Alt+click / L', 'Pick a whole loop: Alt+click an edge, or pick two points side by side and press L'],
     ['F', 'Frame the picked points'], ['Alt+Z', 'X-ray: pick points behind the surface too']]],
   ['Scene list', [['Up / Down', 'Pick the next object'], ['Shift+Up / Down', 'Add the next object to the selection'],
     ['Right / Left', 'Show or hide the parts of a group'], ['F2', 'Rename'], ['H', 'Hide or show']]],
@@ -11210,6 +11597,13 @@ function setupKeyboard() {
       if (k === 'y') { e.preventDefault(); redo(); return; }
       if (k === 'd') { e.preventDefault(); duplicateSelection(); return; }
       if (k === 'a') { e.preventDefault(); selectAll(); return; }
+      // Copy, cut and paste objects - only from the 3D view or the Scene list, so copying words
+      // from the Help panel (say) still works as usual.
+      if ((k === 'c' || k === 'x' || k === 'v') && (e.target === $('stage') || e.target === document.body || (e.target.closest && e.target.closest('#objList')))) {
+        e.preventDefault();
+        if (k === 'v') pasteClip(); else copySelection(k === 'x');
+        return;
+      }
       if (k === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelection(); else groupSelection(); return; }
       return;
     }
