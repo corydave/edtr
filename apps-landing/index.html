@@ -39,7 +39,7 @@
 <meta name="referrer" content="no-referrer">
 
 <title>FLX AI Hub Apps</title>
-<meta name="description" content="Free editors for text, PDFs, images, sound, video, vector art and 3D models, plus a screen recorder and a game maker. They run in your browser and your files stay on your device.">
+<meta name="description" content="Free editors for text, PDFs, images, sound, video, vector art, 3D models and page layout, plus a screen recorder. They run in your browser and your files stay on your device.">
 
 <!-- Fonts: Atkinson Hyperlegible for reading, Comfortaa for headings. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -314,7 +314,7 @@ dialog.show::backdrop { background: var(--backdrop); }
   <div class="wrap">
     <div class="intro">
       <h1>FLX AI Hub Apps</h1>
-      <p>Free editors for text, PDFs, images, sound, video, vector art and 3D models, plus a screen recorder and a game maker. They run right in your browser, install like regular apps, and keep your files on your own device.</p>
+      <p>Free editors for text, PDFs, images, sound, video, vector art, 3D models and page layout, plus a screen recorder. They run right in your browser, install like regular apps, and keep your files on your own device.</p>
     </div>
     <!-- Night mode toggle. Its icon shows where it will take you: a moon in light mode, a sun in dark. -->
     <button class="icon-btn" id="theme-btn" type="button"></button>
@@ -587,6 +587,29 @@ const APPS = [
       { src: 'shots/3dedtr-5.webp', title: 'Dark mode and lighting',
         text: 'A dark theme and a choice of Studio, Soft or Bright lighting keep models easy to see on any classroom screen.',
         alt: '3DEDTR in dark mode showing the white and red rocket on its launch pad over a dark millimeter grid, with Lighting set to Bright.' }
+    ]
+  },
+  {
+    id: 'dskedtr', name: 'DSKEDTR', url: 'https://dskedtr.app',
+    fill: '#065f46', light: '#065f46', dark: '#6ee7b7',
+    blurb: 'Lay out newsletters, flyers and booklets: text flows from box to box and page to page, with shapes, pictures, master pages and a PDF ready to print.',
+    thumb: 'shots/dskedtr-thumb.webp',
+    slides: [
+      { src: 'shots/dskedtr-1.webp', title: 'Lay out a newsletter',
+        text: 'Place text boxes, pictures and shapes on the page, with columns, margins and guides to line everything up.',
+        alt: 'DSKEDTR showing a school newsletter called The Lakeside Ledger: a bold title, a green rule, two columns of articles about a spring concert and a pale green Dates to remember box, with column guides over the page.' },
+      { src: 'shots/dskedtr-2.webp', title: 'Text that flows between boxes',
+        text: 'Link text boxes and the story flows from one into the next, even onto another page. A round tab shows where the text goes on.',
+        alt: 'The newsletter with the first column picked. A round arrow tab sits above it and a green chain-link tab below it, a dotted line runs to the next column, and a floating bar offers Link, Arrange, Duplicate, Copy and Delete.' },
+      { src: 'shots/dskedtr-3.webp', title: 'Shapes for every job',
+        text: 'Pick from more than a hundred shapes in sections like Publisher\'s: arrows, flowchart pieces, callouts, stars, banners and shields.',
+        alt: 'The Shapes gallery open beside the page, with sections of flowchart shapes, callouts, stars and banners, shields and signs. Behind it, page 2 of the newsletter shows a colorful outdoor concert picture.' },
+      { src: 'shots/dskedtr-4.webp', title: 'Master pages and page numbers',
+        text: 'Put a footer or a masthead on a master page and every page that uses it shows it, with the right page number filled in.',
+        alt: 'The bottom of page 1 with its footer reading The Lakeside Ledger, October 2026, Page 1 of 2. A small menu above the page thumbnails shows None and Master A, with Master A ticked.' },
+      { src: 'shots/dskedtr-5.webp', title: 'Made for every reader',
+        text: 'A built-in checker points out missing picture descriptions and hard-to-read text before you share. Shown in dark mode.',
+        alt: 'DSKEDTR in dark mode on page 2 of the newsletter. The Accessibility tab is open with one tip: an empty picture frame will not print until it has a picture.' }
     ]
   }
 ];
