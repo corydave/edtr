@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.14.1 - 2026-10-07 - DSKEDTR joins the family
+
+- **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.
+- The splash's row now fits nine apps: the eight others on one line on a computer, and 4 + 4 on a phone (shared styles pasted in again from `_edtr-suite/suite-block.css`).
+
 ## 1.14.0 - 2026-10-07 - A grab handle for the phone Inspector
 
 - **Phones and narrow windows: the Inspector sheet has a grab handle** along its top edge, the same as DSKEDTR's.
