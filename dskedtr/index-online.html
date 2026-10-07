@@ -126,13 +126,25 @@ body {
 .work { display: grid; grid-template-columns: 56px 1fr 300px; min-height: 0; }
 .centre { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 /* The desk sits in a frame with the rulers along its top and left. */
-.desk-frame { flex: 1; min-height: 0; display: grid; grid-template-columns: 20px 1fr; grid-template-rows: 20px 1fr; }
-.desk-frame > .desk { min-height: 0; min-width: 0; }
-.ruler { display: block; width: 100%; height: 100%; cursor: copy; touch-action: none; background: var(--panel); }
+/* The desk frame's second row and column are "minmax(0, 1fr)", not plain
+   "1fr": plain 1fr lets a too-big child stretch the row past the frame. The
+   rulers are canvases, and a canvas is drawn with one dot per SCREEN pixel
+   (twice as many as CSS pixels on a sharp screen). Some browsers (Chrome on
+   a Chromebook, for one) let that dot count push the row taller; the ruler
+   is then redrawn taller still, and so on: the desk crept down over the
+   filmstrip. Now nothing inside can make the frame bigger, and anything
+   that ever did would be clipped ("overflow: clip" also cannot be scrolled,
+   unlike "hidden"). */
+.desk-frame { flex: 1; min-height: 0; display: grid; grid-template-columns: 20px minmax(0, 1fr); grid-template-rows: 20px minmax(0, 1fr);
+  overflow: hidden; overflow: clip; }
+.desk-frame > * { min-height: 0; min-width: 0; }
+/* "contain: strict" tells the browser to size a ruler only by its CSS (the
+   grid cell it sits in), never by how many dots its canvas has. */
+.ruler { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; contain: strict; cursor: copy; touch-action: none; background: var(--panel); }
 #rulerTop { cursor: row-resize; }
 #rulerLeft { cursor: col-resize; }
 .ruler-corner { background: var(--panel); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.desk-frame.no-rulers { grid-template-columns: 0 1fr; grid-template-rows: 0 1fr; }
+.desk-frame.no-rulers { grid-template-columns: 0 minmax(0, 1fr); grid-template-rows: 0 minmax(0, 1fr); }
 .desk-frame.no-rulers .ruler, .desk-frame.no-rulers .ruler-corner { visibility: hidden; }
 /* View toggles in the top bar: pressed ones are filled, not just coloured. */
 .tb-toggle[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-text); box-shadow: inset 0 0 0 1.5px currentColor; }
@@ -1411,7 +1423,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.13.2';
+const APP_VERSION = '0.13.3';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -10999,6 +11011,9 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.13.3", date: "2026-10-07", title: "", notes: [
+    "Fixed: on a Chromebook the page crept down over the filmstrip after the splash closed. The rulers are drawn with one dot per screen pixel, and Chrome on ChromeOS let that dot count make the desk taller; each redraw then made it taller again. The desk's frame now never grows past its space (and clips anything that tries), and the rulers are sized only by their place in the layout."
+  ] },
   { version: "0.13.2", date: "2026-10-07", title: "", notes: [
     "One Shapes button. The rail's Rectangle, Ellipse and star buttons are now a single Shapes button (a square, a circle and a triangle). A click, or U, opens the gallery; Rectangle and Ellipse are the first two in Basic shapes. Picking one picks the tool that draws it, and the button stays pressed while you draw. R and O still pick Rectangle and Ellipse straight away. The picture-frame gallery leaves Rectangle and Ellipse out, since the Picture section has its own choices for those."
   ] },

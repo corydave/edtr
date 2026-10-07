@@ -1,5 +1,14 @@
 # DSKEDTR changelog
 
+## 0.13.3 - 2026-10-07
+
+- **Fixed: on a Chromebook the page crept down over the filmstrip** after the
+  splash closed. The rulers are drawn with one dot per screen pixel, and
+  Chrome on ChromeOS let that dot count make the desk taller; each redraw
+  then made it taller again. The desk's frame now never grows past its
+  space (and clips anything that tries), and the rulers are sized only by
+  their place in the layout.
+
 ## 0.13.2 - 2026-10-07
 
 - **One Shapes button.** The rail's Rectangle, Ellipse and star buttons are

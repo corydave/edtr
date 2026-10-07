@@ -512,6 +512,14 @@ building blocks, the starter template gallery.
   the start of Basic shapes; they pick the `rect` and `ellipse` tools
   (real rectangles and ellipses, with rounded corners and so on) and are
   hidden in the frame gallery. R and O are unchanged.
+- 0.13.3: Chromebook fix. `.desk-frame` tracks are `minmax(0, 1fr)` (not
+  `1fr`), every child has min sizes 0, the frame has `overflow: clip`, and
+  `.ruler` has `contain: strict`. Before, Chrome on ChromeOS let the ruler
+  canvases' backing-store size (CSS size x devicePixelRatio) feed the grid
+  row's automatic minimum, so each `drawRuler` grew the row, the
+  ResizeObserver redrew, and the desk crept over the filmstrip. Seen in
+  Dave's screen recording; reproduced by forcing the canvases to size from
+  their pixel count.
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,
