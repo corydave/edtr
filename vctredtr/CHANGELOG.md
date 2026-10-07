@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.12.1 - 2026-10-07 - DSKEDTR joins the family
+
+- **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.
+- The splash's row now fits nine apps: the eight others on one line on a computer, and 4 + 4 on a phone (shared styles pasted in again from `_edtr-suite/suite-block.css`).
+
 ## 0.12.0 - 2026-10-07 - A grab handle on the phone Inspector
 
 - **On a phone, the Inspector sheet has a grab handle along its top** (the same as DSKEDTR 0.14.0). Drag it up or down to share the screen between the drawing and the Inspector: the canvas shrinks rather than being covered, and the artboard is fitted into it again when you let go. Drag it nearly to the bottom, or tap it, to close the sheet to just the handle; tap it (or drag it up) to open it again. The Inspector button in the top bar still opens and closes it, and the two stay in step.
