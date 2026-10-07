@@ -224,6 +224,12 @@ body {
 .preview-banner.proof-banner { top: 32px; bottom: auto; width: max-content; }   /* max-content: wrap only when the desk is narrower */
 .desk-frame.no-rulers .proof-banner { top: 12px; }
 #styleBox { margin-top: 10px; }
+/* Fonts: a sample line in the chosen font, and the list of your own fonts. */
+.font-sample { font-size: 20px; line-height: 1.3; margin: 4px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.font-list { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 6px; }
+.font-list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 13px; }
+.font-list .font-what { grid-column: 1; color: var(--muted); font-size: 12px; }
+.font-list .btn { grid-column: 2; grid-row: 1 / span 2; }
 .inspector h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 8px; }
 .inspector p { margin: 4px 0; }
 .muted { color: var(--muted); }
@@ -701,7 +707,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
     Export
   </button>
-  <span class="phase-tag">Phase 1 complete: formatting inside paragraphs</span>
+  <span class="phase-tag">Phase 1 complete, plus fonts</span>
   <span class="spacer"></span>
   <!-- The family's order: Install (only while the browser allows it), Theme, Help. -->
   <button class="icon-btn" id="installBtn" hidden aria-label="Install DSKEDTR as an app" title="Install DSKEDTR as an app: its own window, and it works offline">
@@ -810,6 +816,10 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <label class="field" style="margin-top:8px">Language<select id="docLang"></select></label>
       <p class="muted reserve2" id="pageInfo" style="font-size:12px;margin-top:8px"></p>
       <button class="btn" id="pageSetupBtn">Page setup…</button>
+      <span class="tool-caption" style="margin-top:14px">Your fonts</span>
+      <ul class="font-list" id="fontList"></ul>
+      <p class="muted" id="fontListNote" style="font-size:12px">None yet. Add .ttf, .otf or .woff files (a school's brand font, say): they are saved inside this project. Use fonts you have the right to use.</p>
+      <button class="btn" id="addFontBtn">Add font files…</button>
       </div>
     </section>
 
@@ -965,6 +975,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <button class="icon-sm" id="chUnderline" aria-pressed="false" aria-label="Underline" title="Underline (Ctrl+U)"><svg viewBox="0 0 24 24"><path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/></svg></button>
         <button class="icon-sm" id="chClear" aria-label="Clear formatting" title="Clear formatting: back to the paragraph's style; links stay (Ctrl+\)"><svg viewBox="0 0 24 24"><path d="M4 7V4h16v3M5 20h6M13 4 8 20M15 15l5 5M20 15l-5 5"/></svg></button>
       </div>
+      <p class="muted" id="chFontNote" style="font-size:12px"></p>
+      <label class="field" style="margin-top:6px">Font<select id="chFamily"></select></label>
       <div class="grid4" style="margin-top:8px">
         <label class="field">Size (pt)<input type="number" id="chSize" min="4" max="200" step="0.5"></label>
         <label class="field">Kerning (1/1000 em)<input type="number" id="chKern" min="-500" max="1000" step="10"></label>
@@ -996,6 +1008,9 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <fieldset id="styleBox" hidden>
         <legend id="styleLegend">Body style</legend>
         <p class="muted" style="font-size:12px;margin-top:0" id="styleNote">Changes every Body paragraph in this document.</p>
+        <label class="field">Font<select id="stFamily"></select></label>
+        <p class="font-sample" id="stFamilySample" aria-hidden="true">Aa Bb Gg 123</p>
+        <p class="muted" id="stFamilyNote" style="font-size:12px;margin-top:0"></p>
         <div class="grid4">
           <label class="field">Size (pt)<input type="number" id="stSize" min="4" max="200" step="0.5"></label>
           <label class="field">Weight<select id="stFont"><option value="regular">Regular</option><option value="bold">Bold</option></select></label>
@@ -1124,7 +1139,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 <!-- Short messages on screen ("Saved...", "That file could not be opened"); read out too. -->
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 <!-- The file picker the Open button uses (hidden). -->
-<input type="file" id="fileInput" accept=".dskedtr,application/x-dskedtr,application/json,image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp" hidden>
+<input type="file" id="fileInput" accept=".dskedtr,application/x-dskedtr,application/json,image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp,.ttf,.otf,.woff" hidden>
+<input type="file" id="fontInput" accept=".ttf,.otf,.woff,font/ttf,font/otf,font/woff" multiple hidden>
 
 <!-- ===================== PAGE SETUP ===================== -->
 <dialog id="setupDialog" aria-labelledby="setupTitle">
@@ -1317,7 +1333,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.8.0';
+const APP_VERSION = '0.9.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -1356,20 +1372,56 @@ const r2 = (v) => Math.round(v * 100) / 100;
 /* ======================================================================
    2. FONTS
    The offline edition puts the font files inside the page, in
-   DSK_EMBEDDED.fonts ("atkinson-hyperlegible-400" -> base64 text). The
-   online edition fetches them from the fonts/ folder.
+   DSK_EMBEDDED.fonts ("literata-400" -> base64 text). The online edition
+   fetches them from the fonts/ folder.
+
+   A FAMILY is one typeface (Literata) in up to four styles: regular, bold,
+   italic and bold italic. A family that lacks a style uses the nearest one
+   it has (Archivo Black has one weight; Lexend and Comfortaa have no
+   italics). Fonts are loaded the first time something uses them, so the
+   app starts quickly. A font is named by "family/style", as in
+   "literata/bold". All the built-in fonts are free (SIL Open Font License,
+   see fonts/LICENSES.txt). Fonts someone adds from their own files are in
+   customFamilies (section 2b).
    ====================================================================== */
 const EMBEDDED = (typeof DSK_EMBEDDED === 'object' && DSK_EMBEDDED && DSK_EMBEDDED.fonts) ? DSK_EMBEDDED : null;
-const FONT_FILES = {
-  regular: 'atkinson-hyperlegible-400',
-  bold: 'atkinson-hyperlegible-700',
-  italic: 'atkinson-hyperlegible-400-italic',
-  boldItalic: 'atkinson-hyperlegible-700-italic'
+const VARIANTS = ['regular', 'bold', 'italic', 'boldItalic'];
+/** The style name for bold and italic: variantOf(true, false) is 'bold'. */
+const variantOf = (bold, italic) => (bold ? (italic ? 'boldItalic' : 'bold') : (italic ? 'italic' : 'regular'));
+/** The built-in families: name, what it is good for, and its files (in fonts/, without ".woff"). */
+const FAMILIES = {
+  atkinson: { name: 'Atkinson Hyperlegible', kind: 'Very clear sans serif (the default)',
+    files: { regular: 'atkinson-hyperlegible-400', bold: 'atkinson-hyperlegible-700', italic: 'atkinson-hyperlegible-400-italic', boldItalic: 'atkinson-hyperlegible-700-italic' } },
+  andika: { name: 'Andika', kind: 'Sans serif made for beginning readers',
+    files: { regular: 'andika-400', bold: 'andika-700', italic: 'andika-400-italic', boldItalic: 'andika-700-italic' } },
+  lexend: { name: 'Lexend', kind: 'Sans serif made for easy reading (no italics)',
+    files: { regular: 'lexend-400', bold: 'lexend-700' } },
+  comfortaa: { name: 'Comfortaa', kind: 'Rounded and friendly (no italics)',
+    files: { regular: 'comfortaa-400', bold: 'comfortaa-700' } },
+  comic: { name: 'Comic Neue', kind: 'Casual, hand-lettered look',
+    files: { regular: 'comic-neue-400', bold: 'comic-neue-700', italic: 'comic-neue-400-italic', boldItalic: 'comic-neue-700-italic' } },
+  literata: { name: 'Literata', kind: 'Serif for long reading',
+    files: { regular: 'literata-400', bold: 'literata-700', italic: 'literata-400-italic', boldItalic: 'literata-700-italic' } },
+  fraunces: { name: 'Fraunces', kind: 'Serif with character, for headlines',
+    files: { regular: 'fraunces-400', bold: 'fraunces-700', italic: 'fraunces-400-italic', boldItalic: 'fraunces-700-italic' } },
+  zilla: { name: 'Zilla Slab', kind: 'Friendly slab serif',
+    files: { regular: 'zilla-slab-400', bold: 'zilla-slab-700', italic: 'zilla-slab-400-italic', boldItalic: 'zilla-slab-700-italic' } },
+  archivo: { name: 'Archivo Black', kind: 'Big, blocky headlines (one weight, no italics)', display: true,
+    files: { regular: 'archivo-black-400' } },
+  mono: { name: 'Atkinson Hyperlegible Mono', kind: 'Monospace: every letter the same width',
+    files: { regular: 'atkinson-hyperlegible-mono-400', bold: 'atkinson-hyperlegible-mono-700', italic: 'atkinson-hyperlegible-mono-400-italic', boldItalic: 'atkinson-hyperlegible-mono-700-italic' } }
 };
-/** Which of the four fonts: FONT_KEYS[bold ? 1 : 0][italic ? 1 : 0]. */
-const FONT_KEYS = [['regular', 'italic'], ['bold', 'boldItalic']];
-const FONTS = {};                  // 'regular' -> parsed opentype Font
-const FONT_BYTES = {};             // 'regular' -> the font file itself (the PDF embeds it)
+const DEFAULT_FAMILY = 'atkinson';
+const customFamilies = {};         // fonts added from someone's own files (section 2b)
+/** A family's description (built in or added), or null for a name we don't know. */
+function familyInfo(key) {
+  if (Object.hasOwn(FAMILIES, key)) return FAMILIES[key];
+  if (Object.hasOwn(customFamilies, key)) return customFamilies[key];
+  return null;
+}
+const hasVariant = (family, v) => { const f = familyInfo(family); return !!(f && f.files[v]); };
+const FONTS = {};                  // 'literata/bold' -> parsed opentype Font
+const FONT_BYTES = {};             // 'literata/bold' -> the font file itself (the PDF embeds it)
 
 async function fontBytes(name) {
   if (EMBEDDED && EMBEDDED.fonts[name]) {
@@ -1383,18 +1435,225 @@ async function fontBytes(name) {
   return res.arrayBuffer();
 }
 
+/** Start-up: the default family (the rest load when first used). */
 async function loadFonts() {
   if (!window.opentype) throw new Error('opentype.js did not load');
-  for (const key in FONT_FILES) {
-    FONT_BYTES[key] = await fontBytes(FONT_FILES[key]);
-    FONTS[key] = opentype.parse(FONT_BYTES[key]);
+  await loadFamily(DEFAULT_FAMILY);
+}
+
+const familyLoads = new Map();      // family -> the promise of loading its fonts (each loads once)
+/** Load (once) every style of a family. */
+function loadFamily(family) {
+  const info = familyInfo(family);
+  if (!info) return Promise.resolve();
+  if (!familyLoads.has(family)) {
+    familyLoads.set(family, (async () => {
+      for (const v of VARIANTS) {
+        const file = info.files[v], key = family + '/' + v;
+        if (!file || FONTS[key]) continue;
+        const bytes = typeof file === 'string' ? await fontBytes(file) : file.bytes;   // built in, or someone's own
+        FONT_BYTES[key] = bytes;
+        FONTS[key] = opentype.parse(bytes);
+      }
+      previewFace(family);
+    })());
   }
+  return familyLoads.get(family);
+}
+/** Load every family in a list (names we don't know are skipped). */
+const loadFamilies = (list) => Promise.all([...new Set(list)].map(loadFamily));
+/** Every family a document uses: its styles' and its formatted words'. */
+function familiesIn(d) {
+  const out = new Set([DEFAULT_FAMILY]);
+  for (const k in d.styles || {}) if (d.styles[k].family) out.add(d.styles[k].family);
+  for (const s of Object.values(d.stories || {})) for (const r of s.runs || []) if (r.f) out.add(r.f);
+  return [...out];
+}
+/** Layout asked for a family that isn't loaded yet: load it, then lay out again. */
+function requestFamily(family) {
+  if (familyLoads.has(family)) return;
+  loadFamily(family).then(() => { relayoutAndRender(); updateInspector(); })
+    .catch(() => toast('The font ' + (familyInfo(family) || { name: family }).name + ' could not be loaded.', 5000));
+}
+/**
+ * The font to use for a family, bold or not, italic or not: the style
+ * asked for, or the nearest one the family has. Until a family is loaded,
+ * Atkinson stands in (and the family starts loading).
+ */
+function pickFontKey(family, bold, italic) {
+  if (!familyInfo(family)) family = DEFAULT_FAMILY;
+  const v = [variantOf(bold, italic), variantOf(bold, false), variantOf(false, italic), ...VARIANTS].find((x) => hasVariant(family, x));
+  const key = family + '/' + v;
+  if (FONTS[key]) return key;
+  requestFamily(family);
+  return DEFAULT_FAMILY + '/' + variantOf(bold, italic);
+}
+/** The Inspector's font lists show each name in its own font (a CSS font made from the same file). */
+const previewFaces = new Set();
+function previewFace(family) {
+  if (previewFaces.has(family) || typeof FontFace === 'undefined') return;
+  const v = VARIANTS.find((x) => FONT_BYTES[family + '/' + x]);
+  if (!v) return;
+  previewFaces.add(family);
+  try {
+    const face = new FontFace('DSK ' + family, FONT_BYTES[family + '/' + v].slice(0));
+    document.fonts.add(face);
+    face.load().catch(() => {});
+  } catch (err) { /* no preview: the list still works */ }
+}
+
+/* ---------- 2b. Your own fonts ----------
+   Font files someone adds (.ttf, .otf or .woff) for this document: a
+   school's brand font, say. Each is checked (only real font files, at most
+   40 of them, 15 MB each), read with opentype.js, and grouped into a family
+   by the name inside it. They are saved inside the project, so it opens the
+   same anywhere. Whether a font may go inside a PDF is up to its licence,
+   which the font file itself states ("fsType"): fonts that say no are drawn
+   as shapes in the PDF instead, and the Accessibility checker says so. */
+const MAX_FONT_BYTES = 15 * 1024 * 1024;
+const MAX_CUSTOM_FONTS = 40;
+const CUSTOM_FONT_RE = /^uf\d{1,6}$/;               // our names for added families: "uf1", "uf2"...
+/** What kind of font file the first bytes say this is (or null). */
+function fontKind(bytes) {
+  if (bytes.byteLength < 12) return null;
+  const b = new Uint8Array(bytes, 0, 4), tag = String.fromCharCode(b[0], b[1], b[2], b[3]);
+  if ((b[0] === 0 && b[1] === 1 && b[2] === 0 && b[3] === 0) || tag === 'true') return 'ttf';
+  return { OTTO: 'otf', wOFF: 'woff', wOF2: 'woff2', ttcf: 'ttc' }[tag] || null;
+}
+/** Read a font file: { font, family, bold, italic, weight, fsType }. Throws an Error with a plain message. */
+function readFontFile(bytes, fileName) {
+  const kind = fontKind(bytes);
+  if (kind === 'woff2') throw new Error(fileName + ': WOFF2 fonts can’t be read here yet. A .ttf, .otf or .woff of the same font works.');
+  if (kind === 'ttc') throw new Error(fileName + ' is a font collection (.ttc). Use the single .ttf files instead.');
+  if (!kind) throw new Error(fileName + ' isn’t a font file DSKEDTR can read (.ttf, .otf or .woff).');
+  let font;
+  try { font = opentype.parse(bytes); } catch (err) { throw new Error(fileName + ' looks damaged, so it can’t be used.'); }
+  if (!font || font.supported === false || !font.unitsPerEm || !font.glyphs || font.glyphs.length < 2) throw new Error(fileName + ' looks damaged, so it can’t be used.');
+  const pick = (n) => (n && typeof n === 'object' ? String(n.en || Object.values(n)[0] || '') : '');
+  const family = cleanText(pick(font.names.preferredFamily) || pick(font.names.fontFamily) || fileName.replace(/\.[^.]+$/, ''), 60).trim() || 'My font';
+  const sub = pick(font.names.preferredSubfamily) || pick(font.names.fontSubfamily);
+  const os2 = font.tables.os2 || {};
+  const weight = os2.usWeightClass || (/bold|black|heavy/i.test(sub) ? 700 : 400);
+  return { font, family, weight, bold: weight >= 600, italic: !!(os2.fsSelection & 1) || /italic|oblique/i.test(sub), fsType: os2.fsType || 0 };
+}
+/** How a font may go into a PDF, from its licence flags: 'subset' (only the letters used), 'whole', or 'shapes' (not at all). */
+function embedRule(key) {
+  const font = FONTS[key], fsType = (font.tables.os2 && font.tables.os2.fsType) || 0;
+  if ((fsType & 0x000f) === 2 || (fsType & 0x0200)) return 'shapes';      // "restricted", or "pictures of the letters only"
+  if ((fsType & 0x0100) || font.outlinesFormat === 'cff') return 'whole';  // "don't cut it down" (and CFF fonts are safer whole)
+  return 'subset';
+}
+/** Forget everything worked out from one font (after it is replaced or removed). */
+function forgetFont(key) {
+  delete FONTS[key]; delete FONT_BYTES[key];
+  for (const cache of [glyphCache, kernCache, outlineCache]) for (const k of [...cache.keys()]) if (k.startsWith(key + '|')) cache.delete(k);
+}
+/** Add one checked font to its family (made if new). Returns { key, name } or null if the family has a closer match already. */
+function addCustomFont(r, bytes, fileName) {
+  let key = Object.keys(customFamilies).find((k) => customFamilies[k].name.toLowerCase() === r.family.toLowerCase());
+  if (!key) {
+    let n = 1;
+    while (customFamilies['uf' + n]) n++;
+    key = 'uf' + n;
+    customFamilies[key] = { name: r.family, kind: 'Your font', custom: true, files: {} };
+  }
+  const fam = customFamilies[key], v = variantOf(r.bold, r.italic), target = r.bold ? 700 : 400;
+  const old = fam.files[v];
+  if (old && Math.abs(old.weight - target) <= Math.abs(r.weight - target)) return null;   // keep Regular over Light, Bold over Black
+  fam.files[v] = { bytes, fileName, weight: r.weight, fsType: r.fsType };
+  forgetFont(key + '/' + v);
+  FONTS[key + '/' + v] = r.font;
+  FONT_BYTES[key + '/' + v] = bytes;
+  familyLoads.set(key, Promise.resolve());
+  previewFaces.delete(key);
+  previewFace(key);
+  return { key, name: r.family };
+}
+/** Font files from the Add button or a drop. */
+async function addFontFiles(files) {
+  const added = new Map(), problems = [];
+  for (const file of files) {
+    const name = cleanText(file.name, 80) || 'That file';
+    const count = Object.values(customFamilies).reduce((n, f) => n + Object.keys(f.files).length, 0);
+    if (count >= MAX_CUSTOM_FONTS) { problems.push('A document can have at most ' + MAX_CUSTOM_FONTS + ' font files.'); break; }
+    if (file.size > MAX_FONT_BYTES) { problems.push(name + ' is over 15 MB, too big for a font.'); continue; }
+    try {
+      const bytes = await file.arrayBuffer();
+      const res = addCustomFont(readFontFile(bytes, name), bytes, name);
+      if (res) added.set(res.key, res.name);
+    } catch (err) { problems.push(err.message); }
+  }
+  refreshFontLists();
+  if (added.size) {
+    const names = [...added.values()];
+    const shapesOnly = [...added.keys()].some((k) => VARIANTS.some((v) => FONTS[k + '/' + v] && embedRule(k + '/' + v) === 'shapes'));
+    const it = names.length > 1 ? 'them' : 'it';
+    toast('Added ' + names.join(', ') + '. Pick ' + it + ' in Paragraph or Characters.' + (shapesOnly ? (names.length > 1 ? ' One has a licence that keeps it out of PDFs, so text in it will be shapes there (Document lists which).' : ' Its licence doesn’t allow it inside PDFs, so text in it will be shapes there.') : ''), shapesOnly ? 8000 : 5000);
+  }
+  if (problems.length) toast(problems.join(' '), 8000);
+}
+function chooseFontFiles() {
+  const input = $('fontInput');
+  input.value = '';
+  input.click();
+}
+/** Remove an added family. Words and styles using it go back to Atkinson Hyperlegible (one undo step). */
+async function removeCustomFamily(key) {
+  const fam = customFamilies[key];
+  if (!fam) return;
+  const used = familiesIn(doc).includes(key);
+  if (used && !(await confirmDialog('Remove ' + fam.name + '?', 'Text using ' + fam.name + ' will change to Atkinson Hyperlegible.', 'Remove'))) return;
+  if (used) {
+    recordUndo('other');
+    for (const k in doc.styles) if (doc.styles[k].family === key) doc.styles[k].family = DEFAULT_FAMILY;
+    for (const s of Object.values(doc.stories)) if (s.runs) packRuns(s, charFormats(s).map((f) => (f && f.f === key ? patchFormat(f, { f: null }) : f)));
+  }
+  for (const v of VARIANTS) forgetFont(key + '/' + v);
+  delete customFamilies[key];
+  familyLoads.delete(key);
+  refreshFontLists();
+  relayoutAndRender();
+  updateInspector();
+  announce(fam.name + ' removed');
+}
+/** Put a new document's own fonts in place (or none). store: key -> { name, files: { variant: { bytes, font, fileName, weight, fsType } } }. */
+function resetCustomFonts(store) {
+  for (const key of Object.keys(customFamilies)) {
+    for (const v of VARIANTS) forgetFont(key + '/' + v);
+    delete customFamilies[key];
+    familyLoads.delete(key);
+  }
+  for (const [key, fam] of Object.entries(store || {})) {
+    customFamilies[key] = { name: fam.name, kind: 'Your font', custom: true, files: {} };
+    for (const [v, f] of Object.entries(fam.files)) {
+      customFamilies[key].files[v] = { bytes: f.bytes, fileName: f.fileName, weight: f.weight, fsType: f.fsType };
+      FONTS[key + '/' + v] = f.font;
+      FONT_BYTES[key + '/' + v] = f.bytes;
+    }
+    familyLoads.set(key, Promise.resolve());
+    previewFaces.delete(key);
+    previewFace(key);
+  }
+  refreshFontLists();
+}
+/** The added fonts, for a project file (data: URLs) or a crash backup (Blobs). */
+async function fontsForProject(asBlobs) {
+  const out = {};
+  for (const [key, fam] of Object.entries(customFamilies)) {
+    const files = {};
+    for (const [v, f] of Object.entries(fam.files)) {
+      const blob = new Blob([f.bytes], { type: 'application/octet-stream' });
+      files[v] = asBlobs ? { file: f.fileName, blob } : { file: f.fileName, data: await blobToDataURL(blob) };
+    }
+    out[key] = { name: fam.name, files };
+  }
+  return out;
 }
 
 /* Small caches, so each letter is looked up and outlined only once. */
-const glyphCache = new Map();      // "regular|65"            -> glyph for "A"
-const kernCache = new Map();       // "regular|36|57"         -> kerning in font units
-const outlineCache = new Map();    // "regular|36|10.5"       -> outline commands at (0,0)
+const glyphCache = new Map();      // "atkinson/regular|65"      -> glyph for "A"
+const kernCache = new Map();       // "atkinson/regular|36|57"   -> kerning in font units
+const outlineCache = new Map();    // "atkinson/regular|36|10.5" -> outline commands at (0,0)
 
 function glyphFor(fontKey, codePoint) {
   const key = fontKey + '|' + codePoint;
@@ -1444,7 +1703,8 @@ const TEXT_COLOUR = '#1b1f24';
 /* Each document keeps its own copy of how every role looks (doc.styles),
    so a newsletter's headings can be bigger, centred or green without
    changing what they MEAN. A style is:
-     font         'regular' or 'bold'
+     family       which typeface (section 2): 'atkinson', 'literata'...
+     font         'regular' or 'bold' (its weight)
      size         points
      leading      line spacing, as a multiple of the size (1.2 = 120%)
      tracking     letter spacing, in thousandths of the size (+50 = 5% wider)
@@ -1457,7 +1717,7 @@ function defaultStyles() {
   const out = {};
   for (const k in ROLES) {
     const r = ROLES[k];
-    out[k] = { font: r.font, size: r.size, leading: r.leading, tracking: 0, kern: true, spaceBefore: r.spaceBefore, spaceAfter: r.spaceAfter, align: 'left', colour: TEXT_COLOUR };
+    out[k] = { family: DEFAULT_FAMILY, font: r.font, size: r.size, leading: r.leading, tracking: 0, kern: true, spaceBefore: r.spaceBefore, spaceAfter: r.spaceAfter, align: 'left', colour: TEXT_COLOUR };
   }
   return out;
 }
@@ -1697,12 +1957,13 @@ function groupMembers(o) {
      sz     points          size
      href   'https://...'   a link (also underlined, so it never relies on colour alone)
      k      thousandths of the letter's size: extra space BEFORE this letter
+     f      a family (section 2): 'literata', or someone's own 'uf1'
    To change formatting, the runs are spread out to one entry per letter
    (charFormats), those entries change, and they are packed back into runs
    (packRuns). Stories are small, so this simple way is plenty fast and
    hard to get wrong. Formats are never changed in place, only replaced.
    ====================================================================== */
-const FORMAT_FIELDS = ['b', 'i', 'u', 'c', 'sz', 'href', 'k'];
+const FORMAT_FIELDS = ['b', 'i', 'u', 'c', 'sz', 'href', 'k', 'f'];
 
 /** A text "fingerprint" of a format, so two formats can be compared ('' = plain). */
 function formatKey(f) {
@@ -1750,16 +2011,18 @@ function paraStyleAt(story, pos) {
 }
 /**
  * How one letter looks: its paragraph's style with its own format on top.
- * Returns { bold, italic, u, underline, colour, size, href, k, fontKey }.
+ * Returns { family, bold, italic, u, underline, colour, size, href, k, fontKey }.
  */
 function charLook(style, f) {
   const bold = f && typeof f.b === 'boolean' ? f.b : style.font === 'bold';
   const italic = !!(f && f.i);
+  const family = f && f.f && familyInfo(f.f) ? f.f : (familyInfo(style.family) ? style.family : DEFAULT_FAMILY);
   return {
+    family,
     bold, italic, u: !!(f && f.u), underline: !!(f && (f.u || f.href)),
     colour: (f && f.c) || style.colour, size: (f && f.sz) || style.size,
     href: (f && f.href) || null, k: (f && f.k) || 0,
-    fontKey: FONT_KEYS[bold ? 1 : 0][italic ? 1 : 0]
+    fontKey: pickFontKey(family, bold, italic)
   };
 }
 /**
@@ -1822,9 +2085,11 @@ function measureParagraph(text, start, end, style, fmts) {
       glyphs[k] = null; prev = null; continue;
     }
     let g = glyphFor(fontKey, code);
-    if (g.index === 0 && fontKey !== 'regular') {
-      // This font doesn't have that letter (the italics have a few fewer): borrow the upright one.
-      for (const alt of [look.bold ? 'bold' : 'regular', 'regular']) {
+    if (g.index === 0) {
+      // This font doesn't have that letter: borrow it from the family's upright
+      // style, then from Atkinson Hyperlegible (which has the most).
+      for (const alt of [pickFontKey(look.family, look.bold, false), pickFontKey(look.family, false, false), DEFAULT_FAMILY + '/' + variantOf(look.bold, look.italic), DEFAULT_FAMILY + '/regular']) {
+        if (alt === fontKey) continue;
         const g2 = glyphFor(alt, code);
         if (g2.index !== 0) { fontKey = alt; g = g2; fontKeys[k] = alt; break; }
       }
@@ -2580,7 +2845,7 @@ function selectionLook(t) {
     if (!look.bold) out.bold = false;
     if (!look.italic) out.italic = false;
     if (!look.u) out.u = false;
-    same('colour', look.colour); same('size', look.size); same('href', look.href);
+    same('colour', look.colour); same('size', look.size); same('href', look.href); same('family', look.family);
     if (look.href) out.anyLink = true;
     if (i > t.a && betweenLetters(text, i)) same('kAt', look.k);
   }
@@ -2695,6 +2960,78 @@ function setKerning(value, relative) {
   else announce(relative ? 'Letters spaced ' + (value < 0 ? 'closer' : 'further apart') + ' by ' + Math.abs(value) : 'Kerning ' + signed(value) + ' between the highlighted letters');
 }
 
+/* ---------- Font lists (Paragraph style and Characters) ---------- */
+let fontListSig = '';
+/** Fill a font list: built-in families, then your own, then "Add font files…". `first`: a label for a leading "" choice. */
+function fillFamilySelect(sel, first) {
+  const keep = sel.value;
+  sel.textContent = '';
+  const option = (parent, value, text, family) => {
+    const o = document.createElement('option');
+    o.value = value; o.textContent = text;                       // textContent: a font's own name can never become markup
+    if (family) o.style.fontFamily = '"DSK ' + family + '", system-ui, sans-serif';
+    parent.appendChild(o);
+  };
+  if (first) option(sel, '', first);
+  const built = document.createElement('optgroup');
+  built.label = 'Built in';
+  for (const [k, f] of Object.entries(FAMILIES)) option(built, k, f.name, k);
+  sel.appendChild(built);
+  if (Object.keys(customFamilies).length) {
+    const own = document.createElement('optgroup');
+    own.label = 'Your fonts';
+    for (const [k, f] of Object.entries(customFamilies)) option(own, k, f.name, k);
+    sel.appendChild(own);
+  }
+  option(sel, '__add', 'Add font files…');
+  sel.value = keep;
+}
+/** After fonts are added or removed: the two lists and the Document section's list. */
+function refreshFontLists() {
+  const sig = Object.entries(customFamilies).map(([k, f]) => k + ':' + f.name + ':' + Object.keys(f.files).join('+')).join('|');
+  if (sig !== fontListSig || !$('stFamily').options.length) {
+    fontListSig = sig;
+    fillFamilySelect($('stFamily'));
+    fillFamilySelect($('chFamily'), 'Paragraph style’s font');
+  }
+  const list = $('fontList');
+  list.textContent = '';
+  for (const [key, fam] of Object.entries(customFamilies)) {
+    const li = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = fam.name;
+    name.style.fontFamily = '"DSK ' + key + '", system-ui, sans-serif';
+    const what = document.createElement('span');
+    what.className = 'font-what';
+    const styles = { regular: 'Regular', bold: 'Bold', italic: 'Italic', boldItalic: 'Bold Italic' };
+    const shapes = VARIANTS.some((v) => FONTS[key + '/' + v] && embedRule(key + '/' + v) === 'shapes');
+    what.textContent = VARIANTS.filter((v) => fam.files[v]).map((v) => styles[v]).join(', ') + (shapes ? '. Its licence keeps it out of PDFs (shapes there).' : '');
+    const rm = document.createElement('button');
+    rm.className = 'btn';
+    rm.textContent = 'Remove';
+    rm.setAttribute('aria-label', 'Remove the font ' + fam.name);
+    rm.addEventListener('click', () => removeCustomFamily(key));
+    li.append(name, rm, what);
+    list.appendChild(li);
+  }
+  $('fontListNote').hidden = list.children.length > 0;
+}
+/** The sample line and note under a font list. */
+function showFamilySample(family, sampleId, noteId) {
+  const fam = familyInfo(family);
+  if (sampleId) {
+    $(sampleId).style.fontFamily = '"DSK ' + family + '", system-ui, sans-serif';
+    previewFace(family);
+  }
+  if (noteId) setText(noteId, fam ? fam.kind : '');
+}
+/** A family picked from a list: load it first, so the page never flashes in the wrong font. */
+async function withFamily(family, then) {
+  try { await loadFamily(family); }
+  catch (err) { toast('That font could not be loaded.', 5000); return; }
+  then();
+}
+
 /** The Characters section: what the highlighted words look like now. */
 function fillChars() {
   const t = formatTarget();
@@ -2704,6 +3041,17 @@ function fillChars() {
     ? 'Nothing highlighted: these set how the next letters you type here look.'
     : 'For the highlighted text. Anything left blank differs across it.');
   for (const [id, on] of [['chBold', look.bold], ['chItalic', look.italic], ['chUnderline', look.u]]) $(id).setAttribute('aria-pressed', String(!!on));
+  // The font: the words' own one, "" for the paragraph style's, or blank when they differ.
+  const fmts = charFormats(t.story);
+  const own = (i) => (fmts[i] && fmts[i].f && familyInfo(fmts[i].f) ? fmts[i].f : '');
+  let famVal = own(t.a === t.b ? Math.max(0, t.a - 1) : t.a);
+  if (t.a === t.b) famVal = pendingFormat && pendingFormat.story === t.id && pendingFormat.pos === t.a ? ((pendingFormat.f && pendingFormat.f.f) || '') : (look.family === paraStyleAt(t.story, t.a).family ? '' : look.family);
+  else for (let i = t.a; i < t.b; i++) if (t.story.text[i] !== '\n' && own(i) !== famVal) { famVal = null; break; }
+  if (document.activeElement !== $('chFamily')) { if (famVal === null) $('chFamily').selectedIndex = -1; else $('chFamily').value = famVal; }
+  const fam = familyInfo(look.family || paraStyleAt(t.story, t.a).family) || FAMILIES[DEFAULT_FAMILY];
+  const famKey = Object.keys(FAMILIES).find((k) => FAMILIES[k] === fam) || Object.keys(customFamilies).find((k) => customFamilies[k] === fam);
+  const lacks = [!hasVariant(famKey, 'bold') && 'bold', !hasVariant(famKey, 'italic') && 'italics'].filter(Boolean);
+  setText('chFontNote', lacks.length ? fam.name + ' has no ' + lacks.join(' or ') + ', so ' + (lacks.length > 1 ? 'those buttons change' : 'that button changes') + ' nothing in it.' : '');
   setField($('chSize'), look.size == null ? '' : look.size);
   const kern = $('chKern');
   kern.disabled = look.kAt === undefined;
@@ -2725,7 +3073,17 @@ function fillChars() {
   $('chLinkRemove').disabled = !look.href && !look.anyLink;
 }
 
+/** A font for the highlighted words ('' : the paragraph style's again). */
+function setCharFamily(family) {
+  const name = family ? familyInfo(family).name : 'the paragraph style’s font';
+  withFamily(family || DEFAULT_FAMILY, () => changeFormat((f, style) => patchFormat(f, { f: family && family !== style.family ? family : null }), 'other', 'Font: ' + name));
+}
 function wireChars() {
+  $('chFamily').addEventListener('change', () => {
+    const v = $('chFamily').value;
+    if (v === '__add') { fillChars(); chooseFontFiles(); return; }
+    setCharFamily(v);
+  });
   // Buttons keep the cursor (and highlight) in the story being typed in.
   for (const id of ['chBold', 'chItalic', 'chUnderline', 'chClear']) $(id).addEventListener('mousedown', (e) => e.preventDefault());
   $('chBold').addEventListener('click', () => toggleFormat('b'));
@@ -5636,6 +5994,8 @@ function fillStyle(role) {
   const s = styleOf(role), label = ROLES[role].label;
   setText('styleLegend', label + ' style');
   setText('styleNote', 'Changes every ' + label + ' paragraph in this document. What it means for screen readers stays the same.');
+  setField($('stFamily'), familyInfo(s.family) ? s.family : DEFAULT_FAMILY);
+  showFamilySample(familyInfo(s.family) ? s.family : DEFAULT_FAMILY, 'stFamilySample', 'stFamilyNote');
   setField($('stSize'), s.size);
   setField($('stFont'), s.font);
   setField($('stLeading'), s.leading);
@@ -5685,6 +6045,15 @@ function wireStyleEditor() {
     });
   }
   $('stFont').addEventListener('change', () => setStyle('font', $('stFont').value));
+  $('stFamily').addEventListener('change', () => {
+    const v = $('stFamily').value;
+    if (v === '__add') { fillStyle($('styleBox').dataset.role); chooseFontFiles(); return; }
+    withFamily(v, () => { setStyle('family', v); announce('Font: ' + familyInfo(v).name); });
+  });
+  // Your own fonts (section 2b).
+  $('addFontBtn').addEventListener('click', chooseFontFiles);
+  $('fontInput').addEventListener('change', () => { const files = [...$('fontInput').files]; if (files.length) addFontFiles(files); });
+  refreshFontLists();
   $('stKern').addEventListener('change', () => setStyle('kern', $('stKern').checked));
   $('stColour').addEventListener('input', () => { setStyle('colour', $('stColour').value.toLowerCase()); setField($('stHex'), $('stColour').value); });
   $('stHex').addEventListener('input', () => {
@@ -7058,6 +7427,7 @@ function wireChrome() {
     [mod + ' + ' + alt + ' + 1 / 2 / 0 / 9', 'While typing: Heading 1, Heading 2, Body, Caption'],
     [mod + ' + B, ' + mod + ' + I, ' + mod + ' + U', 'While typing: bold, italic, underline for the highlighted words (or what you type next)'],
     [mod + ' + K', 'While typing: link the highlighted words (Enter links, Escape goes back)'],
+    ['Fonts', 'A paragraph style’s font (Paragraph), or any words’ font (Characters). Add your own .ttf, .otf or .woff files in Document, or drop them on the page'],
     [mod + ' + \\', 'While typing: clear formatting (back to the paragraph style; links stay)'],
     [(isMac ? 'Ctrl + Cmd' : 'Alt') + ' + Left / Right', 'While typing: kerning, the space between two letters (Shift: five times as much); with words highlighted, between all their letters'],
     [mod + ' + Z, ' + mod + ' + Shift + Z', 'Undo, redo'],
@@ -8216,7 +8586,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 2;                         // bump when the file layout changes (2: formatting inside paragraphs)
+const PROJECT_VERSION = 3;                         // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -8282,7 +8652,7 @@ function blankDocument(page) {
  *   picStore  - its pictures: id -> { name, w, h, blob }
  * Undo starts afresh: the old document's history doesn't apply to the new one.
  */
-function loadDocument(newDoc, picStore) {
+function loadDocument(newDoc, picStore, fontStore) {
   // Leave whatever was going on: typing, cropping, linking, a tool's half-made step.
   if (focusedStoryId && inputs[focusedStoryId]) inputs[focusedStoryId].blur();
   cropId = null;
@@ -8299,6 +8669,8 @@ function loadDocument(newDoc, picStore) {
     images[id] = { id, w: p.w, h: p.h, name: p.name };
     imageFiles[id] = { blob: p.blob, url: URL.createObjectURL(p.blob) };
   }
+  // Its own fonts (section 2b), or none.
+  resetCustomFonts(fontStore);
   // The new document.
   for (const key of Object.keys(doc)) delete doc[key];
   Object.assign(doc, newDoc);
@@ -8381,7 +8753,7 @@ async function projectObject() {
   }
   return {
     format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION, saved: new Date().toISOString(),
-    doc: JSON.parse(docState()), images: pics
+    doc: JSON.parse(docState()), images: pics, fonts: await fontsForProject(false)
   };
 }
 /** Hand a file to the browser to save in Downloads (or wherever it asks). */
@@ -8449,8 +8821,9 @@ function cleanLink(v) {
   return u.href.length <= 2000 ? u.href : null;
 }
 /** One formatting run's "what" from a file: only the fields section 4b knows, each checked. */
-function cleanFormat(r) {
+function cleanFormat(r, fontOK) {
   const f = {};
+  if (fontOK && fontOK(r.f)) f.f = r.f;
   if (typeof r.b === 'boolean') f.b = r.b;
   if (r.i === true) f.i = true;
   if (r.u === true) f.u = true;
@@ -8471,7 +8844,9 @@ const POS = 20000;                                   // furthest anything can si
  * Rebuild a document from what a file says, keeping only what DSKEDTR knows.
  * `known` is the set of picture ids that came with it.
  */
-function checkDocument(raw, known) {
+function checkDocument(raw, known, knownFonts) {
+  // Families a file may name: the built-in ones, and the ones it brought (checked by checkFonts).
+  const fontOK = (v) => typeof v === 'string' && (Object.hasOwn(FAMILIES, v) || !!(knownFonts && knownFonts.has(v)));
   if (!raw || typeof raw !== 'object') bad('That project has no document in it.');
   const out = blankDocument();
   out.title = cleanText(raw.title, 200);
@@ -8492,6 +8867,7 @@ function checkDocument(raw, known) {
     const d = DEFAULT_STYLES[key];
     const n = (v, min, max, def) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : def);
     out.styles[key] = {
+      family: fontOK(s.family) ? s.family : DEFAULT_FAMILY,
       font: s.font === 'bold' || s.font === 'regular' ? s.font : d.font,
       size: n(s.size, 4, 200, d.size), leading: n(s.leading, 0.7, 4, d.leading), tracking: n(s.tracking, -200, 1000, 0),
       kern: s.kern !== false, spaceBefore: n(s.spaceBefore, 0, 300, d.spaceBefore), spaceAfter: n(s.spaceAfter, 0, 300, d.spaceAfter),
@@ -8565,7 +8941,7 @@ function checkDocument(raw, known) {
     for (const r of Array.isArray(rs.runs) ? rs.runs.slice(0, 200000) : []) {
       if (!r || typeof r !== 'object' || !Number.isInteger(r.s) || !Number.isInteger(r.e)) continue;
       if (r.s < lastEnd || r.e <= r.s || r.e > text.length) continue;
-      const f = cleanFormat(r);
+      const f = cleanFormat(r, fontOK);
       if (f) { runs.push(Object.assign({ s: r.s, e: r.e }, f)); lastEnd = r.e; }
     }
     if (frames.length) {
@@ -8690,6 +9066,47 @@ function dataURLBytes(s) {
     return bytes;
   } catch (err) { return null; }
 }
+/** A font from a project file: a data: URL back into bytes (null if it isn't one). */
+function fontDataBytes(s) {
+  const m = /^data:(?:application\/octet-stream|font\/(?:ttf|otf|woff)|application\/font-woff);base64,([A-Za-z0-9+/]*={0,2})$/.exec(s);
+  if (!m || m[1].length > MAX_FONT_BYTES * 1.4) return null;
+  try {
+    const bin = atob(m[1]);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  } catch (err) { return null; }
+}
+/**
+ * Check a project's own fonts. `raw` maps a family name ("uf1") ->
+ * { name, files: { regular: { file, data (a data: URL) or blob } ... } }.
+ * Each must be a real font file opentype.js can read (section 2b).
+ * Returns { store, dropped } for resetCustomFonts.
+ */
+async function checkFonts(raw) {
+  const store = {};
+  let dropped = 0, count = 0;
+  for (const [key, r] of Object.entries(raw && typeof raw === 'object' ? raw : {}).slice(0, MAX_CUSTOM_FONTS)) {
+    if (!CUSTOM_FONT_RE.test(key) || !r || typeof r !== 'object' || !r.files || typeof r.files !== 'object') { dropped++; continue; }
+    const files = {};
+    for (const v of VARIANTS) {
+      const fr = r.files[v];
+      if (!fr || typeof fr !== 'object') continue;
+      if (++count > MAX_CUSTOM_FONTS) { dropped++; continue; }
+      let bytes = null;
+      if (typeof fr.data === 'string') bytes = fontDataBytes(fr.data);
+      else if (fr.blob instanceof Blob && fr.blob.size <= MAX_FONT_BYTES) bytes = new Uint8Array(await fr.blob.arrayBuffer());
+      if (!bytes || !bytes.length) { dropped++; continue; }
+      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      try {
+        const info = readFontFile(buf, 'A font');
+        files[v] = { bytes: buf, font: info.font, fileName: cleanText(fr.file, 80) || 'font', weight: info.weight, fsType: info.fsType };
+      } catch (err) { dropped++; }
+    }
+    if (Object.keys(files).length) store[key] = { name: cleanText(r.name, 60).trim() || 'My font', files };
+  }
+  return { store, dropped };
+}
 /**
  * Check a project's pictures. `raw` maps id -> { name, data (a data: URL) }
  * from a file, or id -> { name, blob } from a backup. Each must be a real
@@ -8727,10 +9144,13 @@ async function openProjectData(pj, name) {
   if (!(Number.isInteger(pj.version) && pj.version >= 1)) bad('That project is damaged.');
   if (pj.version > PROJECT_VERSION) bad('That project was made by a newer DSKEDTR. Update the app to open it.');
   const { pics, dropped } = await checkPictures(pj.images);
-  const clean = checkDocument(pj.doc, new Set(Object.keys(pics)));
+  const { store, dropped: fontsDropped } = await checkFonts(pj.fonts);
+  const clean = checkDocument(pj.doc, new Set(Object.keys(pics)), new Set(Object.keys(store)));
+  await loadFamilies(familiesIn(clean).filter((f) => Object.hasOwn(FAMILIES, f)));   // built-in fonts it uses, before it is drawn
   fileBaseName = name || '';
-  loadDocument(clean, pics);
+  loadDocument(clean, pics, store);
   suiteSplashClose();
+  if (fontsDropped) toast(fontsDropped + ' font file' + (fontsDropped === 1 ? '' : 's') + ' in it could not be read; Atkinson Hyperlegible stands in.', 7000);
   return dropped;
 }
 
@@ -8758,8 +9178,10 @@ function openFiles(files, target) {
   const project = list.find((f) => /\.dskedtr$/i.test(f.name || '') || f.type === 'application/x-dskedtr' || f.type === 'application/json');
   if (project) { openProjectFile(project); return; }
   const pictures = list.filter((f) => f.type && f.type.startsWith('image/'));
+  const fontFiles = list.filter((f) => /\.(ttf|otf|woff2?)$/i.test(f.name || ''));
+  if (fontFiles.length) { suiteSplashClose(); addFontFiles(fontFiles); }
   if (pictures.length) { suiteSplashClose(); addPictureFiles(pictures, target); return; }
-  toast('DSKEDTR opens .dskedtr projects, and adds pictures (JPEG, PNG, GIF, WebP, AVIF, BMP).', 5000);
+  if (!fontFiles.length) toast('DSKEDTR opens .dskedtr projects, and adds pictures (JPEG, PNG, GIF, WebP, AVIF, BMP) and fonts (.ttf, .otf, .woff).', 5000);
 }
 function chooseFileToOpen() {
   const input = $('fileInput');
@@ -8780,7 +9202,7 @@ const backup = SuiteBackup.session('dskedtr', async () => {
   const n = doc.pages.length;
   return {
     detail: (doc.title || fileBaseName || 'Untitled') + ', ' + n + ' page' + (n === 1 ? '' : 's'),
-    data: { format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION, doc: JSON.parse(docState()), images: pics, name: fileBaseName }
+    data: { format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION, doc: JSON.parse(docState()), images: pics, fonts: await fontsForProject(true), name: fileBaseName }
   };
 });
 /** Called after every change (from recordUndo, undo and redo). */
@@ -8844,6 +9266,7 @@ async function exportPDF(name) {
   }
   const L = window.PDFLib;
   const op = (name, args) => L.PDFOperator.of(name, args || []);
+  await loadFamilies(familiesIn(doc));               // every font the document uses, before laying it out
   layoutAll();
   const pdf = await L.PDFDocument.create();
   pdf.registerFontkit(window.fontkit);
@@ -8851,8 +9274,13 @@ async function exportPDF(name) {
   // in the file), and only the fonts used (no italics in the file without italic text).
   const usedFonts = new Set();
   for (const id in layouts) for (const ln of layouts[id].lines) for (let i = ln.start; i < ln.end; i++) if (ln.m.glyphs[i - ln.paraStart]) usedFonts.add(ln.m.fontKeys[i - ln.paraStart]);
+  // A font whose licence doesn't allow it inside documents isn't embedded:
+  // pdfText draws its letters as shapes instead (embedRule, section 2b).
   const fonts = {};
-  for (const key of usedFonts) fonts[key] = await pdf.embedFont(FONT_BYTES[key], { subset: true });
+  for (const key of usedFonts) {
+    const rule = embedRule(key);
+    if (rule !== 'shapes') fonts[key] = await pdf.embedFont(FONT_BYTES[key], { subset: rule === 'subset' });
+  }
   const glyphHex = new Map();                      // "regular|65" -> "0006", this font's code for "A"
   const hexFor = (fontKey, cp) => {
     const k = fontKey + '|' + cp;
@@ -8990,6 +9418,7 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
       const k = i - ln.paraStart, g = ln.m.glyphs[k];
       if (!g) continue;                              // a tab (just space) or the second half of an emoji
       const look = ln.m.looks[k], fontKey = ln.m.fontKeys[k], size = ln.m.sizes[k];
+      if (!fonts[fontKey]) continue;                 // a font that can't go in the PDF: drawn as shapes below
       const x = ln.xs[i - ln.start];
       const cp = story.text.codePointAt(i);
       const wordStart = i === ln.start || /\s/.test(story.text[i - 1]);
@@ -9017,11 +9446,36 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
     flush();
   }
   ops.push(L.endText());
+  // Letters in fonts that can't go inside a PDF: their outlines, filled.
+  for (const { ln, story } of lines) {
+    for (let i = ln.start; i < ln.end; i++) {
+      const k = i - ln.paraStart, g = ln.m.glyphs[k], fontKey = ln.m.fontKeys[k];
+      if (!g || fonts[fontKey] || story.text.charCodeAt(i) === 32) continue;
+      ops.push(L.setFillingRgbColor(...rgb01(ln.m.looks[k].colour)));
+      pdfGlyphShape(ops, outline(fontKey, g, ln.m.sizes[k]), ln.x0 + ln.xs[i - ln.start], ln.baseline, L);
+      ops.push(op(L.PDFOperatorNames.FillNonZero));
+    }
+  }
   // Underlines: thin filled bars, after the letters.
   for (const { ln, story } of lines) {
     for (const u of lineUnderlines(ln, story.text)) {
       ops.push(L.setFillingRgbColor(...rgb01(u.colour)), L.rectangle(r2(u.x1), r2(u.y), r2(u.x2 - u.x1), r2(u.h)), op(L.PDFOperatorNames.FillNonZero));
     }
+  }
+}
+
+/** One letter's outline as PDF path operators, moved to (dx, dy). (PDF has no quadratic curves, so those become cubic ones.) */
+function pdfGlyphShape(ops, cmds, dx, dy, L) {
+  let cx = 0, cy = 0;                                // where the pen is
+  for (const c of cmds) {
+    if (c.type === 'M') { ops.push(L.moveTo(r2(c.x + dx), r2(c.y + dy))); cx = c.x; cy = c.y; }
+    else if (c.type === 'L') { ops.push(L.lineTo(r2(c.x + dx), r2(c.y + dy))); cx = c.x; cy = c.y; }
+    else if (c.type === 'C') { ops.push(L.appendBezierCurve(r2(c.x1 + dx), r2(c.y1 + dy), r2(c.x2 + dx), r2(c.y2 + dy), r2(c.x + dx), r2(c.y + dy))); cx = c.x; cy = c.y; }
+    else if (c.type === 'Q') {
+      const x1 = cx + 2 / 3 * (c.x1 - cx), y1 = cy + 2 / 3 * (c.y1 - cy), x2 = c.x + 2 / 3 * (c.x1 - c.x), y2 = c.y + 2 / 3 * (c.y1 - c.y);
+      ops.push(L.appendBezierCurve(r2(x1 + dx), r2(y1 + dy), r2(x2 + dx), r2(y2 + dy), r2(c.x + dx), r2(c.y + dy)));
+      cx = c.x; cy = c.y;
+    } else if (c.type === 'Z') ops.push(L.closePath());
   }
 }
 
@@ -9055,6 +9509,7 @@ function pdfLinks(o, lines, page, pdf, L) {
 
 /** Draw page `pi` onto a new canvas, `k` pixels per point. */
 async function pageCanvas(pi, k, opts = {}) {
+  await loadFamilies(familiesIn(doc));
   layoutAll();
   const c = document.createElement('canvas');
   c.width = Math.round(PAGE.width * k); c.height = Math.round(PAGE.height * k);
@@ -9173,6 +9628,14 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.9.0", date: "2026-10-06", title: "", notes: [
+    "Nine more fonts, built in (all free, SIL Open Font License), each with bold and italics unless noted: Andika (made for beginning readers), Lexend (made for easy reading; no italics), Comfortaa (rounded; no italics), Comic Neue (casual), Literata (serif for long reading), Fraunces (headline serif), Zilla Slab (friendly slab), Archivo Black (big, blocky headlines; one weight) and Atkinson Hyperlegible Mono. Atkinson Hyperlegible stays the default. Pick one for a paragraph style (Paragraph, Font, with a sample line) or for any words (Characters, Font). Fonts load the first time they are used, so the app still starts quickly. A font without bold or italics uses the nearest style it has, and Characters says so.",
+    "Your own fonts: add .ttf, .otf or .woff files (Document, \"Add font files...\", the end of either font list, or drop them on the page). They are grouped into families by the name inside them and saved inside the project, so it opens the same anywhere. Each file is checked first (a real font, at most 15 MB, 40 per document); WOFF2 and font collections can't be read yet, and DSKEDTR says so. Remove one from Document: words using it go back to Atkinson Hyperlegible (one undo step).",
+    "Font licences are respected in PDFs. A font file says whether it may be put inside documents. One that says no is drawn as shapes in the PDF instead of being embedded, and both the font list and the Accessibility checker warn that its text can't be selected, searched or read aloud there.",
+    "The checker suggests a reading font when Body or Caption text is in a headline font (Archivo Black).",
+    "Project files are now version 3 (they can carry fonts). Older versions of DSKEDTR will refuse them; this version opens the older ones.",
+    "The one-file app is about 3.1 MB now (the fonts are about 0.8 MB of it)."
+  ] },
   { version: "0.8.0", date: "2026-10-06", title: "", notes: [
     "Milestone 6, the last of phase 1: formatting inside a paragraph.",
     "Bold, italic and underline for any words: Ctrl+B, Ctrl+I, Ctrl+U (Cmd on a Mac), or the new Characters section of the Inspector while typing. With nothing highlighted, they set how the next letters you type look. Bold off in a heading makes words NOT bold there. Italics are the real Atkinson Hyperlegible italics, not slanted letters.",
@@ -9552,6 +10015,18 @@ async function a11yIssues() {
     const s = styleOf(role);
     if (s.size < 9) add('warning', ROLES[role].label + ' text is ' + s.size + ' pt: small text is hard to read, especially printed. 9 pt or more is kinder.', null, null, null);
     if (s.align === 'justify') add('tip', ROLES[role].label + ' is justified. The uneven gaps between words can make reading harder for people with dyslexia; left-aligned is easier.', null, null, null);
+  }
+  // Fonts: added fonts whose licence keeps them out of PDFs; headline fonts used for reading text.
+  const famsUsed = familiesIn(doc);
+  for (const key of famsUsed) {
+    const fam = familyInfo(key);
+    if (fam && fam.custom && VARIANTS.some((v) => FONTS[key + '/' + v] && embedRule(key + '/' + v) === 'shapes')) {
+      add('warning', 'Text in ' + fam.name + ' will be shapes in the PDF, not real text: the font’s licence doesn’t allow putting it inside documents. There it can’t be selected, searched or read aloud. Another font (or one whose licence allows it) fixes this.', null, null, null);
+    }
+  }
+  for (const role of ['body', 'caption']) {
+    const fam = familyInfo(styleOf(role).family);
+    if (fam && fam.display && Object.values(doc.stories).some((s) => s.roles.includes(role))) add('tip', ROLES[role].label + ' text is in ' + fam.name + ', a headline font. Long passages in it are hard to read; it shines in headings.', null, null, null);
   }
   // Formatting inside paragraphs: tiny words, and links that don't say where they go.
   const VAGUE_LINK = /^(click here|click|here|read more|more|learn more|link|this|this link|go|details|info)[.!:]?$/i;

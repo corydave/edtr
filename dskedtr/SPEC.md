@@ -108,7 +108,7 @@ colour is never the only difference: the icon's drawing and the name carry it.
   (Phase 1 has paragraph styles plus formatting on any words; named,
   reusable character styles are still to come.)
 - Font, size, bold/italic/underline, colour, alignment, small caps.
-  (Done in 0.8.0 except small caps and other fonts.)
+  (Done in 0.8.0 except small caps; ten fonts and your own in 0.9.0.)
 - **Type spacing**, all adjustable in the Inspector and saved in styles:
   - *Kerning* (the gap between two particular letters): the font's own
     kerning is on by default (read from the font through opentype.js), and
@@ -433,6 +433,19 @@ Phase 1 is built in milestones, each stopping for Dave's review:
    word there). The checker measures contrast per colour stretch and flags
    links whose words don't say where they go, and tiny formatted words.
    Phase 1 is complete.
+   - 0.9.0, between phases (Dave's ask): fonts. `FAMILIES` (section 2)
+     lists ten built-in families (Atkinson Hyperlegible, Andika, Lexend,
+     Comfortaa, Comic Neue, Literata, Fraunces, Zilla Slab, Archivo Black,
+     Atkinson Hyperlegible Mono; fontsource 5.3.0 latin .woff files, OFL),
+     loaded when first used (`loadFamily`, `requestFamily` relays out after).
+     A font is "family/style"; `pickFontKey` falls back to the nearest
+     style a family has, and to Atkinson until a family is loaded. Styles
+     have `family`; runs have `f`. Own fonts (`customFamilies`, ids `uf1`...)
+     are .ttf/.otf/.woff, checked and parsed, grouped by their name table,
+     and saved in the project's `fonts` (data: URLs; Blobs in backups).
+     `embedRule` reads each font's fsType: restricted or bitmap-only fonts
+     are drawn as outlines in the PDF (`pdfGlyphShape`), no-subsetting and
+     CFF fonts are embedded whole. Project files are version 3.
 
 **Phase 2 - Publisher's strengths.** Master pages (odd/even), facing
 pages, text wrap, columns in a box, "continued" lines, page numbers,

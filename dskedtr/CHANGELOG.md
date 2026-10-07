@@ -1,5 +1,36 @@
 # DSKEDTR changelog
 
+## 0.9.0 - 2026-10-06
+
+- **Nine more fonts, built in** (all free, SIL Open Font License), each
+  with bold and italics unless noted: Andika (made for beginning readers),
+  Lexend (made for easy reading; no italics), Comfortaa (rounded; no
+  italics), Comic Neue (casual), Literata (serif for long reading),
+  Fraunces (headline serif), Zilla Slab (friendly slab), Archivo Black
+  (big, blocky headlines; one weight) and Atkinson Hyperlegible Mono.
+  Atkinson Hyperlegible stays the default. Pick one for a paragraph style
+  (Paragraph, Font, with a sample line) or for any words (Characters,
+  Font). Fonts load the first time they are used, so the app still starts
+  quickly. A font without bold or italics uses the nearest style it has,
+  and Characters says so.
+- **Your own fonts:** add .ttf, .otf or .woff files (Document, "Add font
+  files...", the end of either font list, or drop them on the page). They
+  are grouped into families by the name inside them and saved inside the
+  project, so it opens the same anywhere. Each file is checked first (a
+  real font, at most 15 MB, 40 per document); WOFF2 and font collections
+  can't be read yet, and DSKEDTR says so. Remove one from Document: words
+  using it go back to Atkinson Hyperlegible (one undo step).
+- **Font licences are respected in PDFs.** A font file says whether it may
+  be put inside documents. One that says no is drawn as shapes in the PDF
+  instead of being embedded, and both the font list and the Accessibility
+  checker warn that its text can't be selected, searched or read aloud
+  there.
+- The checker suggests a reading font when Body or Caption text is in a
+  headline font (Archivo Black).
+- Project files are now version 3 (they can carry fonts). Older versions
+  of DSKEDTR will refuse them; this version opens the older ones.
+- The one-file app is about 3.1 MB now (the fonts are about 0.8 MB of it).
+
 ## 0.8.0 - 2026-10-06
 
 Milestone 6, the last of phase 1: formatting inside a paragraph.

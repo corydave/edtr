@@ -15,11 +15,21 @@ const CACHE = 'dskedtr-' + VERSION;
 
 // The app's own files, saved at install time.
 // index.html is the one-file edition (everything inside); index-online.html is
-// the online edition, which also needs the fonts and the libraries below.
+// the online edition, which also needs the fonts (every built-in family) and the libraries below.
 const APP_FILES = ['./', './index.html', './index-online.html', './manifest.webmanifest', './icon.svg', './icon-192.png',
   './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon-32.png',
-  './fonts/atkinson-hyperlegible-400.woff', './fonts/atkinson-hyperlegible-700.woff',
-  './fonts/atkinson-hyperlegible-400-italic.woff', './fonts/atkinson-hyperlegible-700-italic.woff'];
+  './fonts/andika-400-italic.woff', './fonts/andika-400.woff', './fonts/andika-700-italic.woff',
+  './fonts/andika-700.woff', './fonts/archivo-black-400.woff', './fonts/atkinson-hyperlegible-400-italic.woff',
+  './fonts/atkinson-hyperlegible-400.woff', './fonts/atkinson-hyperlegible-700-italic.woff',
+  './fonts/atkinson-hyperlegible-700.woff', './fonts/atkinson-hyperlegible-mono-400-italic.woff',
+  './fonts/atkinson-hyperlegible-mono-400.woff', './fonts/atkinson-hyperlegible-mono-700-italic.woff',
+  './fonts/atkinson-hyperlegible-mono-700.woff', './fonts/comfortaa-400.woff', './fonts/comfortaa-700.woff',
+  './fonts/comic-neue-400-italic.woff', './fonts/comic-neue-400.woff', './fonts/comic-neue-700-italic.woff',
+  './fonts/comic-neue-700.woff', './fonts/fraunces-400-italic.woff', './fonts/fraunces-400.woff',
+  './fonts/fraunces-700-italic.woff', './fonts/fraunces-700.woff', './fonts/lexend-400.woff',
+  './fonts/lexend-700.woff', './fonts/literata-400-italic.woff', './fonts/literata-400.woff',
+  './fonts/literata-700-italic.woff', './fonts/literata-700.woff', './fonts/zilla-slab-400-italic.woff',
+  './fonts/zilla-slab-400.woff', './fonts/zilla-slab-700-italic.woff', './fonts/zilla-slab-700.woff'];
 
 // The only outside files allowed: the four pinned libraries the online
 // edition loads. The page checks each one's fingerprint (integrity) every time.

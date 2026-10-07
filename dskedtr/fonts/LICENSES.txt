@@ -1,12 +1,30 @@
-Licence for the font in this folder
-===================================
+Licences for the fonts in this folder
+=====================================
 
-Atkinson Hyperlegible (regular, bold, italic and bold italic), by the
-Braille Institute of America, included unchanged as .woff files (the
-Latin-alphabet subset from Fontsource's packaging of the Google Fonts
-release). Regular and bold were copied from VCTREDTR's fonts folder; the
-two italics (added in DSKEDTR 0.8.0) come from Fontsource 5.3.0. Its full
-licence text follows.
+Every font here is free software under the SIL Open Font License 1.1
+(full text below), included unchanged as .woff files: the Latin-alphabet
+subset from Fontsource's packaging (5.3.0) of the Google Fonts releases.
+
+- Atkinson Hyperlegible (regular, bold, italic, bold italic): Copyright
+  2020 Braille Institute of America, Inc. Regular and bold were copied from
+  VCTREDTR's fonts folder; the italics were added in DSKEDTR 0.8.0.
+- Atkinson Hyperlegible Mono: Copyright 2020-2024 The Atkinson Hyperlegible
+  Mono Project Authors (github.com/googlefonts/atkinson-hyperlegible-next-mono).
+- Andika: Copyright (c) 2004-2022 SIL International.
+- Archivo Black: Copyright 2017 The Archivo Black Project Authors
+  (github.com/Omnibus-Type/ArchivoBlack).
+- Comfortaa: Copyright 2011 The Comfortaa Project Authors
+  (github.com/alexeiva/comfortaa), with Reserved Font Name "Comfortaa".
+- Comic Neue: Copyright 2014 The Comic Neue Project Authors
+  (github.com/crozynski/comicneue).
+- Fraunces: Copyright 2020 The Fraunces Project Authors
+  (github.com/undercasetype/Fraunces).
+- Lexend: Copyright 2019 The Lexend Project Authors (github.com/googlefonts/lexend).
+- Literata: Copyright 2017 The Literata Project Authors (github.com/googlefonts/literata).
+- Zilla Slab: Copyright 2017, The Mozilla Foundation.
+
+All but Atkinson Hyperlegible were added in DSKEDTR 0.9.0. The licence
+text follows, as it came with Atkinson Hyperlegible; it is the same for all.
 
 ------------------------------------------------------------------------
 Atkinson Hyperlegible
