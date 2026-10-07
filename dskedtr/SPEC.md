@@ -105,7 +105,10 @@ colour is never the only difference: the icon's drawing and the name carry it.
 - **Text wrap** around objects: none, square, tight (follows the shape),
   top and bottom; with distance from the object.
 - Paragraph styles and character styles that update everywhere.
+  (Phase 1 has paragraph styles plus formatting on any words; named,
+  reusable character styles are still to come.)
 - Font, size, bold/italic/underline, colour, alignment, small caps.
+  (Done in 0.8.0 except small caps and other fonts.)
 - **Type spacing**, all adjustable in the Inspector and saved in styles:
   - *Kerning* (the gap between two particular letters): the font's own
     kerning is on by default (read from the font through opentype.js), and
@@ -396,10 +399,40 @@ Phase 1 is built in milestones, each stopping for Dave's review:
      (an in-tab clipboard with pictures, plus the system clipboard's text
      and a private marker; outside text pastes as a new text box); and
      Ctrl/Cmd + drag to copy (Alt stays "no snapping").
-6. **Formatting inside a paragraph** (next): character styles (bold,
-   italic, a colour, a size for a word or phrase), manual kerning between
-   two letters, and links. The story becomes text plus runs of formatting,
-   kept in step as you type, through layout, the PDF and undo.
+   - 0.7.1: the staging area (Dave's name for the grey around the page):
+     the drawing covers the page plus half a page at each side and a
+     quarter above and below; objects there (not touching the page) are
+     left out of printing, export, reading order and the checker. Space
+     panning fixed (key repeats were scrolling the desk) and works mid-drag;
+     Ctrl+Shift+drag copies along a straight line.
+   - 0.7.2: Preview (the eye at the start of the view group, or W): a
+     `proofing` class on the desk frame hides every helper layer and clips
+     the content layer to the page (`#pageClip`), so only what prints
+     shows. Look, don't touch: drags pan, editing keys stand down; W,
+     Escape, the banner button, a tool or typing go back. Not saved in the
+     view settings: the app always opens ready to edit.
+6. **Formatting inside a paragraph** (done, 0.8.0): bold, italic,
+   underline, colour and size for a word or phrase, links, and kerning by
+   hand. A story is now text, roles, frames and `runs`: a sorted,
+   non-overlapping list of `{ s, e, b, i, u, c, sz, href, k }` that only
+   covers text differing from its paragraph style (`b: false` = not bold
+   inside a bold heading; `k` = space before a letter in 1/1000 of its
+   size). Edits spread runs to one format per letter (`charFormats`),
+   change them and pack them back (`packRuns`). New letters copy the
+   letter before (a link only continues inside a link; kerning never
+   does); Ctrl+B with nothing highlighted sets `pendingFormat` for the
+   next letters typed there. Layout measures each letter in its own font
+   and size, and a line is as tall as its biggest letters. Links are
+   always underlined (never colour alone), become clickable PDF link
+   annotations described by their words, and only https, http, mailto and
+   tel addresses are kept (`cleanLink`). The PDF embeds only the fonts
+   used. Real Atkinson Hyperlegible italics (fontsource 5.3.0, latin, OFL)
+   were added, about 30 KB. Project files are version 2 (an older
+   DSKEDTR refuses them rather than dropping the formatting). Kerning keys:
+   Alt+Left/Right, but Ctrl+Cmd+Left/Right on a Mac (Option+arrows move by
+   word there). The checker measures contrast per colour stretch and flags
+   links whose words don't say where they go, and tiny formatted words.
+   Phase 1 is complete.
 
 **Phase 2 - Publisher's strengths.** Master pages (odd/even), facing
 pages, text wrap, columns in a box, "continued" lines, page numbers,

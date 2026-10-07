@@ -1,5 +1,82 @@
 # DSKEDTR changelog
 
+## 0.8.0 - 2026-10-06
+
+Milestone 6, the last of phase 1: formatting inside a paragraph.
+
+- **Bold, italic and underline** for any words: Ctrl+B, Ctrl+I, Ctrl+U
+  (Cmd on a Mac), or the new **Characters** section of the Inspector while
+  typing. With nothing highlighted, they set how the next letters you type
+  look. Bold off in a heading makes words NOT bold there. Italics are the
+  real Atkinson Hyperlegible italics, not slanted letters.
+- **Colour and size** for any words, in Characters, with the contrast
+  against white paper shown right there. A line grows to fit its biggest
+  letters. "Style's" puts the paragraph style's colour back.
+- **Links:** highlight words, press Ctrl+K (or use Characters), type an
+  address and press Enter. "flcc.edu" becomes https://flcc.edu and an
+  email address becomes a mailto: link; anything that isn't a web, email
+  or phone address is refused. Links are always underlined (so they never
+  rely on colour alone), and in the PDF they can be clicked, with the
+  link's words as the description screen readers announce.
+- **Kerning by hand:** with the cursor between two letters, Alt+Left /
+  Right (Ctrl+Cmd+Left / Right on a Mac, where Option+arrows move by word)
+  closes up or opens the gap, by 1/100 of the letters' size (Shift: five
+  times as much). With words highlighted, it spaces all their letters. The
+  Kerning field in Characters takes exact numbers.
+- **Clear formatting** (Ctrl+backslash, or the button): back to the paragraph
+  style. Links stay.
+- Formatting comes along when copying words inside a story, when copying
+  and pasting text boxes, in undo, saved projects, the PDF, the PNG and the
+  page thumbnails. The sample newsletter now has bold dates and days and
+  an italic phrase.
+- The Accessibility checker measures the contrast of each colour on a line
+  separately, warns about links whose words don't say where they go
+  ("click here"), suggests words instead of bare web addresses, and warns
+  about formatted words under 9 pt.
+- Project files are now version 2. Older versions of DSKEDTR will refuse
+  them (rather than quietly losing the formatting); this version opens the
+  older ones.
+- The PDF only includes the fonts the document uses.
+- Fixed: the alignment buttons in Paragraph didn't show which one was
+  chosen. Small buttons that are on (alignment, Bold) are now emerald with
+  a ring.
+- Fixed: pasting a single copied text box showed an error in the browser
+  console (the Inspector looked at the new text before it was laid out).
+
+## 0.7.2 - 2026-10-06
+
+- **Preview (the eye in the top bar, or W):** see the page as it will
+  print. Guides, the grid, margins, box edges, handles and the cursor are
+  hidden, and so is everything outside the page: whatever waits in the
+  staging area, and any part hanging off an edge. Preview is for looking,
+  so a click or drag on the page slides the view instead of moving things;
+  Page Up / Page Down, zooming and undo still work. W, Escape, the
+  banner's "Back to editing" button, picking a tool or starting to type
+  all go back to editing. It works alongside the colour vision preview.
+
+## 0.7.1 - 2026-10-06
+
+- **The staging area:** the grey around the page is now somewhere to keep
+  things. Drag anything off the page (a spare photo, a heading you're not
+  sure about) and it stays there, visible and editable, on that page's
+  desk. Things out there are never printed or exported, never read by
+  screen readers, and the Accessibility checker leaves them alone (it just
+  mentions, as a tip, what is waiting out there). Something half on the
+  page still prints its half, and the checker still says it runs off the
+  page. Rulers, zooming and Fit page all measure from the page as before.
+  On a touch screen, one finger on an empty spot in the staging area still
+  slides the view.
+- **Ctrl+Shift+drag copies too** (Cmd+Shift on a Mac), in a straight line,
+  as in PowerPoint. Ctrl+drag still copies freely.
+- **Space to slide the page is steady now.** Holding Space made the browser
+  scroll a screenful with each repeat of the key, which caused the jitter
+  and the jump after letting go. And Space now works in the middle of a
+  drag: hold it while moving something and the view slides along, with
+  the thing still under the pointer, to carry it a long way.
+- Fixed: after moving, resizing or turning something with the mouse, the
+  crash backup and the Accessibility checker didn't update until the next
+  other change.
+
 ## 0.7.0 - 2026-10-06
 
 - **More shapes:** a Shapes tool (U) on the rail with 24 shapes: triangle,

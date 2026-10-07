@@ -1,10 +1,12 @@
 Licence for the font in this folder
 ===================================
 
-Atkinson Hyperlegible (regular and bold), by the Braille Institute of
-America, included unchanged as .woff files (the Latin-alphabet subset from
-Fontsource's packaging of the Google Fonts release). Copied from
-VCTREDTR's fonts folder. Its full licence text follows.
+Atkinson Hyperlegible (regular, bold, italic and bold italic), by the
+Braille Institute of America, included unchanged as .woff files (the
+Latin-alphabet subset from Fontsource's packaging of the Google Fonts
+release). Regular and bold were copied from VCTREDTR's fonts folder; the
+two italics (added in DSKEDTR 0.8.0) come from Fontsource 5.3.0. Its full
+licence text follows.
 
 ------------------------------------------------------------------------
 Atkinson Hyperlegible

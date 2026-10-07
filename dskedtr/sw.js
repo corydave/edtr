@@ -18,7 +18,8 @@ const CACHE = 'dskedtr-' + VERSION;
 // the online edition, which also needs the fonts and the libraries below.
 const APP_FILES = ['./', './index.html', './index-online.html', './manifest.webmanifest', './icon.svg', './icon-192.png',
   './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon-32.png',
-  './fonts/atkinson-hyperlegible-400.woff', './fonts/atkinson-hyperlegible-700.woff'];
+  './fonts/atkinson-hyperlegible-400.woff', './fonts/atkinson-hyperlegible-700.woff',
+  './fonts/atkinson-hyperlegible-400-italic.woff', './fonts/atkinson-hyperlegible-700-italic.woff'];
 
 // The only outside files allowed: the four pinned libraries the online
 // edition loads. The page checks each one's fingerprint (integrity) every time.

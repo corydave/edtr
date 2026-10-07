@@ -83,7 +83,7 @@ pdflib_tag, pdflib_block = library('pdf-lib', 'pdf-lib.min.js', 'MIT licence, by
 fontkit_tag, fontkit_block = library('@pdf-lib/fontkit', 'fontkit.umd.min.js', 'MIT licence, by Devon Govett and Andrew Dillon')
 
 # ---- 3. The fonts, as base64 text ----
-wanted = re.findall(r"'(atkinson-hyperlegible-\d+)'", page)
+wanted = re.findall(r"'(atkinson-hyperlegible-\d+(?:-italic)?)'", page)   # regular, bold, and their italics
 fonts = {}
 for name in sorted(set(wanted)):
     f = HERE / 'fonts' / (name + '.woff')

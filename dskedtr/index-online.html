@@ -165,8 +165,11 @@ body {
    to zoom and slide. The browser's own zoom is still there everywhere else. */
 .desk, .desk * { touch-action: none; }
 .desk.panning { cursor: grabbing; }
-.page-wrap { position: relative; margin: 32px auto; width: max-content; }
-.page-svg { display: block; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 8px 24px rgba(0,0,0,.12); }
+.page-wrap { position: relative; margin: 0 auto; width: max-content; }
+/* The drawing covers the page AND the staging area around it (the grey),
+   so things can be dragged off the page and kept there. The white page
+   and its shadow are drawn inside it (applyPageSize). */
+.page-svg { display: block; }
 .page-svg.order-mode { cursor: pointer; }
 
 /* The invisible text boxes that hold each story. They sit at the cursor
@@ -206,6 +209,20 @@ body {
   background: var(--fg); color: var(--panel); padding: 6px 8px 6px 12px; border-radius: 999px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.25); max-width: calc(100% - 40px); }
 .preview-banner .btn { padding: 3px 10px; background: var(--panel); color: var(--fg); border-color: var(--panel); flex: none; }
 .desk-frame { position: relative; }
+/* Preview: the page as it will print. Everything that is only there to help
+   you work (grid, margins, guides, box edges, handles, the cursor, marks) is
+   hidden, and nothing outside the page shows: the content layer is clipped
+   to the paper, so the staging area and anything hanging off an edge vanish. */
+.desk-frame.proofing [data-layer=grid], .desk-frame.proofing [data-layer=margins],
+.desk-frame.proofing [data-layer=guides], .desk-frame.proofing [data-layer=textsel],
+.desk-frame.proofing [data-layer=frames], .desk-frame.proofing [data-layer=marks],
+.desk-frame.proofing [data-layer=caret], .desk-frame.proofing [data-layer=handles],
+.desk-frame.proofing [data-layer=snap], .desk-frame.proofing [data-layer=overlay] { display: none; }
+.desk-frame.proofing [data-layer=content] { clip-path: url(#pageClip); }
+.desk-frame.proofing .ruler { cursor: default; }
+/* Its banner sits at the top of the desk (the colour preview's is at the bottom, so both can show). */
+.preview-banner.proof-banner { top: 32px; bottom: auto; width: max-content; }   /* max-content: wrap only when the desk is narrower */
+.desk-frame.no-rulers .proof-banner { top: 12px; }
 #styleBox { margin-top: 10px; }
 .inspector h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 8px; }
 .inspector p { margin: 4px 0; }
@@ -257,6 +274,8 @@ kbd { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px sol
   border-radius: 8px; background: var(--field); color: var(--fg); cursor: pointer;
 }
 .icon-sm:hover { border-color: var(--muted); }
+/* A small button that is on (Bold) or chosen (an alignment): emerald, with a ring, so it shows without colour too. */
+.icon-sm[aria-pressed="true"], .icon-sm[aria-checked="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--field)); color: var(--accent-text); border-color: currentColor; box-shadow: inset 0 0 0 1px currentColor; }
 .icon-sm svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .btn:disabled, .icon-sm:disabled { opacity: .45; cursor: not-allowed; }
 .color-row { display: grid; grid-template-columns: 40px 1fr auto; gap: 6px; align-items: center; }
@@ -652,7 +671,11 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <!-- How you see the page, the same on every page: rulers, grid, guides and
        snapping. Each is a toggle (aria-pressed); the arrow opens the guides
        and grid panel (exact positions, column guides, grid spacing). -->
-  <div class="tb-group" role="group" aria-label="Rulers, grid, guides and snapping">
+  <div class="tb-group" role="group" aria-label="Preview, rulers, grid, guides and snapping">
+    <!-- Preview: the page as it will print (nothing outside the page, no guides). -->
+    <button class="icon-btn tb-toggle" id="view-preview" aria-pressed="false" aria-label="Preview" title="Preview: see the page as it will print (W)">
+      <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
     <button class="icon-btn tb-toggle" id="view-rulers" aria-pressed="true" aria-label="Rulers" title="Rulers: drag out of one to make a guide (Alt+Shift+R)">
       <svg viewBox="0 0 24 24"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2M11.5 9.5l2-2M8.5 6.5l2-2M17.5 15.5l2-2"/></svg>
     </button>
@@ -678,7 +701,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
     Export
   </button>
-  <span class="phase-tag">Phase 1: more shapes, copy and paste</span>
+  <span class="phase-tag">Phase 1 complete: formatting inside paragraphs</span>
   <span class="spacer"></span>
   <!-- The family's order: Install (only while the browser allows it), Theme, Help. -->
   <button class="icon-btn" id="installBtn" hidden aria-label="Install DSKEDTR as an app" title="Install DSKEDTR as an app: its own window, and it works offline">
@@ -736,6 +759,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <div class="ruler-corner" aria-hidden="true"></div>
   <canvas class="ruler" id="rulerTop" aria-hidden="true" title="Drag down onto the page to make an across guide"></canvas>
   <canvas class="ruler" id="rulerLeft" aria-hidden="true" title="Drag onto the page to make an up-and-down guide"></canvas>
+  <div class="preview-banner proof-banner" id="proofBanner" role="status" hidden><span>Preview: as it will print. W or Escape to go back.</span><button class="btn" id="proofStop">Back to editing</button></div>
   <div class="preview-banner" id="previewBanner" role="status" hidden><span id="previewWords"></span><button class="btn" id="previewStop">Stop preview</button></div>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs id="cbFilters"></defs></svg>
   <main class="desk" id="desk" tabindex="-1" aria-label="Page">
@@ -927,6 +951,35 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <span class="tool-caption" id="capMerge">Merge shapes (two or more rectangles, ellipses or merged shapes)</span>
         <div class="icon-row"><button class="icon-sm" data-merge="union" aria-label="Union: join into one shape" title="Union: join into one shape (Alt+Shift+U)"><svg viewBox="0 0 24 24"><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 1 0 12 6.8Z" fill="currentColor" fill-opacity=".35"/></svg></button><button class="icon-sm" data-merge="combine" aria-label="Combine: join, cutting out the overlap" title="Combine: join, cutting out the overlap (Alt+Shift+C)"><svg viewBox="0 0 24 24"><path d="M3 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0ZM9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" fill="currentColor" fill-opacity=".35" fill-rule="evenodd"/></svg></button><button class="icon-sm" data-merge="fragment" aria-label="Fragment: break into pieces where they overlap" title="Fragment: break into pieces where they overlap (Alt+Shift+F)"><svg viewBox="0 0 24 24"><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 1 1 12 17.2A6 6 0 0 0 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".6"/></svg></button><button class="icon-sm" data-merge="intersect" aria-label="Intersect: keep only the overlap" title="Intersect: keep only the overlap (Alt+Shift+I)"><svg viewBox="0 0 24 24"><path d="M3 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".45"/></svg></button><button class="icon-sm" data-merge="subtract" aria-label="Subtract: cut the others out of the first one picked" title="Subtract: cut the others out of the first one picked (Alt+Shift+S)"><svg viewBox="0 0 24 24"><path d="M9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".35"/></svg></button></div>
       </div>
+      </div>
+    </section>
+
+    <!-- Typing in a story: how the highlighted words look, on top of their paragraph's style (section 8b) -->
+    <section id="secChars" hidden>
+      <h2><button class="fold" data-fold="charsBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Characters</span></button></h2>
+      <div class="fold-body" id="charsBody" hidden>
+      <p id="charsWhat" class="muted reserve2" style="font-size:12px;margin-top:0"></p>
+      <div class="icon-row" role="group" aria-label="Character style">
+        <button class="icon-sm" id="chBold" aria-pressed="false" aria-label="Bold" title="Bold (Ctrl+B)"><svg viewBox="0 0 24 24"><path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/></svg></button>
+        <button class="icon-sm" id="chItalic" aria-pressed="false" aria-label="Italic" title="Italic (Ctrl+I)"><svg viewBox="0 0 24 24"><path d="M19 4h-9M14 20H5M15 4 9 20"/></svg></button>
+        <button class="icon-sm" id="chUnderline" aria-pressed="false" aria-label="Underline" title="Underline (Ctrl+U)"><svg viewBox="0 0 24 24"><path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/></svg></button>
+        <button class="icon-sm" id="chClear" aria-label="Clear formatting" title="Clear formatting: back to the paragraph's style; links stay (Ctrl+\)"><svg viewBox="0 0 24 24"><path d="M4 7V4h16v3M5 20h6M13 4 8 20M15 15l5 5M20 15l-5 5"/></svg></button>
+      </div>
+      <div class="grid4" style="margin-top:8px">
+        <label class="field">Size (pt)<input type="number" id="chSize" min="4" max="200" step="0.5"></label>
+        <label class="field">Kerning (1/1000 em)<input type="number" id="chKern" min="-500" max="1000" step="10"></label>
+      </div>
+      <p id="chKernNote" class="muted reserve2" style="font-size:12px"></p>
+      <span class="tool-caption">Colour</span>
+      <div class="color-row">
+        <input type="color" id="chColour" aria-label="Colour of the highlighted text">
+        <input type="text" id="chHex" aria-label="Colour of the highlighted text as a hex code" maxlength="7" spellcheck="false">
+        <button class="btn" id="chColourReset" title="Use the paragraph style's colour again">Style's</button>
+      </div>
+      <p id="chContrast" class="reserve2" style="font-size:12px" role="status"></p>
+      <label class="field" style="margin-top:4px">Link to (a web or email address)<input type="text" id="chLink" inputmode="url" spellcheck="false" autocomplete="off" placeholder="https://flcc.edu"></label>
+      <div class="btn-row"><button class="btn" id="chLinkSet">Link</button><button class="btn" id="chLinkRemove">Remove link</button></div>
+      <p id="chLinkNote" class="muted reserve2" style="font-size:12px" role="status"></p>
       </div>
     </section>
 
@@ -1264,7 +1317,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.7.0';
+const APP_VERSION = '0.8.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -1309,8 +1362,12 @@ const r2 = (v) => Math.round(v * 100) / 100;
 const EMBEDDED = (typeof DSK_EMBEDDED === 'object' && DSK_EMBEDDED && DSK_EMBEDDED.fonts) ? DSK_EMBEDDED : null;
 const FONT_FILES = {
   regular: 'atkinson-hyperlegible-400',
-  bold: 'atkinson-hyperlegible-700'
+  bold: 'atkinson-hyperlegible-700',
+  italic: 'atkinson-hyperlegible-400-italic',
+  boldItalic: 'atkinson-hyperlegible-700-italic'
 };
+/** Which of the four fonts: FONT_KEYS[bold ? 1 : 0][italic ? 1 : 0]. */
+const FONT_KEYS = [['regular', 'italic'], ['bold', 'boldItalic']];
 const FONTS = {};                  // 'regular' -> parsed opentype Font
 const FONT_BYTES = {};             // 'regular' -> the font file itself (the PDF embeds it)
 
@@ -1444,7 +1501,7 @@ function sampleDocument() {
   // The sample newsletter is original text written for this test.
   const main = [
     ['h2', 'Spring Concert Moves Outdoors'],
-    ['body', 'This year’s spring concert is heading outside. After months of planning, the music department has decided to hold the evening performance on the front lawn, weather permitting, so that every family has room to sit together.'],
+    ['body', 'This year’s spring concert is heading outside. After months of planning, the music department has decided to hold the evening performance on the front lawn, weather permitting, so that every family has room to sit together.', [['weather permitting', { i: true }]]],
     ['body', 'Students in grades three through five have been rehearsing since January. The fourth grade recorder ensemble will open the program, followed by the chorus, the drum circle and, for the first time, a short piece written by our own fifth graders during music class.'],
     ['body', 'Families are welcome to bring blankets and lawn chairs. The PTA will run a lemonade stand near the playground, and all proceeds go toward new instruments for next year. Please leave the space closest to the stage open for students who use wheelchairs and for families who need to sit near the front.'],
     ['h2', 'If it rains'],
@@ -1459,26 +1516,33 @@ function sampleDocument() {
   ];
   const side = [
     ['h2', 'Dates to remember'],
-    ['body', 'Oct 9 · Picture day'],
-    ['body', 'Oct 14 · Half day, dismissal at 11:45'],
-    ['body', 'Oct 20 · Book fair opens'],
-    ['body', 'Oct 31 · Costume parade at 2 p.m.'],
+    ['body', 'Oct 9 · Picture day', [['Oct 9', { b: true }]]],
+    ['body', 'Oct 14 · Half day, dismissal at 11:45', [['Oct 14', { b: true }]]],
+    ['body', 'Oct 20 · Book fair opens', [['Oct 20', { b: true }]]],
+    ['body', 'Oct 31 · Costume parade at 2 p.m.', [['Oct 31', { b: true }]]],
     ['caption', 'Questions? Call the front office at 555-0142.']
   ];
   const lunch = [
     ['h2', 'Lunch this month'],
-    ['body', 'Mondays · Pasta with garden salad'],
-    ['body', 'Tuesdays · Taco bar'],
-    ['body', 'Wednesdays · Chicken and rice bowl'],
-    ['body', 'Thursdays · Breakfast for lunch'],
-    ['body', 'Fridays · Pizza and fruit'],
+    ['body', 'Mondays · Pasta with garden salad', [['Mondays', { b: true }]]],
+    ['body', 'Tuesdays · Taco bar', [['Tuesdays', { b: true }]]],
+    ['body', 'Wednesdays · Chicken and rice bowl', [['Wednesdays', { b: true }]]],
+    ['body', 'Thursdays · Breakfast for lunch', [['Thursdays', { b: true }]]],
+    ['body', 'Fridays · Pizza and fruit', [['Fridays', { b: true }]]],
     ['caption', 'Menus can change. The cafeteria can answer questions about ingredients.']
   ];
-  const story = (id, paras, frames) => ({
-    id, frames,
-    text: paras.map((p) => p[1]).join('\n'),
-    roles: paras.map((p) => p[0])
-  });
+  // A paragraph's optional third entry formats words in it: [[words, format], ...] (section 4b).
+  const story = (id, paras, frames) => {
+    const runs = [];
+    let at = 0;
+    for (const [, text, marks] of paras) {
+      for (const [words, f] of marks || []) { const i = text.indexOf(words); if (i >= 0) runs.push(Object.assign({ s: at + i, e: at + i + words.length }, f)); }
+      at += text.length + 1;
+    }
+    const s = { id, frames, text: paras.map((p) => p[1]).join('\n'), roles: paras.map((p) => p[0]) };
+    if (runs.length) s.runs = runs.sort((a, b) => a.s - b.s);
+    return s;
+  };
   return {
     title: 'The Lakeside Ledger, October 2026',
     lang: 'en',
@@ -1619,39 +1683,184 @@ function groupMembers(o) {
 }
 
 /* ======================================================================
+   4b. FORMATTING INSIDE A PARAGRAPH (character styles)
+   Any stretch of a story's text can look different from its paragraph's
+   style: bold, italic, underlined, another colour or size, a link, or a
+   little more or less space before one letter (kerning). This is kept in
+   story.runs, a list of { s, e, ...what } where s and e are positions in
+   the text (e not included). Runs are sorted, never overlap, and only
+   cover text that differs from its paragraph style. What a run can say:
+     b      true or false   bold (false: NOT bold, inside a bold heading)
+     i      true            italic
+     u      true            underlined
+     c      '#rrggbb'       colour
+     sz     points          size
+     href   'https://...'   a link (also underlined, so it never relies on colour alone)
+     k      thousandths of the letter's size: extra space BEFORE this letter
+   To change formatting, the runs are spread out to one entry per letter
+   (charFormats), those entries change, and they are packed back into runs
+   (packRuns). Stories are small, so this simple way is plenty fast and
+   hard to get wrong. Formats are never changed in place, only replaced.
+   ====================================================================== */
+const FORMAT_FIELDS = ['b', 'i', 'u', 'c', 'sz', 'href', 'k'];
+
+/** A text "fingerprint" of a format, so two formats can be compared ('' = plain). */
+function formatKey(f) {
+  if (!f) return '';
+  return FORMAT_FIELDS.map((k) => (f[k] === undefined ? '' : String(f[k]))).join('|');
+}
+/** One format (or null for plain) per letter of the story. */
+function charFormats(story) {
+  const out = new Array(story.text.length).fill(null);
+  for (const r of story.runs || []) {
+    const f = {};
+    for (const k of FORMAT_FIELDS) if (r[k] !== undefined) f[k] = r[k];
+    for (let i = r.s; i < r.e && i < out.length; i++) out[i] = f;
+  }
+  return out;
+}
+/** Pack one format per letter back into story.runs (neighbours that match join up). */
+function packRuns(story, fmts) {
+  const runs = [];
+  let cur = null, curKey = '';
+  for (let i = 0; i < fmts.length; i++) {
+    const key = formatKey(fmts[i]);
+    if (cur && key === curKey) { cur.e = i + 1; continue; }
+    cur = null; curKey = key;
+    if (key) { cur = Object.assign({ s: i, e: i + 1 }, fmts[i]); runs.push(cur); }
+  }
+  if (runs.length) story.runs = runs; else delete story.runs;
+}
+/** A copy of format f with `patch` applied (a null value removes that field). Null when nothing is left. */
+function patchFormat(f, patch) {
+  const out = Object.assign({}, f || {});
+  for (const k in patch) { if (patch[k] === null || patch[k] === undefined) delete out[k]; else out[k] = patch[k]; }
+  return Object.keys(out).length ? out : null;
+}
+/** The runs between positions a and b, counted from a (for copying part of a story). */
+function sliceRuns(story, a, b) {
+  return (story.runs || []).filter((r) => r.e > a && r.s < b)
+    .map((r) => Object.assign({}, r, { s: Math.max(r.s, a) - a, e: Math.min(r.e, b) - a }));
+}
+/** The paragraph style for position `pos` in a story. */
+function paraStyleAt(story, pos) {
+  let p = 0;
+  for (let i = 0; i < pos && i < story.text.length; i++) if (story.text.charCodeAt(i) === 10) p++;
+  return styleOf(story.roles[p]);
+}
+/**
+ * How one letter looks: its paragraph's style with its own format on top.
+ * Returns { bold, italic, u, underline, colour, size, href, k, fontKey }.
+ */
+function charLook(style, f) {
+  const bold = f && typeof f.b === 'boolean' ? f.b : style.font === 'bold';
+  const italic = !!(f && f.i);
+  return {
+    bold, italic, u: !!(f && f.u), underline: !!(f && (f.u || f.href)),
+    colour: (f && f.c) || style.colour, size: (f && f.sz) || style.size,
+    href: (f && f.href) || null, k: (f && f.k) || 0,
+    fontKey: FONT_KEYS[bold ? 1 : 0][italic ? 1 : 0]
+  };
+}
+/**
+ * The format new letters typed at `pos` get: the letter before's (at the
+ * start of a paragraph: its first letter's). When typing over highlighted
+ * text, the first highlighted letter's. A link only carries on INSIDE a
+ * link (typing at its end is not part of it), and kerning never carries on.
+ * Ctrl+B and friends with nothing highlighted set pendingFormat, which wins.
+ */
+let pendingFormat = null;            // { story, pos, f }: how the next letters typed at pos will look
+function typingFormat(story, fmts, pos, replacing) {
+  if (pendingFormat && pendingFormat.story === story.id && pendingFormat.pos === pos) return pendingFormat.f;
+  const text = story.text;
+  let f = null;
+  if (replacing && pos < text.length && text[pos] !== '\n') f = fmts[pos];
+  else if (pos > 0 && text[pos - 1] !== '\n') f = fmts[pos - 1];
+  else if (pos < text.length && text[pos] !== '\n') f = fmts[pos];
+  if (!f) return null;
+  const before = pos > 0 ? fmts[pos - 1] : null, after = pos < text.length ? fmts[pos] : null;
+  const insideLink = before && after && before.href && before.href === after.href;
+  return patchFormat(f, { k: null, href: insideLink || replacing ? f.href : null });
+}
+
+/* ======================================================================
    5. LAYOUT: breaking a story into lines across its chain of boxes
    ====================================================================== */
 
 /**
  * Measure one paragraph: how wide each character is, and the kerning
- * (the font's own spacing correction, as in "AV") before it.
- * Positions are in the story's text, counted in UTF-16 code units, the
- * same way the textarea counts its cursor position.
+ * (the font's own spacing correction, as in "AV", plus any kerning set by
+ * hand) before it. Each letter has its own look (section 4b): font, size,
+ * colour. Positions are in the story's text, counted in UTF-16 code units,
+ * the same way the textarea counts its cursor position. Arrays are indexed
+ * from the paragraph's start; the extra last entry is the paragraph's end
+ * (its line break), whose look an empty paragraph's line uses.
  */
-function measureParagraph(text, start, end, role) {
-  const fontKey = role.font;
-  const font = FONTS[fontKey];
-  const scale = role.size / font.unitsPerEm;          // font units -> points
-  const track = (role.tracking || 0) * role.size / 1000;   // letter spacing added after every letter
-  const adv = new Float64Array(end - start + 1);      // width of each character
-  const kernBefore = new Float64Array(end - start + 1);
-  const glyphs = new Array(end - start + 1);
-  const space = glyphFor(fontKey, 32);
-  let prev = null;
+function measureParagraph(text, start, end, style, fmts) {
+  const n = end - start + 1;
+  const adv = new Float64Array(n);                   // width of each character
+  const kernBefore = new Float64Array(n);            // space added before it (font kerning + kerning by hand)
+  const sizes = new Float64Array(n);                 // its size in points
+  const glyphs = new Array(n), fontKeys = new Array(n), looks = new Array(n);
+  // Letters with the same format share one look object.
+  const lookCache = new Map();
+  const lookOf = (f) => {
+    const key = formatKey(f);
+    let look = lookCache.get(key);
+    if (!look) { look = charLook(style, f); lookCache.set(key, look); }
+    return look;
+  };
+  let prev = null, prevFont = '', prevSize = 0;
   for (let i = start; i < end; i++) {
-    const code = text.codePointAt(i);
     const k = i - start;
+    const look = lookOf(fmts[i]);
+    let fontKey = look.fontKey;
+    looks[k] = look; sizes[k] = look.size; fontKeys[k] = fontKey;
+    const code = text.codePointAt(i);
     if (code === 9) {                                // a tab: four spaces wide for now
-      adv[k] = space.advanceWidth * scale * 4; glyphs[k] = null; prev = null; continue;
+      adv[k] = glyphFor(fontKey, 32).advanceWidth * look.size / FONTS[fontKey].unitsPerEm * 4;
+      glyphs[k] = null; prev = null; continue;
     }
-    const g = glyphFor(fontKey, code);
+    let g = glyphFor(fontKey, code);
+    if (g.index === 0 && fontKey !== 'regular') {
+      // This font doesn't have that letter (the italics have a few fewer): borrow the upright one.
+      for (const alt of [look.bold ? 'bold' : 'regular', 'regular']) {
+        const g2 = glyphFor(alt, code);
+        if (g2.index !== 0) { fontKey = alt; g = g2; fontKeys[k] = alt; break; }
+      }
+    }
+    const scale = look.size / FONTS[fontKey].unitsPerEm;     // font units -> points
     glyphs[k] = g;
-    adv[k] = g.advanceWidth * scale + track;
-    if (prev && role.kern !== false) kernBefore[k] = kerning(fontKey, prev, g) * scale;
-    prev = g;
-    if (code > 0xffff) { i++; adv[k + 1] = 0; glyphs[k + 1] = null; }   // emoji etc.: two code units, one letter
+    adv[k] = g.advanceWidth * scale + (style.tracking || 0) * look.size / 1000;   // + letter spacing
+    if (prev && style.kern !== false && prevFont === fontKey && prevSize === look.size) kernBefore[k] = kerning(fontKey, prev, g) * scale;
+    kernBefore[k] += look.k * look.size / 1000;      // kerning by hand
+    prev = g; prevFont = fontKey; prevSize = look.size;
+    if (code > 0xffff) {                             // emoji etc.: two code units, one letter
+      i++; adv[k + 1] = 0; glyphs[k + 1] = null; looks[k + 1] = look; sizes[k + 1] = look.size; fontKeys[k + 1] = fontKey;
+    }
   }
-  return { adv, kernBefore, glyphs, fontKey, scale };
+  // The paragraph's end: the look new text would get there.
+  const endLook = lookOf(end < text.length ? fmts[end] : (end > start ? fmts[end - 1] : (start > 0 ? fmts[start - 1] : null)));
+  looks[n - 1] = endLook; sizes[n - 1] = endLook.size; fontKeys[n - 1] = endLook.fontKey;
+  return { adv, kernBefore, glyphs, fontKeys, sizes, looks };
+}
+
+/**
+ * How tall a line is: its biggest letters decide (letters from index
+ * `from` to `to` in the paragraph's measurements). An empty line uses the
+ * look at the paragraph's end. Returns { lineH, asc, desc } in points.
+ */
+function lineMetrics(m, from, to, style) {
+  let size = 0, asc = 0, desc = 0;
+  const take = (k) => {
+    const font = FONTS[m.fontKeys[k]], s = m.sizes[k];
+    size = Math.max(size, s);
+    asc = Math.max(asc, font.ascender * s / font.unitsPerEm);
+    desc = Math.max(desc, -font.descender * s / font.unitsPerEm);
+  };
+  for (let k = from; k < to; k++) take(k);
+  if (!size) take(m.looks.length - 1);
+  return { lineH: size * style.leading, asc, desc };
 }
 
 /**
@@ -1694,30 +1903,30 @@ function layoutStory(story) {
   let overflowAt = null;
   let paraStart = 0;
   const paras = text.split('\n');
+  const fmts = charFormats(story);                   // each letter's own formatting (section 4b)
 
   paraLoop:
   for (let p = 0; p < paras.length; p++) {
     const paraEnd = paraStart + paras[p].length;
     const role = styleOf(story.roles[p]);
-    const m = measureParagraph(text, paraStart, paraEnd, role);
-    const font = FONTS[role.font];
-    const lineH = role.size * role.leading;
-    const asc = font.ascender * m.scale;
-    const desc = -font.descender * m.scale;
+    const m = measureParagraph(text, paraStart, paraEnd, role, fmts);
     let pos = paraStart;
     let firstLineOfPara = true;
     do {
       // Find room for this line: in this box, or the next box in the chain.
-      let before;
+      // (Break it to the box's width first: how tall it is depends on its letters.)
+      let before, end, met;
       for (;;) {
         if (!f) { overflowAt = pos; break paraLoop; }
         before = (firstLineOfPara && !firstInFrame) ? role.spaceBefore : 0;
-        if (y + before + lineH <= f.y + f.h - f.inset + 0.01) break;
+        end = breakLine(text, m, paraStart, pos, paraEnd, f.w - 2 * f.inset);
+        met = lineMetrics(m, pos - paraStart, end - paraStart, role);
+        if (y + before + met.lineH <= f.y + f.h - f.inset + 0.01) break;
         fi++; f = frames[fi];
         if (f) { y = f.y + f.inset; firstInFrame = true; }
       }
       y += before;
-      const end = breakLine(text, m, paraStart, pos, paraEnd, f.w - 2 * f.inset);
+      const { lineH, asc, desc } = met;
       // The x of each cursor position on this line, from the line's left edge.
       const xs = [];
       let x = 0;
@@ -1913,9 +2122,11 @@ function setSel(id, anchor, focus) {
 
 /** The last selection we saw in each story (needed for undo snapshots). */
 const lastSel = {};
+let textClip = null;                 // { text, fmts }: words last copied from a story, with their formatting
 
 function wireInput(ta, id) {
   ta.addEventListener('focus', () => {
+    if (printPreview) setPrintPreview(false);        // typing means editing again
     focusedStoryId = id; activeStoryId = id;
     selectedIds = [];                // typing and picked objects never mix
     if (tool !== 'text') setTool('text');
@@ -1935,6 +2146,15 @@ function wireInput(ta, id) {
   });
 
   ta.addEventListener('input', (e) => onTextInput(id, e));
+  // Copying words inside a story keeps their formatting for pasting into a story (in this tab only).
+  const keepFormatting = () => {
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    if (s === e) return;
+    const story = doc.stories[id];
+    textClip = { text: story.text.slice(s, e), fmts: charFormats(story).slice(s, e) };
+  };
+  ta.addEventListener('copy', keepFormatting);
+  ta.addEventListener('cut', keepFormatting);
   ta.addEventListener('select', () => afterSelectionChange(id));
   ta.addEventListener('keydown', (e) => onStoryKeyDown(e, id));
   ta.addEventListener('keyup', () => afterSelectionChange(id));
@@ -1959,6 +2179,8 @@ function afterSelectionChange(id) {
   }
   lastSel[id] = sel;
   activeStoryId = id;
+  // Ctrl+B with nothing highlighted only counts for typing right there.
+  if (pendingFormat && (pendingFormat.story !== id || sel.start !== pendingFormat.pos || sel.end !== pendingFormat.pos)) pendingFormat = null;
   // The cursor moved into a box on another page (typing, arrow keys, Tab): show that page.
   const c = caretBox(id, sel.focus);
   if (c && pageOf(c.frame) !== pageIndex) goToPage(pageOf(c.frame), true);
@@ -2011,8 +2233,18 @@ function onTextInput(id, e) {
   const added = new Array(insertedNL).fill(newRole);
   roles.splice(paraIdx + 1, 0, ...added);
 
+  // Formatting (section 4b): the new letters look like the letter before
+  // (or as Ctrl+B and friends just said). Words copied from a story and
+  // pasted back keep their own formatting.
+  const fmts = charFormats(story);
+  const pasted = e.inputType === 'insertFromPaste' && textClip && inserted === textClip.text;
+  const fNew = typingFormat(story, fmts, p, removed.length > 0);
+  const newFmts = pasted ? textClip.fmts.slice() : new Array(inserted.length).fill(fNew);
+  pendingFormat = null;
+
   story.text = newText;
   story.roles = roles;
+  packRuns(story, fmts.slice(0, p).concat(newFmts, fmts.slice(p + removed.length)));
   goalX = null;
   const hadOverflow = layouts[id] && layouts[id].overflowAt != null;
   relayoutAndRender();
@@ -2055,6 +2287,23 @@ function onStoryKeyDown(e, id) {
   if (mod && e.altKey && /^Digit[0-9]$/.test(e.code)) {
     const role = ROLE_KEYS[e.code.slice(5)];
     if (role) { e.preventDefault(); applyRole(role); }
+    return;
+  }
+
+  // Characters: Ctrl+B bold, Ctrl+I italic, Ctrl+U underline, Ctrl+K link,
+  // Ctrl+\ clear formatting (Cmd on a Mac). e.code for the backslash, so any layout works.
+  if (mod && !e.altKey && !e.shiftKey) {
+    const key = e.key.toLowerCase();
+    if (key === 'b' || key === 'i' || key === 'u') { e.preventDefault(); toggleFormat(key); return; }
+    if (key === 'k') { e.preventDefault(); focusLinkField(); return; }
+    if (e.code === 'Backslash') { e.preventDefault(); clearFormatting(); return; }
+  }
+  // Kerning by hand: Alt+Left / Right (Shift: five times as much). On a Mac,
+  // Option+arrows already move by word, so there it is Ctrl+Cmd+Left / Right.
+  const kernKeys = isMac ? (e.ctrlKey && e.metaKey && !e.altKey) : (e.altKey && !e.ctrlKey && !e.metaKey);
+  if (kernKeys && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+    e.preventDefault();
+    setKerning((e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 50 : 10), true);
     return;
   }
 
@@ -2152,6 +2401,7 @@ function pushUndo(snap) {
   if (undoStack.length > 300) undoStack.shift();
   redoStack.length = 0;
   updateUndoButtons();
+  noteChange();                      // drags record their step here: keep the backup and the checker up to date
 }
 
 /** Grey out Undo or Redo in the top bar when there is nothing to undo or redo. */
@@ -2182,6 +2432,7 @@ function restore(snap) {
   syncInputs();
   for (const id in doc.stories) if (inputs[id].value !== doc.stories[id].text) inputs[id].value = doc.stories[id].text;
   lastUndoKind = '';
+  pendingFormat = null;
   selectedIds = (snap.selected || []).filter((id) => obj(id));
   if (snap.editing && snap.storyId && doc.stories[snap.storyId] && snap.sel) {
     activeStoryId = snap.storyId;
@@ -2237,6 +2488,270 @@ function applyRole(role) {
 }
 
 /* ======================================================================
+   8b. CHARACTERS: bold, italic, underline, colour, size, links, kerning
+   These work on the highlighted words of the story being typed in (or the
+   one last typed in, while the Inspector has focus). With nothing
+   highlighted, they set how the NEXT letters typed at the cursor look
+   (pendingFormat, section 4b), as word processors do. A change only stores
+   what differs from the paragraph's style: Bold on a Heading (already
+   bold) stores nothing, and Bold off there stores "not bold".
+   ====================================================================== */
+
+/** The story and highlighted range the Characters commands work on, or null. */
+function formatTarget() {
+  const id = activeStoryId;
+  if (!id || !doc.stories[id] || !inputs[id]) return null;
+  const sel = lastSel[id] || getSel(id);
+  return { id, story: doc.stories[id], a: sel.start, b: sel.end };
+}
+
+/** Change the formatting of letters a to b: change(format, paragraph style, position) returns the new format. */
+function formatText(story, a, b, change) {
+  const fmts = charFormats(story);
+  let p = countNewlines(story.text, 0, a);
+  for (let i = a; i < b; i++) {
+    fmts[i] = change(fmts[i], styleOf(story.roles[p]), i);
+    if (story.text.charCodeAt(i) === 10) p++;
+  }
+  packRuns(story, fmts);
+}
+/** formatText as one undo step, then lay out and draw again. */
+function applyFormat(t, change, undoKind) {
+  recordUndo(undoKind || 'other');
+  formatText(t.story, t.a, t.b, change);
+  const hadOverflow = layouts[t.id].overflowAt != null;
+  relayoutAndRender();
+  noteOverflowChange(t.id, hadOverflow);
+  updateInspector();
+}
+/** Apply a change to the highlighted words, or (nothing highlighted) to the next letters typed. */
+function changeFormat(change, undoKind, message) {
+  const t = formatTarget();
+  if (!t) return;
+  if (t.a === t.b) {
+    const fmts = charFormats(t.story);
+    pendingFormat = { story: t.id, pos: t.a, f: change(typingFormat(t.story, fmts, t.a, false), paraStyleAt(t.story, t.a), t.a) };
+    updateInspector();
+    if (message) announce(message + ', for what you type next');
+    return;
+  }
+  applyFormat(t, change, undoKind);
+  if (message) announce(message);
+}
+
+/** The whole link around position pos (a link's middle or either end), as { a, b, href }, or null. */
+function linkExtent(fmts, pos) {
+  const at = fmts[pos] && fmts[pos].href ? pos : (pos > 0 && fmts[pos - 1] && fmts[pos - 1].href ? pos - 1 : -1);
+  if (at < 0) return null;
+  const href = fmts[at].href;
+  let a = at, b = at + 1;
+  while (a > 0 && fmts[a - 1] && fmts[a - 1].href === href) a--;
+  while (b < fmts.length && fmts[b] && fmts[b].href === href) b++;
+  return { a, b, href };
+}
+/** Is there a letter on each side of position i, in the same paragraph? (Kerning goes between two letters.) */
+function betweenLetters(text, i) {
+  return i > 0 && i < text.length && text[i] !== '\n' && text[i - 1] !== '\n';
+}
+
+/**
+ * How the highlighted words look, for the Inspector and the toggles:
+ * { bold, italic, u } are true only when ALL of them are; colour, size and
+ * href are null when they differ; kAt is the kerning between the letters
+ * (undefined: nowhere to kern; null: it differs). With nothing highlighted:
+ * how the next letters typed will look, and the link the cursor is in.
+ */
+function selectionLook(t) {
+  const story = t.story, text = story.text, fmts = charFormats(story);
+  if (t.a === t.b) {
+    const look = charLook(paraStyleAt(story, t.a), typingFormat(story, fmts, t.a, false));
+    const ext = linkExtent(fmts, t.a);
+    look.href = ext ? ext.href : null;
+    look.kAt = betweenLetters(text, t.a) ? ((fmts[t.a] && fmts[t.a].k) || 0) : undefined;
+    return look;
+  }
+  const out = { bold: true, italic: true, u: true, colour: undefined, size: undefined, href: undefined, kAt: undefined, anyLink: false };
+  const same = (key, v) => { out[key] = out[key] === undefined || out[key] === v ? v : null; };
+  let p = countNewlines(text, 0, t.a), letters = 0;
+  for (let i = t.a; i < t.b; i++) {
+    if (text.charCodeAt(i) === 10) { p++; continue; }
+    const look = charLook(styleOf(story.roles[p]), fmts[i]);
+    letters++;
+    if (!look.bold) out.bold = false;
+    if (!look.italic) out.italic = false;
+    if (!look.u) out.u = false;
+    same('colour', look.colour); same('size', look.size); same('href', look.href);
+    if (look.href) out.anyLink = true;
+    if (i > t.a && betweenLetters(text, i)) same('kAt', look.k);
+  }
+  if (!letters) { out.bold = out.italic = out.u = false; }
+  return out;
+}
+
+const FORMAT_NAMES = { b: 'Bold', i: 'Italic', u: 'Underline' };
+/** Ctrl+B, Ctrl+I, Ctrl+U: on for all the highlighted words, or off when they all have it already. */
+function toggleFormat(key) {
+  const t = formatTarget();
+  if (!t) return;
+  const look = selectionLook(t);
+  const on = !(key === 'b' ? look.bold : key === 'i' ? look.italic : look.u);
+  changeFormat((f, style) => {
+    const base = key === 'b' ? style.font === 'bold' : false;      // what the paragraph style already does
+    return patchFormat(f, { [key]: on === base ? null : on });
+  }, 'other', FORMAT_NAMES[key] + (on ? ' on' : ' off'));
+}
+/** A colour for the highlighted words (null: the paragraph style's colour again). */
+function setCharColour(hex) {
+  changeFormat((f, style) => patchFormat(f, { c: hex && hex !== style.colour ? hex : null }), 'field:chars:colour', null);
+}
+/** A size in points for the highlighted words. */
+function setCharSize(size) {
+  changeFormat((f, style) => patchFormat(f, { sz: size && size !== style.size ? size : null }), 'field:chars:size', null);
+}
+/** Back to the paragraph style (links stay: they are what the words do, not how they look). */
+function clearFormatting() {
+  changeFormat((f) => (f && f.href ? { href: f.href } : null), 'other', 'Formatting cleared');
+}
+
+/**
+ * Link the highlighted words to an address (with nothing highlighted: change
+ * the link the cursor is in). Only addresses cleanLink accepts are used.
+ * Returns true when it worked.
+ */
+function setLink(raw) {
+  const t = formatTarget();
+  if (!t) return false;
+  const href = cleanLink(raw);
+  if (!href) {
+    setText('chLinkNote', 'That isn’t an address a link can use. Try one like https://flcc.edu, or an email address.');
+    announce($('chLinkNote').textContent);
+    return false;
+  }
+  let range = t;
+  if (t.a === t.b) {
+    const ext = linkExtent(charFormats(t.story), t.a);
+    if (!ext) { setText('chLinkNote', 'Highlight the words to link first.'); announce('Highlight the words to link first.'); return false; }
+    range = Object.assign({}, t, { a: ext.a, b: ext.b });
+  }
+  const text = t.story.text;
+  applyFormat(range, (f, style, i) => (text[i] === '\n' ? f : patchFormat(f, { href })), 'other');
+  setText('chLinkNote', 'Linked to ' + href + '. In the PDF it can be clicked.');
+  announce('Linked to ' + href);
+  return true;
+}
+/** Remove the link from the highlighted words, or the whole link the cursor is in. */
+function removeLink() {
+  const t = formatTarget();
+  if (!t) return;
+  let range = t;
+  if (t.a === t.b) {
+    const ext = linkExtent(charFormats(t.story), t.a);
+    if (!ext) return;
+    range = Object.assign({}, t, { a: ext.a, b: ext.b });
+  }
+  applyFormat(range, (f) => patchFormat(f, { href: null }), 'other');
+  setText('chLinkNote', 'Link removed.');
+  announce('Link removed');
+}
+/** Ctrl+K: straight to the link field (Enter links, Escape goes back to the words). */
+function focusLinkField() {
+  openFold('charsBody');
+  const el = $('chLink');
+  el.focus();
+  el.select();
+}
+/** Back to typing, with the same words highlighted. */
+function backToStory() {
+  const id = activeStoryId;
+  if (!id || !inputs[id]) return;
+  const s = lastSel[id];
+  inputs[id].focus({ preventScroll: true });
+  if (s) setSel(id, s.anchor, s.focus);
+}
+
+/**
+ * Kerning by hand. With the cursor between two letters: the space between
+ * them. With words highlighted: the space between each of their letters.
+ * `value` is in thousandths of the letters' size; `relative` adds it to
+ * what is there (the arrow keys), otherwise it replaces it (the field).
+ */
+function setKerning(value, relative) {
+  const t = formatTarget();
+  if (!t) return;
+  const text = t.story.text;
+  let r = null;
+  if (t.a === t.b) { if (betweenLetters(text, t.a)) r = { a: t.a, b: t.a + 1 }; }
+  else if (t.b - t.a >= 2) r = { a: t.a + 1, b: t.b };
+  if (!r) { announce('Put the cursor between two letters, or highlight some words, to kern.'); return; }
+  let last = 0;
+  applyFormat(Object.assign({}, t, r), (f, style, i) => {
+    if (!betweenLetters(text, i)) return f;                       // never across a paragraph break
+    const k = Math.max(-500, Math.min(1000, Math.round(relative ? ((f && f.k) || 0) + value : value)));
+    last = k;
+    return patchFormat(f, { k: k || null });
+  }, 'field:kern');
+  const signed = (v) => (v > 0 ? '+' : '') + v;
+  if (t.a === t.b) announce('Kerning ' + signed(last));
+  else announce(relative ? 'Letters spaced ' + (value < 0 ? 'closer' : 'further apart') + ' by ' + Math.abs(value) : 'Kerning ' + signed(value) + ' between the highlighted letters');
+}
+
+/** The Characters section: what the highlighted words look like now. */
+function fillChars() {
+  const t = formatTarget();
+  if (!t) return;
+  const look = selectionLook(t);
+  setText('charsWhat', t.a === t.b
+    ? 'Nothing highlighted: these set how the next letters you type here look.'
+    : 'For the highlighted text. Anything left blank differs across it.');
+  for (const [id, on] of [['chBold', look.bold], ['chItalic', look.italic], ['chUnderline', look.u]]) $(id).setAttribute('aria-pressed', String(!!on));
+  setField($('chSize'), look.size == null ? '' : look.size);
+  const kern = $('chKern');
+  kern.disabled = look.kAt === undefined;
+  setField(kern, look.kAt == null ? '' : look.kAt);
+  setText('chKernNote', look.kAt === undefined
+    ? 'Kerning: put the cursor between two letters, or highlight some words.'
+    : (t.a === t.b ? 'Kerning: the space between the letters either side of the cursor (' : 'Kerning: the space between the highlighted letters (') + (isMac ? 'Ctrl+Cmd' : 'Alt') + '+Left / Right).');
+  setField($('chColour'), look.colour || '#000000');
+  setField($('chHex'), look.colour || '');
+  if (look.colour) {
+    const style = paraStyleAt(t.story, t.a);
+    const size = look.size || style.size, bold = look.bold;
+    const ratio = contrastRatio(look.colour, '#ffffff'), need = isLargeText({ size, bold }) ? 3 : 4.5;
+    $('chContrast').className = (ratio >= need ? 'fit-ok' : 'fit-bad') + ' reserve2';
+    setText('chContrast', 'On white paper: ' + ratio.toFixed(1) + ':1. ' + (ratio >= need ? 'Passes.' : 'Too faint: text this size needs ' + need + ':1.'));
+  } else { $('chContrast').className = 'muted reserve2'; setText('chContrast', 'Several colours.'); }
+  setField($('chLink'), look.href || '');
+  $('chLinkSet').textContent = look.href ? 'Change link' : 'Link';
+  $('chLinkRemove').disabled = !look.href && !look.anyLink;
+}
+
+function wireChars() {
+  // Buttons keep the cursor (and highlight) in the story being typed in.
+  for (const id of ['chBold', 'chItalic', 'chUnderline', 'chClear']) $(id).addEventListener('mousedown', (e) => e.preventDefault());
+  $('chBold').addEventListener('click', () => toggleFormat('b'));
+  $('chItalic').addEventListener('click', () => toggleFormat('i'));
+  $('chUnderline').addEventListener('click', () => toggleFormat('u'));
+  $('chClear').addEventListener('click', () => clearFormatting());
+  $('chSize').addEventListener('input', () => {
+    const v = parseFloat($('chSize').value);
+    if (isFinite(v) && v >= 4 && v <= 200) setCharSize(v);
+  });
+  $('chKern').addEventListener('input', () => {
+    const v = parseFloat($('chKern').value);
+    if (isFinite(v)) setKerning(Math.max(-500, Math.min(1000, v)), false);
+  });
+  $('chColour').addEventListener('input', () => { setCharColour($('chColour').value.toLowerCase()); setField($('chHex'), $('chColour').value); });
+  $('chHex').addEventListener('input', () => { const v = cleanHex($('chHex').value); if (v && $('chHex').value.trim().length >= 4) setCharColour(v); });
+  $('chColourReset').addEventListener('click', () => { setCharColour(null); announce('Back to the paragraph style’s colour'); });
+  $('chLinkSet').addEventListener('click', () => { if (setLink($('chLink').value)) backToStory(); });
+  $('chLinkRemove').addEventListener('click', () => { removeLink(); backToStory(); });
+  $('chLink').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); if (setLink($('chLink').value)) backToStory(); }
+    else if (e.key === 'Escape') { e.preventDefault(); backToStory(); }
+  });
+}
+
+/* ======================================================================
    9. DRAWING THE PAGE
    One page is on the desk at a time. Layers, bottom to top:
      paper     - the white page
@@ -2268,15 +2783,49 @@ function setupSvg() {
     svg.appendChild(layers[name]);
   }
   layers.textsel.style.mixBlendMode = 'multiply';
+  // The page's shadow, so the white paper stands out from the staging area.
+  const defs = svgEl('defs', {}), f = svgEl('filter', { id: 'paperShadow', x: '-10%', y: '-10%', width: '120%', height: '125%' });
+  f.appendChild(svgEl('feDropShadow', { dx: 0, dy: 2, stdDeviation: 5, 'flood-color': '#000000', 'flood-opacity': 0.22 }));
+  defs.appendChild(f);
+  // The page's outline, used to clip the content while previewing.
+  const clip = svgEl('clipPath', { id: 'pageClip' });
+  clip.appendChild(svgEl('rect', { id: 'pageClipRect', x: 0, y: 0, width: PAGE.width, height: PAGE.height }));
+  defs.appendChild(clip);
+  svg.insertBefore(defs, svg.firstChild);
   applyPageSize();
 }
 
-/** After the page size changes: the drawing area and the paper. */
+/* ---------- The staging area ----------
+   The grey around the page is the STAGING AREA: anything can be dragged
+   out there and kept for later (a spare photo, a heading you're not sure
+   about). It is half a page wide at each side and a quarter of a page tall
+   above and below. Things out there are never printed or exported, never
+   read by screen readers, and the Accessibility checker leaves them alone.
+   The page itself still starts at (0, 0): staging positions are simply
+   negative, or past the page's width or height. */
+function stage() { return { x: Math.max(144, PAGE.width * 0.5), y: Math.max(144, PAGE.height * 0.25) }; }
+/** Where the page's top-left corner is on screen, and screen pixels per point. */
+function pageOrigin() {
+  const r = svg.getBoundingClientRect(), k = zoom * PX_PER_PT, s = stage();
+  return { left: r.left + s.x * k, top: r.top + s.y * k, k };
+}
+/** Does an object touch the page at all? (If not, it is out in the staging area.) */
+function onPageArea(o) {
+  const b = bounds(o);
+  return b.x < PAGE.width && b.y < PAGE.height && b.x + b.w > 0 && b.y + b.h > 0;
+}
+/** Is a point on the page itself (not in the staging area)? */
+const inPage = (p) => p.x >= 0 && p.y >= 0 && p.x <= PAGE.width && p.y <= PAGE.height;
+
+/** After the page size changes: the drawing area (page and staging area) and the paper. */
 function applyPageSize() {
   if (!layers.paper) return;
-  svg.setAttribute('viewBox', '0 0 ' + PAGE.width + ' ' + PAGE.height);
+  const s = stage();
+  svg.setAttribute('viewBox', [-s.x, -s.y, PAGE.width + 2 * s.x, PAGE.height + 2 * s.y].join(' '));
   clear(layers.paper);
-  layers.paper.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height, fill: '#ffffff' }));
+  layers.paper.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height, fill: '#ffffff', filter: 'url(#paperShadow)' }));
+  const clipRect = document.getElementById('pageClipRect');
+  if (clipRect) { clipRect.setAttribute('width', PAGE.width); clipRect.setAttribute('height', PAGE.height); }
   renderGrid();
   applyZoom();
 }
@@ -2338,20 +2887,77 @@ function pageTextPaths(pi) {
   const textPaths = {};
   for (const id in doc.stories) {
     if (!layouts[id]) continue;
+    const text = doc.stories[id].text;
     for (const ln of layouts[id].lines) {
       if (!onPage.has(ln.frame)) continue;
       const byColour = textPaths[ln.frame] || (textPaths[ln.frame] = {});
-      const parts = byColour[ln.role.colour] || (byColour[ln.role.colour] = []);
+      const partsFor = (colour) => byColour[colour] || (byColour[colour] = []);
       for (let i = ln.start; i < ln.end; i++) {
-        const g = ln.m.glyphs[i - ln.paraStart];
+        const k = i - ln.paraStart, g = ln.m.glyphs[k];
         if (!g) continue;                                     // tabs and the second half of an emoji
-        if (doc.stories[id].text.charCodeAt(i) === 32) continue;   // spaces have no shape
-        pushOutline(parts, outline(ln.m.fontKey, g, ln.role.size), ln.x0 + ln.xs[i - ln.start], ln.baseline);
+        if (text.charCodeAt(i) === 32) continue;              // spaces have no shape
+        pushOutline(partsFor(ln.m.looks[k].colour), outline(ln.m.fontKeys[k], g, ln.m.sizes[k]), ln.x0 + ln.xs[i - ln.start], ln.baseline);
+      }
+      // Underlines (and links, which are always underlined): a thin bar under the letters.
+      for (const u of lineUnderlines(ln, text)) {
+        partsFor(u.colour).push('M' + r2(u.x1) + ' ' + r2(u.y) + 'H' + r2(u.x2) + 'V' + r2(u.y + u.h) + 'H' + r2(u.x1) + 'Z');
       }
     }
   }
   for (const id in textPaths) textPaths[id] = Object.entries(textPaths[id]).map(([fill, parts]) => ({ fill, d: parts.join('') }));
   return textPaths;
+}
+
+/**
+ * The underline bars on one line, as [{ x1, x2, y, h, colour }] in the
+ * box's upright coordinates: one bar for each stretch of underlined
+ * letters of the same colour and size (spaces between underlined words are
+ * underlined too, but not the spaces a line ends with). The font says how
+ * far below the baseline and how thick.
+ */
+function lineUnderlines(ln, text) {
+  const out = [];
+  let visEnd = ln.end;
+  while (visEnd > ln.start && (text[visEnd - 1] === ' ' || text[visEnd - 1] === '\t' || text[visEnd - 1] === '\n')) visEnd--;
+  let cur = null;
+  for (let i = ln.start; i < visEnd; i++) {
+    const k = i - ln.paraStart, look = ln.m.looks[k];
+    if (!look.underline) { cur = null; continue; }
+    const font = FONTS[ln.m.fontKeys[k]], post = font.tables.post || {};
+    const s = ln.m.sizes[k] / font.unitsPerEm;
+    const h = Math.max(0.5, (post.underlineThickness || 50) * s);
+    const y = ln.baseline - (post.underlinePosition || -75) * s - h / 2;
+    const x1 = ln.x0 + ln.xs[i - ln.start], x2 = ln.x0 + ln.xs[i + 1 - ln.start];
+    if (cur && cur.colour === look.colour && Math.abs(cur.h - h) < 0.01 && Math.abs(cur.x2 - x1) < 2) { cur.x2 = x2; continue; }
+    cur = { x1, x2, y, h, colour: look.colour };
+    out.push(cur);
+  }
+  return out;
+}
+/**
+ * The links on one line, as [{ x1, x2, href, text }]: x1 and x2 across the
+ * line (box coordinates), and the whole link's words (even when it runs
+ * onto the next line), for the PDF's description of the link.
+ */
+function lineLinks(ln, text) {
+  const out = [];
+  let visEnd = ln.end;
+  while (visEnd > ln.start && (text[visEnd - 1] === ' ' || text[visEnd - 1] === '\t' || text[visEnd - 1] === '\n')) visEnd--;
+  const looks = ln.m.looks, last = looks.length - 2;            // (the last entry is the paragraph's end)
+  let cur = null;
+  for (let i = ln.start; i < visEnd; i++) {
+    const href = looks[i - ln.paraStart].href;
+    if (!href) { cur = null; continue; }
+    const x2 = ln.x0 + ln.xs[i + 1 - ln.start];
+    if (cur && cur.href === href) { cur.x2 = x2; continue; }
+    // The whole link, within its paragraph.
+    let a = i - ln.paraStart, b = a;
+    while (a > 0 && looks[a - 1].href === href) a--;
+    while (b < last && looks[b + 1].href === href) b++;
+    cur = { x1: ln.x0 + ln.xs[i - ln.start], x2, href, text: text.slice(ln.paraStart + a, ln.paraStart + b + 1).trim() };
+    out.push(cur);
+  }
+  return out;
 }
 
 /** A rectangle or ellipse the shape of a picture frame, with extra attributes. */
@@ -2698,9 +3304,9 @@ function positionInput(id, pos) {
   let p;
   if (c && pageOf(c.frame) === pageIndex) p = rotatePoint(c, obj(c.frame).rotation, centreOf(obj(c.frame)));
   else p = { x: 0, y: 0 };
-  const scale = zoom * PX_PER_PT;
-  ta.style.left = (p.x * scale) + 'px';
-  ta.style.top = (p.y * scale) + 'px';
+  const scale = zoom * PX_PER_PT, s = stage();
+  ta.style.left = ((p.x + s.x) * scale) + 'px';
+  ta.style.top = ((p.y + s.y) * scale) + 'px';
 }
 
 function scrollCaretIntoView() {
@@ -2880,17 +3486,10 @@ function copyObject(o, dx, dy, groupMap) {
     c.group = groupMap[c.group];
   }
   if (c.type === 'text') {
-    const s = doc.stories[o.story];
-    const lines = layouts[o.story] ? layouts[o.story].lines.filter((ln) => ln.frame === o.id) : [];
-    let text = '', roles = ['body'];
-    if (lines.length) {
-      const a = lines[0].start, b = lines[lines.length - 1].end;
-      text = s.text.slice(a, b);
-      const p0 = lines[0].para;
-      roles = s.roles.slice(p0, p0 + text.split('\n').length);
-    }
-    const ns = makeStory(c.id, text);
-    ns.roles = roles;
+    const ft = frameText(o);                         // the words this box shows, their roles and formatting
+    const ns = makeStory(c.id, ft.text);
+    ns.roles = ft.roles;
+    if (ft.runs.length) ns.runs = ft.runs;
     c.story = ns.id;
   } else if (c.name && /^(Rectangle|Ellipse|Line) \d+$/.test(c.name)) {
     c.name = TYPE_NAMES[c.type] + ' ' + (countOf(c.type) + 1);
@@ -2908,22 +3507,22 @@ function copyObject(o, dx, dy, groupMap) {
    pasting a picture adds it, as before. */
 const CLIP_TYPE = 'application/x-dskedtr-objects';
 let clip = null;                                     // { token, text, items, groups, images, pageId, pastes }
-/** The text a text box shows (its part of the story) and those paragraphs' roles. */
+/** The text a text box shows (its part of the story), those paragraphs' roles, and its formatting runs. */
 function frameText(o) {
   const s = doc.stories[o.story];
   const lines = layouts[o.story] ? layouts[o.story].lines.filter((ln) => ln.frame === o.id) : [];
-  if (!lines.length) return { text: '', roles: ['body'] };
+  if (!lines.length) return { text: '', roles: ['body'], runs: [] };
   const a = lines[0].start, b = lines[lines.length - 1].end;
   const text = s.text.slice(a, b);
   const p0 = lines[0].para;
-  return { text, roles: s.roles.slice(p0, p0 + text.split('\n').length) };
+  return { text, roles: s.roles.slice(p0, p0 + text.split('\n').length), runs: sliceRuns(s, a, b) };
 }
 function copySelection() {
   const list = pageObjs().filter((o) => selectedIds.includes(o.id));
   if (!list.length) return null;
   const items = list.map((o) => {
     const c = JSON.parse(JSON.stringify(o));
-    if (o.type === 'text') { const ft = frameText(o); c.copiedText = ft.text; c.copiedRoles = ft.roles; }
+    if (o.type === 'text') { const ft = frameText(o); c.copiedText = ft.text; c.copiedRoles = ft.roles; c.copiedRuns = ft.runs; }
     return c;
   });
   const groups = {}, pics = {};
@@ -2955,7 +3554,7 @@ function pasteClip() {
   const groupMap = {}, made = [];
   for (const c of clip.items) {
     const o = JSON.parse(JSON.stringify(c));
-    delete o.copiedText; delete o.copiedRoles;
+    delete o.copiedText; delete o.copiedRoles; delete o.copiedRuns;
     o.id = newId('o');
     objIndex.set(o.id, o);
     moveObj(o, off, off);
@@ -2963,7 +3562,13 @@ function pasteClip() {
       if (!groupMap[o.group]) { const g = newId('g'); doc.groups[g] = { id: g, name: (clip.groups[o.group] || 'Group') + ' copy' }; groupMap[o.group] = g; }
       o.group = groupMap[o.group];
     }
-    if (o.type === 'text') { const s = makeStory(o.id, c.copiedText || ''); s.roles = (c.copiedRoles || []).slice(); o.story = s.id; while (s.roles.length < s.text.split('\n').length) s.roles.push('body'); }
+    if (o.type === 'text') {
+      const s = makeStory(o.id, c.copiedText || '');
+      s.roles = (c.copiedRoles || []).slice();
+      while (s.roles.length < s.text.split('\n').length) s.roles.push('body');
+      if (c.copiedRuns && c.copiedRuns.length) s.runs = JSON.parse(JSON.stringify(c.copiedRuns));
+      o.story = s.id;
+    }
     if (o.type === 'picture' && o.image) o.image = imageMap[o.image] || null;
     pageObjs().push(o);
     made.push(o);
@@ -2971,6 +3576,7 @@ function pasteClip() {
   reindex();
   syncInputs();
   setTool('select');
+  layoutAll();                                       // lay out new stories first: picking a text box shows its story's fit
   selectObjects(made.map((o) => o.id));
   relayoutAndRender();
   updateInspector();
@@ -2996,6 +3602,7 @@ function wireClipboard() {
     const t = e.target;
     if (t && t.closest && t.closest('textarea, input, select, [contenteditable="true"], dialog, [popover]')) return;   // fields copy their own text
     if (String(window.getSelection ? window.getSelection() : '')) return;   // text picked in a panel copies as text
+    if (cut && printPreview) return;                  // Preview is for looking; copying is fine
     if (!copySelection()) return;
     e.preventDefault();
     e.clipboardData.setData('text/plain', clip.text);
@@ -3240,7 +3847,7 @@ function goToPage(i, keepTyping) {
   renderOrderList(true);
   renderFilmstrip();
   updateInspector();
-  $('desk').scrollTop = 0;
+  showPage();
   announce('Page ' + (i + 1) + ' of ' + doc.pages.length);
 }
 
@@ -3960,8 +4567,9 @@ function wireShapes() {
 
 /** Everything on page `pi` that should be read, in no particular order. */
 function orderItems(pi) {
-  const stories = Object.keys(doc.stories).filter((id) => pageOf(doc.stories[id].frames[0]) === pi);
-  return stories.concat(doc.pages[pi].objects.filter((o) => o.type !== 'text' && !o.decorative && !o.hidden && !(o.type === 'picture' && !o.image)).map((o) => o.id));
+  // (Things out in the staging area are not read: a story counts when one of its boxes is on a page.)
+  const stories = Object.keys(doc.stories).filter((id) => pageOf(doc.stories[id].frames[0]) === pi && doc.stories[id].frames.some((f) => obj(f) && onPageArea(obj(f))));
+  return stories.concat(doc.pages[pi].objects.filter((o) => o.type !== 'text' && !o.decorative && !o.hidden && !(o.type === 'picture' && !o.image) && onPageArea(o)).map((o) => o.id));
 }
 /** The page an item (story or shape) is read on. */
 function itemPage(id) { return doc.stories[id] ? pageOf(doc.stories[id].frames[0]) : pageOf(id); }
@@ -4191,6 +4799,7 @@ let tool = 'select';                 // select, text, rect, ellipse, line, order
 
 function setTool(t) {
   if (tool === t) return;
+  if (printPreview) setPrintPreview(false);           // picking a tool means you want to edit again
   tool = t;
   if (cropId) endCrop();
   orderClicks = [];
@@ -4383,7 +4992,8 @@ function wirePointer() {
 
   svg.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
-    if (spaceHeld) {                                    // Space + drag slides the page (suite standard)
+    // Space + drag slides the page (suite standard). In Preview, every drag does.
+    if (spaceHeld || printPreview) {
       drag = { kind: 'pan', x: e.clientX, y: e.clientY, left: desk.scrollLeft, top: desk.scrollTop };
       desk.classList.add('panning'); svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
     }
@@ -4427,6 +5037,10 @@ function wirePointer() {
       endCrop();
     }
 
+    if (tool === 'select' && e.pointerType === 'touch' && !inPage(p) && !objectAt(p) && !handleAt(p)) {
+      drag = { kind: 'pan', x: e.clientX, y: e.clientY, left: desk.scrollLeft, top: desk.scrollTop };
+      svg.setPointerCapture(e.pointerId); return;
+    }
     if (tool === 'select') {
       // An out-port of the shown story starts linking.
       const portFrame = outPortAt(p);
@@ -4445,7 +5059,11 @@ function wirePointer() {
         // A click picks the whole group; Ctrl (Cmd on a Mac) + click picks just this one.
         const direct = isMac ? e.metaKey : e.ctrlKey;
         const unitIds = (direct ? [o] : groupMembers(o).filter((x) => !x.hidden)).map((x) => x.id);
-        if (e.shiftKey) {
+        let wasPicked = false;
+        if (direct && e.shiftKey) {
+          // Ctrl+Shift: add it to what is picked; a drag copies them all (Shift keeps the drag straight).
+          if (selectedIds.includes(o.id)) wasPicked = true; else selectObjects(selectedIds.concat([o.id]));
+        } else if (e.shiftKey) {
           const has = unitIds.every((id) => selectedIds.includes(id));
           selectObjects(has ? selectedIds.filter((id) => !unitIds.includes(id)) : selectedIds.concat(unitIds.filter((id) => !selectedIds.includes(id))));
         } else if (direct && selectedIds.includes(o.id)) {
@@ -4457,7 +5075,11 @@ function wirePointer() {
           drag = startTransform('move', p);
           if (drag) {
             svg.setPointerCapture(e.pointerId);
-            if (direct && !e.shiftKey) { drag.copyOnDrag = true; drag.narrowTo = o.id; }
+            if (direct) {
+              drag.copyOnDrag = true;
+              if (!e.shiftKey) drag.narrowTo = o.id;       // Ctrl+click without a drag: just this one
+              else if (wasPicked) drag.unpick = o.id;      // Ctrl+Shift+click without a drag: take it out
+            }
           }
         }
         announceSelection();
@@ -4493,6 +5115,13 @@ function wirePointer() {
   svg.addEventListener('pointermove', (e) => {
     if (!drag) { updateHoverCursor(toPage(e)); return; }
     if (drag.kind === 'pan') { desk.scrollLeft = drag.left - (e.clientX - drag.x); desk.scrollTop = drag.top - (e.clientY - drag.y); return; }
+    // Space held in the middle of a drag: the view slides with the pointer, and
+    // what is being dragged stays under it (so it can be carried a long way).
+    if (spaceHeld && drag.lastClient) {
+      desk.scrollLeft -= e.clientX - drag.lastClient.x;
+      desk.scrollTop -= e.clientY - drag.lastClient.y;
+    }
+    drag.lastClient = { x: e.clientX, y: e.clientY };
     const p = toPage(e);
     if (drag.kind === 'guide') { moveGuide(drag, p, e); return; }
     if (drag.kind === 'cropMove' || drag.kind === 'cropScale') { moveCrop(drag, p, e); return; }
@@ -4545,6 +5174,7 @@ function wirePointer() {
       if (d.changed) { pushUndo(d.snap); lastUndoKind = ''; }
       if (d.copied) { relayoutAndRender(); announce('Copied ' + (selectedIds.length === 1 ? objName(obj(selectedIds[0])) : selectedIds.length + ' objects')); }
       if (!d.changed && d.narrowTo) { selectObjects([d.narrowTo]); announceSelection(); }
+      if (!d.changed && d.unpick) { selectObjects(selectedIds.filter((id) => id !== d.unpick)); announceSelection(); }
       if (d.changed && d.kind === 'rotate') announce('Turned to ' + Math.round(d.orig[0].o.rotation || 0) + ' degrees');
       updateInspector();
     }
@@ -4780,6 +5410,7 @@ function updateTransform(d, p, e) {
 /** The mouse pointer shape, so it shows what a click would do. */
 const CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', p1: 'move', p2: 'move', rot: 'grab' };
 function updateHoverCursor(p) {
+  if (printPreview) { svg.style.cursor = 'grab'; return; }
   if (linkFrom) { svg.style.cursor = 'alias'; return; }
   if (spaceHeld) { svg.style.cursor = 'grab'; return; }
   if (tool === 'select') {
@@ -4855,6 +5486,7 @@ function updateInspector() {
   show('secPicture', !!(one && one.type === 'picture' && !typing));
   if (one && one.type === 'picture' && !typing) fillPicture(one);
   show('secArrange', picked.length > 0 && !typing);
+  show('secChars', typing);
   show('secPara', typing);
   const storyId = typing ? activeStoryId : (one && one.type === 'text' ? one.story : null);
   show('secStory', !!storyId);
@@ -4876,7 +5508,7 @@ function updateInspector() {
     for (const b of document.querySelectorAll('[data-merge]')) b.disabled = mergeCount < 2;
   }
   renderLayers();
-  if (typing) fillParagraph();
+  if (typing) { fillChars(); fillParagraph(); }
   if (storyId) fillStory(storyId);
   renderGuideList();
 }
@@ -5757,7 +6389,7 @@ function renderGuides() {
 
 /** The guide under a point (within a few screen pixels), or null. */
 function guideAt(p) {
-  if (!view.guides) return null;
+  if (!view.guides || !inPage(p)) return null;
   const reach = 5 * onePx();
   let best = null;
   doc.guides.v.forEach((x, index) => { const d = Math.abs(p.x - x); if (d <= reach && (!best || d < best.d)) best = { axis: 'v', index, d }; });
@@ -5967,6 +6599,31 @@ function setView(key, on) {
   if (key === 'guides' || key === 'grid') { renderGrid(); renderGuides(); }
   announce(VIEW_WORDS[key][on ? 0 : 1]);
 }
+/* ---------- Preview: the page as it will print ----------
+   The eye button (or W) hides everything that is only there to help you
+   work: guides, grid, margins, box edges, handles, and whatever is out in
+   the staging area or hanging off the page. It is for looking: clicks and
+   drags on the page slide it around instead of changing things, and W,
+   Escape or the banner's button go back to editing. (It is not remembered
+   between visits: the app always opens ready to edit.) */
+let printPreview = false;
+function setPrintPreview(on) {
+  on = !!on;
+  if (on === printPreview) return;
+  if (on) {
+    // Finish whatever was half done, so nothing is left waiting unseen.
+    if (focusedStoryId) stopEditingToFrame(focusedStoryId);
+    if (cropId) endCrop();
+    cancelLinkPick();
+    setTool('select');                                 // so picking any tool afterwards goes back to editing
+  }
+  printPreview = on;
+  $('deskFrame').classList.toggle('proofing', on);
+  $('proofBanner').hidden = !on;
+  $('view-preview').setAttribute('aria-pressed', String(on));
+  svg.style.cursor = on ? 'grab' : '';
+  announce(on ? 'Preview: the page as it will print. Guides, box edges and the staging area are hidden. W or Escape to go back to editing.' : 'Back to editing');
+}
 /** Switch units: every field, list and ruler shows the new ones (the document itself doesn't change). */
 function setUnits(u) {
   if (!Object.hasOwn(UNITS, u) || u === view.units) return;
@@ -6028,8 +6685,8 @@ function drawRulers() {
   if (!view.rulers || !layers.paper) return;
   const css = getComputedStyle(document.documentElement);
   const colours = { bg: css.getPropertyValue('--panel').trim(), fg: css.getPropertyValue('--muted').trim(), line: css.getPropertyValue('--line').trim(), mark: css.getPropertyValue('--accent-text').trim() };
-  const page = svg.getBoundingClientRect();
-  const k = zoom * PX_PER_PT;                        // screen pixels per point
+  const page = pageOrigin();
+  const k = page.k;                                  // screen pixels per point
   const sel = selectedIds.map(obj).filter(Boolean);
   const band = sel.length ? unionBounds(sel) : null;
   drawRuler($('rulerTop'), 'x', page.left, k, colours, band && [band.x, band.x + band.w], rulerPointer && rulerPointer.x);
@@ -6110,7 +6767,7 @@ function wireRulers() {
     const ruler = $(id);
     let d = null;
     ruler.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || printPreview) return;      // no new guides while previewing (they'd be hidden)
       e.preventDefault();
       if (!view.guides) setView('guides', true);
       const p = toPage(e);
@@ -6148,6 +6805,9 @@ function wireRulers() {
 
 /* ---------- The guides and grid panel (the arrow beside Guides) ---------- */
 function wireViewBar() {
+  const eye = $('view-preview');
+  eye.addEventListener('click', () => setPrintPreview(!printPreview));
+  $('proofStop').addEventListener('click', () => { setPrintPreview(false); $('desk').focus({ preventScroll: true }); });
   for (const key of ['rulers', 'guides', 'grid', 'snap']) {
     const b = $('view-' + key);
     b.addEventListener('mousedown', (e) => e.preventDefault());    // keep the cursor in the story being typed in
@@ -6198,8 +6858,9 @@ function wireViewBar() {
    14. ZOOM, THEME, HELP, AND KEYS OUTSIDE THE TEXT
    ====================================================================== */
 function applyZoom() {
-  svg.setAttribute('width', String(PAGE.width * zoom * PX_PER_PT));
-  svg.setAttribute('height', String(PAGE.height * zoom * PX_PER_PT));
+  const s = stage();
+  svg.setAttribute('width', String((PAGE.width + 2 * s.x) * zoom * PX_PER_PT));
+  svg.setAttribute('height', String((PAGE.height + 2 * s.y) * zoom * PX_PER_PT));
   $('zoomValue').textContent = Math.round(zoom * 100) + '%';
   if (layers.frames && Object.keys(layouts).length) renderSelection();   // handles and ports keep their size on screen
   scheduleRulers();
@@ -6208,13 +6869,13 @@ function setZoom(z) { zoom = Math.max(0.25, Math.min(4, z)); applyZoom(); }
 /** Zoom so that page point `pagePt` ends up under screen point (clientX, clientY): zooming "into" where you point. */
 function zoomKeeping(z, pagePt, clientX, clientY) {
   setZoom(z);
-  const r = svg.getBoundingClientRect(), k = zoom * PX_PER_PT, desk = $('desk');
+  const r = pageOrigin(), k = r.k, desk = $('desk');
   desk.scrollLeft += r.left + pagePt.x * k - clientX;
   desk.scrollTop += r.top + pagePt.y * k - clientY;
 }
 /** The page point under a screen point. */
 function pageAt(clientX, clientY) {
-  const r = svg.getBoundingClientRect(), k = zoom * PX_PER_PT;
+  const r = pageOrigin(), k = r.k;
   return { x: (clientX - r.left) / k, y: (clientY - r.top) / k };
 }
 
@@ -6294,6 +6955,14 @@ function fitZoom() {
   const desk = $('desk');
   const z = Math.min((desk.clientWidth - 64) / (PAGE.width * PX_PER_PT), (desk.clientHeight - 64) / (PAGE.height * PX_PER_PT));
   setZoom(Math.max(0.25, Math.min(2, z)));
+  showPage();
+}
+/** Scroll so the page is in view: centred, or its top showing when it is taller than the window. */
+function showPage() {
+  const desk = $('desk'), d = desk.getBoundingClientRect(), o = pageOrigin();
+  const w = PAGE.width * o.k, h = PAGE.height * o.k;
+  desk.scrollLeft += o.left + w / 2 - (d.left + desk.clientWidth / 2);
+  desk.scrollTop += h + 48 < desk.clientHeight ? o.top + h / 2 - (d.top + desk.clientHeight / 2) : o.top - d.top - 24;
 }
 
 /** A new object in the middle of the page, from the keyboard (Enter with a drawing tool). */
@@ -6368,7 +7037,8 @@ function wireChrome() {
     ['Arrow keys', 'Move what is picked 1 pt (Shift: 10 pt)'],
     ['Delete', 'Delete what is picked'],
     [mod + ' + C, ' + mod + ' + X, ' + mod + ' + V', 'Copy, cut and paste what is picked (also between pages and documents). Text copied from another app pastes as a new text box'],
-    [mod + ' + drag', 'Drag a copy, leaving the original where it was'],
+    [mod + ' + drag, or ' + mod + ' + Shift + drag', 'Drag a copy, leaving the original where it was (with Shift: in a straight line)'],
+    ['The grey around the page', 'The staging area: keep things there for later. They are not printed, exported or read'],
     [mod + ' + D', 'Duplicate'],
     ['U', 'Shapes: triangles, stars, arrows, speech bubbles and more (press U again for the gallery)'],
     ['] and [', 'Forward, backward (' + mod + ': to front, to back)'],
@@ -6386,10 +7056,15 @@ function wireChrome() {
     ['Out-port (the square on a text box’s right edge)', 'Click it, then click an empty box: the text continues there'],
     ['Up / Down, Home / End', 'While typing: move by the lines on the page, across linked boxes'],
     [mod + ' + ' + alt + ' + 1 / 2 / 0 / 9', 'While typing: Heading 1, Heading 2, Body, Caption'],
+    [mod + ' + B, ' + mod + ' + I, ' + mod + ' + U', 'While typing: bold, italic, underline for the highlighted words (or what you type next)'],
+    [mod + ' + K', 'While typing: link the highlighted words (Enter links, Escape goes back)'],
+    [mod + ' + \\', 'While typing: clear formatting (back to the paragraph style; links stay)'],
+    [(isMac ? 'Ctrl + Cmd' : 'Alt') + ' + Left / Right', 'While typing: kerning, the space between two letters (Shift: five times as much); with words highlighted, between all their letters'],
     [mod + ' + Z, ' + mod + ' + Shift + Z', 'Undo, redo'],
     ['Tab', 'Next story, in reading order'],
     [alt + ' + Up / Down', 'In the reading order list: move the picked item'],
-    ['Space + drag', 'Slide the page around'],
+    ['W, or the eye in the top bar', 'Preview: the page as it will print (no guides, nothing in the staging area); W or Escape to go back'],
+    ['Space + drag', 'Slide the page around (also in the middle of moving something, to carry it further)'],
     [mod + ' + scroll wheel, or pinch on a trackpad', 'Zoom the page around the pointer (not the whole web page)'],
     ['Touch screen', 'Two fingers: pinch to zoom, slide to move around. One finger on the grey around the page slides it too'],
     [mod + ' + =, ' + mod + ' + -, ' + mod + ' + 0', 'Zoom in, out, fit'],
@@ -6425,10 +7100,21 @@ function wireChrome() {
     // Keys that act on the page only when the page (or nothing) has focus,
     // so Enter and arrows still work normally on buttons and lists.
     const onPage = t === document.body || t.id === 'desk';
-    if (e.key === ' ' && !e.repeat && onPage) { spaceHeld = true; e.preventDefault(); return; }
+    // Space (held): slide the page. Every Space press is kept from the browser,
+    // including the repeats while it is held; the browser's own Space would
+    // scroll a screenful each time (the jitter, and the jump back after).
+    if (e.key === ' ' && (onPage || drag)) { if (!e.repeat) spaceHeld = true; e.preventDefault(); return; }
     const mod2 = isMac ? e.metaKey : e.ctrlKey;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
 
+    // In Preview, only looking keys work: W or Escape go back, Page Up / Down
+    // change page, and zoom, undo and help still do their jobs.
+    if (printPreview) {
+      if (e.key === 'Escape' || (k === 'w' && !mod2 && !e.altKey && !e.shiftKey)) { e.preventDefault(); setPrintPreview(false); return; }
+      if (onPage && !mod2 && (e.key === 'PageUp' || e.key === 'PageDown')) { e.preventDefault(); goToPage(pageIndex + (e.key === 'PageDown' ? 1 : -1)); return; }
+      const looking = (mod2 && ['z', 'y', '=', '+', '-', '0'].includes(k)) || e.key === '?';
+      if (!looking) return;                          // editing keys stand down (arrows just scroll the desk)
+    }
     if (mod2 && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod2 && k === 'y' && !isMac) { e.preventDefault(); redo(); return; }
     if (mod2 && (e.key === '=' || e.key === '+')) { e.preventDefault(); setZoom(zoom * 1.25); return; }
@@ -6448,6 +7134,7 @@ function wireChrome() {
 
     if (e.key === '?') { e.preventDefault(); openHelp('tabShortcuts'); return; }
     if (TOOL_KEYS[k] && !e.shiftKey) { setTool(TOOL_KEYS[k]); return; }
+    if (k === 'w' && !e.shiftKey) { setPrintPreview(true); return; }
     if (k === 'u' && !e.shiftKey) { if (tool === 'shape') $('shapePop').showPopover(); else setTool('shape'); return; }
     if (e.key === ']') { moveOrder('forward'); return; }
     if (e.key === '[') { moveOrder('backward'); return; }
@@ -6486,7 +7173,11 @@ function wireChrome() {
       if (['text', 'rect', 'ellipse', 'line', 'picture', 'shape'].includes(tool)) createInMiddle(tool);
     }
   });
-  document.addEventListener('keyup', (e) => { if (e.key === ' ') spaceHeld = false; });
+  document.addEventListener('keyup', (e) => {
+    if (e.key !== ' ') return;
+    spaceHeld = false;
+    if (drag || e.target === document.body || e.target.id === 'desk') e.preventDefault();
+  });
   window.addEventListener('blur', () => { spaceHeld = false; });
 }
 
@@ -6519,6 +7210,7 @@ function wirePictureInput() {
   document.addEventListener('paste', (e) => {
     const t = e.target;
     if (t.closest && t.closest('textarea, input, select')) return;   // text fields keep their own pasting
+    if (printPreview) { e.preventDefault(); announce('Go back to editing (W) to paste.'); return; }
     const files = [...(e.clipboardData ? e.clipboardData.files : [])].filter((f) => f.type.startsWith('image/'));
     const token = e.clipboardData ? e.clipboardData.getData(CLIP_TYPE) : '';
     const text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
@@ -7524,7 +8216,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 1;                         // bump when the file layout changes
+const PROJECT_VERSION = 2;                         // bump when the file layout changes (2: formatting inside paragraphs)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -7629,7 +8321,6 @@ function loadDocument(newDoc, picStore) {
   renderGuideList();
   updateInspector();
   fitZoom();
-  $('desk').scrollTop = 0;
   savedState = docState();
   updateWindowTitle();
   scheduleA11y();
@@ -7739,6 +8430,37 @@ function cleanText(v, max, keepNewlines) {
   t = keepNewlines ? t.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '') : t.replace(/[\u0000-\u001f\u007f]/g, ' ');
   return t.slice(0, max);
 }
+/**
+ * A link address that is safe to keep and to put in a PDF: https, http,
+ * mailto and tel only (never javascript: or data:). "flcc.edu" becomes
+ * "https://flcc.edu" and "name@flcc.edu" becomes a mailto: link. Returns
+ * the address in its standard form (plain ASCII), or null.
+ */
+function cleanLink(v) {
+  let s = String(v || '').trim();
+  if (!s || s.length > 2000) return null;
+  if (/^[^\s@:/]+@[^\s@:/]+\.[^\s@:/]+$/.test(s)) s = 'mailto:' + s;          // an email address
+  else if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = 'https://' + s;                 // no scheme: a web site
+  let u;
+  try { u = new URL(s); } catch (err) { return null; }
+  if (!['https:', 'http:', 'mailto:', 'tel:'].includes(u.protocol)) return null;
+  if ((u.protocol === 'https:' || u.protocol === 'http:') && !u.hostname.includes('.')) return null;   // "https://hello" is not a site
+  if (u.username || u.password) return null;                                    // no hidden log-in details in links
+  return u.href.length <= 2000 ? u.href : null;
+}
+/** One formatting run's "what" from a file: only the fields section 4b knows, each checked. */
+function cleanFormat(r) {
+  const f = {};
+  if (typeof r.b === 'boolean') f.b = r.b;
+  if (r.i === true) f.i = true;
+  if (r.u === true) f.u = true;
+  const c = colour(r.c);
+  if (c) f.c = c;
+  if (typeof r.sz === 'number' && Number.isFinite(r.sz)) f.sz = Math.max(4, Math.min(200, r.sz));
+  if (typeof r.href === 'string') { const h = cleanLink(r.href); if (h) f.href = h; }
+  if (typeof r.k === 'number' && Number.isFinite(r.k) && Math.round(r.k)) f.k = Math.max(-500, Math.min(1000, Math.round(r.k)));
+  return Object.keys(f).length ? f : null;
+}
 function checkId(v) {
   if (typeof v !== 'string' || !ID_RE.test(v)) bad('That project is damaged: it has a name for something that DSKEDTR does not use.');
   return v;
@@ -7837,7 +8559,19 @@ function checkDocument(raw, known) {
     }
     // ...then any box that says it shows this story but was missing from the list.
     for (const box of byStory.get(id) || []) if (!inChain.has(box.id)) { frames.push(box.id); inChain.add(box.id); }
-    if (frames.length) out.stories[id] = { id, frames, text, roles };
+    // Formatting runs: in order, inside the text, not overlapping. Anything else is left out.
+    const runs = [];
+    let lastEnd = 0;
+    for (const r of Array.isArray(rs.runs) ? rs.runs.slice(0, 200000) : []) {
+      if (!r || typeof r !== 'object' || !Number.isInteger(r.s) || !Number.isInteger(r.e)) continue;
+      if (r.s < lastEnd || r.e <= r.s || r.e > text.length) continue;
+      const f = cleanFormat(r);
+      if (f) { runs.push(Object.assign({ s: r.s, e: r.e }, f)); lastEnd = r.e; }
+    }
+    if (frames.length) {
+      out.stories[id] = { id, frames, text, roles };
+      if (runs.length) packRuns(out.stories[id], charFormats(Object.assign({}, out.stories[id], { runs })));   // (joins neighbours that match)
+    }
   }
   for (const t of textFrames) if (!out.stories[t.story]) bad('That project has a text box whose text is missing.');
 
@@ -8100,7 +8834,7 @@ function linesByFrame(pi) {
   return out;
 }
 /** Objects that print, back to front. */
-const printedObjects = (pi) => doc.pages[pi].objects.filter((o) => !o.hidden);
+const printedObjects = (pi) => doc.pages[pi].objects.filter((o) => !o.hidden && onPageArea(o));   // (not hidden, not out in the staging area)
 
 /* ---------- The PDF ---------- */
 async function exportPDF(name) {
@@ -8113,9 +8847,12 @@ async function exportPDF(name) {
   layoutAll();
   const pdf = await L.PDFDocument.create();
   pdf.registerFontkit(window.fontkit);
-  // The fonts, embedded as subsets (only the letters the document uses end up in the file).
+  // The fonts, embedded as subsets (only the letters the document uses end up
+  // in the file), and only the fonts used (no italics in the file without italic text).
+  const usedFonts = new Set();
+  for (const id in layouts) for (const ln of layouts[id].lines) for (let i = ln.start; i < ln.end; i++) if (ln.m.glyphs[i - ln.paraStart]) usedFonts.add(ln.m.fontKeys[i - ln.paraStart]);
   const fonts = {};
-  for (const key in FONT_FILES) fonts[key] = await pdf.embedFont(FONT_BYTES[key], { subset: true });
+  for (const key of usedFonts) fonts[key] = await pdf.embedFont(FONT_BYTES[key], { subset: true });
   const glyphHex = new Map();                      // "regular|65" -> "0006", this font's code for "A"
   const hexFor = (fontKey, cp) => {
     const k = fontKey + '|' + cp;
@@ -8148,6 +8885,7 @@ async function exportPDF(name) {
       else if (o.type === 'picture') await pdfPicture(ops, o, pdf, page, pdfImages, L);
       else pdfShape(ops, o, L, op);
       ops.push(L.popGraphicsState());
+      if (o.type === 'text') pdfLinks(o, text[o.id] || [], page, pdf, L);
     }
     page.pushOperators(...ops);
   }
@@ -8242,13 +8980,6 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
   ops.push(L.beginText());
   let lastFont = null, lastSize = 0, lastColour = null;
   for (const { ln, story } of lines) {
-    const fontKey = ln.m.fontKey, size = ln.role.size;
-    if (ln.role.colour !== lastColour) { ops.push(L.setFillingRgbColor(...rgb01(ln.role.colour))); lastColour = ln.role.colour; }
-    if (fontKey !== lastFont || size !== lastSize) {
-      page.setFont(fonts[fontKey]);                 // registers the font with this page, giving its name there
-      ops.push(L.setFontAndSize(page.fontKey, size));
-      lastFont = fontKey; lastSize = size;
-    }
     let items = [], pen = 0, hex = '';
     const flush = () => {
       if (hex) { items.push(L.PDFHexString.of(hex)); hex = ''; }
@@ -8258,13 +8989,21 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
     for (let i = ln.start; i < ln.end; i++) {
       const k = i - ln.paraStart, g = ln.m.glyphs[k];
       if (!g) continue;                              // a tab (just space) or the second half of an emoji
+      const look = ln.m.looks[k], fontKey = ln.m.fontKeys[k], size = ln.m.sizes[k];
       const x = ln.xs[i - ln.start];
       const cp = story.text.codePointAt(i);
       const wordStart = i === ln.start || /\s/.test(story.text[i - 1]);
+      const newColour = look.colour !== lastColour, newFont = fontKey !== lastFont || size !== lastSize;
+      if (wordStart || newColour || newFont) flush();    // finish the letters shown so far before changing anything
+      if (newColour) { ops.push(L.setFillingRgbColor(...rgb01(look.colour))); lastColour = look.colour; }
+      if (newFont) {
+        page.setFont(fonts[fontKey]);               // registers the font with this page, giving its name there
+        ops.push(L.setFontAndSize(page.fontKey, size));
+        lastFont = fontKey; lastSize = size;
+      }
       if (wordStart) {
         // Start of a word: put the pen exactly there. (Text matrix: flipped
         // back upright, since the page itself is flipped.)
-        flush();
         ops.push(L.setTextMatrix(1, 0, 0, -1, r2(ln.x0 + x), r2(ln.baseline)));
         pen = x;
       } else if (Math.abs(x - pen) > 0.001) {
@@ -8273,11 +9012,43 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
         items.push(Math.round(-(x - pen) * 1000 / size * 100) / 100);
       }
       hex += hexFor(fontKey, cp);
-      pen = x + g.advanceWidth * ln.m.scale;         // where the PDF's pen goes by itself (letter spacing comes from the nudges)
+      pen = x + g.advanceWidth * size / FONTS[fontKey].unitsPerEm;   // where the PDF's pen goes by itself (letter spacing comes from the nudges)
     }
     flush();
   }
   ops.push(L.endText());
+  // Underlines: thin filled bars, after the letters.
+  for (const { ln, story } of lines) {
+    for (const u of lineUnderlines(ln, story.text)) {
+      ops.push(L.setFillingRgbColor(...rgb01(u.colour)), L.rectangle(r2(u.x1), r2(u.y), r2(u.x2 - u.x1), r2(u.h)), op(L.PDFOperatorNames.FillNonZero));
+    }
+  }
+}
+
+/**
+ * Links in a text box become clickable areas in the PDF (link
+ * "annotations"), each with the link's words as its description, which
+ * screen readers announce. A turned box gets the area around its turned
+ * letters. Only addresses cleanLink allows ever get here.
+ */
+function pdfLinks(o, lines, page, pdf, L) {
+  const c = centreOf(o);
+  for (const { ln, story } of lines) {
+    for (const lk of lineLinks(ln, story.text)) {
+      // The four corners, turned like the box, then flipped (PDF pages count up from the bottom).
+      const corners = [[lk.x1, ln.top], [lk.x2, ln.top], [lk.x2, ln.top + ln.height], [lk.x1, ln.top + ln.height]]
+        .map(([x, y]) => (o.rotation ? rotatePoint({ x, y }, o.rotation, c) : { x, y }))
+        .map((q) => [q.x, PAGE.height - q.y]);
+      const xs = corners.map((q) => q[0]), ys = corners.map((q) => q[1]);
+      const annot = pdf.context.obj({
+        Type: 'Annot', Subtype: 'Link', F: 4, Border: [0, 0, 0],
+        Rect: [r2(Math.min(...xs)), r2(Math.min(...ys)), r2(Math.max(...xs)), r2(Math.max(...ys))],
+        Contents: L.PDFHexString.fromText(lk.text || lk.href),
+        A: { Type: 'Action', S: 'URI', URI: L.PDFString.of(lk.href) }
+      });
+      page.node.addAnnot(pdf.context.register(annot));
+    }
+  }
 }
 
 /* ---------- The PNG ---------- */
@@ -8402,6 +9173,29 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.8.0", date: "2026-10-06", title: "", notes: [
+    "Milestone 6, the last of phase 1: formatting inside a paragraph.",
+    "Bold, italic and underline for any words: Ctrl+B, Ctrl+I, Ctrl+U (Cmd on a Mac), or the new Characters section of the Inspector while typing. With nothing highlighted, they set how the next letters you type look. Bold off in a heading makes words NOT bold there. Italics are the real Atkinson Hyperlegible italics, not slanted letters.",
+    "Colour and size for any words, in Characters, with the contrast against white paper shown right there. A line grows to fit its biggest letters. \"Style's\" puts the paragraph style's colour back.",
+    "Links: highlight words, press Ctrl+K (or use Characters), type an address and press Enter. \"flcc.edu\" becomes https://flcc.edu and an email address becomes a mailto: link; anything that isn't a web, email or phone address is refused. Links are always underlined (so they never rely on colour alone), and in the PDF they can be clicked, with the link's words as the description screen readers announce.",
+    "Kerning by hand: with the cursor between two letters, Alt+Left / Right (Ctrl+Cmd+Left / Right on a Mac, where Option+arrows move by word) closes up or opens the gap, by 1/100 of the letters' size (Shift: five times as much). With words highlighted, it spaces all their letters. The Kerning field in Characters takes exact numbers.",
+    "Clear formatting (Ctrl+backslash, or the button): back to the paragraph style. Links stay.",
+    "Formatting comes along when copying words inside a story, when copying and pasting text boxes, in undo, saved projects, the PDF, the PNG and the page thumbnails. The sample newsletter now has bold dates and days and an italic phrase.",
+    "The Accessibility checker measures the contrast of each colour on a line separately, warns about links whose words don't say where they go (\"click here\"), suggests words instead of bare web addresses, and warns about formatted words under 9 pt.",
+    "Project files are now version 2. Older versions of DSKEDTR will refuse them (rather than quietly losing the formatting); this version opens the older ones.",
+    "The PDF only includes the fonts the document uses.",
+    "Fixed: the alignment buttons in Paragraph didn't show which one was chosen. Small buttons that are on (alignment, Bold) are now emerald with a ring.",
+    "Fixed: pasting a single copied text box showed an error in the browser console (the Inspector looked at the new text before it was laid out)."
+  ] },
+  { version: "0.7.2", date: "2026-10-06", title: "", notes: [
+    "Preview (the eye in the top bar, or W): see the page as it will print. Guides, the grid, margins, box edges, handles and the cursor are hidden, and so is everything outside the page: whatever waits in the staging area, and any part hanging off an edge. Preview is for looking, so a click or drag on the page slides the view instead of moving things; Page Up / Page Down, zooming and undo still work. W, Escape, the banner's \"Back to editing\" button, picking a tool or starting to type all go back to editing. It works alongside the colour vision preview."
+  ] },
+  { version: "0.7.1", date: "2026-10-06", title: "", notes: [
+    "The staging area: the grey around the page is now somewhere to keep things. Drag anything off the page (a spare photo, a heading you're not sure about) and it stays there, visible and editable, on that page's desk. Things out there are never printed or exported, never read by screen readers, and the Accessibility checker leaves them alone (it just mentions, as a tip, what is waiting out there). Something half on the page still prints its half, and the checker still says it runs off the page. Rulers, zooming and Fit page all measure from the page as before. On a touch screen, one finger on an empty spot in the staging area still slides the view.",
+    "Ctrl+Shift+drag copies too (Cmd+Shift on a Mac), in a straight line, as in PowerPoint. Ctrl+drag still copies freely.",
+    "Space to slide the page is steady now. Holding Space made the browser scroll a screenful with each repeat of the key, which caused the jitter and the jump after letting go. And Space now works in the middle of a drag: hold it while moving something and the view slides along, with the thing still under the pointer, to carry it a long way.",
+    "Fixed: after moving, resizing or turning something with the mouse, the crash backup and the Accessibility checker didn't update until the next other change."
+  ] },
   { version: "0.7.0", date: "2026-10-06", title: "", notes: [
     "More shapes: a Shapes tool (U) on the rail with 24 shapes: triangle, right triangle, diamond, parallelogram, pentagon, hexagon, octagon, half circle, star, seal, burst, heart, arrow, double arrow, chevron, speech bubble, speech box, cloud, lightning bolt, crescent moon, cross, ribbon banner, map pin and border frame (many the same drawings as VCTREDTR's). The button shows the shape it draws; press it (or U) again for the gallery, which works with the arrow keys. Drag on the page to draw one (Shift keeps it in proportion), click for one at its natural shape, or press Enter for one in the middle. Each fills, outlines, turns, resizes, merges, exports and takes alt text like any shape.",
     "Rounded corners for rectangles and rectangular picture frames (Rounded corners, in Look), in the units you picked. Merge Shapes, the PDF and PNG keep them.",
@@ -8650,7 +9444,7 @@ function contrastRatio(a, b) {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 /** WCAG's "large text": 18 pt and up, or 14 pt and up when bold. */
-const isLargeText = (s) => s.size >= 18 || (s.font === 'bold' && s.size >= 14);
+const isLargeText = (s) => s.size >= 18 || ((s.bold !== undefined ? s.bold : s.font === 'bold') && s.size >= 14);   // (a style, or a letter's look)
 
 /**
  * The lowest contrast of each text box's lines on page `pi` against what
@@ -8671,23 +9465,35 @@ async function measureContrast(pi) {
   const results = [];
   for (const [frameId, list] of Object.entries(linesByFrame(pi))) {
     const f = obj(frameId);
-    if (!f || f.hidden) continue;
+    if (!f || f.hidden || !onPageArea(f)) continue;
     let worst = null;
+    const c = centreOf(f);
     for (const { ln, story } of list) {
-      const text = story.text.slice(ln.start, ln.end);
-      if (!text.trim()) continue;
-      const fg = luminance(...hexRGB(ln.role.colour));
-      const need = isLargeText(ln.role) ? 3 : 4.5;
+      if (!story.text.slice(ln.start, ln.end).trim()) continue;
       const width = ln.xs[ln.end - ln.start];
-      const c = centreOf(f);
-      for (let i = 0; i <= 12; i++) {
-        for (const h of [0.15, 0.45, 0.75]) {
-          let p = { x: ln.x0 + width * i / 12, y: ln.baseline - ln.asc * h };
-          if (f.rotation) p = rotatePoint(p, f.rotation, c);
-          const bg = luminance(...pixel(p.x, p.y));
-          const ratio = (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
-          if (!worst || ratio / need < worst.ratio / worst.need) worst = { frame: frameId, ratio, need, colour: ln.role.colour };
+      // Each stretch of letters in one colour (and size class) is measured on its own,
+      // with about a dozen samples across the whole line.
+      let a = ln.start;
+      for (let i = ln.start + 1; i <= ln.end; i++) {
+        const la = ln.m.looks[a - ln.paraStart];
+        const li = i < ln.end ? ln.m.looks[i - ln.paraStart] : null;
+        if (li && li.colour === la.colour && isLargeText(li) === isLargeText(la)) continue;
+        if (story.text.slice(a, i).trim()) {
+          const fg = luminance(...hexRGB(la.colour));
+          const need = isLargeText(la) ? 3 : 4.5;
+          const x1 = ln.xs[a - ln.start], x2 = ln.xs[i - ln.start];
+          const n = Math.max(2, Math.round(12 * (x2 - x1) / Math.max(1, width)));
+          for (let j = 0; j <= n; j++) {
+            for (const h of [0.15, 0.45, 0.75]) {
+              let p = { x: ln.x0 + x1 + (x2 - x1) * j / n, y: ln.baseline - ln.asc * h };
+              if (f.rotation) p = rotatePoint(p, f.rotation, c);
+              const bg = luminance(...pixel(p.x, p.y));
+              const ratio = (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+              if (!worst || ratio / need < worst.ratio / worst.need) worst = { frame: frameId, ratio, need, colour: la.colour };
+            }
+          }
         }
+        a = i;
       }
     }
     if (worst) results.push(worst);
@@ -8709,8 +9515,10 @@ async function a11yIssues() {
   const add = (level, text, page, id, go) => issues.push({ level, text, page, id, go });
   if (!doc.title.trim()) add('error', 'The document has no title. Screen readers and PDF viewers announce it first.', null, null, 'doc');
   for (let pi = 0; pi < doc.pages.length; pi++) {
+    const staged = doc.pages[pi].objects.filter((o) => !o.hidden && !onPageArea(o));
+    if (staged.length) add('tip', staged.length + (staged.length === 1 ? ' thing is' : ' things are') + ' out in the staging area (' + staged.slice(0, 3).map(objName).join(', ') + (staged.length > 3 ? '…' : '') + '). Things there are not printed, exported or read.', pi, staged[0].id, null);
     for (const o of doc.pages[pi].objects) {
-      if (o.hidden || o.type === 'text') continue;
+      if (o.hidden || o.type === 'text' || !onPageArea(o)) continue;
       if (o.type === 'picture' && !o.image) {
         add('tip', 'Empty picture frame "' + objName(o) + '": it won’t print until it has a picture.', pi, o.id, 'picture');
         continue;
@@ -8719,7 +9527,7 @@ async function a11yIssues() {
       if (o.type === 'picture' && o.image && picturePPI(o) < 150) add('warning', objName(o) + ' will print blurry (' + Math.round(picturePPI(o)) + ' pixels per inch; 150 or more looks sharp).', pi, o.id, 'picture');
     }
     for (const o of doc.pages[pi].objects) {
-      if (o.hidden) continue;
+      if (o.hidden || !onPageArea(o)) continue;
       const b = bounds(o);
       if (b.x < -0.5 || b.y < -0.5 || b.x + b.w > PAGE.width + 0.5 || b.y + b.h > PAGE.height + 0.5) {
         add('warning', objName(o) + ' runs off the page, so part of it will be cut off.', pi, o.id, null);
@@ -8727,7 +9535,7 @@ async function a11yIssues() {
     }
     try {
       for (const r of await measureContrast(pi)) {
-        if (r.ratio + 1e-9 < r.need) add('error', 'Low contrast in ' + objName(obj(r.frame)) + ': ' + r.ratio.toFixed(1) + ':1, needs ' + r.need + ':1. Change the text colour (its style, in Paragraph) or what is behind it.', pi, r.frame, 'para');
+        if (r.ratio + 1e-9 < r.need) add('error', 'Low contrast in ' + objName(obj(r.frame)) + ': ' + r.ratio.toFixed(1) + ':1, needs ' + r.need + ':1. Change the text colour (in Characters, or its style in Paragraph) or what is behind it.', pi, r.frame, 'para');
       }
     } catch (err) { /* a picture could not be read: skip the contrast check for this page */ }
   }
@@ -8735,6 +9543,7 @@ async function a11yIssues() {
     if (!layouts[id] || layouts[id].overflowAt == null) continue;
     const frames = doc.stories[id].frames;
     const last = frames[frames.length - 1];
+    if (!frames.some((f) => obj(f) && onPageArea(obj(f)))) continue;          // all out in the staging area
     add('error', 'Text doesn’t fit: ' + storyName(doc.stories[id]) + '. The part that doesn’t fit is left out of the PDF.', pageOf(last), last, 'story');
   }
   // Styles: tiny text, justified text.
@@ -8743,6 +9552,27 @@ async function a11yIssues() {
     const s = styleOf(role);
     if (s.size < 9) add('warning', ROLES[role].label + ' text is ' + s.size + ' pt: small text is hard to read, especially printed. 9 pt or more is kinder.', null, null, null);
     if (s.align === 'justify') add('tip', ROLES[role].label + ' is justified. The uneven gaps between words can make reading harder for people with dyslexia; left-aligned is easier.', null, null, null);
+  }
+  // Formatting inside paragraphs: tiny words, and links that don't say where they go.
+  const VAGUE_LINK = /^(click here|click|here|read more|more|learn more|link|this|this link|go|details|info)[.!:]?$/i;
+  for (const story of Object.values(doc.stories)) {
+    if (!story.runs || !layouts[story.id]) continue;
+    const where = (pos) => {                         // the box a position is in (or the last box, for text that doesn't fit)
+      const ln = layouts[story.id].lines.find((l) => pos >= l.start && pos < l.end);
+      return ln ? ln.frame : story.frames[story.frames.length - 1];
+    };
+    const small = story.runs.find((r) => r.sz && r.sz < 9 && story.text.slice(r.s, r.e).trim());
+    if (small) add('warning', 'Some words in ' + storyName(story) + ' are ' + small.sz + ' pt: small text is hard to read, especially printed. 9 pt or more is kinder.', pageOf(where(small.s)), where(small.s), 'story');
+    const fmts = charFormats(story);
+    for (let i = 0; i < fmts.length; i++) {
+      const href = fmts[i] && fmts[i].href;
+      if (!href || (i > 0 && fmts[i - 1] && fmts[i - 1].href === href)) continue;
+      let j = i;
+      while (j < fmts.length && fmts[j] && fmts[j].href === href) j++;
+      const words = story.text.slice(i, j).trim();
+      if (VAGUE_LINK.test(words)) add('warning', 'The link "' + words + '" doesn’t say where it goes. Screen-reader users often hear a list of just the links, so words like "the concert program" work better.', pageOf(where(i)), where(i), 'story');
+      else if (/^(https?:\/\/|www\.)\S+$/i.test(words)) add('tip', 'The link "' + words.slice(0, 40) + '" is a bare web address. Screen readers read it letter by letter; a few words saying where it goes are kinder (the address still prints if you want it).', pageOf(where(i)), where(i), 'story');
+    }
   }
   // Headings: the map screen-reader users navigate by.
   const hasText = Object.values(doc.stories).some((s) => s.text.trim());
@@ -8921,6 +9751,7 @@ async function start() {
   wireShapes();
   wireClipboard();
   wireStyleEditor();
+  wireChars();
   wireA11y();
   wireAltDialog();
   wirePictureInput();
