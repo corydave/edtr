@@ -1797,7 +1797,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.21.1';
+const APP_VERSION = '0.21.3';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -6515,6 +6515,42 @@ function gearPath(n) {
   }
   return 'M' + pts.join('L') + 'Z M36 50A14 14 0 1 0 64 50A14 14 0 1 0 36 50Z';
 }
+/**
+ * Smooth curves through points around a closed outline: each stretch
+ * between two points becomes a cubic curve whose handles follow the points
+ * on either side (a Catmull-Rom spline), so there are no corners.
+ */
+function smoothPath(pts) {
+  const n = pts.length, f = (v) => v.toFixed(2);
+  let d = 'M' + f(pts[0][0]) + ' ' + f(pts[0][1]);
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    d += 'C' + f(p1[0] + (p2[0] - p0[0]) / 6) + ' ' + f(p1[1] + (p2[1] - p0[1]) / 6) + ' ' +
+      f(p2[0] - (p3[0] - p1[0]) / 6) + ' ' + f(p2[1] - (p3[1] - p1[1]) / 6) + ' ' + f(p2[0]) + ' ' + f(p2[1]);
+  }
+  return d + 'Z';
+}
+/** Points from r(angle), centred and stretched to fill the 0-100 box. */
+function polarPoints(n, r) {
+  const raw = [];
+  for (let i = 0; i < n; i++) { const t = i / n * 2 * Math.PI - Math.PI / 2; const k = r(t); raw.push([Math.cos(t) * k, Math.sin(t) * k]); }
+  const xs = raw.map((q) => q[0]), ys = raw.map((q) => q[1]);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys), w = Math.max(...xs) - x0, h = Math.max(...ys) - y0;
+  return raw.map(([x, y]) => [(x - x0) / w * 100, (y - y0) / h * 100]);
+}
+/** A puffy square: a rounded square (|x|^2.4 + |y|^2.4 = 1, between a circle and a square) pinched in at the middle of each side. */
+function puffySquarePath() {
+  return smoothPath(polarPoints(64, (t) => {
+    const c = Math.abs(Math.cos(t)), si = Math.abs(Math.sin(t));
+    const roundSquare = Math.pow(c ** 2.4 + si ** 2.4, -1 / 2.4);
+    return roundSquare * (1 - 0.2 * Math.cos(2 * t) ** 2);   // cos(2t) is +-1 at the middle of each side, 0 at the corners
+  }));
+}
+/** A scalloped circle: a circle edged with n round bumps, one at the top (like a cookie cutter or a seal of approval). */
+function scallopPath(n) {
+  // |cos| makes broad bumps with narrow dips between them; sqrt(cos^2 + a little) is the same with the dips softly rounded.
+  return smoothPath(polarPoints(n * 12, (t) => 1 + 0.06 * Math.sqrt(Math.cos(n / 2 * (t + Math.PI / 2)) ** 2 + 0.06)));
+}
 // Shield outlines, exactly as VCTREDTR draws them (100 wide, about 120 tall, the point at the bottom middle).
 const SHIELD_BOTTOM = 'C100 88 76 106 50 120C24 106 0 88 0 58';
 const CIRCLE = 'M0 50A50 50 0 1 0 100 50A50 50 0 1 0 0 50Z';
@@ -6562,6 +6598,8 @@ const SHAPES = {
   frame:     { label: 'Border frame',   d: 'M0 0H100V100H0Z M10 10V90H90V10Z' },
   halfFrame: { label: 'Half frame',     d: 'M0 0H100L80 20H20V80L0 100Z' },
   lshape:    { label: 'L-shape',        d: 'M0 0H40V60H100V100H0Z' },
+  puffy:     { label: 'Puffy square',   d: puffySquarePath() },
+  scallop:   { label: 'Scalloped circle', d: scallopPath(13) },
   plaque:    { label: 'Plaque',         d: 'M15 0H85A15 15 0 0 0 100 15V85A15 15 0 0 0 85 100H15A15 15 0 0 0 0 85V15A15 15 0 0 0 15 0Z' },
   snip:      { label: 'Snipped corner', d: 'M0 0H80L100 20V100H0Z' },
   folded:    { label: 'Folded corner',  d: 'M0 0H100V75H75V100H0Z M75 75H100L75 100Z' },
@@ -6658,7 +6696,7 @@ const SHAPES = {
 const SHAPE_GROUPS = [
   ['Lines', ['line', 'arrowLine', 'arrowLine2', 'elbow', 'curve', 'arc', 'waveLine', 'zigzag', 'bracketL', 'bracketR', 'braceL', 'braceR']],
   ['Basic shapes', ['rect', 'ellipse', 'triangle', 'rtriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'decagon', 'dodecagon',
-    'semicircle', 'pie', 'teardrop', 'arch', 'frame', 'halfFrame', 'lshape', 'plaque', 'snip', 'folded', 'can', 'cube', 'donut', 'noSymbol', 'smiley', 'cross']],
+    'semicircle', 'pie', 'teardrop', 'arch', 'frame', 'halfFrame', 'lshape', 'puffy', 'scallop', 'plaque', 'snip', 'folded', 'can', 'cube', 'donut', 'noSymbol', 'smiley', 'cross']],
   ['Block arrows', ['arrow', 'arrowLeft', 'arrowUp', 'arrowDown', 'arrow2', 'arrowUpDown', 'arrow4', 'notchedArrow', 'stripedArrow', 'homePlate', 'chevron', 'bentArrow', 'uturn']],
   ['Flowchart', ['fcProcess', 'fcAltProcess', 'fcDecision', 'fcData', 'fcPredefined', 'fcInternal', 'fcDocument', 'fcTerminator', 'fcPreparation', 'fcManualInput',
     'fcManualOp', 'fcConnector', 'fcOffPage', 'fcCard', 'fcPunchedTape', 'fcSumming', 'fcOr', 'fcCollate', 'fcSort', 'fcExtract', 'fcMerge', 'fcStoredData', 'fcDelay', 'fcDatabase', 'fcDisplay']],
@@ -10496,6 +10534,28 @@ function wireChrome() {
   window.addEventListener('blur', () => { spaceHeld = false; });
 }
 
+/**
+ * While picture files are dragged over the page: the frame they would go
+ * in gets a green tint and outline, and a label saying what will happen
+ * (an empty frame is filled, a full one gets the new picture instead).
+ * Null takes the highlight away. Drawn on the snap layer, never printed.
+ */
+let dropTargetId = null;
+function showDropTarget(o) {
+  const id = o ? o.id : null;
+  if (id === dropTargetId) return;                   // dragover fires constantly: only redraw on a change
+  dropTargetId = id;
+  clear(layers.snap);
+  if (!o) return;
+  const px = onePx();
+  layers.snap.appendChild(withRot(frameShapeEl(o, { fill: 'rgba(16,185,129,0.22)', stroke: '#065f46', 'stroke-width': 3, 'vector-effect': 'non-scaling-stroke' }), o));
+  const b = bounds(o);
+  const label = svgEl('text', { x: b.x + b.w / 2, y: b.y - 8 * px, 'text-anchor': 'middle', 'font-size': 13 * px, 'font-weight': 700,
+    'font-family': 'system-ui, sans-serif', fill: '#065f46', stroke: '#ffffff', 'stroke-width': 4 * px, 'paint-order': 'stroke' });
+  label.textContent = o.image ? 'Drop to replace this picture' : 'Drop to fill this frame';   // our own words, never document text
+  layers.snap.appendChild(label);
+}
+
 /** The file picker, dropping picture files on the page, and pasting pictures. */
 function wirePictureInput() {
   $('pictureInput').addEventListener('change', () => {
@@ -10506,10 +10566,20 @@ function wirePictureInput() {
   });
   const desk = $('desk');
   const hasFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
-  desk.addEventListener('dragover', (e) => { if (hasFiles(e)) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
+  desk.addEventListener('dragover', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    const under = objectAt(toPage(e));
+    showDropTarget(under && under.type === 'picture' ? under : null);   // the frame it would go in, in green
+  });
+  // Leaving the page area (not just moving between the things drawn on it), or the drag ending: no highlight.
+  desk.addEventListener('dragleave', (e) => { if (!e.relatedTarget || !desk.contains(e.relatedTarget)) showDropTarget(null); });
+  window.addEventListener('dragend', () => showDropTarget(null));
   desk.addEventListener('drop', (e) => {
     if (!hasFiles(e)) return;
     e.preventDefault();
+    showDropTarget(null);
     const p = toPage(e);
     const under = objectAt(p);
     openFiles(e.dataTransfer.files, under && under.type === 'picture' ? { frameId: under.id } : { point: p });
@@ -13513,6 +13583,12 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.21.3", date: "2026-10-07", title: "", notes: [
+    "Two new shapes in the gallery's Basic shapes: a puffy square (a rounded square pinched in at the middle of each side) and a scalloped circle (thirteen soft bumps round the edge). Like every gallery shape they can be drawn with the Shapes tool or used as a picture frame's shape, and they print as smooth curves."
+  ] },
+  { version: "0.21.2", date: "2026-10-07", title: "", notes: [
+    "See where a picture will land. While picture files are dragged over the page, the frame under the pointer turns green (in its own shape: rectangle, ellipse or gallery shape) with a label: \"Drop to fill this frame\", or \"Drop to replace this picture\" when it already has one. The highlight goes when the pointer leaves the page, the files are dropped, or the drag ends."
+  ] },
   { version: "0.21.1", date: "2026-10-07", title: "", notes: [
     "Rows and columns anywhere in a table. While you type in a cell, the floating pill appears above the table with six buttons for that cell: insert a row above or below, insert a column left or right, delete its row, delete its column. A mouse press or tap on them leaves the cursor in its cell, so you can keep typing. From the keyboard, Alt+F10 jumps from the cell to the pill and Escape goes back to the cell. (The Table section's buttons already worked beside the cell being typed in; with the table picked they work at the end, and the section now says how to reach the middle.)"
   ] },

@@ -669,6 +669,15 @@ building blocks, the starter template gallery (all done by 0.21.0, below).
   beside the cell; a mousedown on them is cancelled so the textarea keeps
   focus; Escape in the pill returns to the cell's textarea; the desk's
   scroll handler places the pill from the state's list.
+- 0.21.2: `showDropTarget(o)` draws the picture under a file drag (its
+  `frameShapeEl`, green, with a "Drop to fill" / "Drop to replace" label)
+  on the snap layer, redrawn only when the target changes; cleared on
+  dragleave out of the desk, drop and dragend.
+- 0.21.3: gallery shapes `puffy` and `scallop`, made by `smoothPath`
+  (Catmull-Rom points to cubic curves) over `polarPoints(n, r)` (r of the
+  angle, stretched to the 0-100 box): `puffySquarePath()` is
+  |x|^2.4 + |y|^2.4 = 1 times (1 - 0.2 cos^2 2t); `scallopPath(13)` is
+  1 + 0.06 sqrt(cos^2(6.5 (t + pi/2)) + 0.06).
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,

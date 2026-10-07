@@ -1,5 +1,22 @@
 # DSKEDTR changelog
 
+## 0.21.3 - 2026-10-07
+
+- **Two new shapes** in the gallery's Basic shapes: a puffy square (a
+  rounded square pinched in at the middle of each side) and a scalloped
+  circle (thirteen soft bumps round the edge). Like every gallery shape
+  they can be drawn with the Shapes tool or used as a picture frame's
+  shape, and they print as smooth curves.
+
+## 0.21.2 - 2026-10-07
+
+- **See where a picture will land.** While picture files are dragged over
+  the page, the frame under the pointer turns green (in its own shape:
+  rectangle, ellipse or gallery shape) with a label: "Drop to fill this
+  frame", or "Drop to replace this picture" when it already has one. The
+  highlight goes when the pointer leaves the page, the files are dropped,
+  or the drag ends.
+
 ## 0.21.1 - 2026-10-07
 
 - **Rows and columns anywhere in a table.** While you type in a cell, the
