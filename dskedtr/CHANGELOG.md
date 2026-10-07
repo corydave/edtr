@@ -1,0 +1,404 @@
+# DSKEDTR changelog
+
+## 0.7.0 - 2026-10-06
+
+- **More shapes:** a Shapes tool (U) on the rail with 24 shapes: triangle,
+  right triangle, diamond, parallelogram, pentagon, hexagon, octagon, half
+  circle, star, seal, burst, heart, arrow, double arrow, chevron, speech
+  bubble, speech box, cloud, lightning bolt, crescent moon, cross, ribbon
+  banner, map pin and border frame (many the same drawings as VCTREDTR's).
+  The button shows the shape it draws; press it (or U) again for the
+  gallery, which works with the arrow keys. Drag on the page to draw one
+  (Shift keeps it in proportion), click for one at its natural shape, or
+  press Enter for one in the middle. Each fills, outlines, turns, resizes,
+  merges, exports and takes alt text like any shape.
+- **Rounded corners** for rectangles and rectangular picture frames
+  (Rounded corners, in Look), in the units you picked. Merge Shapes, the
+  PDF and PNG keep them.
+- **Copy, cut and paste:** Ctrl+C, Ctrl+X and Ctrl+V (Cmd on a Mac) for what
+  is picked: text boxes (with their text), shapes, lines and pictures,
+  groups kept together. Pasting on the same page puts the copy a little
+  down and to the right (further each time); on another page, in the same
+  place. It even pastes into another document opened in the same tab,
+  pictures included. Copied text boxes put their text on the clipboard
+  too, for other apps. Text copied from another app pastes as a new text
+  box in the middle of the page. While typing in a text box, Ctrl+C and
+  Ctrl+V work on the text as always.
+- **Ctrl+drag copies** (Cmd+drag on a Mac): the original stays put and a
+  copy moves, as one undo step. A Ctrl+click without a drag still picks one
+  object inside a group, as before. (Alt stays "no snapping for this drag".)
+- Fixed: changing a shape's fill, outline or outline width in Look showed an
+  error and didn’t redraw the page until the next change.
+
+## 0.6.1 - 2026-10-06
+
+- **Guides find the middle.** A guide dragged near the middle of the page
+  catches it from further away, and while you drag, a pink line with a
+  label says what it lines up with: "Middle of the page", "Middle of the
+  margins", "Margin" or "Page edge". Shapes and boxes you move get the same
+  labels. The middle of the margins is a new snapping point too (it differs
+  from the page's middle when the margins aren't even). Alt (Option) still
+  gives a free drag.
+- **Quick guides** in the units, grid and guides panel: Middle, Thirds,
+  Quarters, Tri-fold (the page's width in three equal panels) and Half-fold.
+  Each adds to the guides you have, never doubling one, and is one undo step.
+- **Zooming zooms the page, not the web page:** Ctrl (Cmd on a Mac) + scroll
+  wheel and a trackpad pinch zoom the page around the pointer, in every
+  browser (Safari's own trackpad gestures included). Plain scrolling still
+  scrolls. The browser's own zoom still works everywhere else.
+- **Touch screens:** two fingers pinch to zoom and slide to move around. One
+  finger on the page draws, moves and picks things (before, the browser
+  could take a one-finger drag as scrolling and stop it halfway); one finger
+  on the grey around the page slides it. A second finger landing undoes
+  whatever the first had started, so a pinch never moves anything.
+
+## 0.6.0 - 2026-10-06 (phase 1, milestone 5: accessibility tools and type)
+
+- **Centimetres.** A Units choice for every measurement in DSKEDTR:
+  inches, centimetres, millimetres or points. It is in Page setup and in
+  the units, grid and guides panel (the arrow beside Guides). The rulers,
+  the Inspector's position and size, Page setup, margins, guides and column
+  gaps all follow it; switching converts any number you were typing. It
+  starts in inches for US English and in centimetres everywhere else, and
+  is remembered in this browser. (Documents still store points, so nothing
+  in a document changes when you switch.)
+- **Styles: how each role looks.** While typing, the Paragraph section shows
+  the style of the paragraph's role (Heading 1, Heading 2, Body, Caption):
+  size, weight, line spacing, letter spacing, kerning on or off, space
+  before and after, alignment (left, centre, right, justified) and colour.
+  A change applies to every paragraph with that role in the document, and
+  only changes its look, never what it means to a screen reader. Each style
+  shows its contrast on white paper as you pick a colour. Reset this style
+  puts it back. Styles are saved in projects (and checked when opened), and
+  the PDF follows them exactly, letter for letter.
+- **The Accessibility tab**, beside the Inspector, and a top-bar button that
+  shows how many problems there are. It checks again by itself a moment
+  after every change, and lists, most serious first: a missing document
+  title; pictures and shapes without alt text; low contrast, measured from
+  the page itself (so text over shapes and photos is checked too) against
+  WCAG's 4.5:1, or 3:1 for large text; text that doesn't fit; text under 9
+  pt; justified text (a tip); missing or skipped headings (tips); pictures
+  that will print blurry; things running off the page; and empty picture
+  frames (a tip). Each has a "Go to it" or "Fix" button that goes to the
+  page, picks the object and opens the right Inspector field.
+- **See the page as someone else does:** red-blind, green-blind, blue-blind,
+  no colour, or blurred (low vision). It is a preview on the desk only,
+  with a banner and a Stop button; exports never change.
+- **Export's "Before you share it" list** is now the checker's list (its
+  problems, not its tips).
+- **The units, grid and guides panel no longer gets in the way:** on a wide
+  screen it sits over the right-hand column, and it stays open while you
+  drag guides on the page; its X, the arrow or Escape closes it.
+- Fixed: on phones, the filmstrip and the side panel could slide under the
+  page; now the whole window scrolls and each part keeps its full height.
+- Not yet: styles for words inside a paragraph (bold or a colour for one
+  word) and kerning between two chosen letters. Both need the text to
+  carry formatting per letter, which is the next big change to the text
+  engine.
+
+## 0.5.1 - 2026-10-06
+
+- **Rulers, grid, guides and snapping are in the top bar** now, since they
+  are about the whole document, not what is picked. Four toggle buttons
+  (filled when on): Rulers, Grid, Guides and Snap. The small arrow beside
+  Guides opens a panel with the grid's spacing (1/8, 1/4, 1/2 or 1 inch, 5
+  mm or 1 cm) and everything the Guides section of the Inspector had (add a
+  guide, exact positions, column guides, Remove all). That section is gone
+  from the Inspector.
+- **Rulers** along the top and left of the page, in inches from the page's
+  top-left corner. They mark where the pointer is and the extent of what is
+  picked. **Drag out of a ruler onto the page to make a guide** (from the
+  top ruler an across guide, from the left one an up-and-down guide); let
+  go off the page and no guide is made.
+- **A grid** on the page (never printed), with a darker line every inch (or
+  cm). With Snap on, things and guides snap to the grid, unless a page edge,
+  margin, guide or other object is even closer.
+- **Snap** is one switch for all snapping (it was always on before, and the
+  Guides section had its own "Snap to guides"). Alt (Option) while
+  dragging still gives one free drag.
+- Keys: Alt+Shift+R rulers, Ctrl+' grid, Ctrl+; guides, Ctrl+Shift+; snap.
+- These four are view settings, remembered in this browser, not part of the
+  document: switching them is no longer an undo step, and they no longer
+  count as unsaved work. The guides themselves are still saved with the
+  document. (Projects saved by 0.5.0 still open; their old show/snap
+  settings are simply ignored.)
+
+## 0.5.0 - 2026-10-06 (phase 1, milestone 4: files and the suite)
+
+- **Save project** (the disk button, Ctrl+Shift+S): the whole document in a
+  .dskedtr file, pictures inside, so it opens again exactly as it was.
+  **Open** (the folder button, Ctrl+O, or drop the file anywhere in the
+  window) brings it back. Opening is careful: the file is read as data and
+  the document rebuilt from it field by field, keeping only what DSKEDTR
+  knows and checking every number, colour, name and piece of text; each
+  picture must really be a JPEG or PNG, at most 8000 pixels a side (checked
+  before it is decoded), that decodes, or it is left out.
+- **Export** (the green button, Ctrl+S): a PDF of every page, or a PNG
+  picture of the page showing (96, 150 or 300 pixels per inch). The PDF has
+  each page at its real size, text as real text in the document's own font
+  (embedded, so it can be selected, searched and copied, with every letter
+  exactly where the page shows it), shapes and merged shapes as sharp
+  outlines, pictures at full resolution, and the document's title and
+  language. Before you export, the Export box points out text that doesn't
+  fit, pictures or shapes still missing alt text, and a missing title. Not
+  yet: a tagged PDF (headings, reading order and alt text for screen
+  readers inside the PDF); that is planned.
+- **New document** (the page-with-a-plus button): an empty Letter page. It
+  asks first when there is unsaved work.
+- **The splash** when DSKEDTR opens, as in the other apps: New document,
+  Pick a size (opens Page setup), Open a project, or Explore the sample,
+  with the rest of the family underneath.
+- **Crash backups:** while there is unsaved work, a copy is kept in this
+  browser a few seconds after each change. Saving or exporting removes it.
+  If the tab closes some other way (a crash, a closed laptop), the next
+  start offers "Pick up where you left off", and a backup button appears in
+  the top bar. A backup is opened with the same checks as any file.
+- **The full help panel:** Keyboard shortcuts, Getting started (a newsletter
+  from start to finish), About (privacy, the libraries and their licences,
+  credits), Changelog and More apps. The DSKEDTR mark in the top bar opens
+  More apps; the version shows beside the name.
+- **Install as an app** (the Install button, when the browser offers it),
+  with its own icons; it then opens with no internet. Installed, a .dskedtr
+  file can be opened with DSKEDTR from the computer's files. The splash
+  checks for a newer version.
+- Messages now show on screen too (they were only read out to screen
+  readers): a picture that can't be added, a file that can't be opened,
+  "Saved...". Page setup says what is wrong inside its own box.
+- Fixed: Page setup would not apply A4, A5 or a custom size whose inches
+  aren't a multiple of 1/8 (the browser's own check refused them without
+  saying why). Named sizes are now also kept exactly (A4 is 595.28 x 841.89
+  points, not rounded through inches).
+- DSKEDTR is in the shared block's list of apps, marked as not shown yet,
+  so the other apps don't list it until it is ready.
+
+## 0.4.1 - 2026-10-06
+
+- **The sample now has pictures** (page 2), so pictures can be tried without
+  adding a file: an original illustration of the outdoor concert (drawn by
+  the app itself as it starts, so nothing is downloaded and the one-file
+  edition stays one file), with its alt text and a place in the reading
+  order; and an empty round frame with an outline, a placeholder for "Book
+  fair photo (to come)". Double-click the illustration to crop it; pick it
+  to try Fill, Show it all, Centre, the size slider and the frame shape.
+- Fixed: an empty ellipse frame's cross ran past its edge; it now stops at
+  the ellipse.
+
+## 0.4.0 - 2026-10-06 (phase 1, milestone 3: pictures and Merge Shapes)
+
+- **Pictures.** A Picture tool on the rail (F): click on the page to add a
+  picture there, or drag to draw a frame first. Pictures can also be
+  dropped on the page (dropped on a frame, they fill it) or pasted (a paste
+  fills a picked empty frame, otherwise it adds a new picture). From the
+  keyboard: pick the tool, then Enter. JPEG, PNG, GIF, WebP, AVIF and BMP,
+  up to 40 MB.
+- **Privacy:** every picture is decoded and redrawn as it comes in, and only
+  the redrawn copy is kept, so hidden data in the file (a phone photo's GPS
+  location, camera details) is left behind. Nothing leaves the browser.
+  Huge pictures are kept at most 4000 pixels on the long side.
+- **Alt text, right away.** A small "Describe this picture" box opens the
+  moment a picture lands: Save, It's decoration, or Later (the Meaning
+  heading keeps saying "needs alt text" until it has some). A picture with
+  alt text joins the page's reading order.
+- **Picture frames,** rectangle or ellipse. An empty frame is a pale
+  placeholder with a cross that never prints; double-click it (or Enter)
+  to choose its picture.
+- **Cropping:** double-click a picture (or Enter, or the Crop button). The
+  whole picture shows faintly around the frame: drag to move it inside the
+  frame, drag its corners to size it, arrow keys to nudge; Escape or Enter
+  when done. Buttons: Fill frame, Show it all, Centre, and a size slider.
+  Resizing a frame keeps a filled or fitted picture filling or fitting it.
+- **A blurry-print warning** when a picture will print under 150 pixels per
+  inch at its size, on the Picture heading too. New pictures start no
+  bigger than 3 inches and never below 150 pixels per inch.
+- **Replace picture** keeps the frame, its place and shape, then asks you
+  to check the alt text still fits.
+- **Merge Shapes:** Union, Combine, Fragment, Intersect and Subtract, as in
+  PowerPoint and VCTREDTR (same icons and Alt+Shift+U/C/F/I/S shortcuts,
+  same Paper.js engine), in Arrange. Rectangles, ellipses and earlier
+  merged shapes can be merged; the first one picked gives its look (each
+  Fragment piece takes the look of the shape on top there). The result is
+  a merged shape you can move, resize, turn, fill, outline, merge again and
+  give alt text. Clicks only pick it where it really is, not in the empty
+  corners of its box.
+- The one-file edition now carries Paper.js too (0.67 MB).
+
+Known limits:
+
+- Pictures aren't saved anywhere yet: project files and backups come in
+  milestone 4.
+- Text doesn't wrap around pictures yet (phase 2).
+- Shaped picture frames (a photo in a star) didn't make this milestone.
+
+## 0.3.2 - 2026-10-06
+
+- **Undo and Redo in the top bar,** where VCTREDTR, IMGEDTR and 3DEDTR have
+  them, greyed out when there is nothing to undo or redo. Pressing them
+  with the mouse keeps the cursor in the story you were typing in.
+- The zoom buttons' tooltips now show their real shortcuts (Ctrl/Cmd + =,
+  -, 0), and zoom sits next to Undo and Redo on the left.
+- Fixed: deleting a text box (with Delete or the Arrange button) failed
+  part-way in 0.2.0 to 0.3.1 when naming it for screen readers: the box was
+  gone but an error stopped the announcement.
+
+## 0.3.1 - 2026-10-06 (a tidier Inspector, and guides)
+
+- **Every Inspector section folds,** and they **start folded**: you see a
+  short list of headings and open what you need. Sections you open stay
+  open next time (remembered in this browser), as in 3DEDTR. Headings are
+  full-width buttons 44 px tall, easy to hit with a finger. On a heading,
+  Up/Down/Home/End move between headings; Alt+Page Down / Alt+Page Up jump
+  between headings from anywhere in the Inspector.
+- **Folded headings still warn:** Story says "doesn't fit" and Meaning says
+  "needs alt text" right on the heading.
+- **Arrange is compact:** small captioned groups of icon buttons, split by
+  thin rules. Align (six icons in one row, with "Align to" beside its
+  label), Space evenly and Order side by side, then Group and Copy and
+  remove. Every icon has a name for screen readers and a tooltip with its
+  shortcut.
+- **Look and Meaning** are now two sections, so alt text has its own place.
+- **Guides:** lines to line things up against, the same on every page and
+  never printed (teal). Add one up-and-down or across, or add column guides
+  inside the margins (choose the number of columns and the gap). Type an
+  exact position in the Guides list, remove one with its X button, or drag
+  a guide on the page with the Select tool (drag it off the page to remove
+  it). Objects snap to guides; "Show guides" and "Snap to guides" turn them
+  off. The sample has guides at its column edges. Undo covers all of it.
+- Clicking on the page takes focus out of an Inspector field, so Ctrl+Z
+  and Delete act on the page.
+
+## 0.3.0 - 2026-10-06 (phase 1, milestone 2: pages and layers)
+
+- **Pages.** One page at a time on the desk, with a **filmstrip** along the
+  bottom: live thumbnails, page numbers, and a red dot on any page with
+  text that doesn't fit. Click a thumbnail, or use Left/Right in the strip
+  (Home/End for the ends); Alt+Left/Right or drag moves a page. Buttons add
+  a page after this one, duplicate it (text boxes keep the text they show,
+  unlinked) or delete it. Page Up/Page Down on the page go back and forth.
+- **Stories run across pages.** The sample's main story now continues on
+  page 2. Typing or arrowing past the end of a box follows the text onto
+  the next page, and "to p. 2" / "from p. 1" labels mark the jumps. Boxes
+  on any page can be linked (the "Continues in" list names the page).
+- **Page Setup** (Inspector, with nothing picked): size (Letter, Legal,
+  Tabloid, Half Letter, A4, A5 or custom), orientation and margins, for
+  every page. When the size changes, everything **stays where it is**,
+  lined up to the corner, edge or centre you pick in a 3 by 3 grid. Or
+  choose to stretch boxes and shapes to fit (text keeps its size). It says
+  how many objects ended up partly off the page.
+- **Layers list** (an ARIA tree, front-most first): Up/Down pick, Right/Left
+  open and close groups, F2 or double-click renames, H hides, L locks,
+  Delete deletes, Alt+Up/Down moves forward and backward, Enter types in a
+  text box. Eye and lock buttons for the mouse. This is the keyboard way to
+  reach every object.
+- **Groups:** Ctrl/Cmd+G and Ctrl/Cmd+Shift+G (and buttons in Arrange).
+  Clicking any member picks the group; Ctrl/Cmd+click picks just one.
+  Align and Space evenly treat a group as one object. The sample's sidebar
+  is a group.
+- **Hide and lock.** Hidden objects aren't drawn or read; locked ones can't
+  be picked on the page or moved, but their text can still be edited.
+- **Rotation:** a rotate handle above a picked object (Shift: 15 degree
+  steps) and a Rotation field. Turned text boxes still take clicks,
+  selection and typing; resizing a turned object moves the edges the way
+  they look.
+- **Reading order per page,** with the heading naming the page. A story is
+  read on the page where it starts. Tab moves through the stories page by
+  page.
+- The Layers and Reading order sections fold away and stay folded.
+
+Known limits:
+
+- Lines don't rotate (drag their ends instead).
+- Resizing several objects at once when some are turned is approximate.
+- Grouping is one level deep (no groups inside groups).
+
+## 0.2.0 - 2026-10-06 (phase 1, milestone 1: objects)
+
+- **Inspector no longer jumps.** The lines that change length (the box
+  note, the story line, "All the text fits") always keep room for two lines.
+- **Tools on the rail**, with VCTREDTR's letters: Select (V), Text box (T),
+  Rectangle (R), Ellipse (O), Line (L). Reading order moved to N.
+- **Draw** text boxes, rectangles, ellipses and lines by dragging (Shift:
+  square, circle, 45 degree line). A click without a drag makes a
+  default-size one. From the keyboard: pick a tool, then Enter on the page
+  adds one in the middle. A new text box starts typing at once.
+- **Select tool:** click to pick, Shift+click to add or remove, drag on
+  empty page to pick everything the box touches, Ctrl/Cmd+A for all. Drag
+  to move (Shift: straight), drag a handle to resize (Shift on a corner:
+  keep the shape), drag a line's ends. Arrow keys move 1 pt (Shift: 10 pt).
+  Double-click a text box (or Enter) to type in it; Escape while typing
+  picks the box.
+- **Snapping** to the page edges and centre, the margins and other objects'
+  edges and centres, with pink guide lines. Hold Alt to turn it off for one
+  drag.
+- **Linking text boxes:** click a box's out-port (the square on its right
+  edge), then click an empty box. Or use "Continues in" in the Inspector,
+  which also works from the keyboard. "Stop the flow here" ends a chain;
+  the text after it returns to the overflow.
+- **Arrange:** align edges, centres and middles (to the selection, the
+  margins or the page), space three or more evenly, to front, forward,
+  backward, to back, duplicate (Ctrl/Cmd+D), delete. Deleting a box in a
+  chain keeps its text in the story.
+- **Shapes and lines** have fill, outline colour (picker or hex code) and
+  outline width. Each is either decoration (screen readers skip it) or has
+  alt text; one with alt text joins the reading order.
+- **Document title and language** in the Inspector when nothing is picked.
+- **Margin guides** (blue, never printed).
+- Undo and redo cover all of it.
+
+Known limits:
+
+- No rotation yet.
+- From the keyboard, objects are picked by Escape from a story's text or
+  Ctrl/Cmd+A. The layers list (next milestone) will reach any object.
+- Ports and handles can crowd each other on very small boxes.
+
+## 0.1.0 - 2026-10-06 (phase 0: the text engine test)
+
+The first piece of DSKEDTR: a one-page test of the text engine, before the
+rest of the app is built on it.
+
+- **Text that flows between linked boxes.** The sample newsletter's main
+  story runs through two linked text boxes. Our own line breaking, using the
+  font's real letter widths and kerning (opentype.js), decides what fits.
+- **Overflow mark.** When a story doesn't fit, its last box turns red with a
+  red "+" mark, the Inspector says how many words are left over, and screen
+  readers hear it once.
+- **Typing through a real, invisible text box.** Each story lives in a
+  hidden textarea, so typing, accents, other-language input (IMEs), copy
+  and paste, Select All, word-by-word moves and screen readers all use the
+  browser's own text handling. The page draws the result as vector shapes.
+- **Cursor and selection drawn on the page:** click, Shift+click, drag,
+  double-click a word, triple-click a paragraph. Up/Down, Home/End and Page
+  Up/Down follow the lines on the page, across boxes, remembering the
+  column. Cmd+Left/Right on a Mac go to the line's ends.
+- **Paragraph roles:** Heading 1, Heading 2, Body, Caption, from the
+  Inspector or Ctrl+Alt (Cmd+Option) + 1 / 2 / 0 / 9. Enter after a heading
+  starts a Body paragraph; Enter at the start of a heading keeps both as
+  headings.
+- **Reading order for page 1.** Automatic (top to bottom, then left to
+  right) until changed. Change it in the Inspector list (Up/Down to pick,
+  Alt+Up/Down to move, drag, or the Move buttons) or with the Reading order
+  tool (click items on the page in order). Tab moves between stories in
+  reading order. Decoration (the rule and the sidebar background) is listed
+  as not read.
+- **Undo and redo** for typing (grouped), roles, reading order and box
+  sizes: Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y, and the browser's Edit menu.
+- **Box position and size** in the Inspector, in inches, for testing the
+  flow.
+- Zoom, Space+drag to slide the page, light and dark mode, a short Help
+  (? or F1), phone layout.
+- Two editions, like VCTREDTR: `index-online.html` (the source) and
+  `index.html`, the one-file edition made by `build-offline.py`.
+
+Known limits in this test:
+
+- Letters the font doesn't have (Japanese, emoji) show as empty boxes. A
+  fallback font is needed later.
+- No spell check marks: the browser can only draw them in a visible text
+  box. Spell check needs its own word list later.
+- Copy and paste are plain text. The right-click menu on the page is the
+  browser's, so it can't paste into a story.
+- Layout is redone in full on every keystroke (about 16 ms for this page in
+  testing). Fine for a page; a long newsletter will need layout that only
+  redoes what changed.
+- A heading can be left alone at the bottom of a box (no "keep with next"
+  yet).

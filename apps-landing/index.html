@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!--
+  ================================================================
+  SECURITY SETTINGS (read these first)
+  ================================================================
+  Content-Security-Policy (CSP) is a list of rules that tells the
+  browser exactly what this page is allowed to load. Anything not on
+  the list is blocked, so even if someone managed to slip bad code
+  into the page, the browser would refuse to run or fetch it.
+
+  - default-src 'none'   Start by allowing NOTHING, then add back
+                         only what we need (below).
+  - script-src 'unsafe-inline'
+                         Our JavaScript lives inside this file, so
+                         inline scripts must be allowed. No outside
+                         scripts can load at all.
+  - style-src            Our own inline CSS, plus Google Fonts' CSS.
+  - font-src             The font files themselves (Google's server).
+  - img-src 'self' data: Screenshots from this same website, plus
+                         tiny built-in "data:" images.
+  - base-uri / form-action 'none'
+                         Nobody can change where links point or make
+                         a form send data anywhere.
+
+  One rule CAN'T go in a <meta> tag: "frame-ancestors" (it stops other
+  sites from showing this page inside a frame). If you can, add this
+  header on the server (for example in .htaccess on HostGator):
+    Header set Content-Security-Policy "frame-ancestors 'none'"
+  ================================================================
+-->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<!-- Don't tell other sites which page a visitor came from. -->
+<meta name="referrer" content="no-referrer">
+
+<title>FLX AI Hub Apps</title>
+<meta name="description" content="Free editors for text, PDFs, images, sound, video, vector art and 3D models, plus a screen recorder and a game maker. They run in your browser and your files stay on your device.">
+
+<!-- Fonts: Atkinson Hyperlegible for reading, Comfortaa for headings. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Comfortaa:wght@600;700&display=swap">
+
+<style>
+/* ================================================================
+   COLOR TOKENS
+   Every color on the page comes from one of these variables, so the
+   whole look can be changed in one place. Text colors all clear 7:1
+   contrast (WCAG AAA) on the backgrounds they sit on.
+   ================================================================ */
+:root {
+  --bg: #f6f7f9;          /* page background */
+  --surface: #ffffff;     /* cards and the slideshow panel */
+  --fg: #1f2937;          /* main text */
+  --muted: #4b5563;       /* secondary text (7.5:1 on white) */
+  --line: #d6dae1;        /* thin borders */
+  --focus: #0046ad;       /* keyboard focus ring */
+  --btn: #0046ad;         /* default button color */
+  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+  --shadow-hover: 0 2px 4px rgba(0,0,0,.08), 0 10px 28px rgba(0,0,0,.12);
+  --backdrop: rgba(15, 20, 28, .72);
+  color-scheme: light;
+}
+
+/* Dark mode, part 1: follow the computer's setting... */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161c; --surface: #1b2029; --fg: #e6e8ec; --muted: #aab2be;
+    --line: #2e3542; --focus: #9cc2ff; --btn: #0046ad;
+    --shadow: 0 1px 2px rgba(0,0,0,.4); --shadow-hover: 0 10px 28px rgba(0,0,0,.5);
+    --backdrop: rgba(0,0,0,.8);
+    color-scheme: dark;
+  }
+}
+/* ...part 2: unless the visitor picked dark with the toggle button. */
+:root[data-theme="dark"] {
+  --bg: #12161c; --surface: #1b2029; --fg: #e6e8ec; --muted: #aab2be;
+  --line: #2e3542; --focus: #9cc2ff; --btn: #0046ad;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); --shadow-hover: 0 10px 28px rgba(0,0,0,.5);
+  --backdrop: rgba(0,0,0,.8);
+  color-scheme: dark;
+}
+
+/* ================================================================
+   BASICS
+   ================================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 1.0625rem/1.55 "Atkinson Hyperlegible", system-ui, sans-serif;
+}
+
+h1, h2 { font-family: Comfortaa, system-ui, sans-serif; line-height: 1.25; }
+
+a { color: inherit; }
+
+/* One clear focus ring for everything you can Tab to. */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+
+/* Text only screen readers hear (for example, "slide 2 of 5"). */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* A "skip" link: the first thing a keyboard user reaches. */
+.skip {
+  position: absolute; left: 16px; top: -60px; z-index: 10;
+  background: var(--btn); color: #fff; padding: 10px 14px; border-radius: 8px;
+}
+.skip:focus { top: 12px; }
+
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 16px; }
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+.site-head { padding: 28px 0 8px; }
+.site-head .wrap { display: flex; align-items: flex-start; gap: 16px; }
+.site-head .intro { flex: 1; }
+.site-head h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin: 0 0 8px; }
+.site-head p { margin: 0; max-width: 62ch; color: var(--muted); }
+
+/* Small round icon buttons (theme toggle, close, arrows). */
+.icon-btn {
+  display: inline-grid; place-items: center;
+  width: 44px; height: 44px;           /* 44px = comfortable touch target */
+  flex: none;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: var(--surface); color: var(--fg);
+  cursor: pointer;
+}
+.icon-btn:hover { border-color: var(--muted); }
+.icon-btn svg { width: 22px; height: 22px; }
+
+/* The shared icon style: 24x24 drawings, 2px round lines. */
+svg.ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ================================================================
+   APP CARDS
+   ================================================================ */
+main { padding: 24px 0 48px; }
+
+.cards {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 24px;
+  /* As many 300px+ columns as fit: 3 on a laptop, 1 on a phone. */
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+}
+
+.card {
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  cursor: pointer;                       /* the whole card opens the slideshow */
+  transition: transform .15s ease, box-shadow .15s ease;
+  /* A strip of the app's own color along the top. */
+  border-top: 5px solid var(--app-fill);
+}
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+
+/* The thumbnail area is always 16:9. */
+.thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--line);
+  overflow: hidden;
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+
+.card-body { display: flex; flex-direction: column; gap: 10px; padding: 18px 18px 20px; flex: 1; }
+
+/* App names look like the wordmarks inside the apps themselves. */
+.app-name {
+  margin: 0;
+  font: 700 1.35rem/1.2 system-ui, sans-serif;
+  letter-spacing: .04em;
+  color: var(--app-text);
+}
+.card-body p { margin: 0; color: var(--muted); flex: 1; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+
+/* Buttons: a solid one in the app's color, and an outlined one. */
+.btn, .btn-line {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 0 16px;
+  border-radius: 10px;
+  font: 700 1rem/1 "Atkinson Hyperlegible", system-ui, sans-serif;
+  text-decoration: none; cursor: pointer;
+}
+.btn { background: var(--app-fill, var(--btn)); color: #fff; border: 2px solid transparent; }
+.btn:hover { filter: brightness(1.12); }
+.btn-line { background: transparent; color: var(--fg); border: 2px solid var(--line); }
+.btn-line:hover { border-color: var(--muted); }
+.btn svg, .btn-line svg { width: 18px; height: 18px; }
+
+/* Stand-in shown when a screenshot file isn't there yet. */
+.placeholder {
+  width: 100%; height: 100%;
+  display: grid; place-content: center; gap: 6px;
+  padding: 16px; text-align: center;
+  background: var(--app-fill); color: #fff;
+}
+.placeholder strong { font: 700 clamp(1.5rem, 4vw, 2.25rem)/1.1 system-ui, sans-serif; letter-spacing: .04em; }
+.placeholder span { font-size: .95rem; opacity: .95; }
+
+/* ================================================================
+   THE SLIDESHOW (a native <dialog>)
+   A <dialog> opened with showModal() keeps keyboard focus inside it,
+   closes on Escape, and hides the page behind it from screen readers.
+   ================================================================ */
+dialog.show {
+  width: min(1040px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 0;
+  border: 1px solid var(--line); border-radius: 16px;
+  background: var(--surface); color: var(--fg);
+  overflow: auto;
+}
+dialog.show::backdrop { background: var(--backdrop); }
+
+.show-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 14px 14px 20px;
+  border-bottom: 1px solid var(--line);
+  border-top: 5px solid var(--app-fill);
+}
+.show-head .app-name { flex: 1; }
+
+/* The picture area: 16:9, with arrow buttons laid over each side. */
+.stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #0f141c;
+  touch-action: pan-y;       /* let our swipe code handle sideways drags */
+  user-select: none;
+}
+/* "contain" shows the whole screenshot, even if it isn't exactly 16:9. */
+.stage img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.stage .placeholder { position: absolute; inset: 0; }
+
+.stage .fade { animation: fade .25s ease; }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+.stage .nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 48px; height: 48px;
+  background: rgba(15, 20, 28, .78); color: #fff; border-color: rgba(255,255,255,.35);
+}
+.stage .nav:hover { background: rgba(15, 20, 28, .95); }
+.stage .prev { left: 12px; }
+.stage .next { right: 12px; }
+
+.show-foot { padding: 16px 20px 20px; display: grid; gap: 14px; }
+
+.caption h3 { margin: 0 0 4px; font: 700 1.15rem/1.3 "Atkinson Hyperlegible", system-ui, sans-serif; }
+.caption p { margin: 0; color: var(--muted); }
+.caption .count { font-size: .9rem; color: var(--muted); margin-bottom: 4px; }
+
+/* The row of dots under the picture: one per slide. */
+.dots { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.dots button {
+  width: 32px; height: 32px;           /* big enough to tap; the dot inside is small */
+  display: grid; place-items: center;
+  border: 0; background: transparent; cursor: pointer; border-radius: 50%;
+}
+.dots button::before {
+  content: ""; width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--muted); background: transparent;
+}
+.dots button[aria-current="true"]::before { background: var(--app-text); border-color: var(--app-text); }
+
+.foot-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* ================================================================
+   FOOTER
+   ================================================================ */
+.site-foot { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--muted); font-size: .95rem; }
+.site-foot p { margin: 0; }
+
+/* ================================================================
+   SMALL SCREENS AND REDUCED MOTION
+   ================================================================ */
+@media (max-width: 560px) {
+  .stage .nav { width: 40px; height: 40px; }
+  .stage .prev { left: 6px; } .stage .next { right: 6px; }
+  .show-foot { padding: 14px 16px 18px; }
+}
+/* Some people get dizzy from movement: turn it off if they've asked. */
+@media (prefers-reduced-motion: reduce) {
+  .card, .stage .fade { transition: none; animation: none; }
+  .card:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#apps">Skip to the apps</a>
+
+<header class="site-head">
+  <div class="wrap">
+    <div class="intro">
+      <h1>FLX AI Hub Apps</h1>
+      <p>Free editors for text, PDFs, images, sound, video, vector art and 3D models, plus a screen recorder and a game maker. They run right in your browser, install like regular apps, and keep your files on your own device.</p>
+    </div>
+    <!-- Night mode toggle. Its icon shows where it will take you: a moon in light mode, a sun in dark. -->
+    <button class="icon-btn" id="theme-btn" type="button"></button>
+  </div>
+</header>
+
+<main id="apps" tabindex="-1">
+  <div class="wrap">
+    <!-- The cards are built by JavaScript from the APPS list below. -->
+    <ul class="cards" id="cards"></ul>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <p>Made by <a href="https://daveghidiu.com" rel="noopener noreferrer">Dave Ghidiu</a> with Claude. Provided by the <a href="https://flcc.ai" rel="noopener noreferrer">FLX AI Hub</a> and <a href="https://www.flcc.edu" rel="noopener noreferrer">Finger Lakes Community College</a>.</p>
+  </div>
+</footer>
+
+<!-- The slideshow pop-up. It stays hidden until a card is clicked. -->
+<dialog class="show" id="show" aria-labelledby="show-title">
+  <div class="show-head">
+    <h2 class="app-name" id="show-title"></h2>
+    <button class="icon-btn" id="close-btn" type="button" aria-label="Close">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="stage" id="stage">
+    <!-- The current picture goes in here. -->
+    <div id="frame"></div>
+    <button class="icon-btn nav prev" id="prev-btn" type="button" aria-label="Previous picture">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <button class="icon-btn nav next" id="next-btn" type="button" aria-label="Next picture">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+  </div>
+
+  <div class="show-foot">
+    <div class="caption">
+      <div class="count" id="count" aria-hidden="true"></div>
+      <h3 id="cap-title"></h3>
+      <p id="cap-text"></p>
+    </div>
+    <div class="foot-row">
+      <ul class="dots" id="dots" aria-label="Pictures"></ul>
+      <a class="btn" id="open-link" target="_blank" rel="noopener noreferrer"></a>
+    </div>
+    <!-- Screen readers hear each new slide announced from here. -->
+    <p class="sr-only" id="live" aria-live="polite"></p>
+  </div>
+</dialog>
+
+<script>
+'use strict';
+
+/* ==================================================================
+   THE APPS
+   ------------------------------------------------------------------
+   This list is the only part you should need to edit.
+
+   For each app:
+     id     - short lowercase name, also used in screenshot file names
+     name   - the app's name as shown on the page
+     url    - where the "Open" button goes
+     fill   - the app's own color, used for strips, buttons and
+              placeholder tiles (white text sits on top of it)
+     light  - the app's color for TEXT on a light background (7:1+)
+     dark   - the app's color for TEXT on a dark background (7:1+)
+     blurb  - one or two sentences for the card
+     thumb  - the card picture (16:9). If the file is missing, the
+              first slide is used instead, then a colored tile.
+     slides - the pictures in the pop-up slideshow, in order:
+                src   - the image file (16:9 looks best)
+                title - a short headline
+                text  - one sentence about what's happening
+                alt   - what the picture shows, for people who can't
+                        see it (leave out to use the title)
+
+   Screenshots go in a "shots" folder beside this file, e.g.
+     shots/imgedtr-thumb.webp, shots/imgedtr-1.webp, shots/imgedtr-2.webp
+   (WebP keeps them small; PNG or JPG work too - just match the name here)
+   A missing screenshot shows a "coming soon" tile, and its file name
+   is listed in the browser's developer console.
+   ================================================================== */
+const APPS = [
+  {
+    id: 'txtedtr', name: 'TXTEDTR', url: 'https://txtedtr.app',
+    fill: '#b8400c', light: '#a23108', dark: '#f7a57a',
+    blurb: 'A clean, fast text and code editor with tabs, syntax highlighting for over ten languages, and a live preview for HTML and Markdown.',
+    thumb: 'shots/txtedtr-thumb.webp',
+    slides: [
+      { src: 'shots/txtedtr-1.webp', title: 'Live HTML preview',
+        text: "Edit a web page's code on the left and see the finished page update on the right as you type.",
+        alt: "TXTEDTR split view. On the left is the HTML source of an 'AI Tools Workshop' page for the FLX AI Hub. On the right is the rendered page: a blue header and three session cards." },
+      { src: 'shots/txtedtr-2.webp', title: 'Color-coded code',
+        text: 'Several files are open in the sidebar, and the code is colored by type - keywords, text, numbers and comments - so it is easier to read.',
+        alt: 'TXTEDTR with index.html, styles.css, app.js and README.md in the file list. The open JavaScript file has purple keywords, green strings, orange numbers and gray comments.' },
+      { src: 'shots/txtedtr-3.webp', title: 'Smart find and replace',
+        text: 'Search with a pattern instead of exact words. Every match is highlighted, and you can replace them one at a time or all at once.',
+        alt: 'TXTEDTR find and replace bar with regular expressions turned on, showing 2 of 3 matches highlighted in orange in app.js.' },
+      { src: 'shots/txtedtr-4.webp', title: 'Catches hidden characters',
+        text: 'Code pasted from a word processor often brings in curly quotes and invisible spaces that break it. TXTEDTR outlines each one and counts them.',
+        alt: 'A JavaScript file where curly quotes, a zero-width space and a no-break space are each boxed in orange. The status bar counts them.' },
+      { src: 'shots/txtedtr-5.webp', title: 'Dark mode',
+        text: 'A dark theme that is easy on the eyes, shown here with a Markdown file beside its formatted preview.',
+        alt: 'TXTEDTR in dark mode with README.md in Markdown on the left and its formatted preview, with headings, a list and a table, on the right.' }
+    ]
+  },
+  {
+    id: 'pdfedtr', name: 'PDFEDTR', url: 'https://pdfedtr.app',
+    fill: '#8a1c5c', light: '#8a1c5c', dark: '#f4b3d8',
+    blurb: 'Turn any PDF into a fillable form, fill it in and sign it, and rearrange or merge pages - without uploading it anywhere.',
+    thumb: 'shots/pdfedtr-thumb.webp',
+    slides: [
+      { src: 'shots/pdfedtr-1.webp', title: 'Add fillable text fields',
+        text: "Draw fillable boxes right on top of a form's blank lines, then name each one so it becomes a real form field in the saved PDF.",
+        alt: 'A workshop registration form with fillable text fields placed on the Full name, Email, Phone, Department, Date, Campus and Employee ID lines. The Email field is selected and the Inspector shows its name and text size.' },
+      { src: 'shots/pdfedtr-2.webp', title: 'Clickable checkboxes',
+        text: 'Add checkboxes next to each option so people can tick their choices, like picking which workshop sessions they will attend.',
+        alt: 'A list of workshop sessions and format options on a registration form, each with a fillable checkbox. Four boxes are checked.' },
+      { src: 'shots/pdfedtr-3.webp', title: 'Fill, annotate and sign',
+        text: "Type answers, highlight key sentences, leave sticky-note reminders, drop in today's date and sign the form, all without printing it.",
+        alt: 'Page 2 of the form with ticked checkboxes, a typed note, a yellow highlight, a sticky note, a handwritten blue signature and a date.' },
+      { src: 'shots/pdfedtr-4.webp', title: 'Rearrange and merge pages',
+        text: 'Bring in pages from another PDF and drag the thumbnails along the page strip to put them in the order you want.',
+        alt: 'The page filmstrip along the bottom showing five pages, including a feedback survey and certificate imported from a second PDF. The survey is being dragged into third place.' },
+      { src: 'shots/pdfedtr-5.webp', title: 'Draw your signature',
+        text: 'Sign with a mouse, finger or stylus (or just type your name), pick an ink color and place the signature anywhere on the page.',
+        alt: "The Add a signature window with a handwritten signature in blue ink, ink color and thickness controls, and a Place signature button." }
+    ]
+  },
+  {
+    id: 'imgedtr', name: 'IMGEDTR', url: 'https://imgedtr.app',
+    fill: '#305305', light: '#305305', dark: '#9bd66b',
+    blurb: 'A quick image editor for screenshots and how-to guides: hide private details, spotlight what matters, and add numbered steps, big cursors and text.',
+    thumb: 'shots/imgedtr-thumb.webp',
+    slides: [
+      { src: 'shots/imgedtr-1.webp', title: 'Hide private info',
+        text: "Student names and email addresses in a gradebook screenshot are pixelated, so you can share it without exposing anyone's details.",
+        alt: 'IMGEDTR showing a gradebook screenshot with the student name and email columns pixelated and unreadable, while grades stay visible.' },
+      { src: 'shots/imgedtr-2.webp', title: 'Spotlight one row',
+        text: 'The whole screenshot is dimmed and softly blurred except for a single row, which stays bright so it is the only thing you notice.',
+        alt: 'A gradebook screenshot darkened and blurred except for one bright row. The Spotlight panel shows Dim, Blur and Feather sliders.' },
+      { src: 'shots/imgedtr-3.webp', title: 'Show where to click',
+        text: 'A large pointing-hand cursor stamp sits on the "Send Reminder" button to show learners exactly what to click.',
+        alt: 'A big blue pointing-hand cursor stamp pressing the Send Reminder button in a gradebook screenshot.' },
+      { src: 'shots/imgedtr-4.webp', title: 'Tilt and label',
+        text: 'Give a screenshot a 3D perspective tilt with rounded corners and a soft shadow, next to a big, slightly angled label.',
+        alt: 'A gradebook screenshot tilted in 3D perspective on a light blue canvas, beside a rotated navy label reading "Grades are posted!".' },
+      { src: 'shots/imgedtr-5.webp', title: 'Numbered click steps',
+        text: 'Numbered badges walk learners through a task in order: open the Gradebook, search for a student, then press Send Reminder.',
+        alt: 'A gradebook screenshot with three orange numbered badges: 1 on the Gradebook menu item, 2 on the search box and 3 on the Send Reminder button. The Layers panel lists the three step markers.' },
+      { src: 'shots/imgedtr-6.webp', title: 'Zoom in on what matters',
+        text: 'Crop a copy of one row, enlarge it, and point to it with an arrow and a label - each piece is its own layer you can move and edit.',
+        alt: 'A gradebook screenshot with an orange arrow pointing to an enlarged copy of one student row and the label "Check in with this student". The Layers panel lists Text, Arrow, Zoomed row (crop) and Gradebook.' }
+    ]
+  },
+  {
+    id: 'sndedtr', name: 'SNDEDTR', url: 'https://sndedtr.app',
+    fill: '#4b5563', light: '#4b5563', dark: '#cbd1d9',
+    blurb: 'Record, trim and clean up audio on several tracks, with noise reduction, EQ and export to WAV, MP3 or Opus.',
+    thumb: 'shots/sndedtr-thumb.webp',
+    slides: [
+      { src: 'shots/sndedtr-1.webp', title: 'Multitrack editing',
+        text: "Three tracks - a host's voice, a music bed and a chime - start at different times, with part of the voice selected for editing.",
+        alt: 'SNDEDTR with three colored tracks named Host voice, Music bed and Chime, each showing a waveform, and a highlighted selection across the voice clip.' },
+      { src: 'shots/sndedtr-2.webp', title: 'Clean up noisy audio',
+        text: 'A noisy interview is cleaned up by learning what the background noise sounds like and removing it, with hum removal and a noise gate turned on too.',
+        alt: 'Two copies of an interview: the original, with a band of background noise, and the cleaned one with clear speech. The Inspector shows Background noise, Hum removal and Noise gate switched on.' },
+      { src: 'shots/sndedtr-3.webp', title: 'EQ and compression',
+        text: "The host's voice gets a tone adjustment (EQ) and a compressor that evens out loud and quiet moments.",
+        alt: 'The Inspector showing the EQ and Compressor panels switched on, with their settings.' },
+      { src: 'shots/sndedtr-4.webp', title: 'Duck music under voice',
+        text: 'A volume line drawn on the music track lowers the music while the host is talking, then brings it back up.',
+        alt: 'The music track with an orange volume line that dips while the host voice plays and rises after it ends.' },
+      { src: 'shots/sndedtr-5.webp', title: 'Export your mix',
+        text: 'Save the whole mix as one audio file - WAV, MP3 or Opus - and match it to podcast loudness.',
+        alt: 'The Export mix dialog listing WAV, MP3 and Opus formats, a loudness setting for podcasts and a Render and download button.' }
+    ]
+  },
+  {
+    id: 'videdtr', name: 'VIDEDTR', url: 'https://videdtr.app',
+    fill: '#0046ad', light: '#0046ad', dark: '#9cc2ff',
+    blurb: 'A real multitrack video editor in the browser: cut clips, blur what needs hiding, add titles, effects and transitions, and export.',
+    thumb: 'shots/videdtr-thumb.webp',
+    slides: [
+      { src: 'shots/videdtr-1.webp', title: 'Blur private information',
+        text: "Soft blur boxes cover a student's name, email, phone number and photo in a screen recording.",
+        alt: 'VIDEDTR showing a screen recording of a fictional student profile, with a blur box over the name, email and phone and a round blur over the photo. The Inspector shows the blur settings.' },
+      { src: 'shots/videdtr-2.webp', title: 'Multitrack timeline',
+        text: 'A lesson video built from layers: a title card, a screen recording, a picture-in-picture clip, on-screen titles, a voiceover and music.',
+        alt: 'The VIDEDTR timeline with Text, Video 2, Main video, Voiceover and Music tracks. The preview shows the title "Module 3 recap" and a small picture-in-picture video.' },
+      { src: 'shots/videdtr-3.webp', title: 'Effects and transitions',
+        text: 'A camcorder-style effect adds a REC light, a counter and a date stamp, and a menu of transitions is open where two clips meet.',
+        alt: 'A colorful video with a camcorder overlay showing REC, a counter and a date. A menu on the timeline lists transitions such as cross dissolve, wipe and zoom.' },
+      { src: 'shots/videdtr-4.webp', title: 'Split a clip',
+        text: 'The screen recording has been cut in two, and the second piece is selected so it can be moved, trimmed or deleted.',
+        alt: 'The Main video track with a clip split into two at 0:14. The right-hand clip is selected and the Inspector shows its start time and length.' },
+      { src: 'shots/videdtr-5.webp', title: 'Export your video',
+        text: 'Choose the resolution, frame rate and quality, then save a standard video file. Everything is made on your own computer.',
+        alt: 'The Export video dialog with resolution, frame rate, file name and quality settings, and a Start export button.' }
+    ]
+  },
+  {
+    id: 'scrncstr', name: 'SCRNCSTR', url: 'https://scrncstr.app',
+    fill: '#00565d', light: '#00565d', dark: '#7fd8de',
+    blurb: 'Record your screen and webcam together or as separate files, with a webcam bubble you can drag, resize and reshape.',
+    thumb: 'shots/scrncstr-thumb.webp',
+    slides: [
+      { src: 'shots/scrncstr-1.webp', title: 'Place your webcam anywhere',
+        text: 'Drag the round webcam bubble anywhere over your slides, and it shows up in exactly that spot in the finished video.',
+        alt: 'A lesson slide titled "Welcome to the FLX AI Hub" with a round webcam bubble of a cartoon presenter being dragged into place, and rows of shape, effect and sound-effect buttons below.' },
+      { src: 'shots/scrncstr-2.webp', title: 'Choose how you record',
+        text: 'Pick separate screen and webcam files to edit later, one combined video ready to post, or just your screen with narration.',
+        alt: 'The SCRNCSTR setup screen listing three recording modes - Separate files, Combined and Screen only - with a round webcam preview.' },
+      { src: 'shots/scrncstr-3.webp', title: 'Live effects while recording',
+        text: 'While you record, one click adds confetti, a countdown or a sound effect, or moves your webcam, right in the video.',
+        alt: 'SCRNCSTR mid-recording with an orange bar showing a 00:14 timer and Stop recording button. Confetti falls across the lesson slide.' },
+      { src: 'shots/scrncstr-4.webp', title: 'Your recordings, ready',
+        text: 'When you stop, your screen recording and your webcam recording are waiting as two files you can download. Nothing is uploaded.',
+        alt: 'The Recording saved screen listing a screen file and a webcam file, each with a Download link, plus a Record another button.' },
+      { src: 'shots/scrncstr-5.webp', title: 'Circle or rounded rectangle',
+        text: 'Show your webcam as a circle, a rounded rectangle or a square, and make it bigger or smaller to suit your slides.',
+        alt: 'The webcam shown as a wide rounded rectangle over the lesson slide, with the rounded-rectangle shape button highlighted.' }
+    ]
+  },
+  {
+    id: 'vctredtr', name: 'VCTREDTR', url: 'https://vctredtr.app',
+    fill: '#5b21b6', light: '#5b21b6', dark: '#c4b5fd',
+    blurb: 'Draw vector art and merge shapes the way PowerPoint does - union, subtract, fragment and more - with perfect shapes that tile and a live view of the SVG code.',
+    thumb: 'shots/vctredtr-thumb.webp',
+    slides: [
+      { src: 'shots/vctredtr-1.webp', title: 'Merge Shapes',
+        text: "Pick overlapping shapes in order, then join, cut or split them with one click, just like PowerPoint's Merge Shapes.",
+        alt: 'VCTREDTR with four blue shapes picked and numbered 1 to 4, together forming a cloud, next to a yellow sun and an orange star. The Inspector shows the five Merge Shapes buttons.' },
+      { src: 'shots/vctredtr-2.webp', title: 'Five ways to merge',
+        text: 'Union, Combine, Fragment, Intersect and Subtract, each explained with a picture in the built-in help.',
+        alt: "The Help panel's Merge Shapes tab, with three steps for merging and pictures of Union and Combine." },
+      { src: 'shots/vctredtr-3.webp', title: 'Perfect shapes that tile',
+        text: 'A click makes a hexagon with equal sides and angles, and copies snap corner to corner, so shapes fit together with no gaps.',
+        alt: 'A honeycomb of seven colorful hexagons, with an eighth being dragged into place. A small pink ring marks where its corner locks on.' },
+      { src: 'shots/vctredtr-4.webp', title: 'Edit points and curves',
+        text: 'Drag the points and curve handles of any shape to reshape it, and fill it with a gradient.',
+        alt: 'A purple-to-orange blob with its points showing and two curve handles pulled out.' },
+      { src: 'shots/vctredtr-5.webp', title: 'See the SVG code',
+        text: 'The code behind your drawing updates as you draw - handy for learning how vector graphics work. Shown in dark mode.',
+        alt: 'VCTREDTR in dark mode with a circle, a rounded rectangle and a star, and the SVG code panel open below them.' }
+    ]
+  },
+  {
+    id: '3dedtr', name: '3DEDTR', url: 'https://3dedtr.app',
+    fill: '#7a4100', light: '#7a4100', dark: '#f0b46e',
+    blurb: 'Build 3D models from simple shapes, cut and merge them, and export them ready for the 3D printer - all measured in millimeters.',
+    thumb: 'shots/3dedtr-thumb.webp',
+    slides: [
+      { src: 'shots/3dedtr-1.webp', title: 'Cut shapes to build',
+        text: 'Make hollow cups and keyrings by cutting one shape out of another with a single click.',
+        alt: '3DEDTR showing a teal pencil cup with three pencils in it, a red apple on two books, and an orange tag with a round cutter over one end. The Merge Shapes panel shows Union, Subtract and Intersect buttons.' },
+      { src: 'shots/3dedtr-2.webp', title: 'Build from simple shapes',
+        text: 'Put models together from ready-made shapes, and move or resize any piece by dragging or by typing exact millimeters.',
+        alt: 'A toy rocket made of a white cylinder, red fins, a blue porthole and a gray launch pad. The red cone nose has move arrows on it, and the Inspector shows its position, turn and size in millimeters.' },
+      { src: 'shots/3dedtr-3.webp', title: 'Colors and finishes',
+        text: 'One click on a swatch or a finish like Glossy or Metal changes how any part looks.',
+        alt: 'The desk scene from a lower angle with the red apple picked. The Look panel shows color swatches and Matte, Satin, Glossy and Metal finish buttons, with Glossy chosen.' },
+      { src: 'shots/3dedtr-4.webp', title: 'Ready for 3D printing',
+        text: "Export a model as an STL file for the school's 3D printer, and the app checks that it will print cleanly.",
+        alt: 'The Export dialog with STL chosen, Selection only on and Z is up ticked. A note reads that the object is 44 x 64 x 44 mm and every solid is closed (watertight).' },
+      { src: 'shots/3dedtr-5.webp', title: 'Dark mode and lighting',
+        text: 'A dark theme and a choice of Studio, Soft or Bright lighting keep models easy to see on any classroom screen.',
+        alt: '3DEDTR in dark mode showing the white and red rocket on its launch pad over a dark millimeter grid, with Lighting set to Bright.' }
+    ]
+  }
+];
+
+/* ==================================================================
+   SMALL HELPERS
+   ================================================================== */
+
+/* Make an element in one line. Text always goes in with textContent,
+   which shows it as plain text - never as HTML - so nothing in the
+   APPS list can ever be run as code. */
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text) node.textContent = text;
+  return node;
+}
+
+/* Only allow links that start with https:// (blocks "javascript:" tricks). */
+function safeUrl(url) {
+  return /^https:\/\//i.test(url) ? url : '#';
+}
+
+/* Only allow image paths inside this site (no outside servers). */
+function safeSrc(src) {
+  return (typeof src === 'string' && /^[\w\-./]+$/.test(src) && !src.includes('..')) ? src : '';
+}
+
+/* Icons, drawn with SVG. Built with createElementNS because SVG
+   elements need their own "namespace" to show up. */
+const ICONS = {
+  external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  images: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>'
+};
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'ico');
+  svg.setAttribute('aria-hidden', 'true');   // decoration only; the button text says what it does
+  // These drawings are fixed strings written above, never visitor data, so innerHTML is safe here.
+  svg.innerHTML = ICONS[name];
+  return svg;
+}
+
+/* A colored "coming soon" tile, used when a screenshot is missing. */
+function placeholder(app, line) {
+  const box = el('div', 'placeholder');
+  box.setAttribute('role', 'img');
+  box.setAttribute('aria-label', app.name + ': ' + line + ' (picture coming soon)');
+  box.append(el('strong', '', app.name), el('span', '', line));
+  return box;
+}
+
+/* Show an image, trying each file in "sources" in turn. If none of
+   them load, show the placeholder tile instead. */
+function loadImage(container, sources, alt, app, line) {
+  const list = sources.map(safeSrc).filter(Boolean);
+  const img = el('img');
+  img.alt = alt;
+  img.decoding = 'async';
+  let i = 0;
+  img.addEventListener('error', () => {
+    console.warn('Screenshot not found: ' + list[i]);
+    i += 1;
+    if (i < list.length) { img.src = list[i]; }
+    else { img.replaceWith(placeholder(app, line)); }
+  });
+  if (list.length === 0) { container.append(placeholder(app, line)); return; }
+  img.src = list[0];
+  container.append(img);
+}
+
+/* Each card and the dialog set these CSS variables to the app's colors. */
+function setAppColors(node, app) {
+  const dark = isDark();
+  node.style.setProperty('--app-fill', app.fill);
+  node.style.setProperty('--app-text', dark ? app.dark : app.light);
+}
+
+/* ==================================================================
+   THEME (light / dark)
+   The choice is remembered in this browser only. Some browsers block
+   storage (private windows), so every read and write is wrapped in
+   try/catch - the page still works, it just won't remember.
+   ================================================================== */
+const root = document.documentElement;
+const themeBtn = document.getElementById('theme-btn');
+
+function isDark() {
+  const chosen = root.dataset.theme;
+  if (chosen) return chosen === 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function paintThemeButton() {
+  const dark = isDark();
+  themeBtn.replaceChildren(icon(dark ? 'sun' : 'moon'));
+  const label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+  themeBtn.setAttribute('aria-label', label);
+  themeBtn.title = label;
+  // App text colors depend on the theme, so repaint them.
+  document.querySelectorAll('[data-app]').forEach(node => {
+    setAppColors(node, APPS.find(a => a.id === node.dataset.app));
+  });
+}
+
+try {
+  const saved = localStorage.getItem('apps-theme');
+  if (saved === 'light' || saved === 'dark') root.dataset.theme = saved;
+} catch (e) { /* storage blocked: follow the computer's setting */ }
+
+themeBtn.addEventListener('click', () => {
+  const next = isDark() ? 'light' : 'dark';
+  root.dataset.theme = next;
+  try { localStorage.setItem('apps-theme', next); } catch (e) { /* not remembered */ }
+  paintThemeButton();
+});
+
+// If the computer switches modes (e.g. at sunset) and the visitor hasn't picked one, follow along.
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintThemeButton);
+
+/* ==================================================================
+   BUILD THE CARDS
+   ================================================================== */
+const cardList = document.getElementById('cards');
+
+APPS.forEach(app => {
+  const card = el('li', 'card');
+  card.dataset.app = app.id;
+
+  // The picture: the app's thumbnail, else its first slide, else a tile.
+  const thumb = el('div', 'thumb');
+  const firstSlide = app.slides[0] ? app.slides[0].src : '';
+  loadImage(thumb, [app.thumb, firstSlide], 'Screenshot of ' + app.name, app, 'Picture coming soon');
+
+  const body = el('div', 'card-body');
+  const name = el('h2', 'app-name', app.name);
+  const blurb = el('p', '', app.blurb);
+
+  // Button 1: opens the slideshow. This is how keyboard users open it.
+  const seeBtn = el('button', 'btn-line');
+  seeBtn.type = 'button';
+  seeBtn.setAttribute('aria-haspopup', 'dialog');
+  seeBtn.append(icon('images'), document.createTextNode('See it in action'));
+  seeBtn.setAttribute('aria-label', 'See ' + app.name + ' in action');
+  seeBtn.addEventListener('click', event => {
+    event.stopPropagation();       // don't let the card's own click open it a second time
+    openShow(app, seeBtn);
+  });
+
+  // Button 2: a real link to the app, opening in a new tab.
+  const openLink = el('a', 'btn');
+  openLink.href = safeUrl(app.url);
+  openLink.target = '_blank';
+  openLink.rel = 'noopener noreferrer';   // the new tab can't reach back into this page
+  openLink.append(document.createTextNode('Open ' + app.name), icon('external'));
+  openLink.setAttribute('aria-label', 'Open ' + app.name + ' (opens in a new tab)');
+  openLink.addEventListener('click', event => event.stopPropagation());   // just follow the link
+
+  const actions = el('div', 'actions');
+  actions.append(seeBtn, openLink);
+  body.append(name, blurb, actions);
+  card.append(thumb, body);
+
+  // A click anywhere else on the card opens the slideshow too.
+  card.addEventListener('click', () => openShow(app, seeBtn));
+
+  cardList.append(card);
+});
+
+paintThemeButton();
+
+/* ==================================================================
+   THE SLIDESHOW
+   ================================================================== */
+const show = document.getElementById('show');
+const showTitle = document.getElementById('show-title');
+const frame = document.getElementById('frame');
+const stage = document.getElementById('stage');
+const prevBtn = document.getElementById('prev-btn');
+const nextBtn = document.getElementById('next-btn');
+const dots = document.getElementById('dots');
+const countEl = document.getElementById('count');
+const capTitle = document.getElementById('cap-title');
+const capText = document.getElementById('cap-text');
+const openLinkEl = document.getElementById('open-link');
+const live = document.getElementById('live');
+
+let current = null;     // the app being shown
+let index = 0;          // which slide (0 = the first)
+let opener = null;      // the button to send focus back to when closing
+
+function openShow(app, fromButton) {
+  current = app;
+  opener = fromButton;
+  index = 0;
+
+  show.dataset.app = app.id;
+  setAppColors(show, app);
+  showTitle.textContent = app.name;
+
+  openLinkEl.href = safeUrl(app.url);
+  openLinkEl.replaceChildren(document.createTextNode('Open ' + app.name), icon('external'));
+  openLinkEl.setAttribute('aria-label', 'Open ' + app.name + ' (opens in a new tab)');
+
+  // One dot per slide. Each is a button that jumps to its slide.
+  dots.replaceChildren();
+  app.slides.forEach((slide, i) => {
+    const li = el('li');
+    const dot = el('button');
+    dot.type = 'button';
+    dot.setAttribute('aria-label', 'Picture ' + (i + 1) + ': ' + slide.title);
+    dot.addEventListener('click', () => goTo(i));
+    li.append(dot);
+    dots.append(li);
+  });
+
+  // With only one picture, the arrows and dots aren't needed.
+  const many = app.slides.length > 1;
+  prevBtn.hidden = nextBtn.hidden = !many;
+  dots.hidden = !many;
+
+  render(false);
+  show.showModal();
+  // Start keyboard focus on "Next" so arrow keys and Enter work at once.
+  (many ? nextBtn : document.getElementById('close-btn')).focus();
+}
+
+/* Draw the current slide. "announce" = tell screen readers about it. */
+function render(announce) {
+  const slide = current.slides[index];
+  const total = current.slides.length;
+
+  const holder = el('div', 'fade');
+  holder.style.position = 'absolute';
+  holder.style.inset = '0';
+  loadImage(holder, [slide.src], slide.alt || ('Screenshot of ' + current.name + ': ' + slide.title), current, slide.title);
+  frame.replaceChildren(holder);
+
+  countEl.textContent = (index + 1) + ' of ' + total;
+  capTitle.textContent = slide.title;
+  capText.textContent = slide.text || '';
+
+  dots.querySelectorAll('button').forEach((dot, i) => {
+    dot.setAttribute('aria-current', i === index ? 'true' : 'false');
+  });
+
+  if (announce) {
+    live.textContent = 'Picture ' + (index + 1) + ' of ' + total + ': ' + slide.title + '. ' + (slide.text || '');
+  }
+
+  // Quietly fetch the next picture now, so it appears instantly later.
+  const upNext = current.slides[(index + 1) % total];
+  if (upNext && safeSrc(upNext.src)) { const pre = new Image(); pre.src = safeSrc(upNext.src); }
+}
+
+/* Go to a slide. It wraps around: after the last comes the first. */
+function goTo(i) {
+  const total = current.slides.length;
+  index = (i + total) % total;
+  render(true);
+}
+
+prevBtn.addEventListener('click', () => goTo(index - 1));
+nextBtn.addEventListener('click', () => goTo(index + 1));
+document.getElementById('close-btn').addEventListener('click', () => show.close());
+
+// Keyboard: Left/Right arrows change pictures, Home/End jump to the ends.
+// (Escape closing the dialog is built into <dialog>.)
+show.addEventListener('keydown', event => {
+  if (!current || current.slides.length < 2) return;
+  const keys = { ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: current.slides.length - 1 };
+  if (event.key in keys) {
+    event.preventDefault();
+    goTo(keys[event.key]);
+  }
+});
+
+// Clicking the dark area outside the panel closes it.
+// (A click on the backdrop reports the <dialog> itself as its target.)
+show.addEventListener('click', event => {
+  if (event.target === show) show.close();
+});
+
+// Swipe left or right on a phone or tablet to change pictures.
+let swipeStartX = null;
+stage.addEventListener('pointerdown', event => { swipeStartX = event.clientX; });
+stage.addEventListener('pointerup', event => {
+  if (swipeStartX === null || !current) return;
+  const moved = event.clientX - swipeStartX;
+  swipeStartX = null;
+  if (Math.abs(moved) > 40) goTo(index + (moved < 0 ? 1 : -1));
+});
+
+// When the dialog closes (any way), send focus back to where it was.
+show.addEventListener('close', () => {
+  frame.replaceChildren();
+  live.textContent = '';
+  if (opener) opener.focus();
+});
+</script>
+</body>
+</html>

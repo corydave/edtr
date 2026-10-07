@@ -1,0 +1,42 @@
+{
+  "name": "TXTEDTR",
+  "short_name": "TXTEDTR",
+  "description": "A small text editor with syntax highlighting, tabs and no build step.",
+
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+
+  "background_color": "#1e1f22",
+  "theme_color": "#1e1f22",
+
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png",
+      "purpose": "maskable" }
+  ],
+
+  "launch_handler": { "client_mode": "focus-existing" },
+
+  "file_handlers": [
+    {
+      "action": "./index.html",
+      "accept": {
+        "text/plain":       [".txt", ".log", ".text", ".webmanifest"],
+        "text/html":        [".html", ".htm", ".xhtml", ".vue", ".svelte"],
+        "text/css":         [".css", ".scss", ".sass", ".less"],
+        "text/javascript":  [".js", ".mjs", ".cjs", ".jsx", ".ts", ".tsx"],
+        "application/json": [".json", ".jsonc"],
+        "text/x-java":      [".java"],
+        "text/x-python":    [".py", ".pyw", ".pyi"],
+        "text/markdown":    [".md", ".markdown", ".mdown", ".mkd"],
+        "application/sql":  [".sql", ".ddl", ".psql"],
+        "application/x-sh": [".sh", ".bash", ".zsh", ".ksh", ".command"],
+        "application/xml":  [".xml", ".svg", ".xsl", ".xsd", ".rss", ".plist"],
+        "application/yaml": [".yaml", ".yml"],
+        "application/x-httpd-php": [".php", ".phtml"]
+      }
+    }
+  ]
+}

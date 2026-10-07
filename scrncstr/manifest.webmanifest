@@ -1,0 +1,16 @@
+{
+  "name": "SCRNCSTR",
+  "short_name": "SCRNCSTR",
+  "description": "Screen and webcam recorder. Everything stays on this machine.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f2f4f7",
+  "theme_color": "#00565d",
+  "icons": [
+    { "src": "icon-192.png",            "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "scrncstr-icon.png",       "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png",   "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
