@@ -1,5 +1,10 @@
 # 3DEDTR changelog
 
+## 0.15.1 - 2026-10-07 - DSKEDTR joins the family
+
+- **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.
+- The splash's row now fits nine apps: the eight others on one line on a computer, and 4 + 4 on a phone (shared styles pasted in again from `_edtr-suite/suite-block.css`).
+
 ## 0.15.0 - 2026-10-07 - A handle for the Inspector sheet
 
 The same grab handle as DSKEDTR 0.14.0, so the suite's phone sheets work alike.
