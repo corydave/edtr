@@ -501,6 +501,17 @@ building blocks, the starter template gallery.
   through `maskObj`, clipped even-odd); a Lock button and Ctrl+Shift+L; a
   hint when a click lands on something locked or on a master's thing.
   Project files are version 7.
+- 0.13.1: one click on the Shapes rail button opens the gallery (it
+  picks the tool too); a second click closes it. The button carries the
+  `.has-flyout` corner triangle, as in VCTREDTR. U still picks the tool and
+  U again opens the gallery.
+- 0.13.2: the rail has one Shapes button (square, circle, triangle) in
+  place of Rectangle, Ellipse and the star. It and U open the gallery; it
+  is pressed while the rect, ellipse or shape tool is in use, and its name
+  says what is being drawn. `GALLERY_TOOLS` adds Rectangle and Ellipse to
+  the start of Basic shapes; they pick the `rect` and `ellipse` tools
+  (real rectangles and ellipses, with rounded corners and so on) and are
+  hidden in the frame gallery. R and O are unchanged.
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,

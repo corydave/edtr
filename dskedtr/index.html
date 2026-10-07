@@ -153,7 +153,6 @@ body {
 .shape-choice:hover { background: color-mix(in srgb, var(--fg) 8%, transparent); }
 .shape-choice[aria-pressed="true"] { border-color: var(--accent-text); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .shape-choice svg { width: 26px; height: 26px; fill: color-mix(in srgb, var(--accent) 20%, transparent); stroke: currentColor; stroke-width: 1.5; fill-rule: evenodd; }
-#shapeToolIcon path { fill-rule: evenodd; }
 .pop h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 0 8px; }
 .work > * { min-width: 0; }
 /* The Inspector button hides the right-hand column (on a phone: the panel under the page). */
@@ -167,6 +166,11 @@ body {
 }
 .rail .icon-btn { width: 40px; height: 40px; }
 .rail .icon-btn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+/* A rail button that opens a menu (like the Shapes gallery) gets a small
+   triangle in its bottom-right corner, the same mark VCTREDTR uses. */
+.rail .has-flyout { position: relative; }
+.rail .has-flyout::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 0; height: 0;
+  border-style: solid; border-width: 0 0 5px 5px; border-color: transparent transparent currentColor transparent; opacity: .75; }
 
 /* The scrolling desk with the page on it. */
 .desk { overflow: auto; position: relative; outline: none; }
@@ -748,16 +752,13 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <button class="icon-btn" data-tool="text" aria-pressed="false" aria-label="Text box" title="Text box: click a box to type, drag on the page to make one (T)">
       <svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg>
     </button>
-    <button class="icon-btn" data-tool="rect" aria-pressed="false" aria-label="Rectangle" title="Rectangle (R)">
-      <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="1.5"/></svg>
-    </button>
-    <button class="icon-btn" data-tool="ellipse" aria-pressed="false" aria-label="Ellipse" title="Ellipse (O)">
-      <svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8.5" ry="7"/></svg>
-    </button>
-    <!-- Shapes: triangles, stars, arrows, speech bubbles... The button shows the
-         shape it draws; pressed again, it opens the gallery of shapes. -->
-    <button class="icon-btn" id="shapeToolBtn" data-tool-btn="shape" aria-pressed="false" aria-haspopup="dialog" aria-expanded="false" aria-label="Shapes" title="Shapes (U)">
-      <svg viewBox="-8 -8 116 116" id="shapeToolIcon"></svg>
+    <!-- Shapes: ONE button for every shape - rectangles, ellipses, triangles,
+         stars, arrows, speech bubbles... A click opens the gallery (the corner
+         triangle says it opens a menu); picking a shape there picks the tool
+         that draws it. It looks pressed while any shape tool is in use.
+         R (rectangle) and O (ellipse) still pick those two straight away. -->
+    <button class="icon-btn has-flyout" id="shapeToolBtn" aria-pressed="false" aria-haspopup="dialog" aria-expanded="false" aria-label="Shapes" title="Shapes: click for all shapes (U)">
+      <svg viewBox="0 0 24 24"><path d="M12 3 16.5 10.5H7.5Z"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><circle cx="17" cy="17" r="3.5"/></svg>
     </button>
     <button class="icon-btn" data-tool="line" aria-pressed="false" aria-label="Line" title="Line (L)">
       <svg viewBox="0 0 24 24"><path d="M5 19L19 5"/></svg>
@@ -1168,7 +1169,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <h2 id="shapePopTitle">Shapes</h2>
   <div id="shapeGrid"></div>
   <p class="shape-name" id="shapeName" aria-hidden="true"></p>
-  <p class="muted" style="font-size:12px;margin-bottom:0">Pick one, then drag on the page. Shift keeps it in proportion. Rectangles and ellipses have their own tools; round a rectangle's corners in Look.</p>
+  <p class="muted" style="font-size:12px;margin-bottom:0">Pick one, then drag on the page. Shift keeps it in proportion. Round a rectangle's corners in Look.</p>
 </div>
 
 <!-- ===================== GUIDES AND GRID (a popover from the top bar) ===================== -->
@@ -1509,7 +1510,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.13.0';
+const APP_VERSION = '0.13.2';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -5849,7 +5850,7 @@ const SHAPES = {
 /** The gallery's sections, in order (Recently used comes first, when there are any). */
 const SHAPE_GROUPS = [
   ['Lines', ['line', 'arrowLine', 'arrowLine2', 'elbow', 'curve', 'arc', 'waveLine', 'zigzag', 'bracketL', 'bracketR', 'braceL', 'braceR']],
-  ['Basic shapes', ['triangle', 'rtriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'decagon', 'dodecagon',
+  ['Basic shapes', ['rect', 'ellipse', 'triangle', 'rtriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'decagon', 'dodecagon',
     'semicircle', 'pie', 'teardrop', 'arch', 'frame', 'halfFrame', 'lshape', 'plaque', 'snip', 'folded', 'can', 'cube', 'donut', 'noSymbol', 'smiley', 'cross']],
   ['Block arrows', ['arrow', 'arrowLeft', 'arrowUp', 'arrowDown', 'arrow2', 'arrowUpDown', 'arrow4', 'notchedArrow', 'stripedArrow', 'homePlate', 'chevron', 'bentArrow', 'uturn']],
   ['Flowchart', ['fcProcess', 'fcAltProcess', 'fcDecision', 'fcData', 'fcPredefined', 'fcInternal', 'fcDocument', 'fcTerminator', 'fcPreparation', 'fcManualInput',
@@ -5859,6 +5860,19 @@ const SHAPE_GROUPS = [
   ['Shields', ['shieldClassic', 'shieldHeater', 'shieldPointed', 'shieldRound', 'shieldArched', 'shieldDipped', 'shieldNotched', 'shieldPeaked', 'shieldScalloped']],
   ['Signs and symbols', ['heart', 'bolt', 'moon', 'sun', 'cloud', 'pin', 'check', 'xmark', 'house', 'gear']]
 ];
+/* Two gallery entries are not gallery shapes at all: Rectangle and Ellipse
+   pick the Rectangle and Ellipse tools, whose shapes have extras of their
+   own (a rectangle's rounded corners, for one). They are drawn here in the
+   same 0-100 box as the gallery shapes, so their icons match. */
+const GALLERY_TOOLS = {
+  rect:    { label: 'Rectangle', d: 'M0 15H100V85H0Z' },
+  ellipse: { label: 'Ellipse',   d: 'M0 50A50 40 0 1 1 100 50A50 40 0 1 1 0 50Z' }
+};
+/** A gallery entry's drawing and name: a real shape, or one of the two tools above. */
+const galleryDef = (key) => SHAPES[key] || GALLERY_TOOLS[key];
+/** Which gallery entry the drawing tool in use stands for (shown pressed in the gallery). */
+const galleryChoice = () => (tool === 'rect' || tool === 'ellipse') ? tool : currentShape;
+
 /* Recently used shapes: a convenience kept in this browser only (never
    needed: an empty or blocked store just means no Recently used row). */
 const RECENT_SHAPES_KEY = 'dskedtr-recent-shapes';
@@ -5925,19 +5939,16 @@ function createShapeLine(key, seg) {
   }
   return o;
 }
-/** The rail button shows the shape the tool will draw. */
+/** The rail button keeps its square-circle-triangle picture; its name says which shape is being drawn. */
 function showShapeButton() {
-  const def = SHAPES[currentShape];
   const b = $('shapeToolBtn');
-  b.setAttribute('aria-label', 'Shapes: ' + def.label);
-  b.title = 'Shapes: ' + def.label + '. Click again for more shapes (U)';
-  const icon = $('shapeToolIcon');
-  clear(icon);
-  icon.setAttribute('viewBox', shapeViewBox(currentShape));
-  icon.appendChild(svgEl('path', { d: shapeIcon(def), 'vector-effect': 'non-scaling-stroke' }));
+  const drawing = (tool === 'rect' || tool === 'ellipse' || tool === 'shape') ? galleryDef(galleryChoice()).label : '';
+  b.setAttribute('aria-label', drawing ? 'Shapes: drawing ' + drawing : 'Shapes');
+  b.title = (drawing ? 'Shapes: drawing ' + drawing + '. ' : 'Shapes: ') + 'Click for all shapes (U)';
 }
 /** A square view around a shape's outline, so every icon is the same size whatever its proportions. */
 function shapeViewBox(key) {
+  if (GALLERY_TOOLS[key]) return '-8 -8 116 116';     // Rectangle and Ellipse: drawn in the plain box
   shapeAspect(key);
   const def = SHAPES[key];
   if (!def.box) return '-8 -8 116 116';
@@ -5953,7 +5964,7 @@ function shapeViewBox(key) {
  * Home and End jump to the first and last, Enter or a click picks.
  */
 function shapeButton(key) {
-  const def = SHAPES[key];
+  const def = galleryDef(key);
   const b = document.createElement('button');
   b.className = 'shape-choice';
   b.dataset.shape = key;
@@ -5973,9 +5984,14 @@ function shapeButton(key) {
       $('frameShapeBtn').focus();
       return;
     }
-    currentShape = key;
-    showShapeButton();
     $('shapePop').hidePopover();
+    if (GALLERY_TOOLS[key]) {                         // Rectangle or Ellipse: their own tools
+      setTool(key);
+      $('shapeToolBtn').focus();
+      return;                                         // setTool has said what to do next
+    }
+    currentShape = key;
+    if (tool === 'shape') tool = '';                  // so setTool below runs and announces the new shape
     setTool('shape');
     $('shapeToolBtn').focus();
     announce(def.label + ': drag on the page to draw it' + (def.line ? '' : ' (Shift keeps it in proportion)') + ', or press Enter on the page for one in the middle.');
@@ -6038,7 +6054,7 @@ function wireShapes() {
     if (e.newState !== 'open') { galleryFor = 'tool'; return; }
     // Frame shapes: no lines (a picture needs a closed outline), and a title that says so.
     const frame = galleryFor === 'frame';
-    for (const b of pop.querySelectorAll('[data-shape]')) { const d = SHAPES[b.dataset.shape]; b.hidden = frame && !!(d.open || d.line); }
+    for (const b of pop.querySelectorAll('[data-shape]')) { const d = SHAPES[b.dataset.shape]; b.hidden = frame && (!d || !!(d.open || d.line)); }
     for (const sec of pop.querySelectorAll('.shape-section')) if (sec.querySelector('h3').id !== 'shapeSec-recent') sec.hidden = ![...sec.querySelectorAll('[data-shape]')].some((b) => !b.hidden);
     setText('shapePopTitle', frame ? 'Picture frame shape' : 'Shapes');
     // Beside the rail on a wide screen, under it on a phone (or beside the Picture section's button).
@@ -6053,15 +6069,27 @@ function wireShapes() {
     clear(recentGrid);
     for (const key of recent) recentGrid.appendChild(shapeButton(key));
     $('shapeSec-recent').parentElement.hidden = !recent.length || frame;
-    for (const b of pop.querySelectorAll('[data-shape]')) b.setAttribute('aria-pressed', String(b.dataset.shape === currentShape));
-    const cur = [...pop.querySelectorAll('[data-shape="' + currentShape + '"]')].pop() || pop.querySelector('[data-shape]');
+    // The entry for what is being drawn now shows pressed and gets the focus.
+    // (For a picture frame: its gallery shape, if it has one; else the first entry.)
+    const o = frame && selectedIds.length === 1 ? obj(selectedIds[0]) : null;
+    const chosen = frame ? (o && hasMask(o) ? '' : '-') : galleryChoice();
+    for (const b of pop.querySelectorAll('[data-shape]')) b.setAttribute('aria-pressed', String(b.dataset.shape === chosen));
+    const cur = [...pop.querySelectorAll('[data-shape="' + chosen + '"]')].filter((b) => !b.hidden).pop() || [...pop.querySelectorAll('[data-shape]')].find((b) => !b.hidden);
     if (cur) { cur.focus(); cur.scrollIntoView({ block: 'nearest' }); }
-    setText('shapeName', SHAPES[currentShape].label);
+    setText('shapeName', cur ? galleryDef(cur.dataset.shape).label : '');
   });
-  // The rail button: pick the Shapes tool; pressed again (or when already picked), open the gallery.
-  $('shapeToolBtn').addEventListener('click', () => {
-    galleryFor = 'tool';
-    if (tool === 'shape') pop.togglePopover(); else setTool('shape');
+  // The rail button: open the gallery of every shape (picking one there picks
+  // its tool). Clicked while the gallery is open, it closes it. (Pressing the mouse
+  // anywhere outside an open gallery closes it first, before the click
+  // arrives, so the button remembers on pointerdown whether it was open;
+  // otherwise the click would open it straight back up.)
+  let wasOpen = false;
+  $('shapeToolBtn').addEventListener('pointerdown', () => { wasOpen = pop.matches(':popover-open') && galleryFor === 'tool'; });
+  $('shapeToolBtn').addEventListener('click', (e) => {
+    const open = e.detail ? wasOpen : pop.matches(':popover-open') && galleryFor === 'tool';  // e.detail is 0 for Enter or Space
+    wasOpen = false;
+    if (open) { if (pop.matches(':popover-open')) pop.hidePopover(); return; }
+    openShapeGallery('tool', null);
   });
   showShapeButton();
 }
@@ -6314,7 +6342,8 @@ function setTool(t) {
   orderClicks = [];
   cancelLinkPick();
   for (const b of document.querySelectorAll('[data-tool]')) b.setAttribute('aria-pressed', String(b.dataset.tool === t));
-  $('shapeToolBtn').setAttribute('aria-pressed', String(t === 'shape'));
+  $('shapeToolBtn').setAttribute('aria-pressed', String(t === 'shape' || t === 'rect' || t === 'ellipse'));
+  showShapeButton();
   svg.style.cursor = t === 'text' ? 'text' : (t === 'select' || t === 'order') ? '' : 'crosshair';
   if (t === 'order') {
     if (focusedStoryId) inputs[focusedStoryId].blur();
@@ -6322,7 +6351,7 @@ function setTool(t) {
   } else if (t === 'picture') {
     announce('Picture tool. Click on the page to add a picture there, or drag to draw an empty frame. Enter adds one in the middle. You can also drop or paste pictures.');
   } else if (t === 'shape') {
-    announce('Shapes tool: ' + SHAPES[currentShape].label + '. Drag on the page to draw it, or press Enter on the page for one in the middle. Press U again for the other shapes.');
+    announce('Shapes tool: ' + SHAPES[currentShape].label + '. Drag on the page to draw it, or press Enter on the page for one in the middle. Press U, or click the Shapes button, for all the shapes.');
   } else if (t !== 'text' && t !== 'select') {
     announce(TYPE_NAMES[t] + ' tool. Drag on the page to draw, or press Enter on the page for one in the middle.');
   }
@@ -8679,7 +8708,7 @@ function wireChrome() {
     [mod + ' + Shift + ;', 'Snapping on or off (' + alt + ' while dragging: one free drag)'],
     [mod + ' + Shift + S', 'Save project: everything stays editable, pictures included'],
     [mod + ' + S', 'Export: a PDF of every page, or a PNG of this one'],
-    ['V, T, R, O, U, L, F, N', 'Select, Text box, Rectangle, Ellipse, Shapes, Line, Picture, Reading order'],
+    ['V, T, R, O, U, L, F, N', 'Select, Text box, Rectangle, Ellipse, Shapes gallery, Line, Picture, Reading order'],
     ['Pictures', 'Picture tool: click to add one, drag to draw a frame. Or drop picture files on the page (on a frame to fill it), or paste one'],
     ['Double-click a picture, or Enter', 'Crop: drag to move it in its frame, drag its corners to size it, arrow keys to nudge; Escape or Enter when done'],
     [alt + ' + Shift + U / C / F / I / S', 'Merge Shapes: Union, Combine, Fragment, Intersect, Subtract'],
@@ -8694,7 +8723,7 @@ function wireChrome() {
     ['The grey around the page', 'The staging area: keep things there for later. They are not printed, exported or read'],
     [mod + ' + D', 'Duplicate'],
     [mod + ' + Shift + L', 'Lock or unlock what is picked (locked things can’t be moved or picked on the page; pick them in Layers)'],
-    ['U', 'Shapes: triangles, stars, arrows, speech bubbles and more (press U again for the gallery)'],
+    ['U', 'Shapes gallery: rectangles, ellipses, triangles, stars, arrows, speech bubbles and more'],
     ['] and [', 'Forward, backward (' + mod + ': to front, to back)'],
     [mod + ' + G, ' + mod + ' + Shift + G', 'Group, ungroup'],
     [mod + ' + click', 'Pick one object inside a group'],
@@ -8793,7 +8822,7 @@ function wireChrome() {
     if (e.key === '?') { e.preventDefault(); openHelp('tabShortcuts'); return; }
     if (TOOL_KEYS[k] && !e.shiftKey) { setTool(TOOL_KEYS[k]); return; }
     if (k === 'w' && !e.shiftKey) { setPrintPreview(true); return; }
-    if (k === 'u' && !e.shiftKey) { if (tool === 'shape') $('shapePop').showPopover(); else setTool('shape'); return; }
+    if (k === 'u' && !e.shiftKey) { openShapeGallery('tool', null); return; }   // U: the Shapes gallery
     if (e.key === ']') { moveOrder('forward'); return; }
     if (e.key === '[') { moveOrder('backward'); return; }
     if (e.key === 'Escape') {
@@ -11069,6 +11098,12 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.13.2", date: "2026-10-07", title: "", notes: [
+    "One Shapes button. The rail's Rectangle, Ellipse and star buttons are now a single Shapes button (a square, a circle and a triangle). A click, or U, opens the gallery; Rectangle and Ellipse are the first two in Basic shapes. Picking one picks the tool that draws it, and the button stays pressed while you draw. R and O still pick Rectangle and Ellipse straight away. The picture-frame gallery leaves Rectangle and Ellipse out, since the Picture section has its own choices for those."
+  ] },
+  { version: "0.13.1", date: "2026-10-07", title: "", notes: [
+    "The Shapes button is easier to find. One click on the Shapes button on the rail (the star, between the ellipse and the line) now opens the gallery of all 115 shapes; before, the first click only picked the tool. A small triangle in its corner shows that it opens a menu, as in VCTREDTR. U still picks the tool, and U again opens the gallery."
+  ] },
   { version: "0.13.0", date: "2026-10-07", title: "", notes: [
     "Inspector button in the top bar (three sliders, before Theme and Help, as in the other apps): hides or shows the right-hand column, so the page gets the room. A dot on it means something is picked while it is hidden. Remembered in this browser. The Accessibility button opens it again when needed.",
     "Opacity for pictures, shapes and lines: Look, Opacity (5 to 100%). It is see-through on the desk, in the PNG and in the PDF.",

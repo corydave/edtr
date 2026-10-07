@@ -1,5 +1,23 @@
 # DSKEDTR changelog
 
+## 0.13.2 - 2026-10-07
+
+- **One Shapes button.** The rail's Rectangle, Ellipse and star buttons are
+  now a single Shapes button (a square, a circle and a triangle). A click,
+  or U, opens the gallery; Rectangle and Ellipse are the first two in Basic
+  shapes. Picking one picks the tool that draws it, and the button stays
+  pressed while you draw. R and O still pick Rectangle and Ellipse straight
+  away. The picture-frame gallery leaves Rectangle and Ellipse out, since
+  the Picture section has its own choices for those.
+
+## 0.13.1 - 2026-10-07
+
+- **The Shapes button is easier to find.** One click on the Shapes button
+  on the rail (the star, between the ellipse and the line) now opens the
+  gallery of all 115 shapes; before, the first click only picked the tool.
+  A small triangle in its corner shows that it opens a menu, as in
+  VCTREDTR. U still picks the tool, and U again opens the gallery.
+
 ## 0.13.0 - 2026-10-07
 
 - **Inspector button** in the top bar (three sliders, before Theme and
