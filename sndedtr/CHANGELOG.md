@@ -5,6 +5,11 @@ All notable changes to SNDEDTR. Newest first.
 The version number lives in two places and both must move together on a
 release: `APP_VERSION` in `index.html` and `CACHE_VERSION` in `sw.js`.
 
+## 0.7.5 - 2026-10-07 - DSKEDTR joins the family
+
+- **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.
+- The splash's row now fits nine apps: the eight others on one line on a computer, and 4 + 4 on a phone (shared styles pasted in again from `_edtr-suite/suite-block.css`).
+
 ## 0.7.4 - 2026-10-03 - Switched off, not broken
 
 - An effect that is switched off no longer looks disabled. Its whole body was dimmed to 45% opacity, which reads as "unavailable" rather than "off" - the first question it drew was why the effects were greyed out - and it dropped the labels well below the contrast the rest of the app holds to (now 7.6:1 on a switched-off section, measured). The switch carries the state, and the section title goes quiet; the controls stay at full strength.
