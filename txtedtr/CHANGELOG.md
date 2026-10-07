@@ -18,6 +18,12 @@ never had.
 
 ---
 
+## 1.17
+
+**Changed** - DSKEDTR joins the family.
+
+Help -> More apps and the row of apps on the "There is no file open" screen now include DSKEDTR (dskedtr.app), the new desktop publishing app (newsletters, flyers and booklets, with text that flows between boxes), with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js` and `suite-block.css`; with nine apps, the row shows 4 + 4 on a phone.
+
 ## 1.16
 
 - Names of the other apps in Help (in the changelog, About and the guides) are now links that open that app. Each link opens in a new tab; this app's own name stays plain. Shared SUITE block: new `suiteLinkApps()` (called from `renderSuiteApps()`, so no app wiring needed).
