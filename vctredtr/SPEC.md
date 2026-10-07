@@ -98,9 +98,17 @@ Part of the tool family: TXTEDTR, PDFEDTR, IMGEDTR, SNDEDTR, VIDEDTR, SCRNCSTR, 
 - Outline to shape (section 13c): flatten, offset both sides by half the stroke width with the item's joins and caps, `resolveCrossings`; closed paths make a ring (outer XOR inner). Merge Shapes converts open outlined paths first.
 - Pictures (section 16b): Raster items from PNG/JPEG/WebP/GIF, redrawn through a canvas (metadata dropped), max 2048 px. Projects accept `Raster` only with a `data:image/(png|jpeg|webp|gif);base64,` source. Clip: a clipped Group whose first child (the top picked shape; text is converted first) is the mask; its look is kept in `data.maskLook` and restored on Unclip/Ungroup.
 
-## 5. Later (not in 0.1)
+## 4j. Shape tools, Shape builder, Symbols, Artboards, Mesh fills (0.13)
 
-- **Outline stroke** (turn a line's thickness into a filled shape, so lines can be merged).
-- **Offset path** and **simplify path** commands.
-- **Repeat around a centre** (radial copies) for flowers, gears and mandalas.
-- Symbols, multiple artboards, blend, mesh gradients, a shape-builder tool.
+- Resize: Ctrl/Cmd (like Alt) scales about the selection's centre (`scaleSelection`).
+- Section 14b. Offset path: `offsetShape(item, d, join)` = item unite/subtract the union of `outlineOfPath(child, |d|, 'round', join)` for each closed outline; text via `buildTextShape`. Simplify: `path.simplify(tolerance)` on outlines with 12+ points, live shapes skipped. Blend: same point count = segment lerp (points and handles); otherwise 120 points each, aligned by the cyclic shift (and direction) with the least summed squared distance after centring, steps `simplify(0.4)`; styles mixed by `mixStyles`. Settings in `shapeToolOpts` (not undoable, not saved).
+- Shape builder (`builder`, K): `builderPieces()` caches on `history.current` + selection; pieces from `fragmentShapes` (or the shapes themselves when none overlap), looks from the top shape under each piece. Drag = unite picked pieces (first piece's look), Alt = delete; originals swapped for the pieces where the lowest one was. Drawn on uiLayer instead of the selection box.
+- Symbols: instance = Group, `applyMatrix = false`, `data.symbol` (id), `data.symbolName`. Edit: children transformed by the matrix into the art layer, flagged `data.editSymbol = { id, name, instance, uid, matrix, opacity }`; Done: inverse-transformed into a new group with that matrix, then `syncSymbol` clones its children into every other instance. `setStyle` syncs instances too. Ungroup applies the matrix of an `applyMatrix = false` group.
+- Artboards: main board = `doc.width/height` at 0,0 (`doc.boardName`), others in `doc.boards` [{ name, x, y, width, height }] (never mutated in place; `copyDoc` in snapshots), `state.board` = active (clamped by `activeBoard()`). `allBoards()`, `boardRect(i)`, `boardAt(p)`. Extra papers and name labels are HTML in `#boardExtras`, positioned like `#artboardBacker`. `checkBoards()` validates project data.
+- Mesh: `data.mesh = "#tl #tr #bl #br"`, `meshOf(item)`, `meshCanvas(colors)` (64 x 64, smoothstep bilinear, cached); `_draw` wrapper on Path/CompoundPath (skipped for clip masks, compound children and strokeMatrix drawing); SVG via `exportSVG({ onExport })` marking nodes, then `<pattern patternUnits="userSpaceOnUse">` with an `<image>` (both `href` and `xlink:href`). `data-paper-data` is stripped from exports.
+
+## 5. Later
+
+- Gradient meshes with more than four points, and mesh fills for text.
+- Symbols that can hold text you change per copy.
+- Artboards: drag an artboard by its name label; reorder artboards.

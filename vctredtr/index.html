@@ -206,11 +206,16 @@ svg.shield-icon path { vector-effect: non-scaling-stroke; stroke-width: 2; }
 #stage:focus-visible { outline-offset: -3px; }
 /* The artboard's "paper": a white or see-through (checkerboard) rectangle
    under the drawing. JavaScript keeps it lined up with the zoom and pan. */
-#artboardBacker { position: absolute; left: 0; top: 0; pointer-events: none;
+#artboardBacker, .board-backer { position: absolute; left: 0; top: 0; pointer-events: none;
   box-shadow: 0 1px 3px rgba(0,0,0,.18), 0 6px 24px rgba(0,0,0,.12); }
-#artboardBacker.transparent {
+#artboardBacker.transparent, .board-backer.transparent {
   background: repeating-conic-gradient(#e5e7eb 0 25%, #ffffff 0 50%) 0 0 / 16px 16px;
 }
+/* With more than one artboard, each one's name sits just above its top-left corner. */
+#boardExtras { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.board-name { position: absolute; transform: translateY(-100%); padding-bottom: 3px; font-size: 12px;
+  color: var(--text-muted); white-space: nowrap; max-width: 40ch; overflow: hidden; text-overflow: ellipsis; }
+.board-name.active { color: var(--brand); font-weight: 600; }
 
 /* The status bar (bottom) */
 .statusbar { height: 28px; display: flex; align-items: center; gap: 16px; padding: 0 12px;
@@ -286,7 +291,7 @@ svg.shield-icon path { vector-effect: non-scaling-stroke; stroke-width: 2; }
 }
 .field textarea { height: auto; min-height: 56px; padding: 6px 8px; resize: vertical; }
 .field input[type="range"] { width: 100%; accent-color: var(--brand); min-width: 0; }
-.field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); margin: 0; }
+.field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); margin: 3px 0; }  /* (the margin keeps a 24 px clear space round it) */
 .range-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .range-wrap input[type="number"] { width: 64px !important; flex: none; }
 .xywh { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
@@ -303,6 +308,12 @@ svg.shield-icon path { vector-effect: non-scaling-stroke; stroke-width: 2; }
   cursor: pointer; white-space: nowrap; font-size: 12.5px; }
 .seg button + button { border-left: 1px solid var(--border); }
 .seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-contrast); }
+/* Four or more choices do not fit in one row of the Inspector: two rows of two. */
+.seg.seg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); }
+.seg.seg-grid button + button { border-left: 0; }
+/* Export's "What" can have three long choices: on a narrow screen they go onto two rows. */
+#expWhat { flex-wrap: wrap; gap: 1px; background: var(--border); }
+#expWhat button { flex: 1 1 auto; min-width: max-content; border-left: 0; }
 
 /* Colour controls: the picker button, the on/off box and quick swatches. */
 .color-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; min-width: 0; }
@@ -796,6 +807,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
          tap adds a shape to the selection or takes it out. Not a tool: it works
          with Select and Edit points, so it is a toggle (aria-pressed). -->
     <button class="icon-btn" id="btnMulti" title="Pick several: each tap adds or removes a shape (like Shift+click) (M)" aria-label="Pick several" aria-pressed="false"><span data-icon="multi"></span></button>
+    <button class="icon-btn" data-tool="builder" title="Shape builder: drag across pieces of overlapping shapes to join them, Alt+drag to delete (K)" aria-label="Shape builder tool"><span data-icon="builder"></span></button>
     <hr aria-hidden="true">
     <button class="icon-btn" data-tool="rect"    title="Rectangle (R)" aria-label="Rectangle tool"><span data-icon="square"></span></button>
     <button class="icon-btn" data-tool="ellipse" title="Ellipse (O)" aria-label="Ellipse tool"><span data-icon="circle"></span></button>
@@ -825,6 +837,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   <main class="workspace" id="workspace">
     <!-- The artboard's paper (white, a colour, or a see-through checkerboard). -->
     <div id="artboardBacker" class="transparent" hidden></div>
+    <!-- More artboards (and every artboard's name, when there is more than one). -->
+    <div id="boardExtras" aria-hidden="true"></div>
     <canvas id="stage" tabindex="0" role="img" aria-roledescription="drawing canvas"
       aria-label="Drawing canvas. Pick a tool, then drag here. With a shape tool, Enter adds a shape in the middle. Arrow keys move the selection. The Layers list lets you pick shapes from the keyboard."></canvas>
 
@@ -968,6 +982,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       <div class="field"><span class="label" id="expWhatLabel">What</span>
         <div class="seg" role="group" aria-labelledby="expWhatLabel" id="expWhat">
           <button type="button" data-v="board" aria-pressed="true">Whole artboard</button>
+          <button type="button" data-v="all" aria-pressed="false" hidden>Every artboard</button>
           <button type="button" data-v="selection" aria-pressed="false">Selection only</button></div></div>
       <div class="field"><span class="label" id="expFormatLabel">Format</span>
         <div class="seg" role="group" aria-labelledby="expFormatLabel" id="expFormat">
@@ -1053,6 +1068,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       </ol>
       <p class="hint">The order you pick them in matters: the <strong>first</strong> shape you pick gives the result its colours, and Subtract keeps the first shape and cuts the others out of it. (Fragment is the exception: each piece keeps the colour it already had.) Little numbers on the canvas and in the Layers list show the order.</p>
       <ul class="guide-list" id="mergeGuide"></ul>
+      <p class="hint" style="margin-top:12px"><strong>Shape builder (K)</strong> does the same jobs by hand: pick the overlapping shapes, choose the Shape builder, then drag across the pieces you want joined into one shape. Hold Alt (Option on a Mac) and drag to delete pieces instead, or click one piece to make it a shape of its own. Escape goes back to Select.</p>
       <p class="hint" style="margin-top:12px">Merging works on filled shapes: rectangles, ellipses, polygons, stars, shields, pen shapes and earlier merges - and on text. Text is turned into shapes first (its letter outlines, holes and all), so a word can be cut out of a shield or joined to a star; Undo brings the text back. That works with the included fonts, not the ones built into the computer (Sans, Serif, Mono, Rounded, Impact), which a web page cannot read. Lines and pencil squiggles join in too: their outline becomes a filled band first (Outline to shape, in the Outline section, does that on its own). Groups and pictures are left out (ungroup a group first). To show a picture inside a shape or a word, use Clip to top shape instead (under Align and arrange).</p>
     </div>
     <div role="tabpanel" id="paneAbout" aria-labelledby="tabAbout" hidden>
@@ -1211,10 +1227,21 @@ var VCTR_EMBEDDED = { edition: "offline", fonts: {
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.12.1';
+const APP_VERSION = '0.13.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 const CHANGELOG = [
+  { version: '0.13.0', date: '2026-10-07', notes: [
+    'Resize from the middle: hold Ctrl (Cmd on a Mac) while dragging a corner or side handle, and every side moves in or out at the same rate. Alt still works too.',
+    'Offset path, in the new Shape tools section: a copy of a shape or word grown (or, below 0, shrunk) the same distance all the way round, with round or sharp corners. Grown copies go behind the original: instant borders and stickers.',
+    'Simplify: fewer points and smoother curves on Pencil drawings, traced and offset shapes. Amount sets how loosely it may follow the old line.',
+    'Blend: pick exactly two shapes and make steps in between, shape and colours changing a little each time.',
+    'Shape builder tool (K): pick overlapping shapes, then drag across the pieces to join them, or Alt+drag to delete them.',
+    'Symbols: Make symbol turns a drawing into a symbol you can use many times. Edit symbol (then Done editing) changes every copy at once, and so does a colour change on any copy. Detach makes a copy ordinary again.',
+    'More artboards: Add artboard puts another beside the first (a logo in several sizes, a front and a back). Click an empty spot on one to work on it; Export can save every artboard at once.',
+    'Mesh fills: a fourth fill type with a colour in each corner, blending smoothly across the shape. It shows in PNG and SVG exports too.',
+    'Exported SVG files no longer carry VCTREDTR\'s own notes about each shape (its id and so on).'
+  ] },
   { version: '0.12.1', date: '2026-10-07', notes: [
     'More apps and the splash\'s row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes.',
     'With nine apps in the family, the splash\'s row shows the eight others on one line on a computer, and 4 + 4 on a phone.'
@@ -1461,13 +1488,15 @@ function fontFileBytes(file, weight) {
 const KIND_LABELS = {
   rect: 'Rectangle', ellipse: 'Ellipse', polygon: 'Polygon', star: 'Star', shield: 'Shield', symbol: 'Shape', line: 'Line',
   pen: 'Path', pencil: 'Drawing', text: 'Text', group: 'Group', path: 'Path', svg: 'SVG',
-  textshape: 'Text shapes', outline: 'Outline shape', image: 'Picture', clip: 'Clip group', union: 'Union', combine: 'Combine', fragment: 'Fragment', intersect: 'Intersect', subtract: 'Subtract'
+  textshape: 'Text shapes', outline: 'Outline shape', image: 'Picture', clip: 'Clip group', union: 'Union', combine: 'Combine', fragment: 'Fragment', intersect: 'Intersect', subtract: 'Subtract',
+  offset: 'Offset shape', blend: 'Blend', instance: 'Symbol'
 };
 // Which icon each kind uses in the layer list.
 const KIND_ICONS = {
   rect: 'square', ellipse: 'circle', polygon: 'hexagon', star: 'star', shield: 'shield', symbol: 'heart', line: 'line', pen: 'penTool',
   pencil: 'pencil', text: 'type', group: 'group', path: 'penTool', svg: 'code',
-  textshape: 'type', outline: 'penTool', image: 'image', clip: 'group', union: 'mUnion', combine: 'mCombine', fragment: 'mFragment', intersect: 'mIntersect', subtract: 'mSubtract'
+  textshape: 'type', outline: 'penTool', image: 'image', clip: 'group', union: 'mUnion', combine: 'mCombine', fragment: 'mFragment', intersect: 'mIntersect', subtract: 'mSubtract',
+  offset: 'offset', blend: 'blend', instance: 'component'
 };
 
 // Shortcut: find one element by id.
@@ -1608,7 +1637,13 @@ const ICONS = {
   mCombine: '<path d="' + M_LEFT + M_RIGHT + '" fill="currentColor" fill-opacity=".35" fill-rule="evenodd"/>',
   mFragment: '<path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 1 1 12 17.2A6 6 0 0 0 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="' + M_LENS + '" fill="currentColor" fill-opacity=".6"/>',
   mIntersect: '<path d="' + M_LEFT + '" stroke-dasharray="2 2" stroke-width="1.5"/><path d="' + M_RIGHT + '" stroke-dasharray="2 2" stroke-width="1.5"/><path d="' + M_LENS + '" fill="currentColor" fill-opacity=".45"/>',
-  mSubtract: '<path d="' + M_RIGHT + '" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".35"/>'
+  mSubtract: '<path d="' + M_RIGHT + '" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".35"/>',
+  // Shape builder: the two circles, with the overlap being picked.
+  builder: '<path d="' + M_LEFT + '"/><path d="' + M_RIGHT + '"/><path d="' + M_LENS + '" fill="currentColor" fill-opacity=".45"/>',
+  offset: '<rect x="3" y="3" width="18" height="18" rx="5"/><rect x="8" y="8" width="8" height="8" rx="1.5"/>',
+  blend: '<circle cx="6" cy="12" r="3.5"/><circle cx="12" cy="12" r="3.5" stroke-opacity=".6"/><circle cx="18" cy="12" r="3.5" stroke-opacity=".35"/>',
+  // A symbol: four diamonds (the usual sign for "one design, used many times").
+  component: '<path d="M12 3 15 6 12 9 9 6Z"/><path d="M6 9 9 12 6 15 3 12Z"/><path d="M18 9 21 12 18 15 15 12Z"/><path d="M12 15 15 18 12 21 9 18Z"/>'
 };
 
 /** Build an <svg> element for an icon name. aria-hidden because the button has its own label. */
@@ -1723,7 +1758,10 @@ const defaults = {
   // Sans: it looks the same on every computer and can be turned into shapes.
   font: 'montserrat', fontSize: 64, bold: true, align: 'left',
   tracking: 0,           // letter spacing, % of the font size (0 = normal)
-  curve: 0               // text curve, -100 (smile) to 100 (arch, all the way round); 0 = straight
+  curve: 0,              // text curve, -100 (smile) to 100 (arch, all the way round); 0 = straight
+  // Mesh fill: a colour in each corner, blending smoothly across the shape
+  // (top left, top right, bottom left, bottom right).
+  mesh: ['#5b21b6', '#f45922', '#0046ad', '#facc15']
 };
 
 /* Set up Paper.js on the canvas: one project with our three layers. */
@@ -1741,6 +1779,7 @@ function setupEngine() {
   P.project.addLayer(uiLayer);
   artLayer.activate();
   addTextEffects();
+  addMeshDrawing();
 }
 
 /* ---- Letter spacing and curved text ----
@@ -1897,6 +1936,78 @@ function addTextEffects() {
   };
 }
 
+/* ---- Mesh fills ----
+   Four colours, one in each corner of the shape's box, blending smoothly
+   across it. Paper.js has no such fill, so we teach it: after a shape is
+   drawn as usual (filled with the average colour), the mesh picture is
+   painted over it, cut to the shape's outline, and the outline is drawn
+   again on top. The picture is a small 64 × 64 canvas, stretched (the
+   browser smooths it). SVG export uses the same picture (section 17).  */
+const MESH_HEX = /^#[0-9a-f]{6}$/i;
+/** Four "#rrggbb" colours, nothing else (they may come from a project file). */
+const validMesh = (m) => Array.isArray(m) && m.length === 4 && m.every((c) => typeof c === 'string' && MESH_HEX.test(c));
+/**
+ * An item's mesh colours, or null. They are kept in its data as ONE text,
+ * "#5b21b6 #f45922 #0046ad #facc15" (a list of words would look like
+ * something else to the project-file checks in section 16).
+ */
+function meshOf(item) {
+  const m = item && item._data && item._data.mesh;    // (_data: reading .data would give every item an empty data object)
+  if (typeof m !== 'string' || m.length > 40) return null;
+  const list = m.split(' ');
+  return validMesh(list) ? list : null;
+}
+const meshCanvases = new Map();                     // "colours" -> canvas, made once each
+function meshCanvas(colors) {
+  const key = colors.join(',').toLowerCase();
+  if (meshCanvases.has(key)) return meshCanvases.get(key);
+  const N = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = N; canvas.height = N;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(N, N);
+  const [tl, tr, bl, br] = colors.map((c) => hexToRgb(c));
+  // A gentle S-curve (smoothstep) instead of a straight blend: softer, like a real mesh.
+  const ease = (t) => t * t * (3 - 2 * t);
+  for (let y = 0; y < N; y++) {
+    const v = ease(y / (N - 1));
+    for (let x = 0; x < N; x++) {
+      const u = ease(x / (N - 1)), i = (y * N + x) * 4;
+      for (let ch = 0; ch < 3; ch++) {
+        const top = tl[ch] + (tr[ch] - tl[ch]) * u, bottom = bl[ch] + (br[ch] - bl[ch]) * u;
+        img.data[i + ch] = Math.round(top + (bottom - top) * v);
+      }
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  if (meshCanvases.size > 200) meshCanvases.clear();   // never let the store grow without end
+  meshCanvases.set(key, canvas);
+  return canvas;
+}
+function addMeshDrawing() {
+  for (const Cls of [P.Path, P.CompoundPath]) {
+    const proto = Cls.prototype, original = proto._draw;
+    proto._draw = function (ctx, param, viewMatrix, strokeMatrix) {
+      original.apply(this, arguments);
+      const mesh = meshOf(this);
+      // Not when this is a clip mask, or one outline of a compound shape
+      // (the compound paints it once), or when it was drawn some other way.
+      if (!mesh || param.clip || param.dontFinish || strokeMatrix) return;
+      const style = this.getStyle();
+      if (!style.hasFill()) return;
+      const b = this.getInternalBounds();
+      if (!(b.width > 0 && b.height > 0)) return;
+      ctx.save();
+      ctx.clip(this.getFillRule());                    // the shape's outline, still the current path
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(meshCanvas(mesh), b.x, b.y, b.width, b.height);
+      ctx.restore();
+      if (style.hasStroke()) ctx.stroke();             // the outline goes back on top
+    };
+  }
+}
+
 /* The theme's violet, for the selection box (lighter in dark mode). */
 const brandColor = () => getComputedStyle(document.documentElement).getPropertyValue('--brand').trim() || '#5b21b6';
 const guideColor = () => getComputedStyle(document.documentElement).getPropertyValue('--guide').trim() || '#db2777';
@@ -1947,7 +2058,7 @@ const history = { undo: [], redo: [], current: null, lastKey: null, lastTime: 0 
 function snapshot() {
   return {
     art: hidePointsForExport(() => artLayer.exportJSON({ asString: true, precision: 4 })),
-    doc: doc ? { ...doc } : null,
+    doc: doc ? copyDoc(doc) : null,
     sel: state.sel.map((it) => it.data.uid)
   };
 }
@@ -1982,7 +2093,7 @@ function restore(snap) {
   // fills THIS layer with the saved children (rather than adding a new one).
   artLayer.importJSON(snap.art);
   artLayer.name = 'art';
-  doc = snap.doc ? { ...snap.doc } : doc;
+  doc = snap.doc ? copyDoc(snap.doc) : doc;
   state.sel = snap.sel.map(findByUid).filter(Boolean);
   onDocumentShapeChanged();
 }
@@ -2055,13 +2166,83 @@ function setZoom(z, anchor = null) {
   viewChanged();
 }
 const zoomBy = (factor, anchor) => setZoom(P.view.zoom * factor, anchor);
+/* ---- Artboards ----
+   A drawing has one main artboard at 0, 0 (doc.width × doc.height) and can
+   have more: doc.boards lists the others, each { name, x, y, width, height }
+   in drawing units. state.board says which one you are working on (0 = the
+   main one). Zoom to fit, Align (one shape), Export, Pad contents and new
+   shapes added from the keyboard all use that one. Click an empty spot on
+   an artboard (or pick it in the Inspector) to work on it.
+   The list is only ever replaced, never changed in place, and every undo
+   step keeps its own copy (copyDoc), so undo always brings back the right
+   artboards.                                                            */
+const MAX_BOARDS = 50;
+/** Every artboard, the main one first: [{ name, x, y, width, height }, ...]. */
+function allBoards() {
+  if (!doc) return [];
+  return [{ name: doc.boardName || 'Artboard 1', x: 0, y: 0, width: doc.width, height: doc.height }, ...(doc.boards || [])];
+}
+/** Which artboard you are working on (always a real one, even after an undo removed some). */
+const activeBoard = () => clamp(Math.round(state.board) || 0, 0, Math.max(0, allBoards().length - 1));
+/** An artboard as a Paper.js rectangle (the active one unless you say which). */
+function boardRect(i = activeBoard()) {
+  const b = allBoards()[i] || allBoards()[0];
+  return new P.Rectangle(b.x, b.y, b.width, b.height);
+}
+/** Which artboard is under this drawing point? -1 if none (the last one wins where they overlap). */
+function boardAt(p) {
+  const list = allBoards();
+  for (let i = list.length - 1; i >= 0; i--) if (boardRect(i).contains(p)) return i;
+  return -1;
+}
+/** A copy of the drawing's settings that shares nothing with the original (for undo steps). */
+const copyDoc = (d) => ({ ...d, boards: (d.boards || []).map((b) => ({ ...b })) });
+/** The drawing's settings as they go into a project file or a backup. */
+const savedDoc = () => ({ width: doc.width, height: doc.height, background: doc.background, title: doc.title || '', desc: doc.desc || '',
+  boardName: doc.boardName || '', boards: (doc.boards || []).map((b) => ({ ...b })) });
+/**
+ * Check the extra artboards from a project file before using them: a list
+ * (not too long) of plain names and sensible numbers. Anything else stops
+ * the file from opening. Returns a clean copy.
+ */
+function checkBoards(list) {
+  if (list === undefined || list === null) return [];
+  const bad = () => new Error('That project has artboards that do not make sense.');
+  if (!Array.isArray(list) || list.length > MAX_BOARDS - 1) throw bad();
+  const place = (v) => Number.isFinite(v) && Math.abs(v) <= MAX_SIDE * MAX_BOARDS;
+  const size = (v) => Number.isFinite(v) && v >= 1 && v <= MAX_SIDE;
+  return list.map((b) => {
+    if (!b || typeof b !== 'object' || typeof b.name !== 'string' || !place(b.x) || !place(b.y) || !size(b.width) || !size(b.height)) throw bad();
+    return { name: b.name.slice(0, 60), x: b.x, y: b.y, width: Math.round(b.width), height: Math.round(b.height) };
+  });
+}
+/** Work on artboard i (and zoom to it when `fit`). Not an undo step: it changes nothing in the drawing. */
+function setActiveBoard(i, fit = false) {
+  state.board = clamp(i, 0, allBoards().length - 1);
+  if (fit) fitView(); else viewChanged();
+  renderProps();
+  updateStatus();
+  announce('Working on ' + allBoards()[activeBoard()].name);
+}
+/** Change one artboard's name, place or size. The main one stays at 0, 0. */
+function updateBoard(i, changes) {
+  if (i === 0) {
+    if (changes.name !== undefined) doc.boardName = changes.name;
+    if (changes.width !== undefined) doc.width = changes.width;
+    if (changes.height !== undefined) doc.height = changes.height;
+    return;
+  }
+  doc.boards = doc.boards.map((b, k) => (k === i - 1 ? { ...b, ...changes } : b));
+}
+
 /** Show the whole artboard with a little room around it. */
 function fitView() {
   if (!doc) return;
+  const b = boardRect();                              // the artboard you are working on
   const vs = P.view.viewSize, pad = vs.width < 500 ? 24 : 64;
-  const z = Math.min((vs.width - pad * 2) / doc.width, (vs.height - pad * 2) / doc.height);
+  const z = Math.min((vs.width - pad * 2) / b.width, (vs.height - pad * 2) / b.height);
   P.view.zoom = clamp(z, MIN_ZOOM, MAX_ZOOM);
-  P.view.center = new P.Point(doc.width / 2, doc.height / 2);
+  P.view.center = b.center;
   viewChanged();
 }
 /** Move the view by a number of screen pixels. */
@@ -2093,6 +2274,26 @@ function syncArtboardBacker() {
   b.style.width = (br.x - tl.x) + 'px'; b.style.height = (br.y - tl.y) + 'px';
   b.classList.toggle('transparent', !doc.background);
   b.style.backgroundColor = doc.background || '';
+  // The other artboards get a paper of their own, and every artboard a name
+  // label, when there is more than one. (Rebuilt each time: there are few.)
+  const extras = $('boardExtras');
+  extras.replaceChildren();
+  const list = allBoards();
+  if (list.length < 2) return;
+  list.forEach((bd, i) => {
+    const a = P.view.projectToView(new P.Point(bd.x, bd.y));
+    const z = P.view.projectToView(new P.Point(bd.x + bd.width, bd.y + bd.height));
+    if (i > 0) {
+      const paper = el('div', { class: 'board-backer' + (doc.background ? '' : ' transparent') });
+      Object.assign(paper.style, { left: a.x + 'px', top: a.y + 'px', width: (z.x - a.x) + 'px', height: (z.y - a.y) + 'px',
+        backgroundColor: doc.background || '' });
+      extras.append(paper);
+    }
+    // textContent (inside el's "text"): a name typed by someone is shown as text, never run.
+    const label = el('div', { class: 'board-name' + (i === activeBoard() ? ' active' : ''), text: bd.name });
+    Object.assign(label.style, { left: a.x + 'px', top: a.y + 'px' });
+    extras.append(label);
+  });
 }
 
 /* The grid: thin lines over the artboard, only when they are far enough
@@ -2105,11 +2306,14 @@ function drawGrid() {
   const dark = effectiveDark();
   const minor = new P.Color(dark ? '#ffffff' : '#000000'); minor.alpha = 0.09;
   const lines = [];
-  const vb = P.view.bounds.intersect(new P.Rectangle(0, 0, doc.width, doc.height));
-  if (vb.width <= 0 || vb.height <= 0) return;
-  for (let x = Math.ceil(vb.left / g) * g; x <= vb.right; x += g) lines.push([new P.Point(x, vb.top), new P.Point(x, vb.bottom)]);
-  for (let y = Math.ceil(vb.top / g) * g; y <= vb.bottom; y += g) lines.push([new P.Point(vb.left, y), new P.Point(vb.right, y)]);
-  if (lines.length > 3000) return;                    // far too many to be useful
+  for (const bd of allBoards()) {                        // over each artboard (the part on screen)
+    const vb = P.view.bounds.intersect(new P.Rectangle(bd.x, bd.y, bd.width, bd.height));
+    if (vb.width <= 0 || vb.height <= 0) continue;
+    // Grid lines count from each artboard's own top-left corner.
+    for (let x = bd.x + Math.ceil((vb.left - bd.x) / g) * g; x <= vb.right; x += g) lines.push([new P.Point(x, vb.top), new P.Point(x, vb.bottom)]);
+    for (let y = bd.y + Math.ceil((vb.top - bd.y) / g) * g; y <= vb.bottom; y += g) lines.push([new P.Point(vb.left, y), new P.Point(vb.right, y)]);
+  }
+  if (!lines.length || lines.length > 3000) return;                    // far too many to be useful
   const cp = new P.CompoundPath({ strokeColor: minor, strokeWidth: 1 / z });
   for (const [a, b] of lines) cp.addChild(new P.Path.Line(a, b));
   gridLayer.addChild(cp);
@@ -2204,9 +2408,14 @@ function drawSelectionUI() {
   const brand = brandColor();
   const add = (item) => { uiLayer.addChild(item); return item; };
 
-  // The artboard's edge: a thin line so it shows even on a white background.
-  add(new P.Path.Rectangle({ rectangle: new P.Rectangle(0, 0, doc.width, doc.height),
-    strokeColor: effectiveDark() ? '#6b7280' : '#9ca3af', strokeWidth: px }));
+  // Each artboard's edge: a thin line so it shows even on a white background.
+  // With several, the one you are working on gets the brand colour.
+  const boardsNow = allBoards();
+  boardsNow.forEach((bd, i) => {
+    const on = boardsNow.length > 1 && i === activeBoard();
+    add(new P.Path.Rectangle({ rectangle: new P.Rectangle(bd.x, bd.y, bd.width, bd.height),
+      strokeColor: on ? brand : effectiveDark() ? '#6b7280' : '#9ca3af', strokeWidth: (on ? 1.5 : 1) * px }));
+  });
 
   // Pink smart guides.
   const gc = guideColor();
@@ -2230,6 +2439,9 @@ function drawSelectionUI() {
 
   // The pen's "rubber band": where the next segment would go.
   if (state.pen && state.pen.preview) add(state.pen.preview);
+
+  // The Shape builder shows the pieces instead of the selection box.
+  if (state.tool === 'builder') { drawBuilderUI(add, px, brand); return; }
 
   const sel = state.sel;
   if (!sel.length) return;
@@ -2296,7 +2508,11 @@ function handleAt(point) {
    ----------------------------------------------------------------------- */
 /** The lines things can snap to: x positions and y positions. */
 function snapTargets(exclude = []) {
-  const xs = [0, doc.width / 2, doc.width], ys = [0, doc.height / 2, doc.height];
+  const xs = [], ys = [];
+  for (const bd of allBoards()) {                        // every artboard's edges and middle
+    xs.push(bd.x, bd.x + bd.width / 2, bd.x + bd.width);
+    ys.push(bd.y, bd.y + bd.height / 2, bd.y + bd.height);
+  }
   for (const it of topItems()) {
     if (exclude.includes(it) || !it.visible) continue;
     const b = it.bounds;
@@ -2410,10 +2626,11 @@ function snapCorners(c, delta, e) {
    ----------------------------------------------------------------------- */
 const TOOL_NAMES = {
   select: 'Select', direct: 'Edit points', rect: 'Rectangle', ellipse: 'Ellipse', polygon: 'Polygon',
-  star: 'Star', shield: 'Shield', symbol: 'Shapes', line: 'Line', pen: 'Pen', pencil: 'Pencil', text: 'Text', eyedropper: 'Eyedropper', hand: 'Hand'
+  star: 'Star', shield: 'Shield', symbol: 'Shapes', line: 'Line', pen: 'Pen', pencil: 'Pencil', text: 'Text', eyedropper: 'Eyedropper', hand: 'Hand',
+  builder: 'Shape builder'
 };
 const SHAPE_TOOLS = ['rect', 'ellipse', 'polygon', 'star', 'shield', 'symbol'];
-const TOOL_CURSORS = { select: 'default', direct: 'default', text: 'text', hand: 'grab', eyedropper: 'copy' };
+const TOOL_CURSORS = { select: 'default', direct: 'default', text: 'text', hand: 'grab', eyedropper: 'copy', builder: 'default' };
 const mod = (e) => e.ctrlKey || e.metaKey;           // Ctrl on Windows/Chromebook, Cmd on a Mac
 /** Does this click add to the selection? Shift, Ctrl/Cmd, or the Pick several button (for touch screens). */
 const adding = (e) => e.shiftKey || mod(e) || state.multi;
@@ -2434,6 +2651,7 @@ function setTool(name) {
   if (state.editingText) endTextEdit();
   const wasDirect = state.tool === 'direct';
   state.tool = name;
+  if (name === 'builder') { builder = null; state.builderHover = -1; }   // work the pieces out afresh
   if (wasDirect && name !== 'direct') hidePoints();
   if (name === 'direct') showPoints();
   document.querySelectorAll('#toolRail [data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === name)));
@@ -2464,6 +2682,8 @@ function readStyle(item) {
     s.fill2 = hexOf(stops[stops.length - 1].color) || s.fill2;
     if (f.origin && f.destination) s.gradAngle = Math.round(f.destination.subtract(f.origin).angle);
   } else if (f) { s.fillType = 'solid'; s.fill = hexOf(f); }
+  const mesh = f && meshOf(item);
+  if (mesh) { s.fillType = 'mesh'; s.mesh = mesh; }
   s.strokeOn = !!item.strokeColor && item.strokeWidth > 0;
   if (item.strokeColor) s.stroke = hexOf(item.strokeColor) || s.stroke;
   s.strokeWidth = item.strokeWidth || 0;
@@ -2485,6 +2705,9 @@ function readStyle(item) {
 function makeFill(item, s) {
   if (!s.fillOn) return null;
   if (s.fillType === 'solid') return new P.Color(s.fill);
+  // A mesh is painted on top by the drawing code (meshCanvas, below); the
+  // plain fill underneath is the corners' average colour.
+  if (s.fillType === 'mesh') return new P.Color(validMesh(s.mesh) ? mixHex(mixHex(s.mesh[0], s.mesh[1], 0.5), mixHex(s.mesh[2], s.mesh[3], 0.5), 0.5) : s.fill);
   const b = item.bounds;
   if (s.fillType === 'radial') {
     return { gradient: { stops: [s.fill, s.fill2], radial: true },
@@ -2506,7 +2729,12 @@ function dashFor(s) {
 function applyStyle(item, s, only = null) {
   if (isGroup(item)) { item.children.forEach((c) => applyStyle(c, s, only)); return; }
   const want = (k) => !only || only.includes(k);
-  if (want('fill')) item.fillColor = makeFill(item, s);
+  if (want('fill')) {
+    item.fillColor = makeFill(item, s);
+    // The mesh's corner colours live in the item's data (saved, undone and copied with it). Not for text.
+    const mesh = s.fillOn && s.fillType === 'mesh' && !isText(item) && validMesh(s.mesh) ? s.mesh.join(' ') : null;
+    if (mesh || (item.data && item.data.mesh)) item.data = Object.assign({}, item.data, { mesh });
+  }
   if (want('stroke')) {
     item.strokeColor = s.strokeOn ? new P.Color(s.stroke) : null;
     item.strokeWidth = s.strokeOn ? s.strokeWidth : 0;
@@ -2774,11 +3002,11 @@ function addItem(item, kind) {
   announce(item.name + ' added');
 }
 /** The default size for a shape dropped with a click or with Enter. */
-const dropSize = () => Math.round(clamp(Math.min(doc.width, doc.height) * 0.2, 40, 400));
+const dropSize = () => { const b = boardRect(); return Math.round(clamp(Math.min(b.width, b.height) * 0.2, 40, 400)); };
 /** Where to put a shape added from the keyboard: the middle of the view, kept on the artboard. */
 function viewMiddle() {
-  const c = P.view.center;
-  return new P.Point(clamp(c.x, 0, doc.width), clamp(c.y, 0, doc.height));
+  const c = P.view.center, b = boardRect();
+  return new P.Point(clamp(c.x, b.left, b.right), clamp(c.y, b.top, b.bottom));
 }
 /** Enter on the canvas with a drawing tool: add a shape in the middle (keyboard drawing). */
 function insertDefault(tool) {
@@ -2855,6 +3083,7 @@ stage.addEventListener('pointerdown', (e) => {
     guideLines = [];
   }
   else if (t === 'eyedropper') eyedrop(p);
+  else if (t === 'builder') downBuilder(p, e);
 });
 
 stage.addEventListener('pointermove', (e) => {
@@ -2877,6 +3106,7 @@ stage.addEventListener('pointermove', (e) => {
   else if (d.type === 'points') movePoints(p, e);
   else if (d.type === 'handle') moveHandle(p, e);
   else if (d.type === 'pointMarquee') { d.rect = new P.Rectangle(d.start, p); drawSelectionUI(); }
+  else if (d.type === 'builder') moveBuilder(p);
 });
 
 function endPointer(e, cancelled) {
@@ -2906,6 +3136,7 @@ function endPointer(e, cancelled) {
   else if (d.type === 'penDrag') { state.pen.dragging = false; drawPenPreview(p); }
   else if (d.type === 'points' || d.type === 'handle') upPoints(d);
   else if (d.type === 'pointMarquee') upPointMarquee(d);
+  else if (d.type === 'builder') upBuilder(d);
   clearGuides();
   drawSelectionUI();
 }
@@ -2952,6 +3183,8 @@ function hover(p) {
     setCursor(h ? HANDLE_CURSORS[h] : itemAt(p) ? 'move' : 'default');
   } else if (state.tool === 'pen' && state.pen) {
     drawPenPreview(p);
+  } else if (state.tool === 'builder') {
+    hoverBuilder(p);
   }
 }
 
@@ -2995,8 +3228,12 @@ function downSelect(p, e) {
     startMove(p, clickSelect);
     return;
   }
+  // An empty spot on another artboard: work on that artboard from now on.
+  const onBoard = boardAt(p), switched = onBoard >= 0 && onBoard !== activeBoard();
+  if (switched) { state.board = onBoard; syncArtboardBacker(); updateStatus(); announce('Working on ' + allBoards()[onBoard].name); }
   // With Pick several on, a stray tap on empty canvas keeps what you picked.
-  if (!adding(e)) clearSelection();
+  if (!adding(e) && state.sel.length) clearSelection();
+  else if (switched) { renderProps(); drawSelectionUI(); }
   state.drag = { type: 'marquee', start: p, rect: null, before: [...state.sel] };
 }
 function startMove(p, clickSelect = null) {
@@ -3049,8 +3286,9 @@ function scaleSelection(p, e) {
   // a circle stays a circle). Hold Shift on a corner to stretch it freely.
   // Side, top and bottom handles always stretch in one direction only.
   const keep = hx && hy && !e.shiftKey && sb.width > 0 && sb.height > 0;
-  if (e.altKey) {
-    // Alt: grow or shrink from the middle, both sides at once.
+  if (e.altKey || mod(e)) {
+    // Ctrl (Cmd on a Mac) or Alt: grow or shrink from the middle - every
+    // side moves in or out at the same rate, not just the one you hold.
     const c = sb.center;
     let hw = hx ? Math.max(Math.abs(q.x - c.x), 0.5) : sb.width / 2;
     let hh = hy ? Math.max(Math.abs(q.y - c.y), 0.5) : sb.height / 2;
@@ -3706,7 +3944,7 @@ const movable = () => state.sel.filter((it) => !it.locked);
 function align(where) {
   const items = movable();
   if (!items.length) return;
-  const ref = items.length === 1 ? new P.Rectangle(0, 0, doc.width, doc.height) : selectionBounds(items);
+  const ref = items.length === 1 ? boardRect() : selectionBounds(items);
   for (const it of items) {
     const b = it.bounds;
     const dx = where === 'left' ? ref.left - b.left : where === 'right' ? ref.right - b.right
@@ -3769,6 +4007,8 @@ function ungroupSelection() {
   for (const g of groups) {
     unclipGroup(g);                                   // a clip's mask gets its colours back first (section 16b)
     const kids = g.removeChildren();
+    // A symbol copy keeps its place, size and turn in its own matrix (14b): put that on each member.
+    if (!g.applyMatrix) for (const k of kids) k.transform(g.matrix);
     // A group's own opacity would be lost: fold it into each member's.
     for (const k of kids) { k.opacity *= g.opacity; if (!k.data || !k.data.uid) tagItem(k, kindOf(k)); }
     g.parent.insertChildren(g.index, kids);
@@ -4310,6 +4550,548 @@ function convertSelectedOutlines() {
 }
 
 /* -----------------------------------------------------------------------
+   14b. SHAPE TOOLS: OFFSET PATH, SIMPLIFY, BLEND, SHAPE BUILDER, SYMBOLS
+   Five ways to make new shapes out of the ones you have:
+     - Offset path: a copy of a shape, grown (or shrunk) the same distance
+       all the way round - a sticker's border, an outline round a logo.
+     - Simplify: fewer points on a wobbly line or shape (a Pencil drawing
+       has hundreds), so it is smoother and easier to edit.
+     - Blend: steps that turn one shape into another, colour and all.
+     - Shape builder (a tool, K): drag across the pieces where shapes
+       overlap to join them, or Alt+drag to delete them.
+     - Symbols: one drawing used many times. Change the symbol and every
+       copy changes with it.
+   ----------------------------------------------------------------------- */
+/** The settings these tools use (not part of the drawing, so no undo steps). */
+const shapeToolOpts = { offset: 10, offsetCorners: 'round', simplify: 3, blendSteps: 5 };
+/** A path or a compound path (a shape made of outlines; not text, a group or a picture). */
+const isPathItem = (item) => item instanceof P.Path || item instanceof P.CompoundPath;
+
+/* ---- Offset path ----
+   The trick: the band around the shape's edge, `distance` wide on each
+   side, is exactly the "outline to shape" of an outline that thick (13c).
+   The shape plus that band = grown; the shape minus it = shrunk.       */
+function offsetShape(item, distance, join) {
+  const h = Math.abs(distance);
+  const outlines = item instanceof P.CompoundPath ? item.children : [item];
+  let band = null;
+  for (const p of outlines) {
+    if (!p.closed || p.segments.length < 2) continue;
+    const piece = outlineOfPath(p, h, 'round', join, 10);
+    if (piece) band = band ? band.unite(piece, { insert: false }) : piece;
+  }
+  if (!band) return null;
+  const result = distance > 0 ? item.unite(band, { insert: false }) : item.subtract(band, { insert: false });
+  return hasArea(result) ? tidy(result) : null;
+}
+/** The Offset button: a grown (or shrunk) copy of each picked shape or text. */
+let offsetBusy = false;                                 // text waits for its font: no second one meanwhile
+async function offsetSelected() {
+  if (offsetBusy) return;
+  const items = movable().filter((it) => (isPathItem(it) && !isOpenPath(it)) || isText(it));
+  if (!items.length) { toast('Pick a closed shape or some text first.'); return; }
+  const d = clamp(Number(shapeToolOpts.offset) || 0, -1000, 1000);
+  if (!d) { toast('Set a distance first: more than 0 grows the shape, less than 0 shrinks it.'); return; }
+  if (state.editingText) endTextEdit();
+  const join = shapeToolOpts.offsetCorners === 'miter' ? 'miter' : 'round';
+  const made = [];
+  offsetBusy = true;
+  try {
+    for (const it of items) {
+      // Text: work on its letter shapes; the text itself stays as it is.
+      let source = it;
+      if (isText(it)) {
+        try { source = (await buildTextShape(it)).shape; }
+        catch (err) { toast(err instanceof TextShapeError ? err.message : 'That text could not be turned into shapes.', 7000); continue; }
+      }
+      let shape = null;
+      try { shape = offsetShape(source, d, join); } catch (err) { shape = null; }
+      if (!shape) continue;
+      shape.data = {};
+      tagItem(shape, 'offset');
+      shape.name = String(it.name + ' offset').slice(0, 80);
+      // Grown: behind the original (a border around it). Shrunk: in front (or it would be hidden).
+      if (d > 0) shape.insertBelow(it); else shape.insertAbove(it);
+      applyStyle(shape, readStyle(it), ['fill', 'stroke', 'opacity']);
+      made.push(shape);
+    }
+  } finally { offsetBusy = false; }
+  if (!made.length) { toast(d < 0 ? 'Nothing is left: the shape is thinner than that.' : 'That could not be offset. Try a simpler shape.', 5000); return; }
+  select(made);
+  commit();
+  announce(made.length === 1 ? 'Offset shape made' : made.length + ' offset shapes made');
+  toast((d > 0 ? 'Grown copy' : 'Shrunk copy') + ' made ' + (d > 0 ? 'behind' : 'in front of') + ' the original, and picked: give it another colour for a border.', 5000);
+}
+
+/* ---- Simplify ----
+   Paper.js's simplify() swaps many points for a few smooth curves that
+   follow the same line, within `tolerance` (in drawing units).
+   Live shapes (rectangles, stars...) and paths with only a few points are
+   left alone: they are already as simple as they get, and simplifying
+   would round off their sharp corners.                                 */
+const SIMPLIFY_MIN_POINTS = 12;
+function simplifySelected() {
+  const items = movable();
+  const paths = [];
+  for (const it of items) {
+    const shapes = isGroup(it) ? allItems(it).filter(isPathItem) : isPathItem(it) ? [it] : [];
+    for (const s of shapes) {
+      if (s.data && s.data.shape) continue;               // a live shape: leave it
+      for (const p of s instanceof P.CompoundPath ? s.children : [s]) if (p.segments.length >= SIMPLIFY_MIN_POINTS) paths.push({ p, owner: s });
+    }
+  }
+  if (!paths.length) { toast('Nothing to simplify: pick a Pencil drawing, a traced shape or an offset shape (anything with lots of points).', 6000); return; }
+  const tolerance = clamp(Number(shapeToolOpts.simplify) || 3, 0.5, 50);
+  let before = 0, after = 0;
+  const owners = new Set();
+  for (const { p, owner } of paths) {
+    before += p.segments.length;
+    p.simplify(tolerance);
+    after += p.segments.length;
+    owners.add(owner);
+  }
+  for (const o of owners) makePlain(o);
+  refreshGradients([...owners]);
+  commit();
+  announce('Simplified from ' + before + ' points to ' + after);
+  toast('Simplified: ' + before + ' points became ' + after + '. More Amount = fewer points (and a looser fit). Undo brings them back.', 5000);
+}
+
+/* ---- Blend ----
+   Pick exactly two shapes. Blend makes `steps` shapes in between, each a
+   little more like the second one: outline, colours, outline thickness
+   and opacity all change step by step.
+   How the outlines are matched up:
+     - Two shapes with the same number of points (two rectangles, two
+       5-point stars) are blended point by point, so corners stay sharp.
+     - Otherwise both outlines are measured out into the same number of
+       evenly spaced points, and the second one is turned round (and if
+       needed reversed) until its points line up best with the first's.
+   A shape with holes is blended by its outer outline.                   */
+const BLEND_POINTS = 120;
+/** The main outline of a shape: the shape itself, or the biggest outline of a compound one. */
+function mainOutline(item) {
+  if (item instanceof P.Path) return item;
+  const kids = item.children.filter((c) => c.segments.length > 1);
+  return kids.sort((a, b) => Math.abs(b.area) - Math.abs(a.area))[0] || null;
+}
+/** `n` points spaced evenly along a path. */
+function pointsAlong(path, n) {
+  const L = path.length, out = [];
+  if (!(L > 0)) return null;
+  const steps = path.closed ? n : n - 1;
+  for (let i = 0; i < n; i++) out.push(path.getPointAt(Math.min(L, (L * i) / steps)) || path.lastSegment.point);
+  return out;
+}
+/** Line up B's points with A's: the turn (and direction) with the smallest total distance, both centred. */
+function matchPoints(A, B, closed) {
+  const n = A.length;
+  const ca = A.reduce((s, p) => s.add(p), new P.Point(0, 0)).divide(n);
+  const cb = B.reduce((s, p) => s.add(p), new P.Point(0, 0)).divide(n);
+  const a = A.map((p) => p.subtract(ca)), cands = [B, [...B].reverse()];
+  let best = null;
+  for (const cand of cands) {
+    const b = cand.map((p) => p.subtract(cb));
+    const shifts = closed ? n : 1;                        // an open line keeps its ends where they are
+    for (let k = 0; k < shifts; k++) {
+      let sum = 0;
+      for (let i = 0; i < n; i++) { const q = b[(i + k) % n]; const dx = a[i].x - q.x, dy = a[i].y - q.y; sum += dx * dx + dy * dy; }
+      if (!best || sum < best.sum) best = { sum, pts: cand.map((_, i) => cand[(i + k) % n]) };
+    }
+  }
+  return best.pts;
+}
+const mix = (a, b, t) => a + (b - a) * t;
+/** A colour part-way between two "#rrggbb" colours. */
+function mixHex(h1, h2, t) {
+  const a = hexToRgb(parseHex(h1) || '#000000'), b = hexToRgb(parseHex(h2) || '#000000');
+  return rgbToHex(mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t));
+}
+/** The style part-way between two styles (t from 0 to 1). */
+function mixStyles(sa, sb, t) {
+  const s = { ...sa };
+  // A missing fill or outline borrows the other shape's colour, so it fades rather than flips.
+  s.fillOn = sa.fillOn || sb.fillOn;
+  s.fill = mixHex(sa.fillOn ? sa.fill : sb.fill, sb.fillOn ? sb.fill : sa.fill, t);
+  s.fillType = sa.fillType === sb.fillType && sa.fillType !== 'mesh' ? sa.fillType : sa.fillType === 'mesh' && sb.fillType === 'mesh' ? 'mesh' : 'solid';
+  s.fill2 = mixHex(sa.fill2, sb.fill2, t);
+  s.gradAngle = mix(sa.gradAngle || 0, sb.gradAngle || 0, t);
+  if (s.fillType === 'mesh') s.mesh = sa.mesh.map((c, i) => mixHex(c, sb.mesh[i], t));
+  s.strokeOn = sa.strokeOn || sb.strokeOn;
+  s.stroke = mixHex(sa.strokeOn ? sa.stroke : sb.stroke, sb.strokeOn ? sb.stroke : sa.stroke, t);
+  s.strokeWidth = mix(sa.strokeOn ? sa.strokeWidth : 0, sb.strokeOn ? sb.strokeWidth : 0, t);
+  s.opacity = mix(sa.opacity, sb.opacity, t);
+  return s;
+}
+/** The outline of one step, t of the way from path A to path B. */
+function blendOutline(A, B, t, matched) {
+  if (matched.same) {
+    // Same number of points: blend each point and its curve handles.
+    const segs = A.segments.map((sa, i) => {
+      const sb = B.segments[i];
+      const lerp = (p, q) => new P.Point(mix(p.x, q.x, t), mix(p.y, q.y, t));
+      return new P.Segment(lerp(sa.point, sb.point), lerp(sa.handleIn, sb.handleIn), lerp(sa.handleOut, sb.handleOut));
+    });
+    return new P.Path({ segments: segs, closed: A.closed, insert: false });
+  }
+  const pts = matched.a.map((p, i) => new P.Point(mix(p.x, matched.b[i].x, t), mix(p.y, matched.b[i].y, t)));
+  const path = new P.Path({ segments: pts, closed: matched.closed, insert: false });
+  path.simplify(0.4);                                    // 120 straight bits become a few smooth curves
+  return path;
+}
+function blendSelected() {
+  const two = movable().filter(isPathItem);
+  if (two.length !== 2 || state.sel.length !== 2) { toast('Pick exactly two shapes (not groups, text or pictures) to blend between them.', 5000); return; }
+  const steps = clamp(Math.round(Number(shapeToolOpts.blendSteps) || 5), 1, 100);
+  const [first, second] = two;                           // in pick order: from the first to the second
+  const A = mainOutline(first), B = mainOutline(second);
+  if (!A || !B) { toast('Those shapes have no outline to blend.'); return; }
+  const closed = A.closed && B.closed;
+  let matched;
+  if (A.segments.length === B.segments.length && A.closed === B.closed) matched = { same: true };
+  else {
+    const a = pointsAlong(A, BLEND_POINTS), b0 = pointsAlong(B, BLEND_POINTS);
+    if (!a || !b0) { toast('Those shapes are too small to blend.'); return; }
+    matched = { a, b: matchPoints(a, b0, closed), closed };
+  }
+  const sa = readStyle(first), sb = readStyle(second);
+  const made = [];
+  for (let k = 1; k <= steps; k++) {
+    const t = k / (steps + 1);
+    const step = blendOutline(A, B, t, matched);
+    step.data = { uid: uid(), kind: 'path' };
+    step.name = 'Step ' + k;
+    applyStyle(step, mixStyles(sa, sb, t), ['fill', 'stroke', 'opacity']);
+    made.push(step);
+  }
+  // The steps sit between the two shapes in the stacking order, the ones
+  // nearer the upper shape on top, so they overlap like a fan of cards.
+  const lower = first.index < second.index ? first : second;
+  if (lower !== first) made.reverse();
+  const g = new P.Group(made);
+  g.insertAbove(lower);
+  tagItem(g, 'blend');
+  select([g]);
+  commit();
+  announce('Blend made with ' + steps + ' steps');
+  toast('Blend: ' + steps + ' step' + (steps === 1 ? '' : 's') + ' between ' + first.name + ' and ' + second.name + ', as one group. Ungroup to use the steps on their own.', 5000);
+}
+
+/* ---- Shape builder tool (K) ----
+   Pick two or more overlapping shapes, then choose the Shape builder. The
+   shapes show as separate pieces (where they overlap and where they do
+   not, like Fragment). Drag across pieces to join them into one shape;
+   hold Alt (Option on a Mac) and drag to delete pieces instead. A click
+   on one piece makes it a shape of its own. Each change is one undo step,
+   and the pieces stay picked, so you can keep going. Escape goes back to
+   Select. From the keyboard, Merge Shapes does the same jobs.
+   The pieces only become real shapes when you first change something. */
+let builder = null;                                      // { key, shapes, pieces: [{ path, look, real }] }
+/** The pieces for the shapes picked now (worked out again only when the drawing or selection changed). */
+function builderPieces() {
+  const key = history.current;
+  const shapes = state.sel.filter((it) => isMergeable(it) && !it.locked);
+  const selKey = shapes.map((s) => s.data.uid).join(',');
+  if (builder && builder.key === key && builder.selKey === selKey) return builder;
+  builder = { key, selKey, shapes, pieces: [] };
+  if (shapes.length < 2) return builder;
+  // Do any of them overlap? If not, the shapes themselves are the pieces.
+  let overlap = false;
+  for (let i = 0; i < shapes.length && !overlap; i++) {
+    for (let j = i + 1; j < shapes.length && !overlap; j++) {
+      if (!shapes[i].bounds.intersects(shapes[j].bounds)) continue;
+      try { overlap = hasArea(shapes[i].intersect(shapes[j], { insert: false })); } catch (err) { overlap = true; }
+    }
+  }
+  if (!overlap) { builder.pieces = shapes.map((s) => ({ path: s, look: readStyle(s), real: true })); return builder; }
+  let parts;
+  try { parts = fragmentShapes(shapes).filter(hasArea); } catch (err) { parts = []; }
+  // Each piece keeps the colour it shows now: the top shape at that spot.
+  builder.pieces = parts.map((path) => {
+    const inside = path.interiorPoint || path.bounds.center;
+    const top = [...shapes].sort((a, b) => b.index - a.index).find((s) => s.contains(inside));
+    return { path, look: readStyle(top || shapes[0]), real: false };
+  });
+  return builder;
+}
+/** Which piece is under this point? -1 if none. */
+function pieceAt(p) {
+  const pieces = builderPieces().pieces;
+  for (let i = pieces.length - 1; i >= 0; i--) if (pieces[i].path.contains(p)) return i;
+  return -1;
+}
+/** Draw the pieces on top of the drawing: dashed outlines, the ones being dragged across filled in. */
+function drawBuilderUI(add, px, brand) {
+  const b = builderPieces();
+  const d = state.drag && state.drag.type === 'builder' ? state.drag : null;
+  const erase = d ? d.erase : false;
+  b.pieces.forEach((piece, i) => {
+    const shown = piece.path.clone({ insert: false });
+    shown.fillColor = null;
+    shown.strokeColor = new P.Color(brand); shown.strokeWidth = 1.5 * px; shown.dashArray = [4 * px, 3 * px];
+    shown.opacity = 1; shown.visible = true;
+    const on = d ? d.picked.has(i) : i === state.builderHover;
+    if (on) {
+      // A see-through wash (white to join, red to delete) and a solid edge, so it shows on any colour.
+      shown.fillColor = new P.Color(erase ? '#dc2626' : '#ffffff');
+      shown.fillColor.alpha = erase ? 0.5 : 0.45;
+      shown.strokeColor = new P.Color(erase ? '#dc2626' : brand); shown.strokeWidth = 3 * px; shown.dashArray = [];
+    }
+    add(shown);
+  });
+}
+function downBuilder(p, e) {
+  const i = pieceAt(p);
+  if (i < 0) {
+    // Not on a piece: pick shapes, like the Select tool does with a click.
+    const it = itemAt(p);
+    if (it) { if (adding(e)) toggleSelect(it); else select([it]); }
+    else if (!adding(e)) clearSelection();
+    drawSelectionUI();
+    return;
+  }
+  state.drag = { type: 'builder', picked: new Set([i]), erase: e.altKey };
+  drawSelectionUI();
+}
+function moveBuilder(p) {
+  const i = pieceAt(p);
+  if (i >= 0 && !state.drag.picked.has(i)) { state.drag.picked.add(i); drawSelectionUI(); }
+}
+function hoverBuilder(p) {
+  const i = pieceAt(p);
+  if (i !== state.builderHover) { state.builderHover = i; drawSelectionUI(); }
+  setCursor(i >= 0 ? 'cell' : 'default');
+}
+/** Finish a drag: join (or delete) the pieces it crossed. One undo step. */
+function upBuilder(d) {
+  const b = builderPieces();
+  const picked = [...d.picked].filter((i) => b.pieces[i]);
+  if (!picked.length || !b.shapes.length) return;
+  // Where the pieces go: where the lowest of the shapes was.
+  const where = Math.min(...b.shapes.map((s) => s.index));
+  const results = [];
+  let joined = null;
+  if (!d.erase) {
+    // Join: one shape, with the look of the first piece you touched.
+    const first = b.pieces[picked[0]];
+    let acc = first.path.clone({ insert: false });
+    try { for (const i of picked.slice(1)) acc = acc.unite(b.pieces[i].path, { insert: false }); }
+    catch (err) { toast('Those pieces could not be joined.'); return; }
+    joined = { path: tidy(acc), look: first.look, real: false };
+  }
+  b.pieces.forEach((piece, i) => {
+    if (i === picked[0] && joined) results.push(joined);            // the joined shape takes the first piece's place
+    else if (!d.picked.has(i)) results.push(piece);
+  });
+  // Swap the shapes for the pieces (real pieces are the shapes themselves: they just stay).
+  for (const s of b.shapes) s.remove();
+  const items = results.map((piece) => {
+    if (piece.real) return piece.path;
+    const item = piece.path;
+    item.data = {};
+    tagItem(item, 'path', 'Piece');
+    return item;
+  });
+  artLayer.insertChildren(clamp(where, 0, artLayer.children.length), items);
+  results.forEach((piece, i) => { if (!piece.real) applyStyle(items[i], piece.look, ['fill', 'stroke', 'opacity']); });
+  builder = null;
+  state.builderHover = -1;
+  select(items);
+  commit();
+  const n = picked.length;
+  announce(d.erase ? 'Deleted ' + n + ' piece' + (n === 1 ? '' : 's') : n === 1 ? 'Piece separated' : 'Joined ' + n + ' pieces');
+}
+/** The Inspector's note while the Shape builder is on. */
+function builderSection() {
+  const b = builderPieces();
+  const text = b.shapes.length < 2
+    ? 'Pick two or more overlapping shapes: click one, then Shift+click the others (or drag a box with the Select tool). Text and lines must be turned into shapes first.'
+    : 'Drag across pieces to join them into one shape. Alt+drag (Option on a Mac) deletes the pieces you cross. A click on one piece makes it a shape of its own. Escape goes back to Select.';
+  return section('builder', 'Shape builder', b.pieces.length ? b.pieces.length + ' pieces' : '', el('p', { class: 'hint', text }));
+}
+
+/* ---- Symbols ----
+   A symbol is one drawing you can use many times. Each copy ("instance")
+   is a group that keeps its own place, size and turn in its "matrix"
+   (applyMatrix = false), while its insides are the same for every copy.
+   Its data says which symbol it is: { symbol: id, symbolName: name }.
+     - Make symbol: the picked shapes become a symbol (and its first copy).
+     - Duplicate, copy and paste, Alt+drag or Repeat make more copies.
+     - Edit symbol: the copy opens up into ordinary shapes, in place, to
+       change in any way. Done editing puts it back together and every
+       other copy of the symbol takes on the change.
+     - A colour or outline change on one copy changes them all, too.
+     - Detach: the copy becomes an ordinary group, no longer linked.
+   While editing, each opened shape carries data.editSymbol (which symbol,
+   its name, the copy's name and matrix), so undo, saving and reopening
+   all keep the editing going.                                          */
+const isInstance = (item) => isGroup(item) && !!(item.data && typeof item.data.symbol === 'string');
+const instancesOf = (id) => allItems().filter((it) => isInstance(it) && it.data.symbol === id);
+/** The shapes being edited as a symbol right now (top level), and that symbol's details. */
+function symbolEditing() {
+  const flagged = topItems().filter((it) => [it, ...allItems(it)].some((x) => x.data && x.data.editSymbol));
+  if (!flagged.length) return null;
+  const leaf = [flagged[0], ...allItems(flagged[0])].find((x) => x.data && x.data.editSymbol);
+  const info = leaf.data.editSymbol;
+  return { info, items: flagged.filter((it) => [it, ...allItems(it)].some((x) => x.data && x.data.editSymbol && x.data.editSymbol.id === info.id)) };
+}
+/** A new symbol's name: "Symbol 1", "Symbol 2"... (the first one not used yet). */
+function nextSymbolName() {
+  const used = new Set(allItems().filter(isInstance).map((g) => g.data.symbolName));
+  let n = 1;
+  while (used.has('Symbol ' + n)) n++;
+  return 'Symbol ' + n;
+}
+function makeSymbol() {
+  const items = movable().sort((a, b) => a.index - b.index);
+  if (!items.length) { toast('Pick the shapes to make into a symbol first.'); return; }
+  if (items.length === 1 && isInstance(items[0])) { toast('That is already a copy of a symbol.'); return; }
+  if (symbolEditing()) { toast('Finish editing the symbol first (Done editing, in the Inspector).'); return; }
+  const g = new P.Group();
+  g.applyMatrix = false;                                 // the group keeps its own place, size and turn
+  g.insertAbove(items[items.length - 1]);
+  g.addChildren(items);
+  const name = nextSymbolName();
+  g.data = { symbol: 's' + uid(), symbolName: name };
+  tagItem(g, 'instance');
+  g.name = name;                                         // the first copy is simply called by the symbol's name
+  select([g]);
+  commit();
+  announce(name + ' made');
+  toast(name + ' made. Add a copy (in the Inspector, or Ctrl+D) for more; Edit symbol changes every copy at once.', 6000);
+}
+/** Open a copy up into ordinary shapes, in place, to edit the symbol. */
+function editSymbol(g) {
+  if (!isInstance(g)) return;
+  if (symbolEditing()) { toast('Another symbol is being edited: press Done editing first.'); return; }
+  const m = g.matrix.clone();
+  const info = { id: g.data.symbol, name: g.data.symbolName, instance: g.name, uid: g.data.uid, matrix: m.values, opacity: g.opacity };
+  const kids = g.removeChildren();
+  for (const k of kids) {
+    k.transform(m);                                      // from the symbol's own space to the drawing's
+    k.data = Object.assign({}, k.data, { editSymbol: info });
+  }
+  g.parent.insertChildren(g.index, kids);
+  g.remove();
+  setTool('select');
+  select(kids);
+  commit();
+  announce('Editing ' + info.name + '. Press Done editing in the Inspector when finished.');
+  toast('Editing ' + info.name + ': change anything, then press Done editing (Inspector) to update every copy.', 6000);
+}
+/** Put the edited symbol back together and update every other copy. */
+function finishSymbolEdit() {
+  const editing = symbolEditing();
+  if (!editing) return;
+  const { info, items } = editing;
+  items.sort((a, b) => a.index - b.index);
+  // The matrix we stored: a safe list of 6 numbers, or no change at all.
+  const values = Array.isArray(info.matrix) && info.matrix.length === 6 && info.matrix.every(Number.isFinite) ? info.matrix : [1, 0, 0, 1, 0, 0];
+  const m = new P.Matrix(values);
+  const inv = m.inverted() || new P.Matrix();
+  const g = new P.Group();
+  g.applyMatrix = false;
+  g.insertAbove(items[items.length - 1]);
+  for (const it of items) {
+    for (const x of [it, ...allItems(it)]) if (x.data && x.data.editSymbol) x.data = Object.assign({}, x.data, { editSymbol: null });
+    it.transform(inv);                                   // back into the symbol's own space
+  }
+  g.addChildren(items);
+  g.matrix = m;                                          // ...and the copy back where it was
+  g.data = { uid: typeof info.uid === 'string' ? info.uid : uid(), kind: 'instance', symbol: String(info.id), symbolName: String(info.name || 'Symbol').slice(0, 60) };
+  g.name = String(info.instance || info.name || 'Symbol').slice(0, 80);
+  if (Number.isFinite(info.opacity)) g.opacity = clamp(info.opacity, 0, 1);   // the copy's own see-through-ness
+  const others = syncSymbol(g);
+  select([g]);
+  commit();
+  announce('Symbol updated');
+  toast(others ? info.name + ' updated, and its ' + others + ' other cop' + (others === 1 ? 'y' : 'ies') + ' with it.' : info.name + ' updated.', 5000);
+}
+/** Give every other copy of g's symbol the same insides as g. Returns how many changed. */
+function syncSymbol(g) {
+  const others = instancesOf(g.data.symbol).filter((x) => x !== g);
+  for (const o of others) {
+    o.removeChildren();
+    o.addChildren(g.children.map((c) => { const copy = c.clone({ insert: false }); freshIds(copy); return copy; }));
+  }
+  return others.length;
+}
+/** Detach: the picked copies become ordinary groups (or shapes), no longer part of the symbol. */
+function detachSymbol() {
+  const copies = state.sel.filter(isInstance);
+  if (!copies.length) return;
+  ungroupSelection();
+  toast('Detached: ' + (copies.length === 1 ? 'this copy is' : 'these copies are') + ' now ordinary shapes. The other copies are still the symbol.', 5000);
+}
+/** Rename a symbol (every copy). */
+function renameSymbol(id, name) {
+  for (const g of instancesOf(id)) g.data = Object.assign({}, g.data, { symbolName: name });
+}
+/** The Inspector's Symbol section: for one picked copy, or while editing. */
+function symbolSection() {
+  const editing = symbolEditing();
+  if (editing) {
+    return section('symbol', 'Editing symbol', editing.info.name,
+      el('p', { class: 'hint', text: 'Change the shapes in any way, then press Done editing: every copy of ' + editing.info.name + ' takes on the change.' }),
+      el('div', { class: 'btn-row' }, el('button', { type: 'button', class: 'btn primary', text: 'Done editing', onclick: finishSymbolEdit })));
+  }
+  if (state.sel.length !== 1 || !isInstance(state.sel[0])) return null;
+  const g = state.sel[0], count = instancesOf(g.data.symbol).length;
+  const id = fid();
+  const name = el('input', { type: 'text', id, maxlength: '60', autocomplete: 'off', value: g.data.symbolName || '' });
+  name.addEventListener('change', () => {
+    const v = name.value.trim().slice(0, 60);
+    if (!v) { name.value = g.data.symbolName; return; }
+    renameSymbol(g.data.symbol, v);
+    commit();
+  });
+  return section('symbol', 'Symbol', count + (count === 1 ? ' copy' : ' copies'),
+    el('div', { class: 'field' }, el('label', { for: id, text: 'Name' }), name),
+    el('div', { class: 'btn-row' },
+      el('button', { type: 'button', class: 'btn primary', text: 'Edit symbol', onclick: () => editSymbol(g) }),
+      el('button', { type: 'button', class: 'btn', text: 'Add a copy', onclick: duplicateSelected }),
+      el('button', { type: 'button', class: 'btn', text: 'Detach', onclick: detachSymbol, title: 'Make this copy ordinary shapes, no longer linked' })),
+    el('p', { class: 'hint', text: 'Colours and outlines changed here change every copy. Move, resize and turn each copy on its own.' }));
+}
+
+/* ---- The Inspector section for these tools ---- */
+function shapeToolsSection() {
+  const items = movable();
+  if (!items.length) return null;
+  const closed = items.some((it) => (isPathItem(it) && !isOpenPath(it)) || isText(it));
+  const pathy = items.some((it) => isPathItem(it) || isGroup(it));
+  const two = state.sel.length === 2 && items.length === 2 && items.every(isPathItem);
+  const rows = [];
+  if (closed) {
+    rows.push(el('div', { class: 'subhead', text: 'Offset path' }),
+      numberField('Distance', () => shapeToolOpts.offset, (v) => { shapeToolOpts.offset = clamp(v, -1000, 1000); }, { step: 1, noCommit: true }),
+      segField('Corners', [['round', 'Round'], ['miter', 'Sharp']], () => shapeToolOpts.offsetCorners, (v) => { shapeToolOpts.offsetCorners = v; }, true),
+      el('div', { class: 'btn-row' }, el('button', { type: 'button', class: 'btn', text: 'Offset', onclick: offsetSelected,
+        title: 'A copy grown by Distance all the way round (less than 0 shrinks it)' })));
+  }
+  if (pathy) {
+    rows.push(el('div', { class: 'subhead', text: 'Simplify' }),
+      numberField('Amount', () => shapeToolOpts.simplify, (v) => { shapeToolOpts.simplify = clamp(v, 0.5, 50); }, { min: 0.5, max: 50, step: 0.5, noCommit: true }),
+      el('div', { class: 'btn-row' }, el('button', { type: 'button', class: 'btn', text: 'Simplify', onclick: simplifySelected,
+        title: 'Fewer points, smoother curves (for Pencil drawings and traced shapes)' })));
+  }
+  if (two) {
+    rows.push(el('div', { class: 'subhead', text: 'Blend' }),
+      numberField('Steps', () => shapeToolOpts.blendSteps, (v) => { shapeToolOpts.blendSteps = clamp(Math.round(v), 1, 100); }, { min: 1, max: 100, noCommit: true }),
+      el('div', { class: 'btn-row' }, el('button', { type: 'button', class: 'btn', text: 'Blend', onclick: blendSelected,
+        title: 'Steps in between that turn the first shape you picked into the second' })));
+  }
+  if (!(items.length === 1 && isInstance(items[0])) && !symbolEditing()) {
+    rows.push(el('div', { class: 'subhead', text: 'Symbol' }),
+      el('div', { class: 'btn-row' }, el('button', { type: 'button', class: 'btn', text: 'Make symbol', onclick: makeSymbol,
+        title: 'Use this drawing many times: change the symbol and every copy changes' })));
+  }
+  return section('shapetools', 'Shape tools', null, rows,
+    el('p', { class: 'hint', text: 'Offset: a border round a shape or word (less than 0 shrinks). Simplify: fewer points on wobbly lines.' +
+      (two ? ' Blend: steps from the first shape you picked to the second.' : ' Blend: pick exactly two shapes.') }));
+}
+
+/* -----------------------------------------------------------------------
    15. THE INSPECTOR: LAYER LIST AND PROPERTIES
    ----------------------------------------------------------------------- */
 const layerList = $('layerList');
@@ -4347,7 +5129,7 @@ function renderLayers() {
       'aria-pressed': String(order >= 0), 'aria-label': it.name + ', ' + (KIND_LABELS[kind] || 'Shape') + (it.locked ? ', locked' : '') + (it.visible ? '' : ', hidden') });
     name.append(iconEl(KIND_ICONS[kind] || 'penTool'), el('span', { text: it.name }));
     if (order >= 0 && state.sel.length > 1) name.append(el('span', { class: 'layer-order', text: String(order + 1), 'aria-hidden': 'true' }));
-    name.append(el('span', { class: 'kind', text: isGroup(it) ? 'Group (' + it.children.length + ')' : (KIND_LABELS[kind] || 'Shape') }));
+    name.append(el('span', { class: 'kind', text: isInstance(it) ? 'Symbol' : isGroup(it) ? 'Group (' + it.children.length + ')' : (KIND_LABELS[kind] || 'Shape') }));
     name.addEventListener('click', (e) => {
       if (layerDrag.skipClick) return;               // the end of a drag, not a click
       if (adding(e)) toggleSelect(it); else select([it]);
@@ -4581,13 +5363,13 @@ function checkField(label, get, set, hint) {
     hint ? el('div', {}, input, ' ', el('span', { class: 'hint', text: hint })) : input);
 }
 /** A row of choices, like Solid | Dashed | Dotted. options: [[value, label], ...] */
-function segField(label, options, get, set) {
+function segField(label, options, get, set, noCommit = false) {   // noCommit: a setting, not a change to the drawing
   const lid = fid();
-  const seg = el('div', { class: 'seg', role: 'group', 'aria-labelledby': lid });
+  const seg = el('div', { class: 'seg' + (options.length >= 4 ? ' seg-grid' : ''), role: 'group', 'aria-labelledby': lid });
   for (const [v, text] of options) {
     const b = el('button', { type: 'button', text, 'aria-pressed': String(get() === v) });
     b.addEventListener('click', () => {
-      set(v); commit(null, true);
+      set(v); if (!noCommit) commit(null, true);
       seg.querySelectorAll('button').forEach((x, i) => x.setAttribute('aria-pressed', String(options[i][0] === v)));
     });
     seg.append(b);
@@ -4659,7 +5441,7 @@ function iconBtn(icon, label, fn, disabled = false) {
 }
 
 /* ---- Changing the style of the selection (or of new shapes) ---- */
-const STYLE_PART = { fill: 'fill', fillOn: 'fill', fillType: 'fill', fill2: 'fill', gradAngle: 'fill',
+const STYLE_PART = { fill: 'fill', fillOn: 'fill', fillType: 'fill', fill2: 'fill', gradAngle: 'fill', mesh: 'fill',
   stroke: 'stroke', strokeOn: 'stroke', strokeWidth: 'stroke', dash: 'stroke', cap: 'stroke', join: 'stroke',
   opacity: 'opacity', font: 'text', fontSize: 'text', bold: 'text', align: 'text', tracking: 'text', curve: 'text' };
 /** The style the Inspector shows: the first selected item's, or the defaults. */
@@ -4676,6 +5458,7 @@ function setStyle(key, value) {
       if (key === 'strokeOn' && value && !s.strokeWidth) s.strokeWidth = 4;
       applyStyle(leaf, s, [STYLE_PART[key]]);
     }
+    if (isInstance(it)) syncSymbol(it);                  // every copy of a symbol looks the same
   }
   drawSelectionUI();
 }
@@ -4688,6 +5471,9 @@ function renderProps() {
   const sel = state.sel;
   $('propsTitle').textContent = sel.length === 0 ? 'Artboard and new shapes' : sel.length === 1 ? sel[0].name : sel.length + ' shapes';
   propsBody.append(mergeSection());
+  if (state.tool === 'builder') propsBody.append(builderSection());
+  const sym = symbolSection();                         // a picked symbol copy, or "Editing symbol"
+  if (sym) { if (symbolEditing()) sym.open = true; propsBody.append(sym); }
   if (state.tool === 'pencil') propsBody.append(pencilSection());
   if (!sel.length) {
     propsBody.append(boardSection());
@@ -4704,8 +5490,8 @@ function renderProps() {
     if (isText(sel[0])) propsBody.append(textSection(sel[0]));
   }
   // Pictures have no fill or outline: just how see-through they are.
-  if (sel.every(isPicture)) propsBody.append(pictureSection(), repeatSection() || '', arrangeSection());
-  else propsBody.append(fillSection('Fill'), strokeSection('Outline'), repeatSection() || '', arrangeSection());
+  if (sel.every(isPicture)) propsBody.append(pictureSection(), shapeToolsSection() || '', repeatSection() || '', arrangeSection());
+  else propsBody.append(fillSection('Fill'), strokeSection('Outline'), shapeToolsSection() || '', repeatSection() || '', arrangeSection());
 }
 /** While dragging: just refresh the numbers, without rebuilding the panel. */
 function syncPropValues() {
@@ -4739,19 +5525,84 @@ function mergeSection() {
 }
 
 function boardSection() {
-  const rows = [
-    el('div', { class: 'xywh' },
-      boxLabel('W', 'Artboard width', () => doc.width, (v) => { doc.width = clamp(Math.round(v), 1, MAX_SIDE); viewChanged(); }),
-      boxLabel('H', 'Artboard height', () => doc.height, (v) => { doc.height = clamp(Math.round(v), 1, MAX_SIDE); viewChanged(); })),
+  const list = allBoards(), i = activeBoard(), bd = list[i], several = list.length > 1;
+  const rows = [];
+  if (several) {
+    // Which artboard to work on. Changing it is not an undo step (nothing in the drawing changes).
+    const id = fid();
+    const pick = el('select', { id });
+    list.forEach((b, k) => pick.append(el('option', { value: String(k), text: (k + 1) + '. ' + b.name })));
+    pick.value = String(i);
+    pick.addEventListener('change', () => setActiveBoard(Number(pick.value), true));
+    rows.push(el('div', { class: 'field' }, el('label', { for: id, text: 'Working on' }), pick));
+    // Its name (shown above it, used for file names when exporting every artboard).
+    const nid = fid();
+    const name = el('input', { type: 'text', id: nid, maxlength: '60', autocomplete: 'off', value: bd.name });
+    name.addEventListener('change', () => {
+      const v = name.value.trim().slice(0, 60);
+      if (!v) { name.value = bd.name; return; }
+      updateBoard(i, { name: v });
+      syncArtboardBacker();                              // the name label above the artboard
+      commit();
+    });
+    rows.push(el('div', { class: 'field' }, el('label', { for: nid, text: 'Name' }), name));
+  }
+  const size = el('div', { class: 'xywh' },
+    boxLabel('W', 'Artboard width', () => allBoards()[i].width, (v) => { updateBoard(i, { width: clamp(Math.round(v), 1, MAX_SIDE) }); viewChanged(); }),
+    boxLabel('H', 'Artboard height', () => allBoards()[i].height, (v) => { updateBoard(i, { height: clamp(Math.round(v), 1, MAX_SIDE) }); viewChanged(); }));
+  // The main artboard is always at 0, 0; the others can be moved by typing where they go.
+  if (i > 0) {
+    size.prepend(
+      boxLabel('X', 'Artboard left edge', () => allBoards()[i].x, (v) => { updateBoard(i, { x: clamp(v, -MAX_SIDE * MAX_BOARDS, MAX_SIDE * MAX_BOARDS) }); viewChanged(); }),
+      boxLabel('Y', 'Artboard top edge', () => allBoards()[i].y, (v) => { updateBoard(i, { y: clamp(v, -MAX_SIDE * MAX_BOARDS, MAX_SIDE * MAX_BOARDS) }); viewChanged(); }));
+  }
+  rows.push(size,
     checkField('See-through', () => !doc.background, (v) => { doc.background = v ? null : (doc.lastBackground || '#ffffff'); syncArtboardBacker(); renderProps(); },
-      'no background'),
-  ];
+      several ? 'no background (every artboard)' : 'no background'));
   if (doc.background) rows.push(colorField('Background', () => doc.background, (hex) => { doc.background = hex; doc.lastBackground = hex; syncArtboardBacker(); }));
   rows.push(el('div', { class: 'btn-row' },
     el('button', { type: 'button', class: 'btn', text: 'Zoom to fit', onclick: () => fitView() }),
     el('button', { type: 'button', class: 'btn', text: 'Fit to drawing', onclick: () => fitBoardToDrawing(0) })),
     padRow());
-  return section('board', 'Artboard', doc.width + ' × ' + doc.height, rows);
+  // More artboards: for a logo in several sizes, a set of icons, a front and a back...
+  rows.push(el('div', { class: 'subhead', text: several ? 'Artboards (' + list.length + ')' : 'More artboards' }),
+    el('div', { class: 'btn-row' },
+      el('button', { type: 'button', class: 'btn', text: 'Add artboard', onclick: addBoard, disabled: list.length >= MAX_BOARDS }),
+      several ? el('button', { type: 'button', class: 'btn', text: 'Delete artboard', onclick: deleteBoard, disabled: i === 0,
+        title: i === 0 ? 'The first artboard cannot be deleted' : 'Delete this artboard (what is drawn on it stays)' }) : ''),
+    el('p', { class: 'hint', text: several
+      ? 'Click an empty spot on an artboard to work on it. Export can save every artboard at once.' + (i === 0 ? ' The first artboard cannot be deleted.' : '')
+      : 'Add another artboard beside this one: a logo in several sizes, a set of icons, a front and a back.' }));
+  return section('board', several ? 'Artboards' : 'Artboard', (several ? bd.name + ' · ' : '') + bd.width + ' × ' + bd.height, rows);
+}
+/** Add an artboard the size of the one you are on, to the right of all the others. */
+function addBoard() {
+  const list = allBoards();
+  if (list.length >= MAX_BOARDS) { toast('That is the most artboards one drawing can have (' + MAX_BOARDS + ').'); return; }
+  const cur = boardRect();
+  const right = Math.max(...list.map((b) => b.x + b.width));
+  const gap = Math.max(40, Math.round(Math.min(cur.width, cur.height) * 0.1));
+  // The first free "Artboard N" name.
+  let n = list.length + 1;
+  while (list.some((b) => b.name === 'Artboard ' + n)) n++;
+  doc.boards = [...(doc.boards || []), { name: 'Artboard ' + n, x: right + gap, y: cur.y, width: cur.width, height: cur.height }];
+  state.board = list.length;                            // work on the new one
+  commit();
+  fitView();
+  announce('Artboard ' + n + ' added');
+  toast('Artboard ' + n + ' added to the right. Click an empty spot on an artboard to work on it.', 5000);
+}
+/** Delete the artboard you are on (not the first one). What is drawn on it stays where it is. */
+function deleteBoard() {
+  const i = activeBoard();
+  if (i === 0) { toast('The first artboard cannot be deleted.'); return; }
+  const gone = allBoards()[i].name;
+  doc.boards = doc.boards.filter((b, k) => k !== i - 1);
+  state.board = i - 1;
+  commit();
+  fitView();
+  announce(gone + ' deleted');
+  toast(gone + ' deleted. What was drawn on it is still there; Undo brings the artboard back.', 5000);
 }
 /**
  * Make the artboard hug everything drawn, plus `pad` pixels of empty
@@ -4760,16 +5611,27 @@ function boardSection() {
  * cut off at the edge.
  */
 function fitBoardToDrawing(pad = 0) {
-  const items = topItems().filter((it) => it.visible);
-  if (!items.length) { toast('There is nothing drawn yet.'); return; }
+  // With one artboard: everything drawn. With several: what touches the one you are on.
+  const several = allBoards().length > 1, i = activeBoard(), area = boardRect(i);
+  const items = topItems().filter((it) => it.visible && (!several || it.strokeBounds.intersects(area)));
+  if (!items.length) { toast(several ? 'Nothing is drawn on this artboard yet.' : 'There is nothing drawn yet.'); return; }
   // strokeBounds = the box including outlines (plain bounds stop at the middle of an outline).
   const b = items.map((it) => it.strokeBounds).reduce((a, c) => a.unite(c));
-  for (const it of topItems()) it.translate(new P.Point(pad - b.x, pad - b.y));
-  doc.width = clamp(Math.ceil(b.width + pad * 2), 1, MAX_SIDE);
-  doc.height = clamp(Math.ceil(b.height + pad * 2), 1, MAX_SIDE);
+  const w = clamp(Math.ceil(b.width + pad * 2), 1, MAX_SIDE), h = clamp(Math.ceil(b.height + pad * 2), 1, MAX_SIDE);
+  if (i === 0) {
+    // The first artboard always starts at 0, 0: so the drawing (and any
+    // other artboards) move instead, to put the margin's corner there.
+    const shift = new P.Point(pad - b.x, pad - b.y);
+    for (const it of topItems()) it.translate(shift);
+    doc.boards = (doc.boards || []).map((bd) => ({ ...bd, x: bd.x + shift.x, y: bd.y + shift.y }));
+    updateBoard(0, { width: w, height: h });
+  } else {
+    // Any other artboard simply moves and changes size to hug its drawing.
+    updateBoard(i, { x: b.x - pad, y: b.y - pad, width: w, height: h });
+  }
   commit();
   fitView();
-  announce('Artboard fitted to the drawing' + (pad ? ' with ' + pad + ' pixels all round' : '') + ': ' + doc.width + ' by ' + doc.height);
+  announce('Artboard fitted to the drawing' + (pad ? ' with ' + pad + ' pixels all round' : '') + ': ' + w + ' by ' + h);
 }
 /**
  * Pad contents (as in IMGEDTR): the artboard becomes the drawing's size
@@ -4967,11 +5829,23 @@ function fillSection(title) {
   if (!state.sel.length && !defaults.fillOn && !(defaults.strokeOn && defaults.strokeWidth > 0)) {
     rows.push(el('p', { class: 'note', role: 'status', text: 'No fill and no outline: new shapes would be invisible, so they will get a fill anyway. Turn on a fill or an outline here to choose.' }));
   }
+  const mesh = s.fillType === 'mesh';
+  // One corner of a mesh changes; the others stay.
+  const meshCorner = (i) => (hex) => { const m = shownStyle().mesh.slice(); m[i] = hex; setStyle('mesh', m); };
+  // Text cannot have a mesh (turn it into shapes first).
+  const types = [['solid', 'Solid'], ['linear', 'Linear'], ['radial', 'Radial']];
+  if (!(state.sel.length ? state.sel.every(isText) : state.tool === 'text')) types.push(['mesh', 'Mesh']);
   rows.push(
-    colorField(s.fillType === 'solid' ? 'Colour' : 'From', () => shownStyle().fill, (hex) => setStyle('fill', hex), () => shownStyle().fillOn, (v) => { setStyle('fillOn', v); if (!state.sel.length) renderProps(); }),
-    segField('Type', [['solid', 'Solid'], ['linear', 'Linear'], ['radial', 'Radial']], () => s.fillType, (v) => { setStyle('fillOn', true); setStyle('fillType', v); renderProps(); })
+    mesh ? colorField('Top left', () => shownStyle().mesh[0], meshCorner(0), () => shownStyle().fillOn, (v) => { setStyle('fillOn', v); if (!state.sel.length) renderProps(); })
+      : colorField(s.fillType === 'solid' ? 'Colour' : 'From', () => shownStyle().fill, (hex) => setStyle('fill', hex), () => shownStyle().fillOn, (v) => { setStyle('fillOn', v); if (!state.sel.length) renderProps(); }),
+    segField('Type', types, () => s.fillType, (v) => { setStyle('fillOn', true); setStyle('fillType', v); renderProps(); })
   );
-  if (s.fillType !== 'solid') {
+  if (mesh) {
+    rows.push(colorField('Top right', () => shownStyle().mesh[1], meshCorner(1)),
+      colorField('Bottom left', () => shownStyle().mesh[2], meshCorner(2)),
+      colorField('Bottom right', () => shownStyle().mesh[3], meshCorner(3)),
+      el('p', { class: 'hint', text: 'Mesh: a colour in each corner of the shape, blending smoothly across it.' }));
+  } else if (s.fillType !== 'solid') {
     rows.push(colorField('To', () => shownStyle().fill2, (hex) => setStyle('fill2', hex)));
     if (s.fillType === 'linear') rows.push(rangeField('Angle (°)', () => shownStyle().gradAngle || 0, (v) => setStyle('gradAngle', v), -180, 180, 1, 'grad'));
   }
@@ -5600,7 +6474,7 @@ function saveProject() {
   if (!doc) return;
   const project = {
     format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION, saved: new Date().toISOString(),
-    doc: { width: doc.width, height: doc.height, background: doc.background, title: doc.title || '', desc: doc.desc || '' },
+    doc: savedDoc(),
     counters: { ...state.counters },
     art: hidePointsForExport(() => artLayer.exportJSON({ asString: true, precision: 4 }))
   };
@@ -5619,9 +6493,12 @@ async function openProject(text) {
   if (d.background !== null && !parseHex(d.background || '')) throw new Error('That project has a background colour that does not make sense.');
   if (typeof pj.art !== 'string') throw new Error('That project does not contain a drawing.');
   checkPaperJSON(pj.art);
+  const extraBoards = checkBoards(d.boards);           // more artboards (checked before anything changes)
   newDocument(Math.round(d.width), Math.round(d.height), d.background ? parseHex(d.background) : null, false);
   doc.title = typeof d.title === 'string' ? d.title.slice(0, 200) : '';
   doc.desc = typeof d.desc === 'string' ? d.desc.slice(0, 1000) : '';
+  doc.boardName = typeof d.boardName === 'string' ? d.boardName.slice(0, 60) : '';
+  doc.boards = extraBoards;
   artLayer.importJSON(pj.art);
   artLayer.name = 'art';
   // Make sure every item has an id and a sensible name (text only, capped).
@@ -5706,7 +6583,7 @@ function prettySVG(node, depth = 0) {
  */
 function buildSVG(opts = {}) {
   const items = (opts.items || topItems()).filter((it) => it.visible);
-  const b = opts.bounds || new P.Rectangle(0, 0, doc.width, doc.height);
+  const b = opts.bounds || boardRect();
   const k = opts.pxScale || 1;
   const n = (v) => String(Math.round(v * 1000) / 1000);
   return hidePointsForExport(() => {
@@ -5735,13 +6612,49 @@ function buildSVG(opts = {}) {
     }
     if (doc.background && !opts.items && opts.background !== false) {
       const r = document.createElementNS(SVG_NS, 'rect');
-      r.setAttribute('width', n(doc.width)); r.setAttribute('height', n(doc.height)); r.setAttribute('fill', doc.background);
+      // The background fills the area being exported (one artboard).
+      r.setAttribute('x', n(b.x)); r.setAttribute('y', n(b.y));
+      r.setAttribute('width', n(b.width)); r.setAttribute('height', n(b.height)); r.setAttribute('fill', doc.background);
       root.append(r);
     }
     if (items.length) {
       // Export everything in ONE go, so gradient ids never clash.
       const temp = new P.Group(items.map((it) => it.clone({ insert: false })));
-      const out = temp.exportSVG({ asString: false, matchShapes: false, precision: 3 });
+      // Mesh fills (section 4): mark each one now; it gets its picture just below.
+      const meshes = [];
+      const out = temp.exportSVG({ asString: false, matchShapes: false, precision: 3, onExport: (item, node) => {
+        if (meshOf(item) && item.fillColor && isPathItem(item)) { node.setAttribute('data-vctr-mesh', String(meshes.length)); meshes.push(item); }
+        return node;
+      } });
+      // Each mesh becomes a <pattern>: the same blended picture the canvas
+      // shows, stretched over the shape's own box (in the shape's own space).
+      if (meshes.length) {
+        const defs = document.createElementNS(SVG_NS, 'defs');
+        out.querySelectorAll('[data-vctr-mesh]').forEach((node) => {
+          const item = meshes[Number(node.getAttribute('data-vctr-mesh'))];
+          node.removeAttribute('data-vctr-mesh');
+          if (!item) return;
+          const bx = item.internalBounds, id = 'vctr-mesh-' + (defs.children.length + 1);
+          const pat = document.createElementNS(SVG_NS, 'pattern');
+          pat.setAttribute('id', id); pat.setAttribute('patternUnits', 'userSpaceOnUse');
+          pat.setAttribute('x', n(bx.x)); pat.setAttribute('y', n(bx.y)); pat.setAttribute('width', n(bx.width)); pat.setAttribute('height', n(bx.height));
+          const pic = document.createElementNS(SVG_NS, 'image');
+          const url = meshCanvas(meshOf(item)).toDataURL('image/png');
+          pic.setAttribute('href', url);
+          pic.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);   // for older design apps
+          // (Inside a pattern, 0, 0 is the pattern's own top-left corner.)
+          pic.setAttribute('width', n(bx.width)); pic.setAttribute('height', n(bx.height));
+          pic.setAttribute('preserveAspectRatio', 'none');
+          pat.append(pic);
+          defs.append(pat);
+          node.setAttribute('fill', 'url(#' + id + ')');
+        });
+        if (defs.children.length) root.append(defs);
+      }
+      // Paper.js writes each item's private notes (our ids, names of symbols...)
+      // into a data-paper-data attribute. They mean nothing outside VCTREDTR: left out.
+      out.removeAttribute('data-paper-data');
+      out.querySelectorAll('[data-paper-data]').forEach((node) => node.removeAttribute('data-paper-data'));
       // Text: Paper.js writes each text as one <text> with its words inside.
       // That misses our letter spacing and curves (section 4), and it runs
       // several lines together into one. So each <text> is finished here,
@@ -5855,7 +6768,7 @@ async function embeddedFontCSS(items) {
 
 /** Make a PNG (a Blob) of the artboard or of some items. */
 async function renderPNG({ items = null, bounds = null, scale = 2 } = {}) {
-  const b = bounds || new P.Rectangle(0, 0, doc.width, doc.height);
+  const b = bounds || boardRect();
   // Browsers cannot make canvases much bigger than this: shrink the scale if needed.
   const maxSide = 16000, maxArea = 120e6;
   scale = Math.min(scale, maxSide / b.width, maxSide / b.height, Math.sqrt(maxArea / (b.width * b.height)));
@@ -5896,20 +6809,26 @@ function segChoose(id, key) {
 segChoose('expWhat', 'what'); segChoose('expFormat', 'format');
 function exportArea() {
   if (exportOpts.what === 'selection' && state.sel.length) return { items: [...state.sel].sort((a, b) => a.index - b.index), bounds: selectionBounds() };
-  return { items: null, bounds: new P.Rectangle(0, 0, doc.width, doc.height) };
+  return { items: null, bounds: boardRect() };
 }
 function updateExportInfo() {
   if (!state.sel.length && exportOpts.what === 'selection') exportOpts.what = 'board';
+  const several = allBoards().length > 1;
+  if (!several && exportOpts.what === 'all') exportOpts.what = 'board';
   $('expWhat').querySelectorAll('button').forEach((b) => {
     b.setAttribute('aria-pressed', String(b.dataset.v === exportOpts.what));
     if (b.dataset.v === 'selection') b.disabled = !state.sel.length;
+    if (b.dataset.v === 'all') b.hidden = !several;      // only with more than one artboard
+    if (b.dataset.v === 'board') b.textContent = several ? 'This artboard' : 'Whole artboard';
   });
   $('expFormat').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === exportOpts.format)));
   $('expScaleRow').hidden = exportOpts.format !== 'png';
   const { bounds } = exportArea();
   const k = Number($('expScale').value);
-  $('expSize').textContent = exportOpts.format === 'png'
-    ? 'The picture will be ' + Math.round(bounds.width * k) + ' × ' + Math.round(bounds.height * k) + ' pixels' + (doc.background && exportOpts.what === 'board' ? '.' : ', with a see-through background.')
+  $('expSize').textContent = exportOpts.what === 'all'
+    ? allBoards().length + ' files, one per artboard, each named after its artboard.'
+    : exportOpts.format === 'png'
+    ? 'The picture will be ' + Math.round(bounds.width * k) + ' × ' + Math.round(bounds.height * k) + ' pixels' + (doc.background && exportOpts.what !== 'selection' ? '.' : ', with a see-through background.')
     : 'An SVG stays sharp at any size and opens in design apps, browsers and code editors.';
   $('expGo').lastChild.textContent = ' Download ' + exportOpts.format.toUpperCase();
 }
@@ -5931,18 +6850,25 @@ $('expAltCopy').addEventListener('click', async () => {
 });
 async function doExport() {
   const name = safeFileName($('expName').value);
-  const area = exportArea();
+  // "Every artboard": one file per artboard, named "drawing - Artboard 2" and so on.
+  const areas = exportOpts.what === 'all'
+    ? allBoards().map((bd) => ({ items: null, bounds: new P.Rectangle(bd.x, bd.y, bd.width, bd.height), name: safeFileName(name + ' - ' + bd.name) }))
+    : [{ ...exportArea(), name }];
   try {
-    if (exportOpts.format === 'svg') {
-      // The file carries the included fonts its text uses, so it looks the same on any computer.
-      const fontCSS = await embeddedFontCSS(area.items);
-      const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' + buildSVG({ items: area.items, bounds: area.bounds, fontCSS });
-      download(new Blob([svg], { type: 'image/svg+xml' }), name + '.svg');
-    } else {
-      download(await renderPNG({ items: area.items, bounds: area.bounds, scale: Number($('expScale').value) }), name + '.png');
+    for (const area of areas) {
+      if (exportOpts.format === 'svg') {
+        // The file carries the included fonts its text uses, so it looks the same on any computer.
+        const fontCSS = await embeddedFontCSS(area.items);
+        const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' + buildSVG({ items: area.items, bounds: area.bounds, fontCSS });
+        download(new Blob([svg], { type: 'image/svg+xml' }), area.name + '.svg');
+      } else {
+        download(await renderPNG({ items: area.items, bounds: area.bounds, scale: Number($('expScale').value) }), area.name + '.png');
+      }
+      // Browsers may block many downloads at once; a short pause between files helps.
+      if (areas.length > 1) await new Promise((r) => setTimeout(r, 400));
     }
     // The title and description are kept with the drawing (without an undo step of their own).
-    if (history.current) history.current.doc = { ...doc };
+    if (history.current) history.current.doc = copyDoc(doc);
     markSaved();
   } catch (err) {
     toast(err && err.message ? err.message : 'The export did not work.', 5000);
@@ -6015,6 +6941,7 @@ const SHORTCUTS = [
   { id: 'tool-text', keys: 'T', label: 'Text', test: (e) => plain(e, 't'), run: () => setTool('text') },
   { id: 'tool-eyedropper', keys: 'I', label: 'Eyedropper (copy a style)', test: (e) => plain(e, 'i'), run: () => setTool('eyedropper') },
   { id: 'tool-hand', keys: 'H', label: 'Hand (pan)', test: (e) => plain(e, 'h'), run: () => setTool('hand') },
+  { id: 'tool-builder', keys: 'K', label: 'Shape builder (drag across pieces of overlapping shapes to join them)', test: (e) => plain(e, 'k'), run: () => setTool('builder') },
   { id: 'multi', keys: 'M', label: 'Pick several on/off (taps add or remove shapes)', test: (e) => plain(e, 'm'), run: () => setMulti(!state.multi) },
   { id: 'enter', keys: 'Enter', label: 'On the canvas: add a shape in the middle, edit points or text, finish a pen path',
     test: (e) => e.key === 'Enter' && e.target === stage, run: () => enterOnCanvas() },
@@ -6097,6 +7024,7 @@ function escapeKey() {
     return;
   }
   if (state.pen) { finishPen(); return; }
+  if (state.tool === 'builder') { setTool('select'); announce('Select tool'); return; }
   // Edit points: first let go of the picked points, then back to Select (the shape stays picked).
   if (state.tool === 'direct' && pickedSegments().length) { pickedSegments().forEach((s) => { s.selected = false; }); drawSelectionUI(); return; }
   if (state.tool === 'direct') { setTool('select'); announce('Select tool'); return; }
@@ -6189,7 +7117,8 @@ async function placePicture(file) {
   const raster = new P.Raster({ source: pic.url });
   await new Promise((resolve) => { if (raster.loaded) resolve(); else raster.onLoad = resolve; });
   // Fit it inside most of the artboard (never bigger than it is), in the middle of the view.
-  const fit = Math.min(1, (doc.width * 0.8) / pic.w, (doc.height * 0.8) / pic.h);
+  const board = boardRect();
+  const fit = Math.min(1, (board.width * 0.8) / pic.w, (board.height * 0.8) / pic.h);
   raster.scale(fit);
   raster.position = viewMiddle();
   raster.data = {};
@@ -6224,7 +7153,10 @@ async function clipToTopShape() {
     return;
   }
   // Paper.js takes a mask's colours away; keep them, to give back on Unclip.
+  // (A mesh's corner colours are kept as one text, like in data.mesh: a list
+  // of words would look like something else to the project-file checks.)
   const look = readStyle(mask);
+  look.mesh = look.fillType === 'mesh' ? look.mesh.join(' ') : null;
   const g = new P.Group();
   g.insertAbove(mask);
   g.addChildren([mask, ...rest]);                  // the mask must be the FIRST (bottom) one in the group
@@ -6245,7 +7177,10 @@ function unclipGroup(g) {
   if (mask) {
     mask.clipMask = false;
     const look = mask.data && mask.data.maskLook;
-    if (look && typeof look === 'object') applyStyle(mask, { ...defaults, ...look }, ['fill', 'stroke', 'opacity']);
+    if (look && typeof look === 'object') {
+      const mesh = typeof look.mesh === 'string' ? look.mesh.split(' ') : null;
+      applyStyle(mask, { ...defaults, ...look, mesh: validMesh(mesh) ? mesh : defaults.mesh }, ['fill', 'stroke', 'opacity']);
+    }
     mask.data = Object.assign({}, mask.data, { maskLook: null });
   }
 }
@@ -7235,7 +8170,8 @@ function suiteBackupDialog(opts) {
 function newDocument(w, h, background, freshHistory = true) {
   if (state.pen) finishPen();
   if (state.editingText) endTextEdit();
-  doc = { width: w, height: h, background, title: '', desc: '' };
+  doc = { width: w, height: h, background, title: '', desc: '', boardName: '', boards: [] };
+  state.board = 0;
   artLayer.removeChildren();
   state.sel = [];
   state.counters = {};
@@ -7307,7 +8243,9 @@ function updateStatus() {
     const b = selectionBounds();
     $('stSel').textContent = (n === 1 ? state.sel[0].name : n + ' shapes') + ' · ' + Math.round(b.width) + ' × ' + Math.round(b.height);
   }
-  $('stBoard').textContent = 'Artboard ' + doc.width + ' × ' + doc.height + (doc.background ? '' : ' (see-through)');
+  const bd = allBoards()[activeBoard()], count = allBoards().length;
+  $('stBoard').textContent = (count > 1 ? bd.name + ' (' + (activeBoard() + 1) + ' of ' + count + ')' : 'Artboard') + ' ' +
+    bd.width + ' × ' + bd.height + (doc.background ? '' : ' (see-through)');
 }
 
 /* ---- Unsaved work ---- */
@@ -7403,6 +8341,7 @@ function renderShortcutRows() {
   const extra = [
     ['Pan (hold, then drag)', 'Space'], ['Add to / take out of the selection', 'Shift+click'],
     ['Keep proportions, straight lines, 15° turns', 'Shift'], ['Draw or stretch from the middle; move without snapping (press it after you start dragging)', 'Alt'],
+    ['Resize from the middle (on a corner or side handle)', 'Ctrl+drag (Cmd on a Mac) or Alt+drag'],
     ['Edit the points of a shape', 'Double-click it'], ['Add a point (Edit points)', 'Double-click the outline'],
     ['Smooth or corner point (Edit points)', 'Alt+click a point'], ['Paste shapes, or SVG code', 'Ctrl+V'],
     ['Copy a shape and drag the copy', 'Ctrl+drag or Alt+drag (Option on a Mac)'], ['Pick several on a touch screen', 'the two-squares button'], ['Rename a layer (in the list)', 'F2'], ['Move a layer up or down (in the list)', 'Alt+Up / Alt+Down']
@@ -7823,7 +8762,7 @@ const backup = SuiteBackup.session('vctredtr', async () => {
     detail: doc.width + ' × ' + doc.height + ' artboard, ' + n + ' shape' + (n === 1 ? '' : 's'),
     data: {
       format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION,
-      doc: { width: doc.width, height: doc.height, background: doc.background, title: doc.title || '', desc: doc.desc || '' },
+      doc: savedDoc(),
       counters: { ...state.counters },
       art: hidePointsForExport(() => artLayer.exportJSON({ asString: true, precision: 4 }))
     }

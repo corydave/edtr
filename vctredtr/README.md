@@ -36,6 +36,13 @@ To merge text with shapes, the letters' outlines are read out of the font file b
 - **Save project** (Ctrl+Shift+S) keeps everything editable. The file is plain JSON: the artboard settings plus the drawing in Paper.js's own JSON form. Undo history is not included.
 - **Open** accepts `.vctredtr` files (also drag and drop, and "Open with" in the installed app). Every part is checked before anything is replaced: the format name, sensible numbers, and only the kinds of object a drawing is made of (layers, groups, paths, compound paths, text, colours and gradients). Anything else, such as a picture or a link to an outside file, means the file is refused.
 
+## Shape tools, symbols and artboards (0.13)
+
+- **Shape tools** (Inspector): Offset path, Simplify, Blend and Make symbol. **Shape builder** (K) joins or deletes the pieces of overlapping shapes by dragging across them.
+- **Symbols** are groups that keep their own place, size and turn (`applyMatrix = false`) and share their insides: Edit symbol, then Done editing, updates every copy.
+- **Artboards:** the first is always at 0, 0 (`doc.width` x `doc.height`); more live in `doc.boards` and are saved in projects. Export can save every artboard at once.
+- **Mesh fills** (Fill > Mesh) keep four corner colours in the shape's data and are drawn (and exported) as a smooth picture cut to the shape.
+
 ## Opening SVG files
 
 An SVG can carry scripts, links and event handlers. Before Paper.js sees one, VCTREDTR rebuilds it from an **allow-list** of elements (`svg`, `g`, `path`, `rect`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `text`, `tspan`, `defs`, gradients, `stop`, `title`, `desc`) and attributes (geometry, fill, stroke, opacity, font and gradient settings). Everything else is left out: `<script>`, `<foreignObject>`, `<image>`, `<use>`, `<style>`, every `href`, every `on...` handler, and any `url(...)` that does not point inside the file (`url(#id)`).
@@ -73,4 +80,4 @@ The Font box lists five fonts built into every computer, then 27 included fonts,
 - The only outside code is Paper.js, pinned and hash-checked (see above).
 - Fonts come from the app's own `fonts/` folder, not a font service (the CSP's `font-src 'self' data:` would block one anyway). Exports pack the fonts they use inside the file, as `data:` URLs.
 - Copying shapes keeps their full details in memory only. What goes on the system clipboard is SVG code, and SVG code pasted from anywhere else goes through the same cleaner as an opened file.
-- Exported PNGs are drawn fresh from the vectors, so they carry no metadata.
+- Exported PNGs are drawn fresh from the vectors, so they carry no metadata. Exported SVGs leave out the app's own notes about each shape (`data-paper-data`).
