@@ -7,6 +7,11 @@ offline and opened straight off a disk. A new release goes in both.
 Releases before 1.18.0 went out without notes. Rather than guess at them, this
 file starts at 1.18.0; `README.md` describes how everything works as of 1.17.0.
 
+## 1.20.4 - 2026-10-07 - DSKEDTR joins the family
+
+- **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.
+- The splash's row now fits nine apps: the eight others on one line on a computer, and 4 + 4 on a phone (shared styles pasted in again from `_edtr-suite/suite-block.css`).
+
 ## 1.20.3 - 2026-10-03 - Links to the other apps
 
 - Names of the other apps in Help (in the changelog, About and the guides) are now links that open that app. Each link opens in a new tab; this app's own name stays plain. Shared SUITE block: new `suiteLinkApps()` (called from `renderSuiteApps()`, so no app wiring needed).
