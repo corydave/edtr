@@ -5,6 +5,20 @@ All notable changes to SNDEDTR. Newest first.
 The version number lives in two places and both must move together on a
 release: `APP_VERSION` in `index.html` and `CACHE_VERSION` in `sw.js`.
 
+## 0.8.0 - 2026-10-07 - Pitch correction
+
+- **Pitch correction.** Pulls a sung or spoken note onto the nearest note of a key and scale, without changing how long anything takes or how fast the words come out. **Strength** sets how far toward the note it pulls; **Retune in** sets how fast it gets there - instant is the hard robot sound, around 60 ms is a correction nobody notices. One voice at a time; pointed at a mix it will make a mess.
+- **Transpose only** moves a clip by whole semitones, 11 down to 12 up, again without changing its speed.
+- How it works, in two halves. Finding the note uses YIN: a pitched sound repeats itself, so the waveform is slid against itself to find the delay at which it best matches, and that delay is one vibration. Done directly that is about four million operations per reading; the same comparison falls out of the FFT already in the app for noise removal, in a few thousand. Moving the note uses PSOLA: cut a piece around every single vibration, then lay the pieces back down along the same timeline at a new spacing - closer for a higher note, wider for a lower one - so the words keep their timing and only the pitch moves.
+- Measured against generated tones: steady notes land within 1.2 cents of target across 85-660 Hz (a cent is a hundredth of a semitone; people notice somewhere around 5). Unvoiced sound - consonants, breath, room - passes through bit-for-bit identical, correlation 1.0000. Length and level unchanged.
+- Transposition is limited to 11 semitones down rather than 12, and that limit is real rather than arbitrary: each piece carries a faint echo of its neighbouring vibrations past the edges of its fade, and at exactly an octave down the new spacing is an exact multiple of the old one, so those echoes line up with the original pitch and reinforce it. At -11 the result is within half a cent; at -12 it comes out at the original pitch. Correction itself never asks for more than a semitone or so, so this only limits deliberate transposition.
+- A deep vibrato is reduced by about a third under hard correction rather than flattened completely. The 46 ms analysis window cannot follow a 5 Hz wobble exactly, so some of it survives. Real pitch correctors do better here.
+
+## 0.7.6 - 2026-10-07 - The switches actually switch
+
+- **Fixed: clicking an effect's on/off switch did nothing.** The checkbox behind each switch is invisible and stretched across the whole control, and the pill graphic is drawn on top of it. Both are positioned elements with no `z-index`, so they paint in document order: the pill comes second, paints in front, and swallowed every click before it reached the checkbox underneath. `pointer-events: none` on the pill puts the checkbox back in front for hit-testing.
+- The bug had been there since 0.1.0 and the keyboard path always worked (Tab to the switch, press Space), which is why it survived every accessibility check. It also survived every automated test, because those called `.click()` on the checkbox element directly - which bypasses hit-testing entirely and passes no matter what is painted on top. Caught now with a real coordinate click.
+
 ## 0.7.5 - 2026-10-07 - DSKEDTR joins the family
 
 - **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.

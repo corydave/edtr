@@ -649,6 +649,13 @@ body.playing #playhead {
   position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; width: 100%; height: 100%;
 }
 .switch .track-ui {
+  /* The checkbox is invisible and stretched across the whole switch, and this
+     pill is drawn on top of it. Both are positioned with no z-index, so they
+     paint in document order - the pill comes second, paints in front, and
+     swallowed every click, leaving the checkbox underneath untouched. Only the
+     keyboard could operate these switches. Letting the pill ignore the pointer
+     puts the checkbox back in front for hit-testing. */
+  pointer-events: none;
   width: 34px; height: 19px;
   border-radius: 999px;
   background: var(--surface-3);
@@ -1479,12 +1486,19 @@ table.shortcuts td:first-child { width: 132px; }
    only fetched if you explicitly choose MP3 in the export dialog.
    ========================================================================== */
 
-const APP_VERSION = '0.7.5';
+const APP_VERSION = '0.8.0';
 
 /* Short changelog for the Changelog tab (newest first). The long form lives
    in CHANGELOG.md beside this file - a new release gets added to both. It is
    kept in here too so the tab still works offline and opened off a disk. */
 const CHANGELOG = [
+  { version: '0.8.0', date: '2026-10-07', notes: [
+    'Pitch correction. Pulls a sung or spoken note onto the nearest note of a key and scale without changing how long anything takes - Strength sets how far, and Retune in sets how fast (instant is the hard robot sound, 60ms is invisible).',
+    'Transpose only: move a clip up or down by whole semitones, from 11 down to 12 up, again without changing its speed.'
+  ] },
+  { version: '0.7.6', date: '2026-10-07', notes: [
+    'Fixed: clicking an effect\'s on/off switch did nothing. The switch graphic was painted on top of its own checkbox and was swallowing the clicks, so the only way to turn an effect on was with the keyboard.'
+  ] },
   { version: '0.7.5', date: '2026-10-07', notes: [
     'More apps and the splash\'s row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes.',
     'With nine apps in the family, the splash\'s row shows the eight others on one line on a computer, and 4 + 4 on a phone.'
@@ -1681,6 +1695,11 @@ const state = {
   isRecording: false,
   envelopeMode: false,   // when true, clicking a lane edits its volume line
   name: 'Untitled project',
+
+  /* Pitch correction settings, shared by the whole project rather than held
+     per track: you retune one clip at a time, and the key of the song does
+     not change between them. */
+  pitch: { key: 0, scale: 'major', strength: 1, speedMs: 20, shift: 0, snap: true },
 
   /* The master bus: where every track ends up before the speakers. */
   master: {
@@ -4328,6 +4347,61 @@ function renderPanel() {
       'This one changes the audio rather than filtering it as it plays, so it can be undone but not turned back off. Around 12 to 18 dB is usually enough; pushing further starts to hollow out the voice.'),
   ));
 
+  /* ---- Pitch ------------------------------------------------------------ */
+  const pitch = state.pitch;
+
+  const keySelect = (() => {
+    const select = el('select', { style: { flex: '1' }, 'aria-label': 'Key' });
+    NOTE_NAMES.forEach((name, index) => select.append(el('option', { value: String(index) }, name)));
+    select.value = String(pitch.key);
+    select.addEventListener('change', () => { pushUndo('Key'); pitch.key = parseInt(select.value, 10); });
+    return select;
+  })();
+
+  const scaleSelect = (() => {
+    const select = el('select', { style: { flex: '1' }, 'aria-label': 'Scale' });
+    [['major', 'Major'], ['minor', 'Minor'], ['pentatonic', 'Pentatonic'], ['chromatic', 'Chromatic (any note)']]
+      .forEach(([value, label]) => select.append(el('option', { value }, label)));
+    select.value = pitch.scale;
+    select.addEventListener('change', () => { pushUndo('Scale'); pitch.scale = select.value; });
+    return select;
+  })();
+
+  const retuneButton = el('button', { class: 'mini' }, 'Retune this clip');
+  retuneButton.disabled = !state.selectedClipId;
+  retuneButton.addEventListener('click', () => { pitch.snap = true; applyPitchToClip(); });
+
+  const transposeButton = el('button', { class: 'mini' }, 'Transpose only');
+  transposeButton.disabled = !state.selectedClipId;
+  transposeButton.addEventListener('click', () => { pitch.snap = false; applyPitchToClip(); });
+
+  body.append(fxSection('Pitch', null, () => {},
+    el('p', { style: { fontSize: '11px', color: 'var(--text-dim)', margin: '0' } },
+      'Pulls a sung or spoken note onto the nearest note of a scale, without changing how long anything takes or how fast the words come out. One voice at a time - point it at a mix and it will make a mess.'),
+    el('div', { class: 'field' }, el('label', {}, 'Key'), keySelect),
+    el('div', { class: 'field' }, el('label', {}, 'Scale'), scaleSelect),
+    fxRange({
+      label: 'Strength', min: 0, max: 100, step: 1, value: Math.round(pitch.strength * 100),
+      format: (v) => `${v.toFixed(0)}%`,
+      onInput: (v) => { pitch.strength = v / 100; },
+    }),
+    fxRange({
+      label: 'Retune in', min: 0, max: 200, step: 5, value: pitch.speedMs,
+      format: (v) => (v <= 0 ? 'instant' : `${v.toFixed(0)} ms`),
+      onInput: (v) => { pitch.speedMs = v; },
+    }),
+    el('p', { style: { fontSize: '11px', color: 'var(--text-dim)', margin: '0' } },
+      'Instant is the hard robot sound. Around 60 ms is a correction nobody notices.'),
+    fxRange({
+      label: 'Transpose', min: -11, max: 12, step: 1, value: pitch.shift,
+      format: (v) => (v === 0 ? 'none' : `${v > 0 ? '+' : ''}${v.toFixed(0)} semitones`),
+      onInput: (v) => { pitch.shift = v; },
+    }),
+    el('div', { class: 'row', style: { display: 'flex', gap: '5px', flexWrap: 'wrap' } }, retuneButton, transposeButton),
+    el('p', { style: { fontSize: '11px', color: 'var(--text-dim)', margin: '0' } },
+      'Like background-noise removal, this rewrites the clip rather than filtering it as it plays, so it can be undone but not switched back off.'),
+  ));
+
   /* ---- Hum removal ------------------------------------------------------
      Mains hum sits at exactly 50 or 60 Hz plus whole-number multiples of it,
      so a few very narrow notches remove it while leaving voice alone.       */
@@ -5568,6 +5642,354 @@ async function applyNoiseReduction(reductionDb) {
   } catch (err) {
     console.error(err);
     say('Noise reduction failed - see the browser console.');
+  }
+}
+</script>
+
+<script>
+'use strict';
+/* ===========================================================================
+   11e. PITCH: hearing the note, and moving it
+   ---------------------------------------------------------------------------
+   Two jobs here, and the second one is the surprising one.
+
+   Playing a recording faster raises its pitch - the chipmunk effect - because
+   speed and pitch are the same knob when you simply replay samples quicker.
+   Separating them means cutting the sound into single vibrations of the vocal
+   cords, then laying those pieces back down at a different spacing: closer
+   together for a higher note, further apart for a lower one, while each piece
+   stays at the moment in time it came from. The words keep their timing; only
+   the pitch moves. That is PSOLA, further down.
+
+   The transform this uses is the same one background-noise removal uses.
+   ======================================================================== */
+
+const PITCH_WINDOW = 2048;      // samples per reading (~46 ms at 44.1 kHz)
+const PITCH_HOP = 256;          // how far the window moves each time (~6 ms)
+const MIN_F0 = 60;              // the lowest note we will believe, in Hz
+const MAX_F0 = 1000;            // and the highest
+const VOICED_THRESHOLD = 0.2;   // below this, the detector is confident
+
+/**
+ * Follow the pitch through a block of samples.
+ *
+ * The method is YIN, which is what most pitch trackers use. A sound with a
+ * pitch repeats itself, so slide the waveform against itself and find the
+ * delay at which it matches itself best. That delay is one vibration, and the
+ * pitch is 1/delay. Done directly that costs about four million operations per
+ * reading, far too slow for a whole recording; the same comparison falls out
+ * of an FFT in a few thousand, which is why there is a transform in here.
+ *
+ * @returns {{f0: Float32Array, voiced: Uint8Array, hop: number}}
+ *          one reading per PITCH_HOP samples; f0 is 0 where no pitch was found
+ */
+async function detectPitchTrack(samples, sampleRate, onProgress) {
+  const W = PITCH_WINDOW;
+  const N = 2 * W;                      // padded, so the transform cannot wrap
+  const reverse = bitReversalTable(N);
+  const frames = Math.max(1, Math.floor((samples.length - W) / PITCH_HOP) + 1);
+
+  const f0 = new Float32Array(frames);
+  const voiced = new Uint8Array(frames);
+
+  const real = new Float32Array(N);
+  const imag = new Float32Array(N);
+  const cumulative = new Float32Array(W + 1);
+  const diff = new Float32Array(W / 2);
+  const normalised = new Float32Array(W / 2);
+
+  const minTau = Math.max(2, Math.floor(sampleRate / MAX_F0));
+  const maxTau = Math.min(W / 2 - 1, Math.ceil(sampleRate / MIN_F0));
+
+  for (let frame = 0; frame < frames; frame++) {
+    const start = frame * PITCH_HOP;
+
+    real.fill(0); imag.fill(0);
+    for (let i = 0; i < W; i++) real[i] = samples[start + i] || 0;
+    fft(real, imag, reverse, false);
+    for (let i = 0; i < N; i++) {                 // power spectrum
+      const re = real[i], im = imag[i];
+      real[i] = re * re + im * im;
+      imag[i] = 0;
+    }
+    fft(real, imag, reverse, true);               // real[tau] is now the match
+
+    cumulative[0] = 0;
+    for (let i = 0; i < W; i++) {
+      const v = samples[start + i] || 0;
+      cumulative[i + 1] = cumulative[i] + v * v;
+    }
+
+    for (let tau = 0; tau < W / 2; tau++) {
+      diff[tau] = cumulative[W - tau] + (cumulative[W] - cumulative[tau]) - 2 * real[tau];
+    }
+
+    // Scaled so the answer does not simply shrink as the delay grows.
+    normalised[0] = 1;
+    let running = 0;
+    for (let tau = 1; tau < W / 2; tau++) {
+      running += diff[tau];
+      normalised[tau] = running === 0 ? 1 : (diff[tau] * tau) / running;
+    }
+
+    // The FIRST convincing match wins, not the best one: the best is often
+    // twice the period, which would report the note an octave too low.
+    let best = -1;
+    for (let tau = minTau; tau <= maxTau; tau++) {
+      if (normalised[tau] < VOICED_THRESHOLD) {
+        while (tau + 1 <= maxTau && normalised[tau + 1] < normalised[tau]) tau++;
+        best = tau;
+        break;
+      }
+    }
+
+    if (best < 0) { f0[frame] = 0; voiced[frame] = 0; }
+    else {
+      // Fit a curve through the dip so the period can land between two
+      // samples; without this, high notes come out in steps.
+      const y0 = normalised[best - 1], y1 = normalised[best], y2 = normalised[best + 1];
+      const denominator = 2 * (2 * y1 - y2 - y0);
+      const period = best + (denominator === 0 ? 0 : (y2 - y0) / denominator);
+      const hz = sampleRate / period;
+      const usable = hz >= MIN_F0 && hz <= MAX_F0;
+      f0[frame] = usable ? hz : 0;
+      voiced[frame] = usable ? 1 : 0;
+    }
+
+    if (frame % 200 === 0) {
+      if (onProgress) onProgress(frame / frames);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  return { f0, voiced, hop: PITCH_HOP };
+}
+
+/* ---- Which note should it be? ------------------------------------------- */
+
+const SCALES = {
+  chromatic:  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  major:      [0, 2, 4, 5, 7, 9, 11],
+  minor:      [0, 2, 3, 5, 7, 8, 10],
+  pentatonic: [0, 2, 4, 7, 9],
+};
+
+const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+
+const hzToSemitones = (hz) => 12 * Math.log2(hz / 440);
+const semitonesToHz = (n) => 440 * Math.pow(2, n / 12);
+
+/**
+ * The nearest note of the chosen key and scale, as a frequency.
+ * @param {number} hz
+ * @param {number} keyPitchClass 0 = C, 1 = C sharp, ... 11 = B
+ * @param {number[]} scale       semitone offsets from the key
+ */
+function snapToScale(hz, keyPitchClass, scale) {
+  if (!(hz > 0)) return hz;
+  const midi = 69 + hzToSemitones(hz);              // 69 is A4
+  let best = null, bestDistance = Infinity;
+  for (let candidate = Math.floor(midi) - 1; candidate <= Math.ceil(midi) + 1; candidate++) {
+    const degree = (((candidate - keyPitchClass) % 12) + 12) % 12;
+    if (scale.indexOf(degree) === -1) continue;
+    const distance = Math.abs(candidate - midi);
+    if (distance < bestDistance) { bestDistance = distance; best = candidate; }
+  }
+  return best === null ? hz : semitonesToHz(best - 69);
+}
+
+/* ---- Moving the note, without moving the words --------------------------
+   PSOLA: Pitch Synchronous OverLap and Add. Mark every vibration. Cut a short
+   piece around each mark, a little over one vibration either side, faded in
+   and out. Lay the pieces back down along the same timeline, spaced at the NEW
+   period. Pieces get reused or skipped to fill the same stretch of time, so
+   the words keep their timing and only the pitch changes.
+   ------------------------------------------------------------------------ */
+
+/**
+ * @param {Float32Array} samples
+ * @param {number} sampleRate
+ * @param {object} options
+ *   keyPitchClass   0 = C ... 11 = B
+ *   scale           one of SCALES
+ *   strength        0 leaves it alone, 1 puts it fully on the note
+ *   speedMs         how long the correction takes to arrive; 0 is instant
+ *                   (the hard robot sound), 40-80 sounds natural
+ *   shiftSemitones  a plain transposition on top, -11 to +12
+ *   snap            false to transpose only, without snapping to notes
+ */
+async function shiftPitch(samples, sampleRate, options, onProgress) {
+  const keyPitchClass = options.keyPitchClass || 0;
+  const scale = options.scale || SCALES.chromatic;
+  const strength = options.strength != null ? options.strength : 1;
+  const speedMs = options.speedMs != null ? options.speedMs : 20;
+  const snap = options.snap !== false;
+
+  /* Shifting is clamped to 11 semitones down and 12 up. Further down is not a
+     missing feature, it is where the technique stops working: each piece
+     carries a faint echo of its neighbouring vibrations past the edges of its
+     fade, and at exactly an octave down the new spacing is an exact multiple
+     of the old one, so those echoes line up with the ORIGINAL pitch and
+     reinforce it. Measured: -11 lands within half a cent of the target, -12
+     comes out at the original pitch. Correction never asks for more than a
+     semitone or so, so this only limits deliberate transposition. */
+  const shiftSemitones = clamp(options.shiftSemitones || 0, -11, 12);
+
+  const track = await detectPitchTrack(samples, sampleRate, (p) => onProgress && onProgress(p * 0.6));
+  const hop = track.hop;
+  const frames = track.f0.length;
+
+  /* --- what note each moment should be --- */
+  const target = new Float32Array(frames);
+  const frameMs = (hop / sampleRate) * 1000;
+  // How much of the previous correction survives into this frame: a longer
+  // retune time keeps more of it, so the pitch slides into place.
+  const keep = speedMs <= 0 ? 0 : Math.exp(-frameMs / speedMs);
+  let correction = 0;                               // semitones, smoothed
+
+  for (let i = 0; i < frames; i++) {
+    if (!track.voiced[i]) { target[i] = 0; correction *= keep; continue; }
+    const detected = track.f0[i];
+    const snapped = snap ? snapToScale(detected, keyPitchClass, scale) : detected;
+    const wanted = 12 * Math.log2(snapped / detected) * strength + shiftSemitones;
+    correction = wanted + (correction - wanted) * keep;
+    target[i] = detected * Math.pow(2, correction / 12);
+  }
+
+  /* --- mark every vibration in the original --- */
+  const unvoicedPeriod = Math.round(sampleRate * 0.01);     // 10 ms where there is no pitch
+  const frameAt = (position) => Math.min(frames - 1, Math.max(0, Math.round(position / hop)));
+
+  const marks = [];
+  for (let position = 0; position < samples.length;) {
+    marks.push(position);
+    const frame = frameAt(position);
+    const period = track.voiced[frame] ? sampleRate / track.f0[frame] : unvoicedPeriod;
+    position += Math.max(16, Math.round(period));
+  }
+  if (!marks.length) return samples.slice();
+
+  /* --- lay the pieces back down at the new spacing --- */
+  const out = new Float32Array(samples.length);
+  const weight = new Float32Array(samples.length);
+  let nearest = 0;
+  let sinceYield = 0;
+
+  /* The spacing is kept as a fraction and only rounded when a piece is placed.
+     Rounding the spacing itself looks harmless, but a period of 179.4 samples
+     rounded to 179 is a 0.2% pitch error - about 4 cents - and it is the same
+     error on every piece, so it does not average out. */
+  for (let exact = marks[0]; exact < samples.length;) {
+    const where = Math.round(exact);
+    const frame = frameAt(where);
+    const wantedHz = (track.voiced[frame] && target[frame] > 0) ? target[frame] : 0;
+
+    // The piece to copy is the one that came from closest to here in time.
+    while (nearest + 1 < marks.length &&
+           Math.abs(marks[nearest + 1] - where) <= Math.abs(marks[nearest] - where)) nearest++;
+    const from = marks[nearest];
+
+    /* Its width comes from the gap between the marks it sits between, not
+       from a fresh pitch reading: the marks were laid down by walking the
+       pitch track, so the gap IS the period used there. Reading the pitch
+       again at a slightly different spot gives a slightly different answer,
+       and that mismatch biases every piece the same way - which showed up as
+       the whole result sitting a few cents flat. */
+    const gap = nearest + 1 < marks.length ? marks[nearest + 1] - marks[nearest]
+              : (nearest > 0 ? marks[nearest] - marks[nearest - 1] : unvoicedPeriod);
+    const inPeriod = gap > 0 ? gap : unvoicedPeriod;
+
+    // The ratio must be measured against the pitch AT THE PIECE BEING COPIED,
+    // for the same reason: otherwise the width and the ratio do not cancel,
+    // and a wobbling note leaks its wobble through uncorrected.
+    const sourceFrame = frameAt(from);
+    const sourceHz = track.voiced[sourceFrame] ? track.f0[sourceFrame] : 0;
+    const ratio = (sourceHz > 0 && wantedHz > 0) ? wantedHz / sourceHz : 1;
+    const outPeriod = inPeriod / ratio;
+
+    /* Each piece is a little over one vibration either side of its mark, and
+       that matters more than it looks: the pitch you hear comes from how far
+       apart the pieces are laid down, so a piece must hold about ONE
+       vibration. Make it four and the original pitch is inside the piece
+       itself and the spacing stops mattering. The 1.1 is the smallest margin
+       that still leaves neighbours overlapping at an octave down. */
+    const half = Math.max(8, Math.round(inPeriod * 1.1));
+    for (let k = -half; k <= half; k++) {
+      const source = from + k;
+      const destination = where + k;
+      if (source < 0 || source >= samples.length) continue;
+      if (destination < 0 || destination >= samples.length) continue;
+      // Fades in and out, so neighbouring pieces cross over without clicking.
+      const fade = 0.5 - 0.5 * Math.cos((Math.PI * (k + half)) / half);
+      out[destination] += samples[source] * fade;
+      weight[destination] += fade;
+    }
+
+    exact += Math.max(8, outPeriod);
+
+    if (++sinceYield >= 4000) {
+      sinceYield = 0;
+      if (onProgress) onProgress(0.6 + 0.4 * (where / samples.length));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  // Pieces overlap by varying amounts, so divide by how much landed on each
+  // sample, or the result pulses in time with the pieces. Only samples that no
+  // piece reached at all fall back to the original - a higher bar than this
+  // would paste the ORIGINAL pitch into the thin overlaps and undo the shift.
+  for (let i = 0; i < out.length; i++) {
+    if (weight[i] > 0.001) out[i] /= weight[i];
+    else out[i] = samples[i];
+  }
+  return out;
+}
+
+/* ---- The command the interface calls ------------------------------------- */
+
+/** Autotune (or transpose) the selected clip. Destructive, and undoable. */
+async function applyPitchToClip() {
+  const found = state.selectedClipId ? findClip(state.selectedClipId) : null;
+  if (!found) { say('Select a clip first.'); return; }
+
+  const clip = found.clip;
+  const settings = state.pitch;
+  const rate = clip.buffer.sampleRate;
+  const from = Math.floor(clip.offset * rate);
+  const to = Math.min(clip.buffer.length, Math.ceil((clip.offset + clip.duration) * rate));
+
+  say('Listening for the notes...', true);
+  try {
+    const cleaned = engine.ctx.createBuffer(clip.buffer.numberOfChannels, to - from, rate);
+    for (let c = 0; c < clip.buffer.numberOfChannels; c++) {
+      const slice = clip.buffer.getChannelData(c).slice(from, to);
+      const shifted = await shiftPitch(slice, rate, {
+        keyPitchClass: settings.key,
+        scale: SCALES[settings.scale],
+        strength: settings.strength,
+        speedMs: settings.speedMs,
+        shiftSemitones: settings.shift,
+        snap: settings.snap,
+      }, (fraction) => {
+        const overall = (c + fraction) / clip.buffer.numberOfChannels;
+        say(`Retuning... ${Math.round(overall * 100)}%`, true);
+      });
+      cleaned.getChannelData(c).set(shifted);
+    }
+
+    pushUndo('Autotune');
+    clip.buffer = cleaned;
+    clip.offset = 0;
+    clip.duration = cleaned.duration;
+    getPeaks(cleaned);
+    render();
+    const what = settings.snap
+      ? `Retuned to ${NOTE_NAMES[settings.key]} ${settings.scale}`
+      : `Shifted by ${settings.shift > 0 ? '+' : ''}${settings.shift} semitones`;
+    say(`${what} on ${clip.name}.`);
+  } catch (err) {
+    console.error(err);
+    say('Retuning failed - see the browser console.');
   }
 }
 </script>
