@@ -448,7 +448,8 @@ Phase 1 is built in milestones, each stopping for Dave's review:
      CFF fonts are embedded whole. Project files are version 3.
 
 **Phase 2 - Publisher's strengths.** Text wrap (done, 0.10.0, below).
-Master pages (odd/even), facing pages, columns in a box, "continued" lines, page numbers,
+Master pages with odd/even, page numbers and "continued" lines (done,
+0.12.0, below). Facing pages, columns in a box, "continued" lines, page numbers,
 tables, bleed and crop marks, booklet printing, 2-up/4-up, fold presets,
 building blocks, the starter template gallery.
 
@@ -476,6 +477,20 @@ building blocks, the starter template gallery.
   Not done from Publisher's gallery: line callouts (a box with a leader
   line), scrolls, curved and circular block arrows, connectors that stay
   attached to shapes.
+- 0.12.0, master pages: `doc.masters` = [{ id, name, objects, even? }];
+  `page.master` names one. Inside the app masters are pages after the real
+  ones (index doc.pages.length + i; `pageNo`, `allPages`, `isMasterIndex`),
+  so every tool works on them. `masterFor(pi)` resolves odd/even;
+  `pageObjectsWithMaster(pi)` draws and prints master things behind the
+  page's. Page-number fields are U+E000 (page) and U+E001 (number of pages)
+  in the story text, measured as one "letter" whose glyph has `parts` (the
+  digits); `masterLayout(story, pi)` lays out master text for each page.
+  Text boxes have `contPrev` / `contNext`: layout keeps a line's room and
+  `continuedLine` adds "Continued from/on page N" (Caption style, italic) to
+  `layout.notes`, drawn and exported like any line. Stories never span a
+  master and a page. Project files are version 6. Not done yet: facing-page
+  spreads on the desk, a starting page number, section numbering, master
+  text tagged as "artifact" in a tagged PDF (phase 3).
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,

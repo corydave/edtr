@@ -228,6 +228,7 @@ body {
 /* Its banner sits at the top of the desk (the colour preview's is at the bottom, so both can show). */
 .preview-banner.proof-banner { top: 32px; bottom: auto; width: max-content; }   /* max-content: wrap only when the desk is narrower */
 .desk-frame.no-rulers .proof-banner { top: 12px; }
+.preview-banner.master-banner { background: var(--accent); }
 #styleBox { margin-top: 10px; }
 /* Fonts: a sample line in the chosen font, and the list of your own fonts. */
 .font-sample { font-size: 20px; line-height: 1.3; margin: 4px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -305,6 +306,7 @@ input[type="text"], textarea.field-text {
 .film-tools .icon-btn { width: 32px; height: 30px; }
 .page-list { display: flex; gap: 10px; list-style: none; margin: 0; padding: 4px; overflow-x: auto; flex: 1; min-width: 0; }
 .thumb { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
+.thumb-master { display: inline-block; max-width: 4.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 10px; font-weight: 700; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-text); }
 .thumb[aria-selected="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .thumb.drop-before { box-shadow: -4px 0 0 var(--accent); }
 .thumb-svg { height: 84px; width: auto; display: block; box-shadow: 0 1px 3px rgba(0,0,0,.25); background: #fff; }
@@ -712,7 +714,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
     Export
   </button>
-  <span class="phase-tag">Phase 2: text wrap, more shapes</span>
+  <span class="phase-tag">Phase 2: master pages</span>
   <span class="spacer"></span>
   <!-- The family's order: Install (only while the browser allows it), Theme, Help. -->
   <button class="icon-btn" id="installBtn" hidden aria-label="Install DSKEDTR as an app" title="Install DSKEDTR as an app: its own window, and it works offline">
@@ -770,6 +772,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <div class="ruler-corner" aria-hidden="true"></div>
   <canvas class="ruler" id="rulerTop" aria-hidden="true" title="Drag down onto the page to make an across guide"></canvas>
   <canvas class="ruler" id="rulerLeft" aria-hidden="true" title="Drag onto the page to make an up-and-down guide"></canvas>
+  <div class="preview-banner proof-banner master-banner" id="masterBanner" role="status" hidden><span id="masterWords"></span><button class="btn" id="masterBack">Back to the pages</button></div>
   <div class="preview-banner proof-banner" id="proofBanner" role="status" hidden><span>Preview: as it will print. W or Escape to go back.</span><button class="btn" id="proofStop">Back to editing</button></div>
   <div class="preview-banner" id="previewBanner" role="status" hidden><span id="previewWords"></span><button class="btn" id="previewStop">Stop preview</button></div>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs id="cbFilters"></defs></svg>
@@ -793,6 +796,10 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       </button>
       <button class="icon-btn" id="delPageBtn" aria-label="Delete this page" title="Delete this page">
         <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4h6v3"/></svg>
+      </button>
+      <!-- Master pages: the filmstrip lists them instead of the pages while this is pressed. -->
+      <button class="icon-btn tb-toggle" id="masterMode" aria-pressed="false" aria-label="Master pages" title="Master pages: things that show on many pages (a masthead, page numbers)">
+        <svg viewBox="0 0 24 24"><rect x="7" y="3" width="13" height="16" rx="1.5"/><path d="M4 7v12.5A1.5 1.5 0 0 0 5.5 21H16"/><path d="M10 15h7"/></svg>
       </button>
     </div>
     <ul class="page-list" id="pageList" role="listbox" aria-label="Pages" aria-orientation="horizontal"
@@ -821,10 +828,25 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <label class="field" style="margin-top:8px">Language<select id="docLang"></select></label>
       <p class="muted reserve2" id="pageInfo" style="font-size:12px;margin-top:8px"></p>
       <button class="btn" id="pageSetupBtn">Page setup…</button>
+      <div id="pageMasterRow">
+        <label class="field" style="margin-top:12px"><span id="pageMasterLabel">Master page for this page</span><select id="pageMaster"></select></label>
+        <div class="btn-row"><button class="btn" id="masterAllBtn">Use it for every page</button><button class="btn" id="masterEditBtn">Edit master pages</button></div>
+      </div>
       <span class="tool-caption" style="margin-top:14px">Your fonts</span>
       <ul class="font-list" id="fontList"></ul>
       <p class="muted" id="fontListNote" style="font-size:12px">None yet. Add .ttf, .otf or .woff files (a school's brand font, say): they are saved inside this project. Use fonts you have the right to use.</p>
       <button class="btn" id="addFontBtn">Add font files…</button>
+      </div>
+    </section>
+
+    <!-- A master page on the desk (nothing picked): its name and settings -->
+    <section id="secMaster" hidden>
+      <h2><button class="fold" data-fold="masterBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Master page</span></button></h2>
+      <div class="fold-body" id="masterBody" hidden>
+      <label class="field">Name<input type="text" id="masterName" maxlength="40"></label>
+      <label class="field" style="margin-top:8px">On even pages, use<select id="masterEven"></select></label>
+      <p class="muted reserve2" id="masterInfo" style="font-size:12px"></p>
+      <div class="btn-row"><button class="btn" id="masterPageNum">Add a page number</button><button class="btn" id="masterDone">Back to the pages</button></div>
       </div>
     </section>
 
@@ -881,6 +903,9 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <button class="btn" id="linkPickBtn" title="Then click an empty text box on the page">Pick a box on the page</button>
         <button class="btn" id="unlinkBtn">Stop the flow here</button>
       </div>
+      <label class="check"><input type="checkbox" id="contPrev"> "Continued from page…" at the top</label>
+      <label class="check"><input type="checkbox" id="contNext"> "Continued on page…" at the bottom</label>
+      <p class="muted" style="font-size:12px">These show only when the text comes from, or goes on to, a box on another page.</p>
       </div>
     </section>
 
@@ -1011,7 +1036,9 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <button class="btn" id="chColourReset" title="Use the paragraph style's colour again">Style's</button>
       </div>
       <p id="chContrast" class="reserve2" style="font-size:12px" role="status"></p>
-      <label class="field" style="margin-top:4px">Link to (a web or email address)<input type="text" id="chLink" inputmode="url" spellcheck="false" autocomplete="off" placeholder="https://flcc.edu"></label>
+      <span class="tool-caption" style="margin-top:4px">Insert</span>
+      <div class="btn-row" style="margin-top:2px"><button class="btn" id="insPageNum" title="The number of the page it is on (# on a master page) (Ctrl+Alt+Shift+N)">Page number</button><button class="btn" id="insPageCount" title="How many pages the document has">Number of pages</button></div>
+      <label class="field" style="margin-top:8px">Link to (a web or email address)<input type="text" id="chLink" inputmode="url" spellcheck="false" autocomplete="off" placeholder="https://flcc.edu"></label>
       <div class="btn-row"><button class="btn" id="chLinkSet">Link</button><button class="btn" id="chLinkRemove">Remove link</button></div>
       <p id="chLinkNote" class="muted reserve2" style="font-size:12px" role="status"></p>
       </div>
@@ -1455,7 +1482,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.11.0';
+const APP_VERSION = '0.12.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -1904,6 +1931,7 @@ function sampleDocument() {
     ['body', 'Oct 31 · Costume parade at 2 p.m.', [['Oct 31', { b: true }]]],
     ['caption', 'Questions? Call the front office at 555-0142.']
   ];
+  const footer = [['caption', 'The Lakeside Ledger · October 2026 · Page ' + FIELD_CHARS.page + ' of ' + FIELD_CHARS.pages]];
   const lunch = [
     ['h2', 'Lunch this month'],
     ['body', 'Mondays · Pasta with garden salad', [['Mondays', { b: true }]]],
@@ -1934,21 +1962,22 @@ function sampleDocument() {
       s0: story('s0', mast, ['f0']),
       s1: story('s1', main, ['f1', 'f2', 'f4']),    // the main story continues on page 2
       s2: story('s2', side, ['f3']),
-      s3: story('s3', lunch, ['f5'])
+      s3: story('s3', lunch, ['f5']),
+      s4: story('s4', footer, ['f9'])                // on Master A: every page's footer
     },
     groups: { g1: { id: 'g1', name: 'Sidebar' } },
     pages: [
-      { id: 'p1', readingOrder: [], readingOrderAuto: true, objects: [
+      { id: 'p1', master: 'm1', readingOrder: [], readingOrderAuto: true, objects: [
         // inset = the gap between a text box's edge and its text
         { id: 'd1', type: 'rect', name: 'Sidebar background', x: 402, y: 146, w: 156, h: 210, fill: '#e7f6ef', stroke: null, strokeWidth: 0, decorative: true, alt: '', group: 'g1' },
         { id: 'd0', type: 'line', name: 'Rule under the title', x1: 54, y1: 127.5, x2: 558, y2: 127.5, stroke: '#065f46', strokeWidth: 3, decorative: true, alt: '' },
         { id: 'f0', type: 'text', story: 's0', x: 54,  y: 54,  w: 504, h: 66,  inset: 3 },
         { id: 'f1', type: 'text', story: 's1', x: 54,  y: 146, w: 156, h: 440, inset: 3 },
-        { id: 'f2', type: 'text', story: 's1', x: 228, y: 146, w: 156, h: 300, inset: 3 },
+        { id: 'f2', type: 'text', story: 's1', x: 228, y: 146, w: 156, h: 300, inset: 3, contNext: true },
         { id: 'f3', type: 'text', story: 's2', x: 402, y: 146, w: 156, h: 210, inset: 10, group: 'g1' }
       ] },
-      { id: 'p2', readingOrder: [], readingOrderAuto: true, objects: [
-        { id: 'f4', type: 'text', story: 's1', x: 54,  y: 54, w: 156, h: 300, inset: 3 },
+      { id: 'p2', master: 'm1', readingOrder: [], readingOrderAuto: true, objects: [
+        { id: 'f4', type: 'text', story: 's1', x: 54,  y: 54, w: 156, h: 300, inset: 3, contPrev: true },
         { id: 'f5', type: 'text', story: 's3', x: 228, y: 54, w: 330, h: 170, inset: 3 },
         // A sample picture: an illustration the app draws itself at start-up (see sampleArt).
         { id: 'pic1', type: 'picture', name: 'Concert illustration', frameShape: 'rect', x: 228, y: 240, w: 330, h: 206,
@@ -1957,6 +1986,13 @@ function sampleDocument() {
         // An empty frame: a placeholder that never prints, waiting for a photo.
         { id: 'pic2', type: 'picture', name: 'Book fair photo (to come)', frameShape: 'ellipse', x: 64, y: 380, w: 136, h: 136,
           image: null, s: 1, ox: 0, oy: 0, fit: 'fill', stroke: '#065f46', strokeWidth: 2, decorative: false, alt: '' }
+      ] }
+    ],
+    // Master A: a thin rule and a footer with the page number, behind both pages.
+    masters: [
+      { id: 'm1', name: 'Master A', readingOrder: [], readingOrderAuto: true, objects: [
+        { id: 'd9', type: 'line', name: 'Footer rule', x1: 54, y1: 744, x2: 558, y2: 744, stroke: '#065f46', strokeWidth: 0.75, decorative: true, alt: '' },
+        { id: 'f9', type: 'text', story: 's4', x: 54, y: 748, w: 504, h: 18, inset: 3 }
       ] }
     ],
     // Guides: up-and-down lines at x (v) and across lines at y (h), in points,
@@ -1970,11 +2006,42 @@ let doc = blankDocument();           // the splash then offers New, Open, the sa
 let PAGE = doc.page;                 // the current page size (kept in step with doc.page)
 let pageIndex = 0;                   // which page is on the desk
 
-const curPage = () => doc.pages[pageIndex];
-/** The objects on the page that is showing, back to front. */
+/* ---------- Master pages ----------
+   doc.masters holds pages of things that show on many pages at once: a
+   masthead, a footer, a page number. Each page can use one (page.master),
+   and a master can hand even pages to another one (master.even), for
+   left- and right-hand pages. A master is edited like a page: the
+   filmstrip's Masters button lists them and the desk shows the one picked.
+   Inside the app, masters come after the pages: page index
+   doc.pages.length + i is master i, so every tool that works on "the page
+   showing" works on a master too. Masters are never printed on their own. */
+const masterList = () => doc.masters || [];
+/** Pages and masters together. */
+const allPages = () => doc.pages.concat(masterList());
+const pageCount = () => doc.pages.length + masterList().length;
+/** Page (or master) number pi. (pageAt, in section 13g, is something else: the page point under the pointer.) */
+const pageNo = (pi) => (pi < doc.pages.length ? doc.pages[pi] : masterList()[pi - doc.pages.length]);
+const isMasterIndex = (pi) => pi >= doc.pages.length;
+const editingMaster = () => isMasterIndex(pageIndex);
+const masterById = (id) => masterList().find((m) => m.id === id) || null;
+/** The master page pi shows (its even-page partner on even pages), or null. */
+function masterFor(pi) {
+  if (isMasterIndex(pi) || !doc.pages[pi]) return null;
+  let m = masterById(doc.pages[pi].master);
+  if (m && m.even && (pi + 1) % 2 === 0) m = masterById(m.even) || m;
+  return m;
+}
+/** What page pi shows, back to front: its master's things first, then its own. */
+function pageObjectsWithMaster(pi) {
+  const m = masterFor(pi);
+  return (m ? m.objects : []).concat(pageNo(pi).objects);
+}
+
+const curPage = () => pageNo(pageIndex);
+/** The objects on the page (or master) that is showing, back to front. */
 const pageObjs = () => curPage().objects;
-/** Every object on every page. */
-const allObjects = () => doc.pages.flatMap((p) => p.objects);
+/** Every object on every page and master. */
+const allObjects = () => allPages().flatMap((p) => p.objects);
 
 /* ---------- Finding and measuring objects ---------- */
 let objIndex = new Map();            // id -> object
@@ -1982,7 +2049,7 @@ let objPage = new Map();             // id -> index of its page
 /** Rebuild the lookups (after adding, deleting, moving pages or undoing). */
 function reindex() {
   objIndex = new Map(); objPage = new Map();
-  doc.pages.forEach((pg, i) => { for (const o of pg.objects) { objIndex.set(o.id, o); objPage.set(o.id, i); } });
+  allPages().forEach((pg, i) => { for (const o of pg.objects) { objIndex.set(o.id, o); objPage.set(o.id, i); } });
 }
 /** The object with this id (on any page), or undefined. */
 function obj(id) { return objIndex.get(id); }
@@ -1991,7 +2058,7 @@ function pageOf(id) { return objPage.get(id); }
 /** A fresh id like "o7", "s7", "g7" or "p7" that nothing uses yet. */
 function newId(prefix) {
   let id;
-  do { id = prefix + (doc.nextId++); } while (objIndex.has(id) || doc.stories[id] || doc.groups[id] || images[id] || doc.pages.some((p) => p.id === id));
+  do { id = prefix + (doc.nextId++); } while (objIndex.has(id) || doc.stories[id] || doc.groups[id] || images[id] || allPages().some((p) => p.id === id));
   return id;
 }
 
@@ -2168,6 +2235,20 @@ function typingFormat(story, fmts, pos, replacing) {
   return patchFormat(f, { k: null, href: insideLink || replacing ? f.href : null });
 }
 
+/* ---------- Fields: page numbers ----------
+   Two characters from Unicode's "private use" area stand for numbers that
+   change: the page number and the number of pages. They are one character
+   in the story (the cursor steps over them in one go) and show as digits:
+   on a master, as "#"; on each page, as that page's number (section 5c). */
+const FIELD_PAGE = 0xE000, FIELD_PAGES = 0xE001;
+const FIELD_CHARS = { page: String.fromCharCode(FIELD_PAGE), pages: String.fromCharCode(FIELD_PAGES) };
+const isField = (code) => code === FIELD_PAGE || code === FIELD_PAGES;
+/** What a field shows. ctx.page is the page number ('#' on a master). */
+function fieldText(code, ctx) {
+  if (code === FIELD_PAGES) return String(doc.pages.length);
+  return String(ctx && ctx.page != null ? ctx.page : '#');
+}
+
 /* ======================================================================
    5. LAYOUT: breaking a story into lines across its chain of boxes
    ====================================================================== */
@@ -2181,7 +2262,7 @@ function typingFormat(story, fmts, pos, replacing) {
  * from the paragraph's start; the extra last entry is the paragraph's end
  * (its line break), whose look an empty paragraph's line uses.
  */
-function measureParagraph(text, start, end, style, fmts) {
+function measureParagraph(text, start, end, style, fmts, ctx) {
   const n = end - start + 1;
   const adv = new Float64Array(n);                   // width of each character
   const kernBefore = new Float64Array(n);            // space added before it (font kerning + kerning by hand)
@@ -2205,6 +2286,21 @@ function measureParagraph(text, start, end, style, fmts) {
     if (code === 9) {                                // a tab: four spaces wide for now
       adv[k] = glyphFor(fontKey, 32).advanceWidth * look.size / FONTS[fontKey].unitsPerEm * 4;
       glyphs[k] = null; prev = null; continue;
+    }
+    if (isField(code)) {
+      // A page number: its digits, side by side, as one "letter" (parts: each digit and where it goes).
+      const parts = [];
+      let units = 0;
+      for (const ch of fieldText(code, ctx)) {
+        const dg = glyphFor(fontKey, ch.codePointAt(0));
+        parts.push({ g: dg, dx: units, cp: ch.codePointAt(0) });
+        units += dg.advanceWidth;
+      }
+      glyphs[k] = { index: -1, advanceWidth: units, parts };
+      adv[k] = units * look.size / FONTS[fontKey].unitsPerEm + (style.tracking || 0) * look.size / 1000;
+      kernBefore[k] = look.k * look.size / 1000;
+      prev = null;
+      continue;
     }
     let g = glyphFor(fontKey, code);
     if (g.index === 0) {
@@ -2279,13 +2375,19 @@ function breakLine(text, m, paraStart, start, paraEnd, maxWidth) {
  * position along it. overflowAt is where the text that doesn't fit starts
  * (or null when everything fits).
  */
-function layoutStory(story) {
+function layoutStory(story, ctx) {
   const frames = story.frames.map(obj);
   const text = story.text;
   const lines = [];
+  if (!ctx) ctx = storyContext(story);
+  // "Continued from page..." and "Continued on page..." (section 5c) need a line's room at the top or bottom.
+  const noteH = continuedStyle().size * continuedStyle().leading;
+  const pageOfFrame = (i) => (frames[i] ? pageOf(frames[i].id) : null);
+  const roomTop = (i) => (frames[i].contPrev && i > 0 && pageOfFrame(i - 1) !== pageOfFrame(i) ? noteH : 0);
+  const roomBottom = (i) => (frames[i].contNext && i + 1 < frames.length && pageOfFrame(i + 1) !== pageOfFrame(i) ? noteH : 0);
   let fi = 0;
   let f = frames[0];
-  let y = f.y + f.inset;              // where the next line's top goes
+  let y = f.y + f.inset + roomTop(0); // where the next line's top goes
   let firstInFrame = true;
   let overflowAt = null;
   let paraStart = 0;
@@ -2297,7 +2399,7 @@ function layoutStory(story) {
   for (let p = 0; p < paras.length; p++) {
     const paraEnd = paraStart + paras[p].length;
     const role = styleOf(story.roles[p]);
-    const m = measureParagraph(text, paraStart, paraEnd, role, fmts);
+    const m = measureParagraph(text, paraStart, paraEnd, role, fmts, ctx);
     let pos = paraStart;
     let firstLineOfPara = true;
     do {
@@ -2309,7 +2411,7 @@ function layoutStory(story) {
       for (;;) {
         if (!f) { overflowAt = pos; break paraLoop; }
         before = (firstLineOfPara && !firstInFrame) ? role.spaceBefore : 0;
-        const bottom = f.y + f.h - f.inset + 0.01;
+        const bottom = f.y + f.h - f.inset - roomBottom(fi) + 0.01;
         const obs = wrapObstacles(f, wrapCache);
         if (!obs.length) {
           seg = { x: f.x + f.inset, w: f.w - 2 * f.inset };
@@ -2326,7 +2428,7 @@ function layoutStory(story) {
           if (placed) { ({ seg, end, met } = placed); y = placed.top - before; break; }
         }
         fi++; f = frames[fi];
-        if (f) { y = f.y + f.inset; firstInFrame = true; }
+        if (f) { y = f.y + f.inset + roomTop(fi); firstInFrame = true; }
       }
       y += before;
       const { lineH, asc, desc } = met;
@@ -2376,7 +2478,14 @@ function layoutStory(story) {
     y += role.spaceAfter;
     paraStart = paraEnd + 1;
   }
-  return { lines, overflowAt };
+  // The "Continued" lines, where text really does come from or go on to another page.
+  const notes = [];
+  const used = new Set(lines.map((ln) => ln.frame));
+  frames.forEach((fr, i) => {
+    if (roomTop(i) && used.has(fr.id)) notes.push(continuedLine(fr, 'Continued from page ' + (pageOfFrame(i - 1) + 1), fr.y + fr.inset, 'left'));
+    if (roomBottom(i) && used.has(frames[i + 1].id)) notes.push(continuedLine(fr, 'Continued on page ' + (pageOfFrame(i + 1) + 1), fr.y + fr.h - fr.inset - noteH, 'right'));
+  });
+  return { lines, overflowAt, notes };
 }
 
 /* ======================================================================
@@ -2460,11 +2569,12 @@ function wrapObstacles(f, cache) {
   if (cache && cache.has(f.id)) return cache.get(f.id);
   const out = [];
   const pi = pageOf(f.id);
-  const page = doc.pages[pi];
+  const page = pageNo(pi);
   if (page) {
     const fb = bounds(f), fc = centreOf(f);
     const local = (poly) => (f.rotation ? poly.map((q) => rotatePoint(q, -f.rotation, fc)) : poly);
-    for (const o of page.objects) {
+    const m = masterFor(pi);
+    for (const o of (m ? m.objects : []).concat(page.objects)) {
       if (!o.wrap || o.wrap.mode === 'none' || o.hidden || o.type === 'text') continue;
       const gap = (o.wrap.gap || 0) + (o.stroke && o.strokeWidth > 0 ? o.strokeWidth / 2 : 0);
       const b = bounds(o);
@@ -2628,10 +2738,42 @@ function renderWrapOutline(o) {
   layers.handles.appendChild(svgEl('path', { d, fill: 'none', stroke: '#065f46', 'stroke-width': 1, 'stroke-dasharray': '2 2', 'vector-effect': 'non-scaling-stroke' }));
 }
 
+/* ---------- 5c. Pages in layout: numbers, masters, "Continued" lines ---------- */
+/** Which page a story's page-number fields show: its first box's page, or "#" on a master. */
+function storyContext(story) {
+  const pi = pageOf(story.frames[0]);
+  return { page: pi == null || isMasterIndex(pi) ? '#' : pi + 1 };
+}
+/** The look of "Continued on page 3": the Caption style, in italics. */
+function continuedStyle() { return styleOf('caption'); }
+/** One "Continued..." line for box f, at height `top`, against its left or right side. Returns { frame, line, story }. */
+function continuedLine(f, words, top, align) {
+  const style = continuedStyle(), story = { id: '', text: words };
+  const fmts = new Array(words.length).fill({ i: true });
+  const m = measureParagraph(words, 0, words.length, style, fmts, null);
+  const met = lineMetrics(m, 0, words.length, style);
+  const xs = [];
+  let x = 0;
+  for (let i = 0; i < words.length; i++) { if (i) x += m.kernBefore[i]; xs.push(x); x += m.adv[i]; }
+  xs.push(x);
+  const x0 = align === 'right' ? f.x + f.w - f.inset - x : f.x + f.inset;
+  const line = { frame: f.id, para: 0, start: 0, end: words.length, isParaEnd: true, x0, top, height: met.lineH,
+    baseline: top + (met.lineH - (met.asc + met.desc)) / 2 + met.asc, asc: met.asc, desc: met.desc, xs, m, paraStart: 0, role: style, note: true };
+  return { frame: f.id, line, story };
+}
+
 /** Lay out every story (cheap enough to redo on each change in phase 0). */
 const layouts = {};
+const masterLayouts = new Map();                     // "story|page" -> a master story laid out for one page (its page numbers)
 function layoutAll() {
+  masterLayouts.clear();
   for (const id in doc.stories) layouts[id] = layoutStory(doc.stories[id]);
+}
+/** A master's story as it shows on page pi (the same lines, with that page's numbers). */
+function masterLayout(storyId, pi) {
+  const key = storyId + '|' + pi;
+  if (!masterLayouts.has(key)) masterLayouts.set(key, layoutStory(doc.stories[storyId], { page: pi + 1 }));
+  return masterLayouts.get(key);
 }
 
 /* ---------- Finding things in a layout ---------- */
@@ -2705,7 +2847,7 @@ function storyName(story) {
 
 function storyLabel(story) {
   const pi = pageOf(story.frames[0]);
-  const order = doc.pages[pi] ? doc.pages[pi].readingOrder : [];
+  const order = pageNo(pi) ? pageNo(pi).readingOrder : [];
   const n = order.indexOf(story.id) + 1;
   const boxes = story.frames.length > 1 ? ', ' + story.frames.length + ' linked text boxes' : '';
   return 'Page ' + (pi + 1) + ', item ' + n + ' of ' + order.length + ': ' + storyName(story) + boxes;
@@ -2742,8 +2884,10 @@ function syncInputs() {
 /** Keep the textareas in reading order, so Tab moves through stories in that order. */
 function orderInputsInDom() {
   const wrap = $('pageWrap');
-  // Page by page, each page in its reading order.
-  const want = doc.pages.flatMap((pg) => pg.readingOrder).filter((id) => doc.stories[id] && inputs[id]);
+  // Page by page, each page in its reading order; master pages' text last.
+  const pageStories = doc.pages.flatMap((pg) => pg.readingOrder).filter((id) => doc.stories[id] && inputs[id]);
+  const masterStories = Object.keys(doc.stories).filter((id) => inputs[id] && isMasterIndex(pageOf(doc.stories[id].frames[0])));
+  const want = pageStories.concat(masterStories);
   const have = [...wrap.querySelectorAll('.story-input')].map((ta) => ta.dataset.story);
   if (want.join() !== have.join()) {
     // Moving an element can take focus away from it, so put focus and the cursor back after.
@@ -2753,9 +2897,17 @@ function orderInputsInDom() {
     for (const id of want) wrap.appendChild(inputs[id]);   // appending an existing element moves it to the end
     if (keep && document.activeElement !== focused) { focused.focus({ preventScroll: true }); focused.setSelectionRange(...keep); }
   }
-  for (const id of want) {
+  for (const id of pageStories) {
     const label = storyLabel(doc.stories[id]);
     if (inputs[id].getAttribute('aria-label') !== label) inputs[id].setAttribute('aria-label', label);
+    inputs[id].tabIndex = 0;
+  }
+  // A master's text is reached by Tab only while that master is on the desk.
+  for (const id of masterStories) {
+    const pi = pageOf(doc.stories[id].frames[0]);
+    const label = pageNo(pi).name + ': ' + storyName(doc.stories[id]);
+    if (inputs[id].getAttribute('aria-label') !== label) inputs[id].setAttribute('aria-label', label);
+    inputs[id].tabIndex = pi === pageIndex ? 0 : -1;
   }
 }
 
@@ -2942,6 +3094,8 @@ function onStoryKeyDown(e, id) {
     return;
   }
 
+  // Page number: Ctrl+Alt+Shift+N (Cmd+Option+Shift+N), as in InDesign.
+  if (mod && e.altKey && e.shiftKey && e.code === 'KeyN') { e.preventDefault(); insertIntoStory(FIELD_CHARS.page); announce('Page number inserted'); return; }
   // Characters: Ctrl+B bold, Ctrl+I italic, Ctrl+U underline, Ctrl+K link,
   // Ctrl+\ clear formatting (Cmd on a Mac). e.code for the backslash, so any layout works.
   if (mod && !e.altKey && !e.shiftKey) {
@@ -3042,7 +3196,7 @@ function snapshot() {
   return {
     state: JSON.stringify({
       title: doc.title, lang: doc.lang, page: doc.page, styles: doc.styles, stories: doc.stories, groups: doc.groups,
-      pages: doc.pages, guides: doc.guides, nextId: doc.nextId
+      pages: doc.pages, masters: masterList(), guides: doc.guides, nextId: doc.nextId
     }),
     pageIndex, storyId: id, sel, editing: focusedStoryId != null, selected: selectedIds.slice()
   };
@@ -3078,7 +3232,7 @@ function restore(snap) {
   const s = JSON.parse(snap.state);
   Object.assign(doc, s);
   PAGE = doc.page;
-  pageIndex = Math.min(snap.pageIndex || 0, doc.pages.length - 1);
+  pageIndex = Math.min(snap.pageIndex || 0, pageCount() - 1);
   applyPageSize();
   reindex();
   syncInputs();
@@ -3100,6 +3254,7 @@ function restore(snap) {
   renderOrderList();
   renderFilmstrip();
   updateInspector();
+  showMasterBanner();
 }
 
 function undo() {
@@ -3475,6 +3630,71 @@ function wireWrap() {
   });
 }
 
+/* ---------- Masters in the Inspector ---------- */
+function masterOptions(sel, none, skipId) {
+  const sig = none + '|' + masterList().map((m) => m.id + ':' + m.name).join('|') + '|' + skipId;
+  if (sel.dataset.sig === sig) return;
+  sel.dataset.sig = sig;
+  clear(sel);
+  const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+  add('', none);
+  for (const m of masterList()) if (m.id !== skipId) add(m.id, m.name);
+}
+/** Document section: which master this page uses. */
+function fillPageMaster() {
+  const sel = $('pageMaster');
+  masterOptions(sel, 'None', '');
+  setText('pageMasterLabel', 'Master page for page ' + (pageIndex + 1));
+  setField(sel, curPage().master || '');
+  $('masterAllBtn').disabled = !masterList().length;
+}
+/** The Master page section, for the master showing. */
+function fillMaster() {
+  const m = curPage();
+  setField($('masterName'), m.name);
+  masterOptions($('masterEven'), 'This master (the same on every page)', m.id);
+  setField($('masterEven'), m.even || '');
+  const users = doc.pages.map((pg, i) => (pg.master === m.id ? i + 1 : 0)).filter(Boolean);
+  setText('masterInfo', users.length ? 'Used by page' + (users.length > 1 ? 's ' : ' ') + users.join(', ') + '. Things here show behind each page’s own; they can only be changed here.' : 'No page uses it yet: pick it for a page in Document (nothing picked, on that page).');
+}
+function wireMasters() {
+  $('pageMaster').addEventListener('change', () => setPageMaster(pageIndex, $('pageMaster').value));
+  $('masterAllBtn').addEventListener('click', () => useMasterEverywhere($('pageMaster').value));
+  $('masterEditBtn').addEventListener('click', toggleMasters);
+  $('masterName').addEventListener('input', () => {
+    const v = cleanText($('masterName').value, 40).trim();
+    if (!v || !editingMaster()) return;
+    recordUndo('field:mastername');
+    curPage().name = v;
+    renderFilmstrip(); showMasterBanner();
+  });
+  $('masterEven').addEventListener('change', () => {
+    if (!editingMaster()) return;
+    recordUndo('other');
+    const v = $('masterEven').value;
+    if (v) curPage().even = v; else delete curPage().even;
+    relayoutAndRender(); scheduleThumbnails(); updateInspector();
+    announce(v ? 'Even pages use ' + masterById(v).name : 'Even pages use this master too');
+  });
+  $('masterPageNum').addEventListener('click', addPageNumberBox);
+  $('masterDone').addEventListener('click', toggleMasters);
+  $('insPageNum').addEventListener('mousedown', (e) => e.preventDefault());
+  $('insPageCount').addEventListener('mousedown', (e) => e.preventDefault());
+  $('insPageNum').addEventListener('click', () => { insertIntoStory(FIELD_CHARS.page); announce('Page number inserted'); });
+  $('insPageCount').addEventListener('click', () => { insertIntoStory(FIELD_CHARS.pages); announce('Number of pages inserted'); });
+  $('contPrev').addEventListener('change', () => setContinued('contPrev', $('contPrev').checked));
+  $('contNext').addEventListener('change', () => setContinued('contNext', $('contNext').checked));
+}
+/** A text box's "Continued from page..." (top) or "Continued on page..." (bottom) line, on or off. */
+function setContinued(key, on) {
+  const o = obj($('secGeom').dataset.obj);
+  if (!o || o.type !== 'text') return;
+  recordUndo('other');
+  if (on) o[key] = true; else delete o[key];
+  relayoutAndRender(); updateInspector();
+  announce((key === 'contPrev' ? '"Continued from page…" at the top ' : '"Continued on page…" at the bottom ') + (on ? 'on' : 'off'));
+}
+
 /** The Characters section: what the highlighted words look like now. */
 function fillChars() {
   const t = formatTarget();
@@ -3664,7 +3884,7 @@ function renderContent(target, pi) {
   clear(target);
   // Clip ids must be unique in the whole web page (the desk and every thumbnail).
   const prefix = target.getAttribute('data-layer') || target.getAttribute('data-thumb') || 'x';
-  const objects = doc.pages[pi].objects;
+  const objects = pageObjectsWithMaster(pi);           // its master's things behind its own (section 4)
   const textPaths = pageTextPaths(pi);
   for (const o of objects) {
     if (o.hidden) continue;
@@ -3684,20 +3904,19 @@ function renderContent(target, pi) {
 
 /** The letters of each text box on page `pi`, as SVG path text, one per colour: text box id -> [{ fill, d }]. */
 function pageTextPaths(pi) {
-  const onPage = new Set(doc.pages[pi].objects.map((o) => o.id));
   const textPaths = {};
-  for (const id in doc.stories) {
-    if (!layouts[id]) continue;
-    const text = doc.stories[id].text;
-    for (const ln of layouts[id].lines) {
-      if (!onPage.has(ln.frame)) continue;
+  for (const [frameId, list] of Object.entries(linesByFrame(pi))) {
+    for (const { ln, story } of list) {
+      const text = story.text;
       const byColour = textPaths[ln.frame] || (textPaths[ln.frame] = {});
       const partsFor = (colour) => byColour[colour] || (byColour[colour] = []);
       for (let i = ln.start; i < ln.end; i++) {
         const k = i - ln.paraStart, g = ln.m.glyphs[k];
         if (!g) continue;                                     // tabs and the second half of an emoji
         if (text.charCodeAt(i) === 32) continue;              // spaces have no shape
-        pushOutline(partsFor(ln.m.looks[k].colour), outline(ln.m.fontKeys[k], g, ln.m.sizes[k]), ln.x0 + ln.xs[i - ln.start], ln.baseline);
+        const size = ln.m.sizes[k], fk = ln.m.fontKeys[k], x = ln.x0 + ln.xs[i - ln.start];
+        if (g.parts) { for (const pt of g.parts) pushOutline(partsFor(ln.m.looks[k].colour), outline(fk, pt.g, size), x + pt.dx * size / FONTS[fk].unitsPerEm, ln.baseline); continue; }
+        pushOutline(partsFor(ln.m.looks[k].colour), outline(fk, g, size), x, ln.baseline);
       }
       // Underlines (and links, which are always underlined): a thin bar under the letters.
       for (const u of lineUnderlines(ln, text)) {
@@ -4204,6 +4423,7 @@ function createObject(type, r) {
 function isLinkTarget(fromId, toId) {
   const from = obj(fromId), to = obj(toId);
   if (!from || !to || to.type !== 'text' || to.id === from.id || to.story === from.story) return false;
+  if (isMasterIndex(pageOf(fromId)) !== isMasterIndex(pageOf(toId))) return false;   // a master's text stays on masters
   const s = doc.stories[to.story];
   return s.frames.length === 1 && s.text === '';
 }
@@ -4270,7 +4490,7 @@ function removeObjects(list) {
     }
   }
   const gone = new Set(list.map((o) => o.id));
-  for (const pg of doc.pages) pg.objects = pg.objects.filter((o) => !gone.has(o.id));
+  for (const pg of allPages()) pg.objects = pg.objects.filter((o) => !gone.has(o.id));
   pruneGroups();
 }
 
@@ -4657,8 +4877,9 @@ function stopEditingToFrame(storyId) {
 
 /** Show page i on the desk. keepTyping: the cursor moved there while typing. */
 function goToPage(i, keepTyping) {
-  i = Math.max(0, Math.min(doc.pages.length - 1, i));
+  i = Math.max(0, Math.min(pageCount() - 1, i));
   if (i === pageIndex) return;
+  if (!isMasterIndex(i)) lastPageIndex = i;           // where "Back to the pages" returns to
   pageIndex = i;
   selectedIds = [];
   cropId = null;
@@ -4672,14 +4893,137 @@ function goToPage(i, keepTyping) {
   renderFilmstrip();
   updateInspector();
   showPage();
-  announce('Page ' + (i + 1) + ' of ' + doc.pages.length);
+  showMasterBanner();
+  orderInputsInDom();
+  announce(isMasterIndex(i) ? pageNo(i).name + ', a master page. What you put here shows on every page that uses it.' : 'Page ' + (i + 1) + ' of ' + doc.pages.length + (masterFor(i) ? ', with ' + masterFor(i).name : ''));
+}
+let lastPageIndex = 0;                               // the page to go back to from the masters
+
+/* ---------- Masters: adding, copying, removing, using ---------- */
+/** "Master A", "Master B"... the first letter not taken. */
+function nextMasterName() {
+  const names = new Set(masterList().map((m) => m.name));
+  for (let i = 0; i < 26; i++) { const n = 'Master ' + String.fromCharCode(65 + i); if (!names.has(n)) return n; }
+  return 'Master ' + (masterList().length + 1);
+}
+function addMaster() {
+  recordUndo('other');
+  if (!doc.masters) doc.masters = [];
+  doc.masters.push({ id: newId('m'), name: nextMasterName(), objects: [], readingOrder: [], readingOrderAuto: true });
+  reindex();
+  goToPage(doc.pages.length + doc.masters.length - 1);
+  renderFilmstrip();
+  updateInspector();
+}
+/** A copy of the master showing (its text boxes keep their text). */
+function duplicateMaster() {
+  if (!editingMaster()) return;
+  recordUndo('other');
+  const src = curPage(), m = { id: newId('m'), name: nextMasterName(), objects: [], readingOrder: [], readingOrderAuto: true };
+  const groupMap = {};
+  for (const o of src.objects) m.objects.push(copyObject(o, 0, 0, groupMap));
+  doc.masters.push(m);
+  reindex();
+  syncInputs();
+  goToPage(doc.pages.length + doc.masters.length - 1);
+  renderFilmstrip();
+  announce(src.name + ' copied as ' + m.name);
+}
+/** Remove the master showing. Pages that used it use none. */
+async function deleteMaster() {
+  if (!editingMaster()) return;
+  const m = curPage(), users = doc.pages.filter((pg) => pg.master === m.id).length;
+  if (users && !(await confirmDialog('Delete ' + m.name + '?', users + (users === 1 ? ' page uses it. It' : ' pages use it. They') + ' will have no master page.', 'Delete'))) return;
+  recordUndo('other');
+  removeObjects(m.objects.slice());
+  doc.masters = masterList().filter((x) => x !== m);
+  for (const pg of doc.pages) if (pg.master === m.id) delete pg.master;
+  for (const x of doc.masters) if (x.even === m.id) delete x.even;
+  selectedIds = [];
+  if (activeStoryId && !doc.stories[activeStoryId]) activeStoryId = null;
+  pageIndex = doc.masters.length ? doc.pages.length + Math.min(pageIndex - doc.pages.length, doc.masters.length - 1) : Math.min(lastPageIndex, doc.pages.length - 1);
+  reindex();
+  syncInputs();
+  relayoutAndRender();
+  renderOrderList(true);
+  renderFilmstrip();
+  updateInspector();
+  showMasterBanner();
+  announce(m.name + ' deleted');
+}
+/** Which master a page uses ('' for none). */
+function setPageMaster(pi, masterId) {
+  const pg = doc.pages[pi];
+  if (!pg || (pg.master || '') === masterId) return;
+  recordUndo('other');
+  if (masterId) pg.master = masterId; else delete pg.master;
+  relayoutAndRender();
+  renderFilmstrip();
+  scheduleThumbnails();
+  updateInspector();
+  announce(masterId ? 'Page ' + (pi + 1) + ' uses ' + masterById(masterId).name : 'Page ' + (pi + 1) + ' has no master page');
+}
+function useMasterEverywhere(masterId) {
+  recordUndo('other');
+  for (const pg of doc.pages) { if (masterId) pg.master = masterId; else delete pg.master; }
+  relayoutAndRender();
+  renderFilmstrip();
+  scheduleThumbnails();
+  updateInspector();
+  announce(masterId ? 'Every page uses ' + masterById(masterId).name : 'No page uses a master page');
+}
+/** The Masters button: go to the masters (making Master A if there are none), or back to the pages. */
+function toggleMasters() {
+  if (editingMaster()) { goToPage(Math.min(lastPageIndex, doc.pages.length - 1)); renderFilmstrip(); return; }
+  if (!masterList().length) { addMaster(); return; }
+  const used = masterFor(pageIndex);
+  goToPage(doc.pages.length + Math.max(0, masterList().indexOf(used)));
+  renderFilmstrip();
+}
+/** A page number at the bottom of the master: a centred text box with the page-number field in it. */
+function addPageNumberBox() {
+  if (!editingMaster()) return;
+  const m = marginBox(), h = 18;
+  const o = createObject('text', { x: m.x, y: Math.min(PAGE.height - h - 6, m.y + m.h + 12), w: m.w, h });
+  const s = doc.stories[o.story];
+  s.text = FIELD_CHARS.page;
+  s.roles = ['caption'];
+  inputs[s.id].value = s.text;
+  stopEditingToFrame(s.id);
+  relayoutAndRender();
+  updateInspector();
+  announce('Page number added at the bottom of ' + curPage().name + '. Each page shows its own number.');
+}
+/** The banner while a master is on the desk. */
+function showMasterBanner() {
+  const on = editingMaster();
+  $('masterBanner').hidden = !on;
+  $('masterMode').setAttribute('aria-pressed', String(on));
+  if (on) {
+    const users = doc.pages.filter((pg) => pg.master === curPage().id).length;
+    setText('masterWords', 'Editing ' + curPage().name + ' (used by ' + users + (users === 1 ? ' page' : ' pages') + ').');
+  }
+}
+/** Put text in the story being typed in, where the cursor is (one undo step, like typing). */
+function insertIntoStory(text) {
+  const id = activeStoryId;
+  if (!id || !inputs[id]) return;
+  const ta = inputs[id], s = lastSel[id] || getSel(id);
+  ta.focus({ preventScroll: true });
+  ta.setSelectionRange(s.start, s.end);
+  ta.setRangeText(text, s.start, s.end, 'end');
+  onTextInput(id, { inputType: 'insertText' });
+  afterSelectionChange(id);
 }
 
 function blankPage() { return { id: newId('p'), objects: [], readingOrder: [], readingOrderAuto: true }; }
 
 function addPage() {
+  if (editingMaster()) { addMaster(); return; }
   recordUndo('other');
-  doc.pages.splice(pageIndex + 1, 0, blankPage());
+  const pg = blankPage();
+  if (curPage().master) pg.master = curPage().master;       // a new page uses the same master as the one before it
+  doc.pages.splice(pageIndex + 1, 0, pg);
   reindex();
   goToPage(pageIndex + 1);
   renderFilmstrip();
@@ -4688,9 +5032,11 @@ function addPage() {
 
 /** A copy of the page showing, right after it. Text boxes keep the text they show, unlinked. */
 function duplicatePage() {
+  if (editingMaster()) { duplicateMaster(); return; }
   recordUndo('other');
   const src = curPage();
   const pg = blankPage();
+  if (src.master) pg.master = src.master;
   const groupMap = {};
   for (const o of src.objects) pg.objects.push(copyObject(o, 0, 0, groupMap));
   doc.pages.splice(pageIndex + 1, 0, pg);
@@ -4702,6 +5048,7 @@ function duplicatePage() {
 }
 
 function deletePage() {
+  if (editingMaster()) { deleteMaster(); return; }
   if (doc.pages.length === 1) { announce('A document needs at least one page.'); return; }
   recordUndo('other');
   const pg = curPage();
@@ -4721,7 +5068,7 @@ function deletePage() {
 }
 
 function movePage(from, to) {
-  if (to < 0 || to >= doc.pages.length || from === to) return;
+  if (isMasterIndex(from) || to < 0 || to >= doc.pages.length || from === to) return;
   recordUndo('other');
   const [pg] = doc.pages.splice(from, 1);
   doc.pages.splice(to, 0, pg);
@@ -5625,7 +5972,7 @@ function wireShapes() {
 function orderItems(pi) {
   // (Things out in the staging area are not read: a story counts when one of its boxes is on a page.)
   const stories = Object.keys(doc.stories).filter((id) => pageOf(doc.stories[id].frames[0]) === pi && doc.stories[id].frames.some((f) => obj(f) && onPageArea(obj(f))));
-  return stories.concat(doc.pages[pi].objects.filter((o) => o.type !== 'text' && !o.decorative && !o.hidden && !(o.type === 'picture' && !o.image) && onPageArea(o)).map((o) => o.id));
+  return stories.concat(pageNo(pi).objects.filter((o) => o.type !== 'text' && !o.decorative && !o.hidden && !(o.type === 'picture' && !o.image) && onPageArea(o)).map((o) => o.id));
 }
 /** The page an item (story or shape) is read on. */
 function itemPage(id) { return doc.stories[id] ? pageOf(doc.stories[id].frames[0]) : pageOf(id); }
@@ -6539,7 +6886,10 @@ function updateInspector() {
   const one = picked.length === 1 ? picked[0] : null;
   const geomObj = typing ? obj(activeFrameId()) : one;
 
-  show('secDoc', !typing && !picked.length);
+  show('secDoc', !typing && !picked.length && !editingMaster());
+  show('secMaster', !typing && !picked.length && editingMaster());
+  if (!typing && !picked.length && editingMaster()) fillMaster();
+  $('orderHeading').parentElement.hidden = editingMaster();      // masters aren't read in order: their things repeat on every page
   show('secGeom', !!geomObj);
   show('secLink', !!(geomObj && geomObj.type === 'text'));
   show('secShape', !!(one && one.type !== 'text' && !typing));
@@ -6555,7 +6905,8 @@ function updateInspector() {
   const storyId = typing ? activeStoryId : (one && one.type === 'text' ? one.story : null);
   show('secStory', !!storyId);
 
-  if (!typing && !picked.length) {
+  if (!typing && !picked.length && !editingMaster()) {
+    fillPageMaster();
     setField($('docTitle'), doc.title);
     setField($('docLang'), doc.lang);
     setText('pageInfo', pageDescription() + '. ' + doc.pages.length + (doc.pages.length === 1 ? ' page.' : ' pages.'));
@@ -6623,6 +6974,8 @@ function fillFlow(o) {
   }
   sel.value = next;
   $('unlinkBtn').disabled = !next;
+  $('contPrev').checked = !!o.contPrev;
+  $('contNext').checked = !!o.contNext;
 }
 function describeBox(o, what) {
   return what + (pageOf(o.id) !== pageIndex ? ' on page ' + (pageOf(o.id) + 1) : '') + ' at ' + toU(o.x) + ', ' + toU(o.y) + ' ' + unit().short + ' (' + toU(o.w) + ' × ' + toU(o.h) + ')';
@@ -7223,12 +7576,15 @@ let filmSig = '';
 function renderFilmstrip() {
   const list = $('pageList');
   const over = pagesWithOverflow();
-  const sig = JSON.stringify([doc.pages.map((p) => p.id), pageIndex, [...over], PAGE.width, PAGE.height]);
+  const masters = editingMaster();
+  const shown = masters ? masterList().map((m, i) => [m, doc.pages.length + i]) : doc.pages.map((pg, i) => [pg, i]);
+  const sig = JSON.stringify([doc.pages.map((p) => [p.id, p.master]), masterList().map((m) => [m.id, m.name]), pageIndex, [...over], PAGE.width, PAGE.height]);
   if (sig === filmSig) return;
   filmSig = sig;
   const hadFocus = list.contains(document.activeElement);
+  list.setAttribute('aria-label', masters ? 'Master pages' : 'Pages');
   clear(list);
-  doc.pages.forEach((pg, i) => {
+  shown.forEach(([pg, i]) => {
     const li = document.createElement('li');
     li.setAttribute('role', 'option');
     li.id = 'thumb-' + pg.id;
@@ -7237,7 +7593,9 @@ function renderFilmstrip() {
     li.className = 'thumb';
     li.setAttribute('aria-selected', String(i === pageIndex));
     li.tabIndex = i === pageIndex ? 0 : -1;
-    li.setAttribute('aria-label', 'Page ' + (i + 1) + ' of ' + doc.pages.length + (over.has(i) ? ', has text that doesn’t fit' : ''));
+    const pm = masters ? null : masterById(pg.master);
+    li.draggable = !masters;
+    li.setAttribute('aria-label', (masters ? pg.name : 'Page ' + (i + 1) + ' of ' + doc.pages.length + (pm ? ', ' + pm.name : '')) + (over.has(i) ? ', has text that doesn’t fit' : ''));
     const box = document.createElementNS(SVG_NS, 'svg');
     box.setAttribute('viewBox', '0 0 ' + PAGE.width + ' ' + PAGE.height);
     box.setAttribute('aria-hidden', 'true');
@@ -7248,7 +7606,8 @@ function renderFilmstrip() {
     const label = document.createElement('span');
     label.className = 'thumb-num';
     label.setAttribute('aria-hidden', 'true');
-    label.textContent = String(i + 1);
+    label.textContent = masters ? pg.name.replace(/^Master /, '') : String(i + 1);
+    if (pm) { const tag = document.createElement('span'); tag.className = 'thumb-master'; tag.textContent = pm.name.replace(/^Master /, ''); tag.title = 'Uses ' + pm.name; label.appendChild(tag); }
     if (over.has(i)) { const dot = document.createElement('span'); dot.className = 'thumb-dot'; label.appendChild(dot); }
     li.append(box, label);
     list.appendChild(li);
@@ -7257,11 +7616,16 @@ function renderFilmstrip() {
   if (hadFocus) focusThumb();
   const cur = $('thumb-' + curPage().id);
   if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  $('delPageBtn').disabled = doc.pages.length < 2;
+  $('delPageBtn').disabled = !masters && doc.pages.length < 2;
+  // The three buttons act on masters while the masters are showing.
+  const what = masters ? 'master page' : 'page';
+  for (const [id, words] of [['addPageBtn', 'Add a ' + what + (masters ? '' : ' after this one')], ['dupPageBtn', 'Duplicate this ' + what], ['delPageBtn', 'Delete this ' + what]]) {
+    $(id).setAttribute('aria-label', words); $(id).title = words;
+  }
 }
 function renderThumbnails() {
   renderFilmstrip();                 // in case overflow dots changed
-  doc.pages.forEach((pg, i) => {
+  allPages().forEach((pg, i) => {
     const g = document.querySelector('[data-thumb="' + pg.id + '"]');
     if (g) renderContent(g, i);
   });
@@ -7275,8 +7639,9 @@ function wireFilmstrip() {
     const back = k === 'ArrowLeft' || k === 'ArrowUp', fwd = k === 'ArrowRight' || k === 'ArrowDown';
     if (e.altKey && (back || fwd)) { e.preventDefault(); movePage(pageIndex, pageIndex + (fwd ? 1 : -1)); return; }
     let j = null;
-    if (back) j = pageIndex - 1; else if (fwd) j = pageIndex + 1;
-    else if (k === 'Home') j = 0; else if (k === 'End') j = doc.pages.length - 1;
+    const first = editingMaster() ? doc.pages.length : 0, last = editingMaster() ? pageCount() - 1 : doc.pages.length - 1;
+    if (back) j = Math.max(first, pageIndex - 1); else if (fwd) j = Math.min(last, pageIndex + 1);
+    else if (k === 'Home') j = first; else if (k === 'End') j = last;
     if (j == null) return;
     e.preventDefault();
     goToPage(j);
@@ -7312,6 +7677,8 @@ function wireFilmstrip() {
   });
   list.addEventListener('dragend', () => { dragFrom = null; clearMarks(); });
   $('addPageBtn').addEventListener('click', addPage);
+  $('masterMode').addEventListener('click', toggleMasters);
+  $('masterBack').addEventListener('click', () => { toggleMasters(); $('desk').focus({ preventScroll: true }); });
   $('dupPageBtn').addEventListener('click', duplicatePage);
   $('delPageBtn').addEventListener('click', deletePage);
 }
@@ -8145,6 +8512,8 @@ function wireChrome() {
     [mod + ' + ' + alt + ' + 1 / 2 / 0 / 9', 'While typing: Heading 1, Heading 2, Body, Caption'],
     [mod + ' + B, ' + mod + ' + I, ' + mod + ' + U', 'While typing: bold, italic, underline for the highlighted words (or what you type next)'],
     [mod + ' + K', 'While typing: link the highlighted words (Enter links, Escape goes back)'],
+    ['Master pages (the button under the page buttons)', 'Things that show on many pages: a masthead, a footer, page numbers. Pick a page’s master in Document (nothing picked)'],
+    [mod + ' + ' + alt + ' + Shift + N', 'While typing: insert a page number (# on a master page; each page shows its own)'],
     ['Fonts', 'A paragraph style’s font (Paragraph), or any words’ font (Characters). Add your own .ttf, .otf or .woff files in Document, or drop them on the page'],
     [mod + ' + \\', 'While typing: clear formatting (back to the paragraph style; links stay)'],
     [(isMac ? 'Ctrl + Cmd' : 'Alt') + ' + Left / Right', 'While typing: kerning, the space between two letters (Shift: five times as much); with words highlighted, between all their letters'],
@@ -9304,7 +9673,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 5;                         // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads)
+const PROJECT_VERSION = 6;                         // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -9359,6 +9728,7 @@ function blankDocument(page) {
     styles: defaultStyles(),
     stories: {}, groups: {},
     pages: [{ id: 'p1', objects: [], readingOrder: [], readingOrderAuto: true }],
+    masters: [],
     guides: { v: [], h: [] },
     nextId: 1
   };
@@ -9411,6 +9781,8 @@ function loadDocument(newDoc, picStore, fontStore) {
   renderGuideList();
   updateInspector();
   fitZoom();
+  lastPageIndex = 0;
+  showMasterBanner();
   savedState = docState();
   updateWindowTitle();
   scheduleA11y();
@@ -9624,8 +9996,37 @@ function checkDocument(raw, known, knownFonts) {
       objects.push(o);
     }
     const order = Array.isArray(rp.readingOrder) ? rp.readingOrder.filter((x) => typeof x === 'string' && ID_RE.test(x)).slice(0, 25000) : [];
-    return { id, objects, readingOrder: order, readingOrderAuto: rp.readingOrderAuto !== false };
+    const pg = { id, objects, readingOrder: order, readingOrderAuto: rp.readingOrderAuto !== false };
+    if (typeof rp.master === 'string') pg.master = rp.master;          // checked below, once the masters are known
+    return pg;
   });
+  // Master pages: like pages, plus a name and the master for even pages.
+  const masterFrames = new Set();
+  const rawMasters = Array.isArray(raw.masters) ? raw.masters : [];
+  if (rawMasters.length > 100) bad('That project has more than 100 master pages.');
+  out.masters = rawMasters.map((rm) => {
+    if (!rm || typeof rm !== 'object' || !Array.isArray(rm.objects)) bad('That project has a damaged master page.');
+    const id = checkId(rm.id);
+    if (pageIds.has(id)) bad('That project has two pages with the same name.');
+    pageIds.add(id);
+    const objects = [];
+    for (const r of rm.objects) {
+      if (++count > 20000) bad('That project has more than 20,000 objects.');
+      const o = checkObject(r, known, groups);
+      if (objectIds.has(o.id)) bad('That project has two objects with the same name.');
+      objectIds.add(o.id);
+      if (o.type === 'path') points += o.contours.reduce((n, c) => n + c.pts.length, 0);
+      if (points > 500000) bad('That project has shapes with too many points.');
+      if (o.type === 'text') { textFrames.push(o); masterFrames.add(o.id); }
+      objects.push(o);
+    }
+    const m = { id, name: cleanText(rm.name, 40).trim() || 'Master', objects, readingOrder: [], readingOrderAuto: true };
+    if (typeof rm.even === 'string') m.even = rm.even;
+    return m;
+  });
+  const masterIds = new Set(out.masters.map((m) => m.id));
+  for (const m of out.masters) if (m.even && (!masterIds.has(m.even) || m.even === m.id)) delete m.even;
+  for (const pg of out.pages) if (pg.master && !masterIds.has(pg.master)) delete pg.master;
 
   // Stories: their text, a role per paragraph, and their chain of boxes.
   const textById = new Map(textFrames.map((f) => [f.id, f]));          // quick lookups, even for big files
@@ -9662,6 +10063,8 @@ function checkDocument(raw, known, knownFonts) {
       const f = cleanFormat(r, fontOK);
       if (f) { runs.push(Object.assign({ s: r.s, e: r.e }, f)); lastEnd = r.e; }
     }
+    // A story's boxes are all on masters or all on pages, never both.
+    if (frames.some((f) => masterFrames.has(f)) && !frames.every((f) => masterFrames.has(f))) bad('That project has text running between a master page and a page.');
     if (frames.length) {
       out.stories[id] = { id, frames, text, roles };
       if (runs.length) packRuns(out.stories[id], charFormats(Object.assign({}, out.stories[id], { runs })));   // (joins neighbours that match)
@@ -9705,6 +10108,8 @@ function checkObject(r, known, groups) {
     box();
     o.inset = r.inset == null ? 3 : num(r.inset, 0, 300);
     o.story = checkId(r.story);
+    if (bool(r.contPrev)) o.contPrev = true;
+    if (bool(r.contNext)) o.contNext = true;
   } else if (r.type === 'line') {
     o.x1 = num(r.x1, -POS, POS); o.y1 = num(r.y1, -POS, POS); o.x2 = num(r.x2, -POS, POS); o.y2 = num(r.y2, -POS, POS);
     if (['start', 'end', 'both'].includes(r.arrows)) o.arrows = r.arrows;
@@ -9968,18 +10373,31 @@ async function restoreBackup(found) {
 function rgb01(hex) {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 }
-/** The lines of text on page `pi`, grouped by their text box. */
+/**
+ * The lines of text on page `pi`, grouped by their text box: { frameId:
+ * [{ ln, story }] }. Its own boxes' lines, its master's boxes laid out for
+ * this page (their page numbers are this page's), and "Continued" lines.
+ */
 function linesByFrame(pi) {
-  const onPage = new Set(doc.pages[pi].objects.map((o) => o.id));
+  const onPage = new Set(pageNo(pi).objects.map((o) => o.id));
   const out = {};
+  const add = (frame, ln, story) => (out[frame] || (out[frame] = [])).push({ ln, story });
   for (const id in doc.stories) {
     if (!layouts[id]) continue;
-    for (const ln of layouts[id].lines) if (onPage.has(ln.frame)) (out[ln.frame] || (out[ln.frame] = [])).push({ ln, story: doc.stories[id] });
+    for (const ln of layouts[id].lines) if (onPage.has(ln.frame)) add(ln.frame, ln, doc.stories[id]);
+    for (const n of layouts[id].notes || []) if (onPage.has(n.frame)) add(n.frame, n.line, n.story);
+  }
+  const m = masterFor(pi);
+  if (m) {
+    for (const o of m.objects) {
+      if (o.type !== 'text' || !doc.stories[o.story]) continue;
+      for (const ln of masterLayout(o.story, pi).lines) if (ln.frame === o.id) add(o.id, ln, doc.stories[o.story]);
+    }
   }
   return out;
 }
-/** Objects that print, back to front. */
-const printedObjects = (pi) => doc.pages[pi].objects.filter((o) => !o.hidden && onPageArea(o));   // (not hidden, not out in the staging area)
+/** Objects that print, back to front (its master's first; not hidden, not out in the staging area). */
+const printedObjects = (pi) => pageObjectsWithMaster(pi).filter((o) => !o.hidden && onPageArea(o));
 
 /* ---------- The PDF ---------- */
 async function exportPDF(name) {
@@ -9996,7 +10414,9 @@ async function exportPDF(name) {
   // The fonts, embedded as subsets (only the letters the document uses end up
   // in the file), and only the fonts used (no italics in the file without italic text).
   const usedFonts = new Set();
-  for (const id in layouts) for (const ln of layouts[id].lines) for (let i = ln.start; i < ln.end; i++) if (ln.m.glyphs[i - ln.paraStart]) usedFonts.add(ln.m.fontKeys[i - ln.paraStart]);
+  for (let pi = 0; pi < doc.pages.length; pi++) {
+    for (const list of Object.values(linesByFrame(pi))) for (const { ln } of list) for (let i = ln.start; i < ln.end; i++) if (ln.m.glyphs[i - ln.paraStart]) usedFonts.add(ln.m.fontKeys[i - ln.paraStart]);
+  }
   // A font whose licence doesn't allow it inside documents isn't embedded:
   // pdfText draws its letters as shapes instead (embedRule, section 2b).
   const fonts = {};
@@ -10168,7 +10588,7 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
         if (hex) { items.push(L.PDFHexString.of(hex)); hex = ''; }
         items.push(Math.round(-(x - pen) * 1000 / size * 100) / 100);
       }
-      hex += hexFor(fontKey, cp);
+      hex += g.parts ? g.parts.map((pt) => hexFor(fontKey, pt.cp)).join('') : hexFor(fontKey, cp);   // a page number: its digits
       pen = x + g.advanceWidth * size / FONTS[fontKey].unitsPerEm;   // where the PDF's pen goes by itself (letter spacing comes from the nudges)
     }
     flush();
@@ -10180,7 +10600,8 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
       const k = i - ln.paraStart, g = ln.m.glyphs[k], fontKey = ln.m.fontKeys[k];
       if (!g || fonts[fontKey] || story.text.charCodeAt(i) === 32) continue;
       ops.push(L.setFillingRgbColor(...rgb01(ln.m.looks[k].colour)));
-      pdfGlyphShape(ops, outline(fontKey, g, ln.m.sizes[k]), ln.x0 + ln.xs[i - ln.start], ln.baseline, L);
+      const size = ln.m.sizes[k], x = ln.x0 + ln.xs[i - ln.start];
+      for (const pt of g.parts || [{ g, dx: 0 }]) pdfGlyphShape(ops, outline(fontKey, pt.g, size), x + pt.dx * size / FONTS[fontKey].unitsPerEm, ln.baseline, L);
       ops.push(op(L.PDFOperatorNames.FillNonZero));
     }
   }
@@ -10358,6 +10779,15 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.12.0", date: "2026-10-06", title: "", notes: [
+    "Master pages: things that show on many pages at once, like a masthead, a footer or page numbers. The new Master pages button (under the page buttons, beside the filmstrip) lists the masters instead of the pages; edit one like any page, with a banner saying which. The add, copy and delete buttons work on masters while they show. A master's things are drawn behind each page's own, print on every page that uses it, and can only be changed on the master.",
+    "Which pages use which master: in Document (nothing picked), \"Master page for page 3\", with \"Use it for every page\". A new page uses the same master as the page before it. The filmstrip marks each page with its master. A master can hand even pages to another master (Master page, \"On even pages, use\"), for left- and right-hand pages.",
+    "Page numbers: in a text box, Insert, Page number (or Ctrl+Alt+Shift+N, Cmd+Option+Shift+N on a Mac) and Number of pages. On a master they show as #; each page shows its own number, as real text in the PDF. Master page, \"Add a page number\" puts a footer box with one at the bottom.",
+    "\"Continued on page 3\" and \"Continued from page 2\": two choices in Text flow for a text box whose story runs onto another page. The line appears only when the text really does come from, or go on to, a box on another page, in the Caption style in italics, and keeps its page number right as pages move.",
+    "The sample newsletter has Master A, with a footer rule and \"Page 1 of 2\", and its main story says where it continues.",
+    "Text never flows between a master and a page; master text is reached with Tab only while that master is showing; the Accessibility checker checks masters' pictures and shapes for alt text too.",
+    "Project files are now version 6."
+  ] },
   { version: "0.11.0", date: "2026-10-06", title: "", notes: [
     "115 shapes, in sections like Publisher's (the Shapes tool, U, then U again or a second click for the gallery): Recently used, Lines, Basic shapes, Block arrows, Flowchart, Callouts, Stars and banners, Shields and Signs and symbols. The gallery is a grid of small pictures; the name of the one under the pointer or focus shows below it (and every button is named for screen readers). Arrow keys move around it (up and down by rows, across sections), Home and End jump to the ends.",
     "The nine shields from VCTREDTR, with exactly the same outlines: Classic, Heater, Pointed, Round, Arched, Dipped, Notched, Peaked and Scalloped.",
@@ -10752,6 +11182,12 @@ async function a11yIssues() {
       }
     } catch (err) { /* a picture could not be read: skip the contrast check for this page */ }
   }
+  masterList().forEach((m, mi) => {
+    for (const o of m.objects) {
+      if (o.hidden || o.type === 'text' || !onPageArea(o)) continue;
+      if (o.decorative === false && !(o.alt || '').trim()) add('error', objName(o) + ' on ' + m.name + ' needs alt text (or mark it as decoration).', doc.pages.length + mi, o.id, 'meaning');
+    }
+  });
   for (const id in doc.stories) {
     if (!layouts[id] || layouts[id].overflowAt == null) continue;
     const frames = doc.stories[id].frames;
@@ -10850,7 +11286,7 @@ function renderA11y() {
     tag.textContent = LEVEL_WORDS[issue.level];
     const text = document.createElement('span');
     text.className = 'a11y-text';
-    text.textContent = issue.text + (issue.page != null && doc.pages.length > 1 ? ' (page ' + (issue.page + 1) + ')' : '');
+    text.textContent = issue.text + (issue.page != null && isMasterIndex(issue.page) ? '' : issue.page != null && doc.pages.length > 1 ? ' (page ' + (issue.page + 1) + ')' : '');
     li.append(tag, text);
     if (issue.id || issue.go) {
       const b = document.createElement('button');
@@ -10977,6 +11413,7 @@ async function start() {
   wireClipboard();
   wireStyleEditor();
   wireChars();
+  wireMasters();
   wireWrap();
   wireA11y();
   wireAltDialog();

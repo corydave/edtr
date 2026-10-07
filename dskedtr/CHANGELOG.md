@@ -1,5 +1,35 @@
 # DSKEDTR changelog
 
+## 0.12.0 - 2026-10-06
+
+- **Master pages:** things that show on many pages at once, like a
+  masthead, a footer or page numbers. The new Master pages button (under
+  the page buttons, beside the filmstrip) lists the masters instead of the
+  pages; edit one like any page, with a banner saying which. The add, copy
+  and delete buttons work on masters while they show. A master's things
+  are drawn behind each page's own, print on every page that uses it, and
+  can only be changed on the master.
+- **Which pages use which master:** in Document (nothing picked), "Master
+  page for page 3", with "Use it for every page". A new page uses the same
+  master as the page before it. The filmstrip marks each page with its
+  master. A master can hand **even pages** to another master (Master page,
+  "On even pages, use"), for left- and right-hand pages.
+- **Page numbers:** in a text box, Insert, Page number (or Ctrl+Alt+Shift+N,
+  Cmd+Option+Shift+N on a Mac) and Number of pages. On a master they show
+  as #; each page shows its own number, as real text in the PDF. Master
+  page, "Add a page number" puts a footer box with one at the bottom.
+- **"Continued on page 3" and "Continued from page 2":** two choices in
+  Text flow for a text box whose story runs onto another page. The line
+  appears only when the text really does come from, or go on to, a box on
+  another page, in the Caption style in italics, and keeps its page number
+  right as pages move.
+- The sample newsletter has Master A, with a footer rule and "Page 1 of 2",
+  and its main story says where it continues.
+- Text never flows between a master and a page; master text is reached
+  with Tab only while that master is showing; the Accessibility checker
+  checks masters' pictures and shapes for alt text too.
+- Project files are now version 6.
+
 ## 0.11.0 - 2026-10-06
 
 - **115 shapes, in sections like Publisher's** (the Shapes tool, U, then U
