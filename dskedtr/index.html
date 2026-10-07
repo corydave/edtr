@@ -155,7 +155,12 @@ body {
 .shape-choice svg { width: 26px; height: 26px; fill: color-mix(in srgb, var(--accent) 20%, transparent); stroke: currentColor; stroke-width: 1.5; fill-rule: evenodd; }
 #shapeToolIcon path { fill-rule: evenodd; }
 .pop h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 0 8px; }
-.work > * { min-width: 0; }      /* let grid columns shrink instead of pushing the page wider */
+.work > * { min-width: 0; }
+/* The Inspector button hides the right-hand column (on a phone: the panel under the page). */
+.work.inspector-hidden { grid-template-columns: 56px 1fr; }
+.work.inspector-hidden .side { display: none; }
+#inspectorBtn { position: relative; }
+#inspectorBtn[aria-pressed="false"].has-pick::after { content: ''; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--panel); }      /* let grid columns shrink instead of pushing the page wider */
 .rail {
   background: var(--panel); border-right: 1px solid var(--line);
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0;
@@ -602,7 +607,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
    Inspector moves under the page. */
 @media (max-width: 760px) {
   body { overflow: auto; }
-  .work { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+  .work, .work.inspector-hidden { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
   .rail { flex-direction: row; justify-content: center; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); order: 0; }
   .rail hr { width: 1px; height: 28px; border-top: 0; border-left: 1px solid var(--line); }
   .centre { order: 1; }
@@ -716,9 +721,12 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   </button>
   <span class="phase-tag">Phase 2: master pages</span>
   <span class="spacer"></span>
-  <!-- The family's order: Install (only while the browser allows it), Theme, Help. -->
+  <!-- The family's order: Install (only while the browser allows it), Inspector, Theme, Help. -->
   <button class="icon-btn" id="installBtn" hidden aria-label="Install DSKEDTR as an app" title="Install DSKEDTR as an app: its own window, and it works offline">
     <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 7v7M9 11.5l3 3 3-3"/></svg>
+  </button>
+  <button class="icon-btn" id="inspectorBtn" aria-pressed="true" aria-controls="sidePanel" aria-label="Inspector" title="Inspector: settings for what is picked, layers and reading order">
+    <svg viewBox="0 0 24 24"><path d="M5 20v-8M5 8V4M12 20v-5M12 11V4M19 20v-3M19 13V4M3 12h4M10 15h4M17 17h4"/></svg>
   </button>
   <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode" title="Switch to dark mode">
     <svg viewBox="0 0 24 24" id="themeIcon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -809,7 +817,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   </div>
 
   <!-- ===================== INSPECTOR ===================== -->
-  <div class="side">
+  <div class="side" id="sidePanel">
   <div class="tabs side-tabs" role="tablist" aria-label="Side panel" id="sideTabs">
     <button role="tab" id="tabInspector" aria-controls="inspectorPane" aria-selected="true">Inspector</button>
     <button role="tab" id="tabA11y" aria-controls="a11yPane" aria-selected="false" tabindex="-1">Accessibility<span class="count-badge" id="a11yTabCount" aria-hidden="true" hidden></span></button>
@@ -890,6 +898,9 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <legend>Frame shape</legend>
         <label class="check"><input type="radio" name="frameShape" value="rect"> Rectangle</label>
         <label class="check"><input type="radio" name="frameShape" value="ellipse"> Ellipse (circle when square)</label>
+        <label class="check"><input type="radio" name="frameShape" value="shape"> <span id="frameShapeName">A shape from the gallery</span></label>
+        <div class="btn-row"><button class="btn" id="frameShapeBtn" aria-haspopup="dialog">Choose a shape…</button></div>
+        <label class="field" style="margin-top:8px" id="picRadiusRow"><span>Rounded corners (<span class="u-short">in</span>)</span><input type="number" id="picRadius" class="u-input" min="0"></label>
       </fieldset>
       </div>
     </section>
@@ -930,6 +941,21 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <label class="field" style="margin-top:8px">Outline width (pt)<input type="number" id="strokeWidth" min="0" max="72" step="0.25"></label>
       <label class="field" style="margin-top:8px" id="arrowsRow">Arrowheads<select id="lineArrows"><option value="none">None</option><option value="end">At the end</option><option value="start">At the start</option><option value="both">At both ends</option></select></label>
       <label class="field" style="margin-top:8px" id="radiusRow"><span>Rounded corners (<span class="u-short">in</span>)</span><input type="number" id="cornerRadius" class="u-input" min="0"></label>
+      <label class="field" style="margin-top:8px"><span id="opacityLabel">Opacity: 100%</span><input type="range" id="opacity" min="5" max="100" step="5" aria-describedby="opacityLabel"></label>
+      <label class="check"><input type="checkbox" id="shadowOn"> Drop shadow</label>
+      <div id="shadowBox" hidden>
+        <div class="grid4">
+          <label class="field">Across (pt)<input type="number" id="shX" min="-144" max="144" step="1"></label>
+          <label class="field">Down (pt)<input type="number" id="shY" min="-144" max="144" step="1"></label>
+          <label class="field">Softness (pt)<input type="number" id="shBlur" min="0" max="144" step="1"></label>
+          <label class="field">Strength (%)<input type="number" id="shOpacity" min="5" max="100" step="5"></label>
+        </div>
+        <div class="color-row" style="margin-top:8px">
+          <input type="color" id="shColour" aria-label="Shadow colour">
+          <input type="text" id="shHex" aria-label="Shadow colour as a hex code" maxlength="7" spellcheck="false">
+          <span></span>
+        </div>
+      </div>
       </div>
     </section>
 
@@ -980,7 +1006,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <div class="icon-cols">
         <div role="group" aria-labelledby="capGroup">
           <span class="tool-caption" id="capGroup">Group</span>
-          <div class="icon-row"><button class="icon-sm" id="groupBtn" aria-label="Group" title="Group (Ctrl+G)"><svg viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="2" stroke-dasharray="3 2.5"/><rect x="6.5" y="6.5" width="6" height="6" rx="1"/><rect x="11.5" y="11.5" width="6" height="6" rx="1"/></svg></button><button class="icon-sm" id="ungroupBtn" aria-label="Ungroup" title="Ungroup (Ctrl+Shift+G)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button></div>
+          <div class="icon-row"><button class="icon-sm" id="lockBtn" aria-pressed="false" aria-label="Lock" title="Lock: it can't be moved, sized or picked on the page by accident (Ctrl+Shift+L)"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button><button class="icon-sm" id="groupBtn" aria-label="Group" title="Group (Ctrl+G)"><svg viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="2" stroke-dasharray="3 2.5"/><rect x="6.5" y="6.5" width="6" height="6" rx="1"/><rect x="11.5" y="11.5" width="6" height="6" rx="1"/></svg></button><button class="icon-sm" id="ungroupBtn" aria-label="Ungroup" title="Ungroup (Ctrl+Shift+G)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button></div>
         </div>
         <div role="group" aria-labelledby="capCopy">
           <span class="tool-caption" id="capCopy">Copy and remove</span>
@@ -1103,6 +1129,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <div class="fold-body" id="layersBody" hidden>
         <ul class="layer-tree" id="layerTree" role="tree" aria-labelledby="layersHeading" aria-describedby="layersHelp" aria-multiselectable="true"></ul>
         <p id="layersHelp" class="muted" style="font-size:12px">Up/Down to pick, Right/Left for groups, <kbd>F2</kbd> rename, <kbd>H</kbd> hide, <kbd>L</kbd> lock.</p>
+        <div class="btn-row" id="unlockAllRow" hidden><button class="btn" id="unlockAllBtn">Unlock everything on this page</button></div>
       </div>
     </section>
 
@@ -1482,7 +1509,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.12.0';
+const APP_VERSION = '0.13.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -2550,9 +2577,12 @@ function wrapShapes(o) {
     return { polys };
   }
   if (o.type === 'picture') {
-    const frame = o.frameShape === 'ellipse' ? ellipsePoly(o.x, o.y, o.w, o.h) : rectPoly(o.x, o.y, o.w, o.h);
+    // The frame: its rectangle or ellipse, or its gallery shape (the path code, with this picture's turn).
+    const framePolys = hasMask(o) ? wrapShapes(Object.assign(maskObj(o), { wrap: { mode: 'tight' } })).polys
+      : [o.frameShape === 'ellipse' ? ellipsePoly(o.x, o.y, o.w, o.h) : rectPoly(o.x, o.y, o.w, o.h)];
+    const frame = framePolys[0];
     const im = o.image && images[o.image], mask = im ? pictureMask(o.image) : null;
-    if (!mask) return { polys: [frame] };
+    if (!mask) return { polys: framePolys };
     // The parts of the picture that show, placed and sized as on the page, then kept inside the frame.
     const kx = im.w / mask.w * o.s, ky = im.h / mask.h * o.s;
     const polys = mask.polys.map((poly) => turn(poly.map(([mx, my]) => ({ x: o.x + o.ox + mx * kx, y: o.y + o.oy + my * ky }))));
@@ -3880,6 +3910,30 @@ function renderMargins() {
  * desk and for the filmstrip's thumbnails. Text boxes draw their letters
  * (the same shapes a PDF will get). Hidden objects are skipped.
  */
+/**
+ * See-through-ness and a drop shadow, around the drawing of an object:
+ * o.opacity (0.05 to 1) and o.shadow { x, y, blur, colour, opacity } (x, y
+ * and blur in points). The shadow is an SVG filter on a group that is not
+ * turned, so it always falls the same way on the page, however the object
+ * is turned. Filter ids are unique per drawing (the desk, each thumbnail).
+ */
+function withEffects(el, o, prefix) {
+  const fade = o.opacity != null && o.opacity < 1, s = o.shadow;
+  if (!fade && !s) return el;
+  const g = svgEl('g', {});
+  if (fade) g.setAttribute('opacity', o.opacity);
+  if (s) {
+    const b = bounds(o), pad = s.blur * 3 + Math.abs(s.x) + Math.abs(s.y) + (o.strokeWidth || 0) + 4;
+    const id = 'shadow-' + prefix + '-' + o.id;
+    const f = svgEl('filter', { id, filterUnits: 'userSpaceOnUse', x: b.x - pad, y: b.y - pad, width: b.w + 2 * pad, height: b.h + 2 * pad });
+    f.appendChild(svgEl('feDropShadow', { dx: s.x, dy: s.y, stdDeviation: s.blur / 2, 'flood-color': s.colour, 'flood-opacity': s.opacity }));
+    g.appendChild(f);
+    g.setAttribute('filter', 'url(#' + id + ')');
+  }
+  g.appendChild(el);
+  return g;
+}
+
 function renderContent(target, pi) {
   clear(target);
   // Clip ids must be unique in the whole web page (the desk and every thumbnail).
@@ -3895,9 +3949,9 @@ function renderContent(target, pi) {
         target.appendChild(g);
       }
     } else if (o.type === 'picture') {
-      target.appendChild(pictureElement(o, prefix));
+      target.appendChild(withEffects(pictureElement(o, prefix), o, prefix));
     } else {
-      target.appendChild(withRot(shapeElement(o), o));
+      target.appendChild(withEffects(withRot(shapeElement(o), o), o, prefix));
     }
   }
 }
@@ -3980,8 +4034,33 @@ function lineLinks(ln, text) {
   return out;
 }
 
-/** A rectangle or ellipse the shape of a picture frame, with extra attributes. */
+/*
+ * Picture frames can be any closed shape from the Shapes gallery (a star, a
+ * heart, a shield...): frameShape 'shape', with o.mask = { label, w0, h0,
+ * contours } (the outline, as a merged shape keeps it, stretched to the
+ * frame). maskObj makes it look like a path object, so the path code draws,
+ * prints, clips, hits and wraps it.
+ */
+const hasMask = (o) => o.type === 'picture' && o.frameShape === 'shape' && !!o.mask;
+function maskObj(o) {
+  return { type: 'path', x: o.x, y: o.y, w: o.w, h: o.h, rotation: o.rotation, w0: o.mask.w0, h0: o.mask.h0, contours: o.mask.contours, fill: '#000000' };
+}
+/** Make picture o's frame the gallery shape `key`. */
+function setFrameShape(o, key) {
+  const def = SHAPES[key];
+  if (!def || def.open || def.line || !setupPaper()) return;
+  const made = fromPaper(new paper.CompoundPath({ pathData: def.d, insert: false }), {}, '');
+  recordUndo('other');
+  o.frameShape = 'shape';
+  o.mask = { label: def.label, w0: made.w0, h0: made.h0, contours: made.contours };
+  delete o.radius;
+  relayoutAndRender(); updateInspector();
+  announce('Picture frame: ' + def.label);
+}
+
+/** A rectangle, ellipse or gallery shape the shape of a picture frame, with extra attributes. */
 function frameShapeEl(o, attrs) {
+  if (hasMask(o)) return svgEl('path', Object.assign({ d: pathData(maskObj(o)), 'fill-rule': 'evenodd', 'clip-rule': 'evenodd' }, attrs));
   if (o.frameShape === 'ellipse') return svgEl('ellipse', Object.assign({ cx: o.x + o.w / 2, cy: o.y + o.h / 2, rx: o.w / 2, ry: o.h / 2 }, attrs));
   return svgEl('rect', Object.assign({ x: o.x, y: o.y, width: o.w, height: o.h }, cornerAttrs(o), attrs));
 }
@@ -5887,6 +5966,13 @@ function shapeButton(key) {
   b.addEventListener('focus', say);
   b.addEventListener('mouseenter', say);
   b.addEventListener('click', () => {
+    if (galleryFor === 'frame') {                     // picking a picture frame's shape (Picture section)
+      const o = selectedIds.length === 1 ? obj(selectedIds[0]) : null;
+      $('shapePop').hidePopover();
+      if (o && o.type === 'picture') setFrameShape(o, key);
+      $('frameShapeBtn').focus();
+      return;
+    }
     currentShape = key;
     showShapeButton();
     $('shapePop').hidePopover();
@@ -5896,6 +5982,18 @@ function shapeButton(key) {
   });
   return b;
 }
+/* The gallery also picks a picture frame's shape: then lines are left out
+   and the panel opens beside the button that asked. */
+let galleryFor = 'tool';                             // 'tool' (the Shapes tool) or 'frame'
+let galleryAnchor = null;
+function openShapeGallery(purpose, anchor) {
+  galleryFor = purpose;
+  galleryAnchor = anchor;
+  const pop = $('shapePop');
+  if (pop.matches(':popover-open')) pop.hidePopover();
+  pop.showPopover();
+}
+
 /** One section of the gallery: a heading and its shapes. */
 function shapeSection(title, keys, id) {
   const sec = document.createElement('div');
@@ -5936,18 +6034,25 @@ function wireShapes() {
   });
   const pop = $('shapePop');
   pop.addEventListener('toggle', (e) => {
-    $('shapeToolBtn').setAttribute('aria-expanded', String(e.newState === 'open'));
-    if (e.newState !== 'open') return;
-    // Beside the rail on a wide screen, under it on a phone.
-    const r = $('shapeToolBtn').getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    $('shapeToolBtn').setAttribute('aria-expanded', String(e.newState === 'open' && galleryFor === 'tool'));
+    if (e.newState !== 'open') { galleryFor = 'tool'; return; }
+    // Frame shapes: no lines (a picture needs a closed outline), and a title that says so.
+    const frame = galleryFor === 'frame';
+    for (const b of pop.querySelectorAll('[data-shape]')) { const d = SHAPES[b.dataset.shape]; b.hidden = frame && !!(d.open || d.line); }
+    for (const sec of pop.querySelectorAll('.shape-section')) if (sec.querySelector('h3').id !== 'shapeSec-recent') sec.hidden = ![...sec.querySelectorAll('[data-shape]')].some((b) => !b.hidden);
+    setText('shapePopTitle', frame ? 'Picture frame shape' : 'Shapes');
+    // Beside the rail on a wide screen, under it on a phone (or beside the Picture section's button).
+    const anchor = frame && galleryAnchor ? galleryAnchor : $('shapeToolBtn');
+    const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
     const wide = window.innerWidth > 760;
-    pop.style.left = (wide ? r.right + 8 : Math.max(8, Math.min(r.left, window.innerWidth - w - 8))) + 'px';
-    pop.style.top = (wide ? Math.max(8, Math.min(r.top, window.innerHeight - h - 8)) : r.bottom + 6) + 'px';
+    if (frame) pop.style.left = Math.max(8, Math.min(r.left - w - 8, window.innerWidth - w - 8)) + 'px';
+    else pop.style.left = (wide ? r.right + 8 : Math.max(8, Math.min(r.left, window.innerWidth - w - 8))) + 'px';
+    pop.style.top = (wide || frame ? Math.max(8, Math.min(r.top, window.innerHeight - h - 8)) : r.bottom + 6) + 'px';
     // Recently used: refilled each time (other tabs may have drawn shapes too).
     const recent = recentShapes(), recentGrid = $('shapeSec-recent').nextElementSibling;
     clear(recentGrid);
     for (const key of recent) recentGrid.appendChild(shapeButton(key));
-    $('shapeSec-recent').parentElement.hidden = !recent.length;
+    $('shapeSec-recent').parentElement.hidden = !recent.length || frame;
     for (const b of pop.querySelectorAll('[data-shape]')) b.setAttribute('aria-pressed', String(b.dataset.shape === currentShape));
     const cur = [...pop.querySelectorAll('[data-shape="' + currentShape + '"]')].pop() || pop.querySelector('[data-shape]');
     if (cur) { cur.focus(); cur.scrollIntoView({ block: 'nearest' }); }
@@ -5955,6 +6060,7 @@ function wireShapes() {
   });
   // The rail button: pick the Shapes tool; pressed again (or when already picked), open the gallery.
   $('shapeToolBtn').addEventListener('click', () => {
+    galleryFor = 'tool';
     if (tool === 'shape') pop.togglePopover(); else setTool('shape');
   });
   showShapeButton();
@@ -6241,9 +6347,9 @@ function hitObject(o, p) {
     const cx = o.x1 + t * dx, cy = o.y1 + t * dy;
     return Math.hypot(p.x - cx, p.y - cy) <= Math.max(tol, o.strokeWidth / 2 + tol / 2);
   }
-  if (o.type === 'path') {
+  if (o.type === 'path' || hasMask(o)) {
     if (p.x < o.x - tol || p.x > o.x + o.w + tol || p.y < o.y - tol || p.y > o.y + o.h + tol) return false;
-    return pointInPath(o, p);
+    return pointInPath(hasMask(o) ? maskObj(o) : o, p);
   }
   if (o.type === 'ellipse' || (o.type === 'picture' && o.frameShape === 'ellipse')) {
     const rx = o.w / 2 + tol, ry = o.h / 2 + tol;
@@ -6260,6 +6366,19 @@ function objectAt(p, includeLocked) {
     if ((includeLocked || !o.locked) && hitObject(o, p)) return o;
   }
   return null;
+}
+/** A click on something that can't be picked here: say why, and where it can be changed. */
+let lastHint = '';
+function lockedHint(p) {
+  const locked = objectAt(p, true);
+  const m = masterFor(pageIndex);
+  const fromMaster = !locked && m ? [...m.objects].reverse().find((o) => !o.hidden && hitObject(o, p)) : null;
+  const msg = locked && locked.locked ? objName(locked) + ' is locked. To change it, pick it in Layers and unlock it (Ctrl+Shift+L, or the padlock).'
+    : fromMaster ? objName(fromMaster) + ' is on ' + m.name + '. To change it, open the master pages (the button under the page buttons).' : '';
+  if (!msg || msg === lastHint) return;
+  lastHint = msg;
+  setTimeout(() => { if (lastHint === msg) lastHint = ''; }, 4000);
+  toast(msg, 4500);
 }
 /** The topmost TEXT box under a point (locked boxes still take typing). */
 function textFrameAt(p) {
@@ -6488,6 +6607,8 @@ function wirePointer() {
         announceSelection();
         return;
       }
+      // Nothing to pick here: a locked thing, or a master page's thing, says how to change it.
+      if (clicks === 1) lockedHint(p);
       // A guide: drag it along, or off the page to remove it.
       const g = guideAt(p);
       if (g) { drag = { kind: 'guide', axis: g.axis, index: g.index, snap: snapshot(), changed: false }; svg.setPointerCapture(e.pointerId); return; }
@@ -6881,6 +7002,7 @@ const setText = (id, text) => { if ($(id).textContent !== text) $(id).textConten
 function setField(el, v) { if (document.activeElement !== el && el.value !== String(v)) el.value = String(v); }
 
 function updateInspector() {
+  showInspectorDot();
   const picked = selectedIds.map(obj).filter(Boolean);
   const typing = !!(activeStoryId && doc.stories[activeStoryId]);
   const one = picked.length === 1 ? picked[0] : null;
@@ -6918,11 +7040,16 @@ function updateInspector() {
     setText('arrangeInfo', picked.length === 1 ? objName(one) : picked.length + ' objects picked');
     for (const b of document.querySelectorAll('[data-align="distH"], [data-align="distV"]')) b.disabled = movableUnits(picked).length < 3;
     $('groupBtn').disabled = picked.length < 2;
+    const allLocked = picked.every((o) => o.locked);
+    $('lockBtn').setAttribute('aria-pressed', String(allLocked));
+    $('lockBtn').setAttribute('aria-label', allLocked ? 'Unlock' : 'Lock');
+    $('lockBtn').title = allLocked ? 'Unlock: it can be moved and picked on the page again (Ctrl+Shift+L)' : 'Lock: it can\'t be moved, sized or picked on the page by accident (Ctrl+Shift+L)';
     $('ungroupBtn').disabled = !picked.some((o) => o.group);
     const mergeCount = picked.filter(isMergeable).length;
     for (const b of document.querySelectorAll('[data-merge]')) b.disabled = mergeCount < 2;
   }
   renderLayers();
+  show('unlockAllRow', pageObjs().some((o) => o.locked));
   if (typing) { fillChars(); fillParagraph(); }
   if (storyId) fillStory(storyId);
   renderGuideList();
@@ -6995,8 +7122,19 @@ function fillLook(o) {
   $('strokeColor').disabled = $('strokeHex').disabled = !o.stroke;
   setField($('strokeWidth'), o.strokeWidth);
   show('arrowsRow', isLine);
+  const op = Math.round((o.opacity != null ? o.opacity : 1) * 100);
+  setField($('opacity'), op);
+  setText('opacityLabel', 'Opacity: ' + op + '%' + (op < 100 ? ' (see-through)' : ''));
+  $('opacity').setAttribute('aria-valuetext', op + ' percent');
+  $('shadowOn').checked = !!o.shadow;
+  show('shadowBox', !!o.shadow);
+  if (o.shadow) {
+    setField($('shX'), o.shadow.x); setField($('shY'), o.shadow.y); setField($('shBlur'), o.shadow.blur);
+    setField($('shOpacity'), Math.round(o.shadow.opacity * 100));
+    setField($('shColour'), o.shadow.colour); setField($('shHex'), o.shadow.colour);
+  }
   if (isLine) setField($('lineArrows'), o.arrows || 'none');
-  const roundable = o.type === 'rect' || (o.type === 'picture' && o.frameShape !== 'ellipse');
+  const roundable = o.type === 'rect';                  // (a picture's corners are in Picture, with its frame shape)
   show('radiusRow', roundable);
   if (roundable) setField($('cornerRadius'), toU(o.radius || 0));
   $('decoCheck').checked = !!o.decorative;
@@ -7017,6 +7155,9 @@ function fillPicture(o) {
   for (const b of document.querySelectorAll('[data-fit]')) b.disabled = !has;
   $('picSize').disabled = !has;
   for (const r of document.querySelectorAll('input[name="frameShape"]')) r.checked = r.value === (o.frameShape || 'rect');
+  setText('frameShapeName', hasMask(o) ? 'Shape: ' + o.mask.label : 'A shape from the gallery');
+  show('picRadiusRow', (o.frameShape || 'rect') === 'rect');
+  setField($('picRadius'), toU(o.radius || 0));
   if (!has) {
     setText('picInfo', 'An empty frame: a placeholder that never prints. Choose a picture, drop one on it, or leave it for later.');
     setText('picWarn', '');
@@ -7242,6 +7383,27 @@ function wireInspector() {
       if (part === 'stroke' && o.stroke && !o.strokeWidth) { o.strokeWidth = 1; relayoutAndRender(); updateInspector(); }
     });
   }
+  // Opacity and drop shadow.
+  $('opacity').addEventListener('input', () => {
+    const v = Math.max(5, Math.min(100, Number($('opacity').value) || 100)) / 100;
+    setProp('field:', 'opacity', v >= 1 ? undefined : v);
+  });
+  const SHADOW_START = { x: 4, y: 4, blur: 8, colour: '#000000', opacity: 0.35 };
+  const setShadow = (kind, change) => {
+    const o = picked(); if (!o) return;
+    recordUndo(kind + o.id + 'shadow');
+    if (change === null) delete o.shadow; else o.shadow = Object.assign({}, SHADOW_START, o.shadow || {}, change);
+    relayoutAndRender(); updateInspector();
+  };
+  $('shadowOn').addEventListener('change', () => { setShadow('other', $('shadowOn').checked ? {} : null); announce($('shadowOn').checked ? 'Drop shadow on' : 'Drop shadow off'); });
+  for (const [id, key, min, max, k] of [['shX', 'x', -144, 144, 1], ['shY', 'y', -144, 144, 1], ['shBlur', 'blur', 0, 144, 1], ['shOpacity', 'opacity', 5, 100, 0.01]]) {
+    $(id).addEventListener('input', () => {
+      const v = parseFloat($(id).value);
+      if (isFinite(v)) setShadow('field:', { [key]: Math.max(min, Math.min(max, v)) * k });
+    });
+  }
+  $('shColour').addEventListener('input', () => { setShadow('field:', { colour: $('shColour').value.toLowerCase() }); setField($('shHex'), $('shColour').value); });
+  $('shHex').addEventListener('change', () => { const v = cleanHex($('shHex').value); if (v) setShadow('field:', { colour: v }); else { announce('Use a colour like #000000.'); updateInspector(); } });
   $('lineArrows').addEventListener('change', () => {
     const v = $('lineArrows').value;
     setProp('other', 'arrows', v === 'none' ? undefined : v);
@@ -7311,11 +7473,26 @@ function wireInspector() {
   });
   for (const r of document.querySelectorAll('input[name="frameShape"]')) r.addEventListener('change', () => {
     const o = pic(); if (!o) return;
+    if (r.value === 'shape') {
+      if (o.mask) { recordUndo('other'); o.frameShape = 'shape'; relayoutAndRender(); updateInspector(); announce('Picture frame: ' + o.mask.label); }
+      else openShapeGallery('frame', $('frameShapeBtn'));
+      return;
+    }
     recordUndo('other'); o.frameShape = r.value;
     relayoutAndRender(); updateInspector();
     announce(r.value === 'ellipse' ? 'Ellipse frame' : 'Rectangle frame');
   });
+  $('frameShapeBtn').addEventListener('click', () => openShapeGallery('frame', $('frameShapeBtn')));
+  $('picRadius').addEventListener('input', () => {
+    const o = pic(), v = parseFloat($('picRadius').value);
+    if (!o || !isFinite(v)) return;
+    recordUndo('field:' + o.id + 'radius');
+    o.radius = Math.max(0, Math.min(1000, fromU(v)));
+    relayoutAndRender(); updateInspector();
+  });
   $('ungroupBtn').addEventListener('click', ungroupSelected);
+  $('lockBtn').addEventListener('click', () => toggleFlag(selectedIds.map(obj).filter(Boolean), 'locked'));
+  $('unlockAllBtn').addEventListener('click', () => { const list = pageObjs().filter((o) => o.locked); if (list.length) toggleFlag(list, 'locked'); });
   $('pageSetupBtn').addEventListener('click', openPageSetup);
 
   $('kbdMod').textContent = isMac ? 'Cmd+Option' : 'Ctrl+Alt';
@@ -8021,16 +8198,29 @@ function wireGuides() {
 const VIEW_KEY = 'dskedtr-view';
 const GRID_SIZES = [[9, '1/8 inch'], [18, '1/4 inch'], [36, '1/2 inch'], [72, '1 inch'], [14.173, '5 mm'], [28.346, '1 cm']];
 // Units: inches where people mostly measure in inches (US English, or plain "en"), centimetres elsewhere.
-const view = { rulers: true, guides: true, grid: false, snap: true, gridSize: 18,
+const view = { rulers: true, guides: true, grid: false, snap: true, gridSize: 18, inspector: true,
   units: /^en(-(US|LR))?([^a-z-]|$)/i.test(navigator.language || 'en-US') ? 'in' : 'cm' };
 try {
   const saved = JSON.parse(localStorage.getItem(VIEW_KEY) || '{}');
-  for (const k of ['rulers', 'guides', 'grid', 'snap']) if (typeof saved[k] === 'boolean') view[k] = saved[k];
+  for (const k of ['rulers', 'guides', 'grid', 'snap', 'inspector']) if (typeof saved[k] === 'boolean') view[k] = saved[k];
   if (GRID_SIZES.some(([v]) => v === saved.gridSize)) view.gridSize = saved.gridSize;
   if (typeof saved.units === 'string' && Object.hasOwn(UNITS, saved.units)) view.units = saved.units;
 } catch (err) { /* storage blocked or damaged: the defaults are fine */ }
 function saveView() {
   try { localStorage.setItem(VIEW_KEY, JSON.stringify(view)); } catch (err) { /* fine */ }
+}
+
+/** Show or hide the Inspector (remembered in this browser). A dot on its button means something is picked. */
+function setInspector(on) {
+  view.inspector = on;
+  saveView();
+  document.querySelector('.work').classList.toggle('inspector-hidden', !on);
+  $('inspectorBtn').setAttribute('aria-pressed', String(on));
+  showInspectorDot();
+  requestAnimationFrame(() => { scheduleRulers(); showPage(); });
+}
+function showInspectorDot() {
+  $('inspectorBtn').classList.toggle('has-pick', !!(selectedIds.length || activeStoryId));
 }
 
 /** Turn one of the view settings on or off (from its button or its key). */
@@ -8254,6 +8444,8 @@ function wireRulers() {
 
 /* ---------- The guides and grid panel (the arrow beside Guides) ---------- */
 function wireViewBar() {
+  $('inspectorBtn').addEventListener('click', () => { setInspector(!view.inspector); announce(view.inspector ? 'Inspector shown' : 'Inspector hidden'); });
+  if (!view.inspector) setInspector(false);
   const eye = $('view-preview');
   eye.addEventListener('click', () => setPrintPreview(!printPreview));
   $('proofStop').addEventListener('click', () => { setPrintPreview(false); $('desk').focus({ preventScroll: true }); });
@@ -8277,19 +8469,26 @@ function wireViewBar() {
     announce('Grid every ' + sel.options[sel.selectedIndex].textContent);
   });
   // The panel stays open while you drag guides on the page (it is a
-  // "manual" popover: the arrow, its X or Escape closes it). On a wide
-  // screen it sits over the right-hand column, so the page stays in view.
+  // "manual" popover: the arrow, its X or Escape closes it). It hangs from
+  // the arrow that opened it, like any menu: its left edge under the
+  // arrow's, kept inside the window. It follows the arrow if the window
+  // changes size or the top bar scrolls sideways (on a phone).
   const pop = $('guidesPop');
+  const placeGuidesPop = () => {
+    if (!pop.matches(':popover-open')) return;
+    const b = $('guidesMore').getBoundingClientRect();
+    const w = pop.offsetWidth;
+    pop.style.left = Math.max(8, Math.min(b.left - 4, window.innerWidth - w - 8)) + 'px';
+    pop.style.top = (b.bottom + 6) + 'px';
+  };
   pop.addEventListener('toggle', (e) => {
     $('guidesMore').setAttribute('aria-expanded', String(e.newState === 'open'));
     if (e.newState !== 'open') return;
     renderGuideList();
-    const b = $('guidesMore').getBoundingClientRect();
-    const w = pop.offsetWidth;
-    const wide = window.innerWidth > 760;
-    pop.style.left = (wide ? window.innerWidth - w - 6 : Math.max(8, Math.min(b.left, window.innerWidth - w - 8))) + 'px';
-    pop.style.top = (b.bottom + 6) + 'px';
+    placeGuidesPop();
   });
+  window.addEventListener('resize', placeGuidesPop);
+  $('guidesMore').closest('.topbar').addEventListener('scroll', placeGuidesPop);
   $('guidesClose').addEventListener('click', () => { pop.hidePopover(); $('guidesMore').focus(); });
   // Escape closes it first (before Escape's other jobs, like dropping the selection).
   document.addEventListener('keydown', (e) => {
@@ -8494,6 +8693,7 @@ function wireChrome() {
     [mod + ' + drag, or ' + mod + ' + Shift + drag', 'Drag a copy, leaving the original where it was (with Shift: in a straight line)'],
     ['The grey around the page', 'The staging area: keep things there for later. They are not printed, exported or read'],
     [mod + ' + D', 'Duplicate'],
+    [mod + ' + Shift + L', 'Lock or unlock what is picked (locked things can’t be moved or picked on the page; pick them in Layers)'],
     ['U', 'Shapes: triangles, stars, arrows, speech bubbles and more (press U again for the gallery)'],
     ['] and [', 'Forward, backward (' + mod + ': to front, to back)'],
     [mod + ' + G, ' + mod + ' + Shift + G', 'Group, ungroup'],
@@ -8580,6 +8780,7 @@ function wireChrome() {
     if (mod2 && k === 'd') { e.preventDefault(); duplicateSelected(); return; }
     if (mod2 && k === 'a' && onPage) { e.preventDefault(); setTool('select'); selectObjects(pageObjs().filter((o) => !o.hidden && !o.locked).map((o) => o.id)); announceSelection(); return; }
     if (mod2 && k === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelected(); else groupSelected(); return; }
+    if (mod2 && e.shiftKey && k === 'l') { e.preventDefault(); toggleFlag(selectedIds.map(obj).filter(Boolean), 'locked'); return; }
     if (mod2 && e.key === ']') { e.preventDefault(); moveOrder('front'); return; }
     if (mod2 && e.key === '[') { e.preventDefault(); moveOrder('back'); return; }
     // Merge Shapes: Alt+Shift+U, C, F, I or S (read from the key's place, since Alt changes letters on a Mac).
@@ -9673,7 +9874,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 6;                         // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages)
+const PROJECT_VERSION = 7;                         // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -10116,7 +10317,17 @@ function checkObject(r, known, groups) {
     look(false);
   } else if (r.type === 'picture') {
     box();
-    o.frameShape = r.frameShape === 'ellipse' ? 'ellipse' : 'rect';
+    o.frameShape = ['ellipse', 'shape'].includes(r.frameShape) ? r.frameShape : 'rect';
+    if (o.frameShape === 'shape') {
+      // A gallery shape: checked like a merged shape's outline (else the frame is a rectangle).
+      const m = r.mask;
+      if (m && typeof m === 'object' && Array.isArray(m.contours) && m.contours.length && m.contours.length <= 500) {
+        o.mask = { label: cleanText(m.label, 60) || 'Shape', w0: num(m.w0, 0.01, POS), h0: num(m.h0, 0.01, POS), contours: m.contours.map((c) => {
+          if (!c || !Array.isArray(c.pts) || c.pts.length > 20000) bad('That project has a damaged picture frame.');
+          return { closed: c.closed !== false, pts: c.pts.map((pt) => { if (!Array.isArray(pt) || pt.length !== 6) bad('That project has a damaged picture frame.'); return pt.map((v) => num(v, -1e6, 1e6)); }) };
+        }) };
+      } else o.frameShape = 'rect';
+    }
     o.image = typeof r.image === 'string' && known.has(r.image) ? r.image : null;
     o.s = num(r.s, 1e-6, 1000);
     o.ox = num(r.ox, -1e6, 1e6); o.oy = num(r.oy, -1e6, 1e6);
@@ -10140,6 +10351,12 @@ function checkObject(r, known, groups) {
   } else {
     box();
     look(true);
+  }
+  // See-through and drop shadows (pictures, shapes and lines).
+  if (o.type !== 'text' && r.opacity != null) { const a = num(r.opacity, 0.05, 1); if (a < 1) o.opacity = a; }
+  if (o.type !== 'text' && r.shadow && typeof r.shadow === 'object') {
+    const s = r.shadow;
+    o.shadow = { x: num(s.x, -144, 144), y: num(s.y, -144, 144), blur: num(s.blur, 0, 144), colour: colour(s.colour) || '#000000', opacity: num(s.opacity, 0.05, 1) };
   }
   // Text wrap (pictures and shapes).
   if (o.type !== 'text' && r.wrap && typeof r.wrap === 'object' && WRAP_MODES.includes(r.wrap.mode) && r.wrap.mode !== 'none') {
@@ -10437,6 +10654,7 @@ async function exportPDF(name) {
   pdf.setCreator('DSKEDTR ' + APP_VERSION);
   pdf.setProducer('DSKEDTR, with pdf-lib');
   const pdfImages = {};                            // picture id -> embedded picture (each stored once)
+  const shadowBitmaps = {};                        // pictures decoded once, for drawing shadows
 
   for (let pi = 0; pi < doc.pages.length; pi++) {
     const page = pdf.addPage([PAGE.width, PAGE.height]);
@@ -10446,7 +10664,9 @@ async function exportPDF(name) {
     ops.push(L.concatTransformationMatrix(1, 0, 0, -1, 0, PAGE.height));
     const text = linesByFrame(pi);
     for (const o of printedObjects(pi)) {
+      if (o.type !== 'text' && o.shadow) await pdfShadow(ops, o, pdf, page, L, shadowBitmaps);
       ops.push(L.pushGraphicsState());
+      if (o.type !== 'text' && o.opacity != null && o.opacity < 1) ops.push(L.setGraphicsState(pdfOpacity(page, pdf, o.opacity)));
       if (o.rotation && o.type !== 'line') {
         // Turn around the object's centre (the same turn SVG's rotate() makes).
         const c = centreOf(o), a = o.rotation * Math.PI / 180, cos = Math.cos(a), sin = Math.sin(a);
@@ -10460,6 +10680,7 @@ async function exportPDF(name) {
     }
     page.pushOperators(...ops);
   }
+  for (const id in shadowBitmaps) shadowBitmaps[id].close();
   const bytes = await pdf.save();
   downloadBlob(new Blob([bytes], { type: 'application/pdf' }), name + '.pdf');
   return true;
@@ -10477,6 +10698,7 @@ function pdfOutline(ops, o, L) {
       L.closePath());
   };
   if (o.type === 'ellipse' || (o.type === 'picture' && o.frameShape === 'ellipse')) ellipse(o.x + o.w / 2, o.y + o.h / 2, o.w / 2, o.h / 2);
+  else if (hasMask(o)) pdfOutline(ops, maskObj(o), L);
   else if (o.type === 'path') {
     // The same curves as pathData(): each point with its two handles.
     const sx = o.w / o.w0, sy = o.h / o.h0;
@@ -10533,7 +10755,7 @@ async function pdfPicture(ops, o, pdf, page, pdfImages, L) {
     const name = page.node.newXObject('Image', pdfImages[o.image].ref);
     ops.push(L.pushGraphicsState());
     pdfOutline(ops, o, L);
-    ops.push(L.clip(), L.endPath());
+    ops.push(hasMask(o) ? L.clipEvenOdd() : L.clip(), L.endPath());
     // A PDF picture fills a 1 x 1 square, its first row at the top: stretch it
     // to the picture's size and turn it right way up (our page is flipped).
     const w = im.w * o.s, h = im.h * o.s;
@@ -10613,6 +10835,44 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
   }
 }
 
+/** A PDF graphics state for see-through drawing (fill and outline alike), named on this page. */
+function pdfOpacity(page, pdf, opacity) {
+  const a = Math.round(opacity * 1000) / 1000;
+  return page.node.newExtGState('GS', pdf.context.obj({ Type: 'ExtGState', ca: a, CA: a }));
+}
+/**
+ * A drop shadow in the PDF. PDF has no blur, so the shadow is made the way
+ * the PNG makes it (the object drawn on a canvas, its shadow alone kept,
+ * at 2 pixels per point) and placed under the object as a soft,
+ * see-through PNG picture. The object itself stays sharp vector drawing.
+ */
+async function pdfShadow(ops, o, pdf, page, L, bitmaps) {
+  const s = o.shadow, b = bounds(o), sw = o.strokeWidth || 0;
+  const pad = s.blur * 2 + sw + 2;
+  const x0 = b.x - pad, y0 = b.y - pad, wPt = b.w + 2 * pad, hPt = b.h + 2 * pad;
+  const k = Math.min(2, 4000 / Math.max(wPt, hPt));
+  const W = Math.max(1, Math.ceil(wPt * k)), H = Math.max(1, Math.ceil(hPt * k));
+  // The object on a canvas of its own...
+  const a = document.createElement('canvas'); a.width = W; a.height = H;
+  const ag = a.getContext('2d');
+  ag.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
+  await drawObjectOn(ag, o, {}, bitmaps);
+  // ...then only its shadow: the object is drawn off the canvas, its shadow lands on it.
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const cg = c.getContext('2d');
+  shadowOn(cg, Object.assign({}, s, { x: 0, y: 0 }), k);
+  cg.shadowOffsetX = W;
+  cg.drawImage(a, -W, 0);
+  const blob = await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
+  if (!blob) return;
+  const img = await pdf.embedPng(new Uint8Array(await blob.arrayBuffer()));
+  const name = page.node.newXObject('Image', img.ref);
+  ops.push(L.pushGraphicsState());
+  if (o.opacity != null && o.opacity < 1) ops.push(L.setGraphicsState(pdfOpacity(page, pdf, o.opacity)));
+  // As with pictures: stretch the 1 x 1 picture to size and turn it right way up (our page is flipped).
+  ops.push(L.concatTransformationMatrix(wPt, 0, 0, -hPt, x0 + s.x, y0 + s.y + hPt), L.drawObject(name), L.popGraphicsState());
+}
+
 /** One letter's outline as PDF path operators, moved to (dx, dy). (PDF has no quadratic curves, so those become cubic ones.) */
 function pdfGlyphShape(ops, cmds, dx, dy, L) {
   let cx = 0, cy = 0;                                // where the pen is
@@ -10670,7 +10930,38 @@ async function pageCanvas(pi, k, opts = {}) {
   // opts.bitmaps: decoded pictures to reuse (kept by the caller, not closed here).
   const texts = opts.noText ? {} : pageTextPaths(pi);
   const bitmaps = opts.bitmaps || {};
+  let layer = null, lg = null;
   for (const o of printedObjects(pi)) {
+    const fx = o.type !== 'text' && (o.shadow || (o.opacity != null && o.opacity < 1));
+    if (!fx) { await drawObjectOn(g, o, texts, bitmaps); continue; }
+    // A shadow or see-through: draw it on a layer of its own, then onto the page
+    // with the shadow and opacity (so they apply to the whole object at once).
+    if (!layer) { layer = document.createElement('canvas'); layer.width = c.width; layer.height = c.height; lg = layer.getContext('2d'); }
+    lg.setTransform(1, 0, 0, 1, 0, 0);
+    lg.clearRect(0, 0, c.width, c.height);
+    lg.setTransform(k, 0, 0, k, 0, 0);
+    await drawObjectOn(lg, o, texts, bitmaps);
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalAlpha = o.opacity != null ? o.opacity : 1;
+    if (o.shadow) shadowOn(g, o.shadow, k);
+    g.drawImage(layer, 0, 0);
+    g.restore();
+  }
+  if (!opts.bitmaps) for (const id in bitmaps) bitmaps[id].close();
+  return c;
+}
+/** A canvas shadow from o.shadow, k pixels per point (canvas shadows are measured in pixels). */
+function shadowOn(g, s, k) {
+  const [r, gr, b] = hexRGB(s.colour);
+  g.shadowColor = 'rgba(' + r + ',' + gr + ',' + b + ',' + s.opacity + ')';
+  g.shadowBlur = s.blur * k;                          // a canvas blur of B spreads like an SVG stdDeviation of B/2
+  g.shadowOffsetX = s.x * k;
+  g.shadowOffsetY = s.y * k;
+}
+/** Draw one object onto a canvas whose units are points (texts: its letters, bitmaps: decoded pictures). */
+async function drawObjectOn(g, o, texts, bitmaps) {
+  {
     g.save();
     if (o.rotation && o.type !== 'line') {
       const ctr = centreOf(o);
@@ -10680,6 +10971,7 @@ async function pageCanvas(pi, k, opts = {}) {
       const p = new Path2D();
       if (o.type === 'ellipse' || (o.type === 'picture' && o.frameShape === 'ellipse')) p.ellipse(o.x + o.w / 2, o.y + o.h / 2, o.w / 2, o.h / 2, 0, 0, Math.PI * 2);
       else if (o.type === 'path') p.addPath(new Path2D(pathData(o)));
+      else if (hasMask(o)) p.addPath(new Path2D(pathData(maskObj(o))));
       else if (cornerRadius(o)) {
         const r = cornerRadius(o);
         p.moveTo(o.x + r, o.y); p.arcTo(o.x + o.w, o.y, o.x + o.w, o.y + o.h, r); p.arcTo(o.x + o.w, o.y + o.h, o.x, o.y + o.h, r);
@@ -10704,7 +10996,7 @@ async function pageCanvas(pi, k, opts = {}) {
       if (im && imageFiles[o.image]) {
         if (!bitmaps[o.image]) bitmaps[o.image] = await createImageBitmap(imageFiles[o.image].blob);
         g.save();
-        g.clip(outline());
+        g.clip(outline(), hasMask(o) ? 'evenodd' : 'nonzero');
         g.drawImage(bitmaps[o.image], o.x + o.ox, o.y + o.oy, im.w * o.s, im.h * o.s);
         g.restore();
       }
@@ -10716,8 +11008,6 @@ async function pageCanvas(pi, k, opts = {}) {
     }
     g.restore();
   }
-  if (!opts.bitmaps) for (const id in bitmaps) bitmaps[id].close();
-  return c;
 }
 async function exportPNG(name, ppi) {
   const k = ppi / 72;
@@ -10779,6 +11069,18 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.13.0", date: "2026-10-07", title: "", notes: [
+    "Inspector button in the top bar (three sliders, before Theme and Help, as in the other apps): hides or shows the right-hand column, so the page gets the room. A dot on it means something is picked while it is hidden. Remembered in this browser. The Accessibility button opens it again when needed.",
+    "Opacity for pictures, shapes and lines: Look, Opacity (5 to 100%). It is see-through on the desk, in the PNG and in the PDF.",
+    "Drop shadows for pictures, shapes and lines: Look, Drop shadow, with how far across and down, softness, strength and colour. A shadow falls the same way however the object is turned. In the PDF the object stays sharp and its shadow is a soft picture underneath (PDF has no blur).",
+    "Pictures in any shape: Picture, Frame shape, \"Choose a shape...\" opens the Shapes gallery (without the lines) and cuts the picture to a heart, a star, a shield or any other closed shape. Crop and Fill still work; clicks outside the shape miss it; text wrap follows it.",
+    "Rounded corners for pictures are now in Picture, beside the frame shape (they were hidden under Look).",
+    "Locking, easier to find: a Lock button in Arrange and Ctrl+Shift+L (Cmd+Shift+L), as well as the padlock in Layers. Clicking a locked thing on the page now says how to unlock it, and clicking something that belongs to a master page says where to change it. Layers has \"Unlock everything on this page\" when anything there is locked.",
+    "Project files are now version 7."
+  ] },
+  { version: "0.12.1", date: "2026-10-06", title: "", notes: [
+    "The Units, grid and guides panel now hangs from the arrow that opens it (beside Guides in the top bar), like any menu, instead of sitting over the right-hand column. It stays inside the window, and on a phone it follows the arrow when the top bar scrolls sideways. It still stays open while you drag guides; the arrow, its X or Escape closes it."
+  ] },
   { version: "0.12.0", date: "2026-10-06", title: "", notes: [
     "Master pages: things that show on many pages at once, like a masthead, a footer or page numbers. The new Master pages button (under the page buttons, beside the filmstrip) lists the masters instead of the pages; edit one like any page, with a banner saying which. The add, copy and delete buttons work on masters while they show. A master's things are drawn behind each page's own, print on every page that uses it, and can only be changed on the master.",
     "Which pages use which master: in Document (nothing picked), \"Master page for page 3\", with \"Use it for every page\". A new page uses the same master as the page before it. The filmstrip marks each page with its master. A master can hand even pages to another master (Master page, \"On even pages, use\"), for left- and right-hand pages.",
@@ -11374,6 +11676,7 @@ function wireA11y() {
   $('previewStop').addEventListener('click', () => setPreview('none'));
   selectSideTab = suiteWireTabs($('sideTabs'), (id) => { if (id === 'tabA11y') runA11y(); });
   $('a11yBtn').addEventListener('click', () => {
+    if (!view.inspector) setInspector(true);          // the checker lives in the Inspector's column
     selectSideTab('tabA11y');
     $('tabA11y').focus();
     $('tabA11y').scrollIntoView({ block: 'nearest' });

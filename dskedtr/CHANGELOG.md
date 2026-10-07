@@ -1,5 +1,39 @@
 # DSKEDTR changelog
 
+## 0.13.0 - 2026-10-07
+
+- **Inspector button** in the top bar (three sliders, before Theme and
+  Help, as in the other apps): hides or shows the right-hand column, so
+  the page gets the room. A dot on it means something is picked while it
+  is hidden. Remembered in this browser. The Accessibility button opens it
+  again when needed.
+- **Opacity** for pictures, shapes and lines: Look, Opacity (5 to 100%).
+  It is see-through on the desk, in the PNG and in the PDF.
+- **Drop shadows** for pictures, shapes and lines: Look, Drop shadow, with
+  how far across and down, softness, strength and colour. A shadow falls
+  the same way however the object is turned. In the PDF the object stays
+  sharp and its shadow is a soft picture underneath (PDF has no blur).
+- **Pictures in any shape:** Picture, Frame shape, "Choose a shape..." opens
+  the Shapes gallery (without the lines) and cuts the picture to a heart, a
+  star, a shield or any other closed shape. Crop and Fill still work; clicks
+  outside the shape miss it; text wrap follows it.
+- **Rounded corners for pictures** are now in Picture, beside the frame
+  shape (they were hidden under Look).
+- **Locking**, easier to find: a Lock button in Arrange and Ctrl+Shift+L
+  (Cmd+Shift+L), as well as the padlock in Layers. Clicking a locked thing on
+  the page now says how to unlock it, and clicking something that belongs
+  to a master page says where to change it. Layers has "Unlock everything on
+  this page" when anything there is locked.
+- Project files are now version 7.
+
+## 0.12.1 - 2026-10-06
+
+- The Units, grid and guides panel now hangs from the arrow that opens it
+  (beside Guides in the top bar), like any menu, instead of sitting over
+  the right-hand column. It stays inside the window, and on a phone it
+  follows the arrow when the top bar scrolls sideways. It still stays open
+  while you drag guides; the arrow, its X or Escape closes it.
+
 ## 0.12.0 - 2026-10-06
 
 - **Master pages:** things that show on many pages at once, like a

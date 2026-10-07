@@ -491,6 +491,16 @@ building blocks, the starter template gallery.
   master and a page. Project files are version 6. Not done yet: facing-page
   spreads on the desk, a starting page number, section numbering, master
   text tagged as "artifact" in a tagged PDF (phase 3).
+- 0.13.0, details from Dave's testing: the Inspector button (suite standard,
+  `view.inspector`, `.work.inspector-hidden`); `o.opacity` and `o.shadow`
+  { x, y, blur, colour, opacity } on non-text objects (desk: `withEffects`,
+  an unturned group with feDropShadow; canvas: each such object drawn on its
+  own layer by `drawObjectOn`, then composited with a canvas shadow; PDF: an
+  ExtGState for opacity, `pdfShadow` a 2 px/pt PNG of the shadow alone);
+  picture frames in gallery shapes (`frameShape: 'shape'`, `o.mask`, drawn
+  through `maskObj`, clipped even-odd); a Lock button and Ctrl+Shift+L; a
+  hint when a click lands on something locked or on a master's thing.
+  Project files are version 7.
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,
