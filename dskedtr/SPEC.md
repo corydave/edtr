@@ -447,10 +447,35 @@ Phase 1 is built in milestones, each stopping for Dave's review:
      are drawn as outlines in the PDF (`pdfGlyphShape`), no-subsetting and
      CFF fonts are embedded whole. Project files are version 3.
 
-**Phase 2 - Publisher's strengths.** Master pages (odd/even), facing
-pages, text wrap, columns in a box, "continued" lines, page numbers,
+**Phase 2 - Publisher's strengths.** Text wrap (done, 0.10.0, below).
+Master pages (odd/even), facing pages, columns in a box, "continued" lines, page numbers,
 tables, bleed and crop marks, booklet printing, 2-up/4-up, fold presets,
 building blocks, the starter template gallery.
+
+- 0.10.0, text wrap: any non-text object can have `wrap: { mode, gap }`,
+  mode `box`, `tight` or `topBottom` (absent = none), gap in points.
+  `wrapObstacles(f)` gathers a box's obstacles as polygons in the box's
+  upright directions (skipping hidden ones and any obstacle the box sits
+  entirely inside); `freeSegment` finds the widest free stretch for a
+  line's band (gap added up, down and sideways); `placeWrappedLine` moves
+  down 1 pt at a time until a stretch of at least six letters (6 em, or
+  36 pt) fits without cutting a word. Lines use one side only (InDesign's
+  "largest area"); wrapping both sides could come later as an option.
+  Tight wrap: ellipses (48-point polygon), merged shapes (each curve in 8
+  steps), and PNG pictures traced from their alpha (`traceSeeThrough`: at
+  most 256 px, rows' leftmost and rightmost visible pixels), clipped to
+  the frame. Project files are version 4.
+- 0.11.0, shapes (Dave's ask, with Publisher's gallery as the model):
+  `SHAPES` holds 115 shapes as path data (`open: true` for outline-only
+  lines, `line: 'end'|'both'|'none'` for gallery entries that make real
+  line objects), grouped by `SHAPE_GROUPS` into Publisher-like sections,
+  with a Recently used row (localStorage, this browser only). The nine
+  shields are VCTREDTR's `SHIELD_STYLES` outlines, unchanged. Lines have
+  `arrows: 'start'|'end'|'both'` (`lineParts` shortens the line and makes
+  the heads, 5 x the stroke, at least 8 pt). Project files are version 5.
+  Not done from Publisher's gallery: line callouts (a box with a leader
+  line), scrolls, curved and circular block arrows, connectors that stay
+  attached to shapes.
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,

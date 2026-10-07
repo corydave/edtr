@@ -141,13 +141,18 @@ body {
 /* The guides and grid panel: a popover under its button. */
 .pop[popover] { position: fixed; inset: auto; margin: 0; width: min(292px, calc(100vw - 16px)); max-height: min(70vh, 560px); overflow: auto;
   padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--fg); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
-.shape-pop[popover] { width: min(340px, calc(100vw - 16px)); }
-.shape-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-.shape-choice { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border: 1px solid transparent; border-radius: 8px;
-  background: none; color: var(--fg); cursor: pointer; font-size: 11px; line-height: 1.2; text-align: center; }
+.shape-pop[popover] { width: min(372px, calc(100vw - 16px)); max-height: min(86vh, 720px); }
+/* The Shapes gallery: sections of small icon buttons (names show below, and in each button's label). */
+.shape-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 10px 0 4px; }
+.shape-section:first-child h3 { margin-top: 0; }
+.shape-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+.shape-choice { display: grid; place-items: center; aspect-ratio: 1; min-height: 36px; padding: 3px; border: 1px solid transparent; border-radius: 8px;
+  background: none; color: var(--fg); cursor: pointer; }
+.shape-choice svg .open { fill: none; }
+.shape-name { min-height: 1.4em; margin: 8px 0 2px; font-size: 13px; font-weight: 600; }
 .shape-choice:hover { background: color-mix(in srgb, var(--fg) 8%, transparent); }
 .shape-choice[aria-pressed="true"] { border-color: var(--accent-text); background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.shape-choice svg { width: 30px; height: 30px; fill: color-mix(in srgb, var(--accent) 20%, transparent); stroke: currentColor; stroke-width: 1.5; fill-rule: evenodd; }
+.shape-choice svg { width: 26px; height: 26px; fill: color-mix(in srgb, var(--accent) 20%, transparent); stroke: currentColor; stroke-width: 1.5; fill-rule: evenodd; }
 #shapeToolIcon path { fill-rule: evenodd; }
 .pop h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 0 8px; }
 .work > * { min-width: 0; }      /* let grid columns shrink instead of pushing the page wider */
@@ -707,7 +712,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
     Export
   </button>
-  <span class="phase-tag">Phase 1 complete, plus fonts</span>
+  <span class="phase-tag">Phase 2: text wrap, more shapes</span>
   <span class="spacer"></span>
   <!-- The family's order: Install (only while the browser allows it), Theme, Help. -->
   <button class="icon-btn" id="installBtn" hidden aria-label="Install DSKEDTR as an app" title="Install DSKEDTR as an app: its own window, and it works offline">
@@ -898,7 +903,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         </div>
       </div>
       <label class="field" style="margin-top:8px">Outline width (pt)<input type="number" id="strokeWidth" min="0" max="72" step="0.25"></label>
-      <label class="field" style="margin-top:8px" id="radiusRow">Rounded corners (<span class="u-short">in</span>)<input type="number" id="cornerRadius" class="u-input" min="0"></label>
+      <label class="field" style="margin-top:8px" id="arrowsRow">Arrowheads<select id="lineArrows"><option value="none">None</option><option value="end">At the end</option><option value="start">At the start</option><option value="both">At both ends</option></select></label>
+      <label class="field" style="margin-top:8px" id="radiusRow"><span>Rounded corners (<span class="u-short">in</span>)</span><input type="number" id="cornerRadius" class="u-input" min="0"></label>
       </div>
     </section>
 
@@ -961,6 +967,22 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <span class="tool-caption" id="capMerge">Merge shapes (two or more rectangles, ellipses or merged shapes)</span>
         <div class="icon-row"><button class="icon-sm" data-merge="union" aria-label="Union: join into one shape" title="Union: join into one shape (Alt+Shift+U)"><svg viewBox="0 0 24 24"><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 1 0 12 6.8Z" fill="currentColor" fill-opacity=".35"/></svg></button><button class="icon-sm" data-merge="combine" aria-label="Combine: join, cutting out the overlap" title="Combine: join, cutting out the overlap (Alt+Shift+C)"><svg viewBox="0 0 24 24"><path d="M3 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0ZM9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" fill="currentColor" fill-opacity=".35" fill-rule="evenodd"/></svg></button><button class="icon-sm" data-merge="fragment" aria-label="Fragment: break into pieces where they overlap" title="Fragment: break into pieces where they overlap (Alt+Shift+F)"><svg viewBox="0 0 24 24"><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 1 1 12 17.2A6 6 0 0 0 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".6"/></svg></button><button class="icon-sm" data-merge="intersect" aria-label="Intersect: keep only the overlap" title="Intersect: keep only the overlap (Alt+Shift+I)"><svg viewBox="0 0 24 24"><path d="M3 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".45"/></svg></button><button class="icon-sm" data-merge="subtract" aria-label="Subtract: cut the others out of the first one picked" title="Subtract: cut the others out of the first one picked (Alt+Shift+S)"><svg viewBox="0 0 24 24"><path d="M9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".35"/></svg></button></div>
       </div>
+      </div>
+    </section>
+
+    <!-- Picked pictures and shapes: how text goes around them (section 5b) -->
+    <section id="secWrap" hidden>
+      <h2><button class="fold" data-fold="wrapBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Text wrap</span><span class="fold-note" id="wrapNote"></span></button></h2>
+      <div class="fold-body" id="wrapBody" hidden>
+      <span class="tool-caption" id="capWrap">How text goes around it</span>
+      <div class="icon-row" role="radiogroup" aria-labelledby="capWrap" id="wrapModes">
+        <button class="icon-sm" role="radio" data-wrap="none" aria-checked="true" aria-label="No wrap: text runs over or under it" title="No wrap: text runs over or under it"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 10h18M3 15h18M3 20h18"/><rect x="8" y="8" width="8" height="9" rx="1" stroke-dasharray="2 2"/></svg></button>
+        <button class="icon-sm" role="radio" data-wrap="box" aria-checked="false" aria-label="Around its box" title="Around its box" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M3 4h18M3 9h8M3 14h8M3 19h8M3 22h18" /><rect x="14" y="7" width="7" height="12" rx="1"/></svg></button>
+        <button class="icon-sm" role="radio" data-wrap="tight" aria-checked="false" aria-label="Tight: around its shape (for a PNG with a see-through background, around what shows)" title="Tight: around its shape (a PNG's see-through background is left out)" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M3 4h18M3 9h10M3 13h8M3 17h10M3 21h18"/><circle cx="17" cy="13" r="4"/></svg></button>
+        <button class="icon-sm" role="radio" data-wrap="topBottom" aria-checked="false" aria-label="Above and below only" title="Above and below only: nothing beside it" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M3 4h18M3 20h18"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg></button>
+      </div>
+      <label class="field" style="margin-top:8px"><span>Distance from the text (<span class="u-short">in</span>)</span><input type="number" id="wrapGap" class="u-input" min="0"></label>
+      <p id="wrapInfo" class="muted reserve2" style="font-size:12px"></p>
       </div>
     </section>
 
@@ -1090,7 +1112,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 <!-- ===================== SHAPES (a popover from the tool rail) ===================== -->
 <div class="pop shape-pop" id="shapePop" popover role="dialog" aria-labelledby="shapePopTitle">
   <h2 id="shapePopTitle">Shapes</h2>
-  <div class="shape-grid" id="shapeGrid"></div>
+  <div id="shapeGrid"></div>
+  <p class="shape-name" id="shapeName" aria-hidden="true"></p>
   <p class="muted" style="font-size:12px;margin-bottom:0">Pick one, then drag on the page. Shift keeps it in proportion. Rectangles and ellipses have their own tools; round a rectangle's corners in Look.</p>
 </div>
 
@@ -1125,7 +1148,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <span class="tool-caption">Column guides inside the margins</span>
       <div class="grid4">
         <label class="field">Columns<input type="number" id="colCount" min="2" max="12" step="1" value="3"></label>
-        <label class="field">Gap (<span class="u-short">in</span>)<input type="number" id="colGap" class="u-input" min="0" value="0.25" data-pt="18"></label>
+        <label class="field"><span>Gap (<span class="u-short">in</span>)</span><input type="number" id="colGap" class="u-input" min="0" value="0.25" data-pt="18"></label>
       </div>
       <div class="row">
         <button class="btn" id="colGuidesBtn">Add column guides</button>
@@ -1153,8 +1176,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <label class="field">Units (for every measurement in DSKEDTR)<select id="psUnits"></select></label>
     <label class="field" style="margin-top:8px">Size<select id="psSize"></select></label>
     <div class="grid4" style="margin-top:8px">
-      <label class="field">Width (<span class="u-short">in</span>)<input type="number" id="psW" class="u-input"></label>
-      <label class="field">Height (<span class="u-short">in</span>)<input type="number" id="psH" class="u-input"></label>
+      <label class="field"><span>Width (<span class="u-short">in</span>)</span><input type="number" id="psW" class="u-input"></label>
+      <label class="field"><span>Height (<span class="u-short">in</span>)</span><input type="number" id="psH" class="u-input"></label>
     </div>
     <fieldset>
       <legend>Orientation</legend>
@@ -1333,7 +1356,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.9.0';
+const APP_VERSION = '0.11.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -2169,6 +2192,7 @@ function layoutStory(story) {
   let paraStart = 0;
   const paras = text.split('\n');
   const fmts = charFormats(story);                   // each letter's own formatting (section 4b)
+  const wrapCache = new Map();                       // each box's wrap obstacles, worked out once
 
   paraLoop:
   for (let p = 0; p < paras.length; p++) {
@@ -2180,13 +2204,28 @@ function layoutStory(story) {
     do {
       // Find room for this line: in this box, or the next box in the chain.
       // (Break it to the box's width first: how tall it is depends on its letters.)
-      let before, end, met;
+      // Pictures and shapes with text wrap (section 5b) can push a line
+      // sideways (into the widest gap beside them) or down (below them).
+      let before, end, met, seg;
       for (;;) {
         if (!f) { overflowAt = pos; break paraLoop; }
         before = (firstLineOfPara && !firstInFrame) ? role.spaceBefore : 0;
-        end = breakLine(text, m, paraStart, pos, paraEnd, f.w - 2 * f.inset);
-        met = lineMetrics(m, pos - paraStart, end - paraStart, role);
-        if (y + before + met.lineH <= f.y + f.h - f.inset + 0.01) break;
+        const bottom = f.y + f.h - f.inset + 0.01;
+        const obs = wrapObstacles(f, wrapCache);
+        if (!obs.length) {
+          seg = { x: f.x + f.inset, w: f.w - 2 * f.inset };
+          end = breakLine(text, m, paraStart, pos, paraEnd, seg.w);
+          met = lineMetrics(m, pos - paraStart, end - paraStart, role);
+          if (y + before + met.lineH <= bottom) break;
+        } else {
+          const placed = placeWrappedLine(f, obs, y + before, bottom, (w) => {
+            const e = breakLine(text, m, paraStart, pos, paraEnd, w);
+            // "forced": a word too long for the width had to be cut in two.
+            const forced = e < paraEnd && e > pos && !/[ \t-]/.test(text[e - 1]);
+            return { end: e, forced, met: lineMetrics(m, pos - paraStart, e - paraStart, role) };
+          }, Math.max(36, role.size * 6));
+          if (placed) { ({ seg, end, met } = placed); y = placed.top - before; break; }
+        }
         fi++; f = frames[fi];
         if (f) { y = f.y + f.inset; firstInFrame = true; }
       }
@@ -2203,11 +2242,11 @@ function layoutStory(story) {
       }
       xs.push(x);
       // Alignment. The spaces a line ends with "hang" outside the box, so they don't count.
-      const avail = f.w - 2 * f.inset;
+      const avail = seg.w;
       let visEnd = end;
       while (visEnd > pos && (text[visEnd - 1] === ' ' || text[visEnd - 1] === '\t')) visEnd--;
       const used = xs[visEnd - pos];
-      let x0 = f.x + f.inset;
+      let x0 = seg.x;
       if (role.align === 'center') x0 += Math.max(0, (avail - used) / 2);
       else if (role.align === 'right') x0 += Math.max(0, avail - used);
       else if (role.align === 'justify' && end !== paraEnd) {
@@ -2239,6 +2278,255 @@ function layoutStory(story) {
     paraStart = paraEnd + 1;
   }
   return { lines, overflowAt };
+}
+
+/* ======================================================================
+   5b. TEXT WRAP
+   A picture or shape can push text aside (o.wrap = { mode, gap }):
+     none       text runs over or under it (the default)
+     box        text goes around its box
+     tight      text follows its outline: an ellipse, a star, a merged
+                shape, or the part of a PNG that shows (its see-through
+                background is left out)
+     topBottom  text stops above it and carries on below it; nothing beside
+   gap is the distance kept between it and the text, in points.
+   Each line goes into the WIDEST gap left on its row (never on both sides
+   of a picture, which is hard to read), and moves down when no gap is wide
+   enough (about three letters). It works in turned boxes too: everything
+   is measured in the text box's own upright directions. A wrap never
+   affects a text box that lies entirely inside it (a coloured panel with
+   text on top, say).
+   ====================================================================== */
+const WRAP_MODES = ['none', 'box', 'tight', 'topBottom'];
+const WRAP_STEP = 1;                                 // points to move down while looking for room
+
+/** The outline(s) of an object for wrapping, on the page: { polys: [[{x,y}...]], clip }. */
+function wrapShapes(o) {
+  const mode = o.wrap.mode, c = centreOf(o);
+  const turn = (pts) => (o.rotation ? pts.map((q) => rotatePoint(q, o.rotation, c)) : pts);
+  const rectPoly = (x, y, w, h) => turn([{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }]);
+  const ellipsePoly = (x, y, w, h) => {
+    const pts = [];
+    for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2; pts.push({ x: x + w / 2 + Math.cos(a) * w / 2, y: y + h / 2 + Math.sin(a) * h / 2 }); }
+    return turn(pts);
+  };
+  if (o.type === 'line') {
+    // A line: a thin band along it, as thick as its stroke.
+    const dx = o.x2 - o.x1, dy = o.y2 - o.y1, len = Math.hypot(dx, dy) || 1, t = Math.max(0.5, (o.strokeWidth || 0) / 2);
+    const nx = -dy / len * t, ny = dx / len * t;
+    return { polys: [[{ x: o.x1 + nx, y: o.y1 + ny }, { x: o.x2 + nx, y: o.y2 + ny }, { x: o.x2 - nx, y: o.y2 - ny }, { x: o.x1 - nx, y: o.y1 - ny }]] };
+  }
+  if (mode !== 'tight') return { polys: [rectPoly(o.x, o.y, o.w, o.h)] };
+  if (o.type === 'ellipse') return { polys: [ellipsePoly(o.x, o.y, o.w, o.h)] };
+  if (o.type === 'path') {
+    // Each curve of the shape, followed in eight small straight steps.
+    const sx = o.w / o.w0, sy = o.h / o.h0, X = (v) => o.x + v * sx, Y = (v) => o.y + v * sy;
+    const polys = [];
+    for (const ct of o.contours) {
+      const pts = ct.pts;
+      if (pts.length < 2) continue;
+      const out = [];
+      const curve = (a, b) => {
+        const p0 = [a[0], a[1]], p1 = [a[0] + a[4], a[1] + a[5]], p2 = [b[0] + b[2], b[1] + b[3]], p3 = [b[0], b[1]];
+        for (let s = 0; s < 8; s++) {
+          const t = s / 8, u = 1 - t;
+          const px = u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0];
+          const py = u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1];
+          out.push({ x: X(px), y: Y(py) });
+        }
+      };
+      for (let i = 1; i < pts.length; i++) curve(pts[i - 1], pts[i]);
+      curve(pts[pts.length - 1], pts[0]);
+      polys.push(turn(out));
+    }
+    return { polys };
+  }
+  if (o.type === 'picture') {
+    const frame = o.frameShape === 'ellipse' ? ellipsePoly(o.x, o.y, o.w, o.h) : rectPoly(o.x, o.y, o.w, o.h);
+    const im = o.image && images[o.image], mask = im ? pictureMask(o.image) : null;
+    if (!mask) return { polys: [frame] };
+    // The parts of the picture that show, placed and sized as on the page, then kept inside the frame.
+    const kx = im.w / mask.w * o.s, ky = im.h / mask.h * o.s;
+    const polys = mask.polys.map((poly) => turn(poly.map(([mx, my]) => ({ x: o.x + o.ox + mx * kx, y: o.y + o.oy + my * ky }))));
+    return { polys, clip: frame };
+  }
+  return { polys: [rectPoly(o.x, o.y, o.w, o.h)] };
+}
+
+/**
+ * The things that push text aside in box f, in f's own upright directions:
+ * [{ polys, clip, gap, mode }]. Remembered per layout in `cache`.
+ */
+function wrapObstacles(f, cache) {
+  if (cache && cache.has(f.id)) return cache.get(f.id);
+  const out = [];
+  const pi = pageOf(f.id);
+  const page = doc.pages[pi];
+  if (page) {
+    const fb = bounds(f), fc = centreOf(f);
+    const local = (poly) => (f.rotation ? poly.map((q) => rotatePoint(q, -f.rotation, fc)) : poly);
+    for (const o of page.objects) {
+      if (!o.wrap || o.wrap.mode === 'none' || o.hidden || o.type === 'text') continue;
+      const gap = (o.wrap.gap || 0) + (o.stroke && o.strokeWidth > 0 ? o.strokeWidth / 2 : 0);
+      const b = bounds(o);
+      // Not near this box at all, or a panel the whole box sits on: no effect.
+      if (b.x - gap > fb.x + fb.w || b.x + b.w + gap < fb.x || b.y - gap > fb.y + fb.h || b.y + b.h + gap < fb.y) continue;
+      if (b.x <= fb.x && b.y <= fb.y && b.x + b.w >= fb.x + fb.w && b.y + b.h >= fb.y + fb.h) continue;
+      const sh = wrapShapes(o);
+      out.push({ polys: sh.polys.map(local), clip: sh.clip ? local(sh.clip) : null, gap, mode: o.wrap.mode });
+    }
+  }
+  if (cache) cache.set(f.id, out);
+  return out;
+}
+
+/** How far across a polygon reaches between heights y0 and y1: [left, right], or null if it isn't there. */
+function polyBandExtent(poly, y0, y1) {
+  let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], b = poly[(i + 1) % poly.length];
+    let ta = 0, tb = 1;
+    const dy = b.y - a.y;
+    if (Math.abs(dy) < 1e-9) { if (a.y < y0 || a.y > y1) continue; }
+    else {
+      let t0 = (y0 - a.y) / dy, t1 = (y1 - a.y) / dy;
+      if (t0 > t1) [t0, t1] = [t1, t0];
+      ta = Math.max(0, t0); tb = Math.min(1, t1);
+      if (ta > tb) continue;
+    }
+    const xa = a.x + (b.x - a.x) * ta, xb = a.x + (b.x - a.x) * tb;
+    lo = Math.min(lo, xa, xb); hi = Math.max(hi, xa, xb);
+  }
+  return lo <= hi ? [lo, hi] : null;
+}
+/** The stretches across that an obstacle blocks for a line from y0 to y1. */
+function obstacleBlocks(ob, y0, y1) {
+  const a = y0 - ob.gap, b = y1 + ob.gap;
+  const clip = ob.clip ? polyBandExtent(ob.clip, a, b) : null;
+  if (ob.clip && !clip) return [];
+  const out = [];
+  for (const poly of ob.polys) {
+    let ext = polyBandExtent(poly, a, b);
+    if (!ext) continue;
+    if (clip) { ext = [Math.max(ext[0], clip[0]), Math.min(ext[1], clip[1])]; if (ext[0] > ext[1]) continue; }
+    out.push(ob.mode === 'topBottom' ? [-Infinity, Infinity] : [ext[0] - ob.gap, ext[1] + ob.gap]);
+  }
+  return out;
+}
+/** The widest free stretch of box f's line from y0 to y1 (at least minW wide): { x, w }, or null. */
+function freeSegment(f, obs, y0, y1, minW) {
+  const L = f.x + f.inset, R = f.x + f.w - f.inset;
+  minW = Math.min(minW, R - L);
+  const blocked = obs.flatMap((ob) => obstacleBlocks(ob, y0, y1)).sort((p, q) => p[0] - q[0]);
+  let best = null, x = L;
+  const consider = (a, b) => { if (b - a >= minW - 0.01 && (!best || b - a > best.w + 0.01)) best = { x: a, w: b - a }; };
+  for (const [a, b] of blocked) {
+    if (a > x) consider(x, Math.min(a, R));
+    x = Math.max(x, b);
+    if (x >= R) break;
+  }
+  if (x < R) consider(x, R);
+  return best;
+}
+/**
+ * Find where a line fits in box f, from height `top` down: a free stretch
+ * wide enough (minW: about six letters), for a line as tall as its
+ * letters. fit(width) breaks the line to a width and says how tall it is,
+ * and whether a word had to be cut in two: beside a wrap that never
+ * happens (the line moves down instead). Returns { top, seg, end, met }
+ * or null when the box has no room left.
+ */
+function placeWrappedLine(f, obs, top, bottom, fit, minW) {
+  const fullW = f.w - 2 * f.inset;
+  let estH = null;
+  for (let y = top; ; y += WRAP_STEP) {
+    if (estH != null && y + estH > bottom) return null;
+    // First guess the line's height from a line as wide as the whole box.
+    if (estH == null) { estH = fit(f.w - 2 * f.inset).met.lineH; if (y + estH > bottom) return null; }
+    const seg = freeSegment(f, obs, y, y + estH, minW);
+    if (!seg) continue;
+    let r = fit(seg.w);
+    if (r.forced && seg.w < fullW - 0.5) continue;      // a word wouldn't fit beside it: look lower
+    if (r.met.lineH > estH + 0.01) {
+      // Taller than guessed (bigger letters on it): check the taller stretch too.
+      estH = r.met.lineH;
+      const seg2 = freeSegment(f, obs, y, y + estH, minW);
+      if (!seg2) continue;
+      if (seg2.w < seg.w - 0.01 || seg2.x !== seg.x) {
+        r = fit(seg2.w);
+        if (r.forced && seg2.w < fullW - 0.5) continue;
+        if (y + r.met.lineH > bottom) return null;
+        return { top: y, seg: seg2, end: r.end, met: r.met };
+      }
+    }
+    if (y + r.met.lineH > bottom) return null;
+    return { top: y, seg, end: r.end, met: r.met };
+  }
+}
+
+/* ---------- The part of a PNG that shows ----------
+   For tight wrap, a picture with a see-through background is traced once:
+   drawn small (at most 256 pixels across), and for each row of pixels the
+   leftmost and rightmost ones that show (more than 1/8 opaque) are found.
+   Rows that show something, one after another, make an outline (down the
+   left edges, back up the right edges). JPEG photos have no see-through
+   parts, so their frame is used. Tracing takes a moment: until it is done
+   the frame is used, then the text is laid out again. */
+const wrapMasks = new Map();                         // picture id -> { w, h, polys } in small-copy pixels, null, or 'busy'
+function pictureMask(id) {
+  const m = wrapMasks.get(id);
+  if (m !== undefined) return m === 'busy' ? null : m;
+  wrapMasks.set(id, 'busy');
+  traceSeeThrough(id).then((r) => { wrapMasks.set(id, r); if (r) { relayoutAndRender(); updateInspector(); } })
+    .catch(() => wrapMasks.set(id, null));
+  return null;
+}
+async function traceSeeThrough(id) {
+  const file = imageFiles[id];
+  if (!file || file.blob.type !== 'image/png') return null;
+  const bm = await createImageBitmap(file.blob);
+  const k = Math.min(1, 256 / Math.max(bm.width, bm.height));
+  const w = Math.max(1, Math.round(bm.width * k)), h = Math.max(1, Math.round(bm.height * k));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const g = canvas.getContext('2d', { willReadFrequently: true });
+  g.drawImage(bm, 0, 0, w, h);
+  bm.close();
+  const data = g.getImageData(0, 0, w, h).data;
+  let clear = 0;
+  const rows = [];
+  for (let y = 0; y < h; y++) {
+    let lo = -1, hi = -1;
+    for (let x = 0; x < w; x++) {
+      const a = data[(y * w + x) * 4 + 3];
+      if (a < 128) clear++;
+      if (a > 32) { if (lo < 0) lo = x; hi = x; }
+    }
+    rows.push(lo < 0 ? null : [lo, hi + 1]);
+  }
+  if (clear < w * h * 0.005) return null;            // hardly anything see-through: use the frame
+  const polys = [];
+  let left = null, right = null;
+  const finish = () => { if (left) polys.push(left.concat(right.reverse())); left = right = null; };
+  for (let y = 0; y < h; y++) {
+    const r = rows[y];
+    if (!r) { finish(); continue; }
+    if (!left) { left = []; right = []; }
+    left.push([r[0], y], [r[0], y + 1]);
+    right.push([r[1], y], [r[1], y + 1]);
+  }
+  finish();
+  return { w, h, polys };
+}
+
+/** Show the wrap of a picked object: its outline, and a pale band as wide as the distance. */
+function renderWrapOutline(o) {
+  if (!o.wrap || o.wrap.mode === 'none' || o.type === 'text') return;
+  const sh = wrapShapes(o);
+  const gap = (o.wrap.gap || 0) + (o.stroke && o.strokeWidth > 0 ? o.strokeWidth / 2 : 0);
+  const d = sh.polys.map((poly) => 'M' + poly.map((q) => r2(q.x) + ' ' + r2(q.y)).join('L') + 'Z').join('');
+  if (gap > 0) layers.handles.appendChild(svgEl('path', { d, fill: 'none', stroke: '#10b981', 'stroke-opacity': 0.18, 'stroke-width': gap * 2, 'stroke-linejoin': 'round' }));
+  layers.handles.appendChild(svgEl('path', { d, fill: 'none', stroke: '#065f46', 'stroke-width': 1, 'stroke-dasharray': '2 2', 'vector-effect': 'non-scaling-stroke' }));
 }
 
 /** Lay out every story (cheap enough to redo on each change in phase 0). */
@@ -3032,6 +3320,62 @@ async function withFamily(family, then) {
   then();
 }
 
+/* ---------- Text wrap in the Inspector ---------- */
+const WRAP_WORDS = { none: 'No wrap', box: 'Around its box', tight: 'Tight, around its shape', topBottom: 'Above and below only' };
+/** Show the wrap of the picked pictures and shapes (the first one's, when they differ). */
+function fillWrap(list) {
+  const w = list[0].wrap || { mode: 'none', gap: 9 };
+  for (const b of $('wrapModes').querySelectorAll('[role="radio"]')) {
+    const on = b.dataset.wrap === w.mode;
+    b.setAttribute('aria-checked', String(on));
+    b.tabIndex = on ? 0 : -1;
+  }
+  const gap = $('wrapGap');
+  gap.disabled = w.mode === 'none';
+  setField(gap, toU(w.gap == null ? 9 : w.gap));
+  setText('wrapNote', w.mode === 'none' ? '' : WRAP_WORDS[w.mode].toLowerCase());
+  const o = list[0];
+  let info = '';
+  if (w.mode === 'tight' && o.type === 'picture') {
+    const m = o.image ? wrapMasks.get(o.image) : null;
+    info = m && m !== 'busy' ? 'Follows the part of the picture that shows (its see-through background is left out).' : 'Follows the frame. (A PNG with a see-through background is followed around what shows.)';
+  } else if (w.mode === 'tight' && o.type === 'rect') info = 'A rectangle’s shape is its box.';
+  else if (w.mode !== 'none') info = 'Text goes on the wider side, never on both sides at once (easier to read).';
+  setText('wrapInfo', info);
+}
+/** Change the wrap of every picked picture and shape. */
+function setWrap(change, undoKind, message) {
+  const list = selectedIds.map(obj).filter((o) => o && o.type !== 'text');
+  if (!list.length) return;
+  recordUndo(undoKind);
+  for (const o of list) {
+    const w = change(Object.assign({ mode: 'none', gap: 9 }, o.wrap || {}));
+    if (w.mode === 'none') delete o.wrap; else o.wrap = w;
+  }
+  const before = Object.keys(doc.stories).filter((id) => layouts[id] && layouts[id].overflowAt != null).length;
+  relayoutAndRender();
+  updateInspector();
+  const after = Object.keys(doc.stories).filter((id) => layouts[id] && layouts[id].overflowAt != null).length;
+  if (message) announce(message + (after > before ? '. Now some text doesn’t fit its boxes.' : ''));
+}
+function wireWrap() {
+  const radios = [...$('wrapModes').querySelectorAll('[role="radio"]')];
+  radios.forEach((b, i) => {
+    b.addEventListener('click', () => setWrap((w) => Object.assign(w, { mode: b.dataset.wrap }), 'other', 'Text wrap: ' + WRAP_WORDS[b.dataset.wrap]));
+    b.addEventListener('keydown', (e) => {
+      const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      const next = radios[(i + d + radios.length) % radios.length];
+      next.focus(); next.click();
+    });
+  });
+  $('wrapGap').addEventListener('input', () => {
+    const v = parseFloat($('wrapGap').value);
+    if (isFinite(v)) setWrap((w) => Object.assign(w, { gap: Math.max(0, Math.min(144, fromU(v))) }), 'field:wrapgap', null);
+  });
+}
+
 /** The Characters section: what the highlighted words look like now. */
 function fillChars() {
   const t = formatTarget();
@@ -3340,11 +3684,33 @@ function pictureElement(o, prefix) {
   return g;
 }
 
+/**
+ * A line's arrowheads (o.arrows: 'start', 'end' or 'both'): the line itself,
+ * shortened so it stops inside each head, and each head's three corners.
+ * A head is five times as long as the line is thick (at least 8 pt).
+ */
+function lineParts(o) {
+  const ends = o.arrows || 'none', sw = Math.max(0.5, o.strokeWidth || 0);
+  const len = Math.hypot(o.x2 - o.x1, o.y2 - o.y1) || 1, ux = (o.x2 - o.x1) / len, uy = (o.y2 - o.y1) / len;
+  const L = Math.min(len / 2.2, Math.max(8, sw * 5)), W = L * 0.45;          // head length and half width
+  const head = (tx, ty, dx, dy) => [[tx, ty], [tx - dx * L - dy * W, ty - dy * L + dx * W], [tx - dx * L + dy * W, ty - dy * L - dx * W]];
+  let { x1, y1, x2, y2 } = o;
+  const heads = [];
+  if (ends === 'end' || ends === 'both') { heads.push(head(o.x2, o.y2, ux, uy)); x2 -= ux * L * 0.8; y2 -= uy * L * 0.8; }
+  if (ends === 'start' || ends === 'both') { heads.push(head(o.x1, o.y1, -ux, -uy)); x1 += ux * L * 0.8; y1 += uy * L * 0.8; }
+  return { x1, y1, x2, y2, heads };
+}
+const headPath = (h) => 'M' + h.map(([x, y]) => r2(x) + ' ' + r2(y)).join('L') + 'Z';
+
 /** The SVG for a shape or line (only our own numbers and checked colours go in). */
 function shapeElement(o) {
   const stroke = o.stroke && o.strokeWidth > 0 ? { stroke: o.stroke, 'stroke-width': o.strokeWidth } : { stroke: 'none' };
   if (o.type === 'line') {
-    return svgEl('line', Object.assign({ x1: o.x1, y1: o.y1, x2: o.x2, y2: o.y2, 'stroke-linecap': 'butt' }, stroke));
+    if (!o.arrows || o.arrows === 'none' || stroke.stroke === 'none') return svgEl('line', Object.assign({ x1: o.x1, y1: o.y1, x2: o.x2, y2: o.y2, 'stroke-linecap': 'butt' }, stroke));
+    const lp = lineParts(o), g = svgEl('g', {});
+    g.appendChild(svgEl('line', Object.assign({ x1: lp.x1, y1: lp.y1, x2: lp.x2, y2: lp.y2, 'stroke-linecap': 'butt' }, stroke)));
+    for (const h of lp.heads) g.appendChild(svgEl('path', { d: headPath(h), fill: o.stroke }));
+    return g;
   }
   const fill = { fill: o.fill || 'none' };
   if (o.type === 'path') return svgEl('path', Object.assign({ d: pathData(o), 'fill-rule': 'evenodd' }, fill, stroke));
@@ -3506,6 +3872,7 @@ function renderHandles() {
   const list = selectedIds.map(obj).filter(Boolean);
   if (!list.length || activeStoryId) return;
   const px = onePx();
+  for (const o of list) renderWrapOutline(o);       // text wrap (section 5b): what pushes text aside
   for (const o of list) {
     const stroke = { fill: 'none', stroke: o.locked ? '#94a3b8' : '#10b981', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' };
     if (o.type === 'line') layers.handles.appendChild(svgEl('line', Object.assign({ x1: o.x1, y1: o.y1, x2: o.x2, y2: o.y2 }, stroke)));
@@ -4767,7 +5134,11 @@ function mergeShapes(op) {
 let pathTester = null;
 function pointInPath(o, p) {
   if (!pathTester) pathTester = document.createElement('canvas').getContext('2d');
-  return pathTester.isPointInPath(new Path2D(pathData(o)), p.x, p.y, 'evenodd');
+  const path = new Path2D(pathData(o));
+  if (o.fill && pathTester.isPointInPath(path, p.x, p.y, 'evenodd')) return true;
+  // The outline itself (all there is to click on a line from the gallery), a few pixels either side.
+  pathTester.lineWidth = Math.max(o.strokeWidth || 0, 8 * onePx());
+  return pathTester.isPointInStroke(path, p.x, p.y);
 }
 
 /* ======================================================================
@@ -4794,53 +5165,217 @@ function starPath(n, inner) {
   }
   return 'M' + pts.join('L') + 'Z';
 }
+/** A sun: a circle with eight pointed rays around it. */
+function sunPath() {
+  const at = (r, t) => (50 + r * Math.cos(t)).toFixed(2) + ' ' + (50 + r * Math.sin(t)).toFixed(2);
+  let d = 'M28 50A22 22 0 1 0 72 50A22 22 0 1 0 28 50Z';
+  for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; d += 'M' + at(28, a - 0.2) + 'L' + at(50, a) + 'L' + at(28, a + 0.2) + 'Z'; }
+  return d;
+}
+/** A gear with n teeth and a round hole in the middle. */
+function gearPath(n) {
+  const at = (r, t) => (50 + r * Math.cos(t)).toFixed(2) + ' ' + (50 + r * Math.sin(t)).toFixed(2);
+  const step = 2 * Math.PI / n, pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = i * step - Math.PI / 2;
+    pts.push(at(38, a - step * 0.32), at(50, a - step * 0.17), at(50, a + step * 0.17), at(38, a + step * 0.32));
+  }
+  return 'M' + pts.join('L') + 'Z M36 50A14 14 0 1 0 64 50A14 14 0 1 0 36 50Z';
+}
+// Shield outlines, exactly as VCTREDTR draws them (100 wide, about 120 tall, the point at the bottom middle).
+const SHIELD_BOTTOM = 'C100 88 76 106 50 120C24 106 0 88 0 58';
+const CIRCLE = 'M0 50A50 50 0 1 0 100 50A50 50 0 1 0 0 50Z';
+
+/*
+ * The gallery's shapes. Each is SVG path data in a box about 100 across
+ * (a shape's own size and proportions come from its outline). Holes are
+ * drawn as shapes inside shapes (the even-odd rule). Extra marks:
+ *   open: true     a line, not a filled shape (drawn with an outline only)
+ *   line: 'end'    really a straight line, drawn from where the drag starts
+ *                  to where it ends, with arrowheads ('none', 'end' or 'both');
+ *                  icon is its picture in the gallery
+ * Keys are only names for the gallery: a drawn shape keeps its own outline.
+ */
 const SHAPES = {
+  // Lines
+  line:      { label: 'Line',              line: 'none', icon: 'M5 95L95 5' },
+  arrowLine: { label: 'Arrow line',        line: 'end',  icon: 'M5 95L84 16M95 5L64 15L85 36Z' },
+  arrowLine2:{ label: 'Double arrow line', line: 'both', icon: 'M16 84L84 16M95 5L64 15L85 36Z M5 95L36 85L15 64Z' },
+  elbow:     { label: 'Elbow line',        open: true, d: 'M0 0H50V100H100' },
+  curve:     { label: 'Curve',             open: true, d: 'M0 80C30 -20 70 120 100 20' },
+  arc:       { label: 'Arc',               open: true, d: 'M0 100A100 100 0 0 1 100 0' },
+  waveLine:  { label: 'Wavy line',         open: true, d: 'M0 50Q12.5 10 25 50T50 50T75 50T100 50' },
+  zigzag:    { label: 'Zigzag',            open: true, d: 'M0 70L20 30L40 70L60 30L80 70L100 30' },
+  bracketL:  { label: 'Left bracket',      open: true, d: 'M40 0H10V100H40' },
+  bracketR:  { label: 'Right bracket',     open: true, d: 'M10 0H40V100H10' },
+  braceL:    { label: 'Left brace',        open: true, d: 'M60 0C40 0 40 10 40 25V40C40 45 35 50 25 50C35 50 40 55 40 60V75C40 90 40 100 60 100' },
+  braceR:    { label: 'Right brace',       open: true, d: 'M40 0C60 0 60 10 60 25V40C60 45 65 50 75 50C65 50 60 55 60 60V75C60 90 60 100 40 100' },
+  // Basic shapes
   triangle:  { label: 'Triangle',       d: 'M50 0L100 100H0Z' },
   rtriangle: { label: 'Right triangle', d: 'M0 0V100H100Z' },
   diamond:   { label: 'Diamond',        d: 'M50 0L100 50L50 100L0 50Z' },
   parallelogram: { label: 'Parallelogram', d: 'M25 0H100L75 100H0Z' },
+  trapezoid: { label: 'Trapezoid',      d: 'M20 0H80L100 100H0Z' },
   pentagon:  { label: 'Pentagon',       d: polygonPath(5) },
   hexagon:   { label: 'Hexagon',        d: polygonPath(6) },
+  heptagon:  { label: 'Heptagon',       d: polygonPath(7) },
   octagon:   { label: 'Octagon',        d: 'M29.29 0H70.71L100 29.29V70.71L70.71 100H29.29L0 70.71V29.29Z' },
+  decagon:   { label: 'Decagon',        d: polygonPath(10) },
+  dodecagon: { label: 'Dodecagon',      d: polygonPath(12) },
   semicircle:{ label: 'Half circle',    d: 'M0 50A50 50 0 0 1 100 50Z' },
-  star:      { label: 'Star',           d: starPath(5, 0.42) },
-  seal:      { label: 'Seal',           d: starPath(16, 0.84) },
-  burst:     { label: 'Burst',          d: starPath(12, 0.62) },
-  heart:     { label: 'Heart',          d: 'M50 94C18 70 2 52 2 31C2 15 14 4 28 4C38 4 46 10 50 19C54 10 62 4 72 4C86 4 98 15 98 31C98 52 82 70 50 94Z' },
+  pie:       { label: 'Pie',            d: 'M50 50V0A50 50 0 1 1 0 50Z' },
+  teardrop:  { label: 'Teardrop',       d: 'M100 0V50A50 50 0 1 1 50 0Z' },
+  arch:      { label: 'Arch',           d: 'M0 100A50 50 0 0 1 100 100H75A25 25 0 0 0 25 100Z' },
+  frame:     { label: 'Border frame',   d: 'M0 0H100V100H0Z M10 10V90H90V10Z' },
+  halfFrame: { label: 'Half frame',     d: 'M0 0H100L80 20H20V80L0 100Z' },
+  lshape:    { label: 'L-shape',        d: 'M0 0H40V60H100V100H0Z' },
+  plaque:    { label: 'Plaque',         d: 'M15 0H85A15 15 0 0 0 100 15V85A15 15 0 0 0 85 100H15A15 15 0 0 0 0 85V15A15 15 0 0 0 15 0Z' },
+  snip:      { label: 'Snipped corner', d: 'M0 0H80L100 20V100H0Z' },
+  folded:    { label: 'Folded corner',  d: 'M0 0H100V75H75V100H0Z M75 75H100L75 100Z' },
+  can:       { label: 'Cylinder',       d: 'M0 15V85A50 15 0 0 0 100 85V15A50 15 0 0 1 0 15Z M0 15A50 15 0 1 1 100 15A50 15 0 1 1 0 15Z' },
+  cube:      { label: 'Cube',           d: 'M0 25H75V100H0Z M0 25L25 0H100L75 25Z M75 25L100 0V75L75 100Z' },
+  donut:     { label: 'Ring',           d: CIRCLE + ' M25 50A25 25 0 1 1 75 50A25 25 0 1 1 25 50Z' },
+  noSymbol:  { label: '"No" sign',      d: CIRCLE + ' M79.02 67.71A34 34 0 0 0 32.29 20.98Z M20.98 32.29A34 34 0 0 0 67.71 79.02Z' },
+  smiley:    { label: 'Smiley face',    d: CIRCLE + ' M28 38A7 7 0 1 0 42 38A7 7 0 1 0 28 38Z M58 38A7 7 0 1 0 72 38A7 7 0 1 0 58 38Z M28 62Q50 84 72 62Q50 74 28 62Z' },
+  cross:     { label: 'Cross',          d: 'M34 0H66V34H100V66H66V100H34V66H0V34H34Z' },
+  // Block arrows
   arrow:     { label: 'Arrow',          d: 'M0 32H58V8L100 50L58 92V68H0Z' },
+  arrowLeft: { label: 'Left arrow',     d: 'M100 32H42V8L0 50L42 92V68H100Z' },
+  arrowUp:   { label: 'Up arrow',       d: 'M32 100V42H8L50 0L92 42H68V100Z' },
+  arrowDown: { label: 'Down arrow',     d: 'M32 0V58H8L50 100L92 58H68V0Z' },
   arrow2:    { label: 'Double arrow',   d: 'M0 50L30 16V34H70V16L100 50L70 84V66H30V84Z' },
+  arrowUpDown:{ label: 'Up-down arrow', d: 'M50 0L84 30H66V70H84L50 100L16 70H34V30H16Z' },
+  arrow4:    { label: 'Four-way arrow', d: 'M50 0L68 18H59V41H82V32L100 50L82 68V59H59V82H68L50 100L32 82H41V59H18V68L0 50L18 32V41H41V18H32Z' },
+  notchedArrow: { label: 'Notched arrow', d: 'M0 25H60V0L100 50L60 100V75H0L15 50Z' },
+  stripedArrow: { label: 'Striped arrow', d: 'M0 25H6V75H0Z M12 25H18V75H12Z M24 25H60V0L100 50L60 100V75H24Z' },
+  homePlate: { label: 'Pentagon arrow', d: 'M0 0H70L100 50L70 100H0Z' },
   chevron:   { label: 'Chevron',        d: 'M0 0H58L100 50L58 100H0L42 50Z' },
+  bentArrow: { label: 'Bent arrow',     d: 'M0 100V45A30 30 0 0 1 30 15H70V0L100 27.5L70 55V40H30A5 5 0 0 0 25 45V100Z' },
+  uturn:     { label: 'U-turn arrow',   d: 'M0 100V40A40 40 0 0 1 80 40V55H100L70 85L40 55H60V40A20 20 0 0 0 20 40V100Z' },
+  // Flowchart
+  fcProcess:   { label: 'Process',            d: 'M0 0H100V60H0Z' },
+  fcAltProcess:{ label: 'Alternate process',  d: 'M10 0H90Q100 0 100 10V50Q100 60 90 60H10Q0 60 0 50V10Q0 0 10 0Z' },
+  fcDecision:  { label: 'Decision',           d: 'M50 0L100 35L50 70L0 35Z' },
+  fcData:      { label: 'Data',               d: 'M20 0H100L80 60H0Z' },
+  fcPredefined:{ label: 'Predefined process', d: 'M0 0H100V60H0Z M10 0V60 M90 0V60' },
+  fcInternal:  { label: 'Internal storage',   d: 'M0 0H100V60H0Z M15 0V60 M0 12H100' },
+  fcDocument:  { label: 'Document',           d: 'M0 0H100V52C75 40 60 75 35 66C20 60 10 56 0 60Z' },
+  fcTerminator:{ label: 'Terminator',         d: 'M20 0H80A20 20 0 0 1 80 40H20A20 20 0 0 1 20 0Z' },
+  fcPreparation:{ label: 'Preparation',       d: 'M20 0H80L100 30L80 60H20L0 30Z' },
+  fcManualInput:{ label: 'Manual input',      d: 'M0 15L100 0V60H0Z' },
+  fcManualOp:  { label: 'Manual operation',   d: 'M0 0H100L80 60H20Z' },
+  fcConnector: { label: 'Connector',          d: CIRCLE },
+  fcOffPage:   { label: 'Off-page connector', d: 'M0 0H100V70L50 100L0 70Z' },
+  fcCard:      { label: 'Card',               d: 'M20 0H100V60H0V20Z' },
+  fcPunchedTape:{ label: 'Punched tape',      d: 'M0 8C20 -8 30 24 50 8S80 -8 100 8V52C80 68 70 36 50 52S20 68 0 52Z' },
+  fcSumming:   { label: 'Summing junction',   d: CIRCLE + ' M14.64 14.64L85.36 85.36 M85.36 14.64L14.64 85.36' },
+  fcOr:        { label: 'Or',                 d: CIRCLE + ' M50 0V100 M0 50H100' },
+  fcCollate:   { label: 'Collate',            d: 'M0 0H100L0 100H100Z' },
+  fcSort:      { label: 'Sort',               d: 'M50 0L100 50L50 100L0 50Z M0 50H100' },
+  fcExtract:   { label: 'Extract',            d: 'M50 0L100 80H0Z' },
+  fcMerge:     { label: 'Merge',              d: 'M0 0H100L50 80Z' },
+  fcStoredData:{ label: 'Stored data',        d: 'M15 0H100A15 30 0 0 0 100 60H15A15 30 0 0 1 15 0Z' },
+  fcDelay:     { label: 'Delay',              d: 'M0 0H60A40 30 0 0 1 60 60H0Z' },
+  fcDatabase:  { label: 'Database',           d: 'M0 15V85A50 15 0 0 0 100 85V15A50 15 0 0 1 0 15Z M0 15A50 15 0 1 1 100 15A50 15 0 1 1 0 15Z' },
+  fcDisplay:   { label: 'Display',            d: 'M0 30L20 0H80A20 30 0 0 1 80 60H20Z' },
+  // Callouts
   bubble:    { label: 'Speech bubble',  d: 'M50 4C77 4 98 21 98 42C98 63 77 80 50 80C45 80 39 79 34 78L10 96L18 71C8 64 2 54 2 42C2 21 23 4 50 4Z' },
   callout:   { label: 'Speech box',     d: 'M10 4H90Q98 4 98 12V64Q98 72 90 72H44L20 94V72H10Q2 72 2 64V12Q2 4 10 4Z' },
-  cloud:     { label: 'Cloud',          d: 'M26 82C12 82 2 72 2 59C2 47 11 38 23 37C25 23 36 13 50 13C62 13 72 21 75 32C88 32 98 43 98 56C98 70 87 82 74 82Z' },
+  calloutRect: { label: 'Square speech box', d: 'M0 0H100V70H45L20 95V70H0Z' },
+  calloutLeft: { label: 'Callout, pointing left', d: 'M30 0H100V70H30V45L0 35L30 25Z' },
+  thought:   { label: 'Thought bubble', d: 'M26 82C12 82 2 72 2 59C2 47 11 38 23 37C25 23 36 13 50 13C62 13 72 21 75 32C88 32 98 43 98 56C98 70 87 82 74 82Z M14 91A6 6 0 1 0 26 91A6 6 0 1 0 14 91Z M3 100A3.5 3.5 0 1 0 10 100A3.5 3.5 0 1 0 3 100Z' },
+  // Stars and banners
+  star4:     { label: '4-point star',   d: starPath(4, 0.38) },
+  star:      { label: 'Star',           d: starPath(5, 0.42) },
+  star6:     { label: '6-point star',   d: starPath(6, 0.55) },
+  star7:     { label: '7-point star',   d: starPath(7, 0.5) },
+  star8:     { label: '8-point star',   d: starPath(8, 0.6) },
+  star10:    { label: '10-point star',  d: starPath(10, 0.66) },
+  burst:     { label: 'Burst',          d: starPath(12, 0.62) },
+  seal:      { label: 'Seal',           d: starPath(16, 0.84) },
+  star24:    { label: '24-point star',  d: starPath(24, 0.86) },
+  star32:    { label: '32-point star',  d: starPath(32, 0.9) },
+  explosion: { label: 'Explosion',      d: 'M55 0L62 28L86 10L76 36L100 40L78 56L96 80L66 70L60 100L48 74L24 96L30 66L0 62L24 46L4 22L34 30Z' },
+  ribbon:    { label: 'Ribbon banner',  d: 'M0 36H14V20H86V36H100L90 58L100 80H78V64H22V80H0L10 58Z' },
+  waveBanner:{ label: 'Wave banner',    d: 'M0 15C25 -5 40 30 65 18C80 10 90 8 100 12V82C90 78 80 80 65 88C40 100 25 65 0 85Z' },
+  doubleWave:{ label: 'Double wave',    d: 'M0 10C20 0 30 25 50 12S80 0 100 10V90C80 80 70 105 50 90S20 80 0 90Z' },
+  // Shields (the same nine as VCTREDTR's Shield tool)
+  shieldClassic:   { label: 'Classic shield',   d: 'M0 0H100V52C100 84 76 104 50 120C24 104 0 84 0 52Z' },
+  shieldHeater:    { label: 'Heater shield',    d: 'M0 0H100C100 58 82 94 50 120C18 94 0 58 0 0Z' },
+  shieldPointed:   { label: 'Pointed shield',   d: 'M0 0H100V70L50 120L0 70Z' },
+  shieldRound:     { label: 'Round shield',     d: 'M0 0H100V70C100 98 78 120 50 120C22 120 0 98 0 70Z' },
+  shieldArched:    { label: 'Arched shield',    d: 'M0 14Q50 -14 100 14V58' + SHIELD_BOTTOM + 'Z' },
+  shieldDipped:    { label: 'Dipped shield',    d: 'M0 0Q50 24 100 0V58' + SHIELD_BOTTOM + 'Z' },
+  shieldNotched:   { label: 'Notched shield',   d: 'M16 0H84A16 16 0 0 0 100 16V58' + SHIELD_BOTTOM + 'V16A16 16 0 0 0 16 0Z' },
+  shieldPeaked:    { label: 'Peaked shield',    d: 'M0 8C18 10 36 7 50 0C64 7 82 10 100 8V58' + SHIELD_BOTTOM + 'Z' },
+  shieldScalloped: { label: 'Scalloped shield', d: 'M0 10Q12.5 -4 25 10Q37.5 -4 50 10Q62.5 -4 75 10Q87.5 -4 100 10V58' + SHIELD_BOTTOM + 'Z' },
+  // Signs and symbols
+  heart:     { label: 'Heart',          d: 'M50 94C18 70 2 52 2 31C2 15 14 4 28 4C38 4 46 10 50 19C54 10 62 4 72 4C86 4 98 15 98 31C98 52 82 70 50 94Z' },
   bolt:      { label: 'Lightning bolt', d: 'M60 0L12 58H44L32 100L88 36H56L70 0Z' },
   moon:      { label: 'Crescent moon',  d: 'M51.01 4.01A46 46 0 1 0 92.84 66.76A38 38 0 0 1 51.01 4.01Z' },
-  cross:     { label: 'Cross',          d: 'M34 0H66V34H100V66H66V100H34V66H0V34H34Z' },
-  ribbon:    { label: 'Ribbon banner',  d: 'M0 36H14V20H86V36H100L90 58L100 80H78V64H22V80H0L10 58Z' },
+  sun:       { label: 'Sun',            d: sunPath() },
+  cloud:     { label: 'Cloud',          d: 'M26 82C12 82 2 72 2 59C2 47 11 38 23 37C25 23 36 13 50 13C62 13 72 21 75 32C88 32 98 43 98 56C98 70 87 82 74 82Z' },
   pin:       { label: 'Map pin',        d: 'M50 100C50 100 12 60 12 38A38 38 0 1 1 88 38C88 60 50 100 50 100Z' },
-  frame:     { label: 'Border frame',   d: 'M0 0H100V100H0Z M10 10V90H90V10Z' }
+  check:     { label: 'Check mark',     d: 'M0 55L15 40L35 60L85 10L100 25L35 90Z' },
+  xmark:     { label: 'X mark',         d: 'M0 15L15 0L50 35L85 0L100 15L65 50L100 85L85 100L50 65L15 100L0 85L35 50Z' },
+  house:     { label: 'House',          d: 'M50 0L100 45H85V100H60V65H40V100H15V45H0Z' },
+  gear:      { label: 'Gear',           d: gearPath(10) }
 };
+/** The gallery's sections, in order (Recently used comes first, when there are any). */
+const SHAPE_GROUPS = [
+  ['Lines', ['line', 'arrowLine', 'arrowLine2', 'elbow', 'curve', 'arc', 'waveLine', 'zigzag', 'bracketL', 'bracketR', 'braceL', 'braceR']],
+  ['Basic shapes', ['triangle', 'rtriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'decagon', 'dodecagon',
+    'semicircle', 'pie', 'teardrop', 'arch', 'frame', 'halfFrame', 'lshape', 'plaque', 'snip', 'folded', 'can', 'cube', 'donut', 'noSymbol', 'smiley', 'cross']],
+  ['Block arrows', ['arrow', 'arrowLeft', 'arrowUp', 'arrowDown', 'arrow2', 'arrowUpDown', 'arrow4', 'notchedArrow', 'stripedArrow', 'homePlate', 'chevron', 'bentArrow', 'uturn']],
+  ['Flowchart', ['fcProcess', 'fcAltProcess', 'fcDecision', 'fcData', 'fcPredefined', 'fcInternal', 'fcDocument', 'fcTerminator', 'fcPreparation', 'fcManualInput',
+    'fcManualOp', 'fcConnector', 'fcOffPage', 'fcCard', 'fcPunchedTape', 'fcSumming', 'fcOr', 'fcCollate', 'fcSort', 'fcExtract', 'fcMerge', 'fcStoredData', 'fcDelay', 'fcDatabase', 'fcDisplay']],
+  ['Callouts', ['bubble', 'callout', 'calloutRect', 'calloutLeft', 'thought']],
+  ['Stars and banners', ['star4', 'star', 'star6', 'star7', 'star8', 'star10', 'burst', 'seal', 'star24', 'star32', 'explosion', 'ribbon', 'waveBanner', 'doubleWave']],
+  ['Shields', ['shieldClassic', 'shieldHeater', 'shieldPointed', 'shieldRound', 'shieldArched', 'shieldDipped', 'shieldNotched', 'shieldPeaked', 'shieldScalloped']],
+  ['Signs and symbols', ['heart', 'bolt', 'moon', 'sun', 'cloud', 'pin', 'check', 'xmark', 'house', 'gear']]
+];
+/* Recently used shapes: a convenience kept in this browser only (never
+   needed: an empty or blocked store just means no Recently used row). */
+const RECENT_SHAPES_KEY = 'dskedtr-recent-shapes';
+function recentShapes() {
+  try { const v = JSON.parse(localStorage.getItem(RECENT_SHAPES_KEY) || '[]'); return Array.isArray(v) ? v.filter((k) => Object.hasOwn(SHAPES, k)).slice(0, 10) : []; }
+  catch (err) { return []; }
+}
+function noteRecentShape(key) {
+  try { localStorage.setItem(RECENT_SHAPES_KEY, JSON.stringify([key, ...recentShapes().filter((k) => k !== key)].slice(0, 10))); } catch (err) { /* fine */ }
+}
+/** The picture of a shape in the gallery and on the rail button. */
+const shapeIcon = (def) => def.icon || def.d;
 let currentShape = 'star';                           // the Shapes tool draws this one
 /** How tall a shape is for its width, from its own drawing (for a click without a drag). */
 function shapeAspect(key) {
   const def = SHAPES[key];
   if (def.aspect == null) {
     if (!setupPaper()) return 1;
-    const b = new paper.CompoundPath({ pathData: def.d, insert: false }).bounds;
+    const b = new paper.CompoundPath({ pathData: shapeIcon(def), insert: false }).bounds;
     def.box = [b.x, b.y, b.width, b.height];
     def.aspect = b.height / b.width;
   }
   return def.aspect;
 }
-/** Make a shape from the gallery, filling the box r. */
+/** A click without a drag: the shape at its own proportions, fitting a 108 pt (1.5 inch) square at (x, y). */
+function defaultShapeBox(key, x, y) {
+  const a = shapeAspect(key);
+  return a > 1 ? { x, y, w: 108 / a, h: 108 } : { x, y, w: 108, h: 108 * a };
+}
+/** Make a shape from the gallery, filling the box r. (Line entries are made by createShapeLine.) */
 function createShape(key, r) {
   if (!Object.hasOwn(SHAPES, key)) key = 'star';
   if (!setupPaper()) { toast('Shapes need Paper.js, which did not load. Check the internet connection and reload (the one-file edition has it inside).', 6000); return null; }
   const def = SHAPES[key];
+  noteRecentShape(key);
+  if (def.line) return createShapeLine(key, { x1: r.x, y1: r.y + r.h, x2: r.x + r.w, y2: r.y });
   const item = new paper.CompoundPath({ pathData: def.d, insert: false });
   recordUndo('other');
   const count = allObjects().filter((o) => o.type === 'path' && (o.name || '').startsWith(def.label + ' ')).length;
-  const o = fromPaper(item, { fill: '#d1fae5', stroke: '#065f46', strokeWidth: 1, decorative: true, alt: '' }, def.label + ' ' + (count + 1));
+  // Lines in the gallery (open shapes) have an outline and no fill.
+  const look = def.open ? { fill: null, stroke: '#1b1f24', strokeWidth: 2 } : { fill: '#d1fae5', stroke: '#065f46', strokeWidth: 1 };
+  const o = fromPaper(item, Object.assign(look, { decorative: true, alt: '' }), def.label + ' ' + (count + 1));
   o.x = r.x; o.y = r.y; o.w = Math.max(r.w, 1); o.h = Math.max(r.h, 1);
   pageObjs().push(o);
   reindex();
@@ -4851,6 +5386,20 @@ function createShape(key, r) {
   announce(o.name + ' added. It is decoration until you give it alt text.');
   return o;
 }
+/** A straight line from the gallery (Line, Arrow line, Double arrow line), from (x1, y1) to (x2, y2). */
+function createShapeLine(key, seg) {
+  const def = SHAPES[key];
+  noteRecentShape(key);
+  const o = createObject('line', seg);
+  if (def.line !== 'none') {
+    o.arrows = def.line;
+    o.name = def.label + ' ' + (allObjects().filter((x) => x.type === 'line' && (x.name || '').startsWith(def.label + ' ')).length + 1);
+    o.strokeWidth = 1.5;
+    relayoutAndRender();
+    updateInspector();
+  }
+  return o;
+}
 /** The rail button shows the shape the tool will draw. */
 function showShapeButton() {
   const def = SHAPES[currentShape];
@@ -4859,41 +5408,85 @@ function showShapeButton() {
   b.title = 'Shapes: ' + def.label + '. Click again for more shapes (U)';
   const icon = $('shapeToolIcon');
   clear(icon);
-  icon.appendChild(svgEl('path', { d: def.d, 'vector-effect': 'non-scaling-stroke' }));
+  icon.setAttribute('viewBox', shapeViewBox(currentShape));
+  icon.appendChild(svgEl('path', { d: shapeIcon(def), 'vector-effect': 'non-scaling-stroke' }));
 }
-/** The gallery: a grid of buttons, one per shape (arrow keys move, Enter picks). */
+/** A square view around a shape's outline, so every icon is the same size whatever its proportions. */
+function shapeViewBox(key) {
+  shapeAspect(key);
+  const def = SHAPES[key];
+  if (!def.box) return '-8 -8 116 116';
+  const [x, y, w, h] = def.box, s = Math.max(w, h) * 1.16;
+  return [r2(x + w / 2 - s / 2), r2(y + h / 2 - s / 2), r2(s), r2(s)].join(' ');
+}
+/**
+ * The gallery: sections like Publisher's (Lines, Basic shapes, Block
+ * arrows, Flowchart, Callouts, Stars and banners, Shields, Signs and
+ * symbols), with Recently used first. Each shape is a button named for
+ * screen readers; the name of the one under the pointer or focus shows
+ * below. Arrow keys move around (up and down by rows, across sections),
+ * Home and End jump to the first and last, Enter or a click picks.
+ */
+function shapeButton(key) {
+  const def = SHAPES[key];
+  const b = document.createElement('button');
+  b.className = 'shape-choice';
+  b.dataset.shape = key;
+  b.setAttribute('aria-label', def.label);
+  b.title = def.label;
+  const s = svgEl('svg', { viewBox: shapeViewBox(key), 'aria-hidden': 'true', focusable: 'false' });
+  s.appendChild(svgEl('path', { d: shapeIcon(def), 'vector-effect': 'non-scaling-stroke', class: def.open || def.line ? 'open' : '' }));
+  b.appendChild(s);
+  const say = () => setText('shapeName', def.label);
+  b.addEventListener('focus', say);
+  b.addEventListener('mouseenter', say);
+  b.addEventListener('click', () => {
+    currentShape = key;
+    showShapeButton();
+    $('shapePop').hidePopover();
+    setTool('shape');
+    $('shapeToolBtn').focus();
+    announce(def.label + ': drag on the page to draw it' + (def.line ? '' : ' (Shift keeps it in proportion)') + ', or press Enter on the page for one in the middle.');
+  });
+  return b;
+}
+/** One section of the gallery: a heading and its shapes. */
+function shapeSection(title, keys, id) {
+  const sec = document.createElement('div');
+  sec.className = 'shape-section';
+  const h = document.createElement('h3');
+  h.id = 'shapeSec-' + id;
+  h.textContent = title;
+  const grid = document.createElement('div');
+  grid.className = 'shape-grid';
+  grid.setAttribute('role', 'group');
+  grid.setAttribute('aria-labelledby', h.id);
+  for (const key of keys) grid.appendChild(shapeButton(key));
+  sec.append(h, grid);
+  return sec;
+}
 function wireShapes() {
-  const grid = $('shapeGrid');
-  for (const [key, def] of Object.entries(SHAPES)) {
-    const b = document.createElement('button');
-    b.className = 'shape-choice';
-    b.dataset.shape = key;
-    b.setAttribute('aria-label', def.label);
-    b.title = def.label;
-    const s = svgEl('svg', { viewBox: '-8 -8 116 116', 'aria-hidden': 'true', focusable: 'false' });
-    s.appendChild(svgEl('path', { d: def.d, 'vector-effect': 'non-scaling-stroke' }));
-    const name = document.createElement('span');
-    name.textContent = def.label;
-    b.append(s, name);
-    b.addEventListener('click', () => {
-      currentShape = key;
-      showShapeButton();
-      $('shapePop').hidePopover();
-      setTool('shape');
-      $('shapeToolBtn').focus();
-      announce(def.label + ': drag on the page to draw it (Shift keeps it in proportion), or press Enter on the page for one in the middle.');
-    });
-    grid.appendChild(b);
-  }
-  // Arrow keys move around the grid (4 across).
-  grid.addEventListener('keydown', (e) => {
-    const bs = [...grid.querySelectorAll('button')], i = bs.indexOf(document.activeElement);
+  const all = $('shapeGrid');
+  all.appendChild(shapeSection('Recently used', [], 'recent'));
+  SHAPE_GROUPS.forEach(([title, keys], i) => all.appendChild(shapeSection(title, keys, i)));
+  // Arrow keys: across in reading order; up and down to the nearest button in the row above or below.
+  all.addEventListener('keydown', (e) => {
+    const bs = [...all.querySelectorAll('button')].filter((b) => b.offsetParent), i = bs.indexOf(document.activeElement);
     if (i < 0) return;
-    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 4, ArrowUp: -4 }[e.key];
     if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); bs[e.key === 'Home' ? 0 : bs.length - 1].focus(); return; }
-    if (!step) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); bs[Math.max(0, Math.min(bs.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1)))].focus(); return; }
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     e.preventDefault();
-    bs[Math.max(0, Math.min(bs.length - 1, i + step))].focus();
+    const here = bs[i].getBoundingClientRect(), down = e.key === 'ArrowDown';
+    let best = null, bestScore = Infinity;
+    for (const b of bs) {
+      const r = b.getBoundingClientRect();
+      const dy = down ? r.top - here.top : here.top - r.top;
+      if (dy < 4) continue;                                     // only rows below (or above)
+      const score = dy * 1000 + Math.abs(r.left - here.left);    // the nearest row first, then the nearest column
+      if (score < bestScore) { bestScore = score; best = b; }
+    }
+    if (best) { best.focus(); best.scrollIntoView({ block: 'nearest' }); }
   });
   const pop = $('shapePop');
   pop.addEventListener('toggle', (e) => {
@@ -4904,9 +5497,15 @@ function wireShapes() {
     const wide = window.innerWidth > 760;
     pop.style.left = (wide ? r.right + 8 : Math.max(8, Math.min(r.left, window.innerWidth - w - 8))) + 'px';
     pop.style.top = (wide ? Math.max(8, Math.min(r.top, window.innerHeight - h - 8)) : r.bottom + 6) + 'px';
+    // Recently used: refilled each time (other tabs may have drawn shapes too).
+    const recent = recentShapes(), recentGrid = $('shapeSec-recent').nextElementSibling;
+    clear(recentGrid);
+    for (const key of recent) recentGrid.appendChild(shapeButton(key));
+    $('shapeSec-recent').parentElement.hidden = !recent.length;
     for (const b of pop.querySelectorAll('[data-shape]')) b.setAttribute('aria-pressed', String(b.dataset.shape === currentShape));
-    const cur = pop.querySelector('[data-shape="' + currentShape + '"]');
-    if (cur) cur.focus();
+    const cur = [...pop.querySelectorAll('[data-shape="' + currentShape + '"]')].pop() || pop.querySelector('[data-shape]');
+    if (cur) { cur.focus(); cur.scrollIntoView({ block: 'nearest' }); }
+    setText('shapeName', SHAPES[currentShape].label);
   });
   // The rail button: pick the Shapes tool; pressed again (or when already picked), open the gallery.
   $('shapeToolBtn').addEventListener('click', () => {
@@ -5503,7 +6102,7 @@ function wirePointer() {
     }
     if (drag.kind === 'create') {
       let q = p;
-      if (e.shiftKey) q = constrain(drag.start, p, drag.type === 'line');
+      if (e.shiftKey) q = constrain(drag.start, p, drag.type === 'line' || (drag.type === 'shape' && !!SHAPES[currentShape].line));
       const snapped = snapPoint(q, e.altKey, new Set());
       drag.end = e.shiftKey ? q : snapped.p;
       drag.moved = drag.moved || Math.hypot(drag.end.x - drag.start.x, drag.end.y - drag.start.y) > 3 * onePx();
@@ -5591,7 +6190,7 @@ function renderCreatePreview(d) {
   clear(layers.handles);
   const a = d.start, b = d.end;
   const style = { fill: 'none', stroke: '#065f46', 'stroke-width': 1, 'stroke-dasharray': '4 3', 'vector-effect': 'non-scaling-stroke' };
-  if (d.type === 'line') layers.handles.appendChild(svgEl('line', Object.assign({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }, style)));
+  if (d.type === 'line' || (d.type === 'shape' && SHAPES[currentShape].line)) layers.handles.appendChild(svgEl('line', Object.assign({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }, style)));
   else if (d.type === 'ellipse') { const r = rectFrom(a, b); layers.handles.appendChild(svgEl('ellipse', Object.assign({ cx: r.x + r.w / 2, cy: r.y + r.h / 2, rx: r.w / 2, ry: r.h / 2 }, style))); }
   else if (d.type === 'shape') {
     // The shape's own outline, stretched to the box being dragged.
@@ -5632,7 +6231,12 @@ function finishCreate(d) {
   }
   let r = rectFrom(a, d.end);
   if (d.type === 'shape') {
-    if (!d.moved || r.w < 9 || r.h < 9) r = { x: a.x, y: a.y, w: 108, h: 108 * shapeAspect(currentShape) };
+    if (SHAPES[currentShape].line) {                 // Line, Arrow line: from where the drag starts to where it ends
+      const b = d.moved ? d.end : { x: a.x + 108, y: a.y };
+      createShapeLine(currentShape, { x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+      return;
+    }
+    if (!d.moved || r.w < 9 || r.h < 9) r = defaultShapeBox(currentShape, a.x, a.y);
     createShape(currentShape, r);
     return;
   }
@@ -5844,6 +6448,9 @@ function updateInspector() {
   show('secPicture', !!(one && one.type === 'picture' && !typing));
   if (one && one.type === 'picture' && !typing) fillPicture(one);
   show('secArrange', picked.length > 0 && !typing);
+  const wrapList = typing ? [] : picked.filter((o) => o.type !== 'text');
+  show('secWrap', wrapList.length > 0);
+  if (wrapList.length) fillWrap(wrapList);
   show('secChars', typing);
   show('secPara', typing);
   const storyId = typing ? activeStoryId : (one && one.type === 'text' ? one.story : null);
@@ -5935,6 +6542,8 @@ function fillLook(o) {
   if (o.stroke) { setField($('strokeColor'), o.stroke); setField($('strokeHex'), o.stroke); }
   $('strokeColor').disabled = $('strokeHex').disabled = !o.stroke;
   setField($('strokeWidth'), o.strokeWidth);
+  show('arrowsRow', isLine);
+  if (isLine) setField($('lineArrows'), o.arrows || 'none');
   const roundable = o.type === 'rect' || (o.type === 'picture' && o.frameShape !== 'ellipse');
   show('radiusRow', roundable);
   if (roundable) setField($('cornerRadius'), toU(o.radius || 0));
@@ -6181,6 +6790,11 @@ function wireInspector() {
       if (part === 'stroke' && o.stroke && !o.strokeWidth) { o.strokeWidth = 1; relayoutAndRender(); updateInspector(); }
     });
   }
+  $('lineArrows').addEventListener('change', () => {
+    const v = $('lineArrows').value;
+    setProp('other', 'arrows', v === 'none' ? undefined : v);
+    announce('Arrowheads: ' + $('lineArrows').selectedOptions[0].textContent.toLowerCase());
+  });
   $('strokeWidth').addEventListener('input', () => {
     const v = parseFloat($('strokeWidth').value);
     if (isFinite(v)) setProp('field:', 'strokeWidth', Math.max(0, Math.min(72, v)));
@@ -7338,7 +7952,12 @@ function showPage() {
 function createInMiddle(type) {
   const cx = PAGE.width / 2, cy = PAGE.height / 2;
   if (type === 'picture') { choosePicture({ point: { x: cx, y: cy } }); return; }
-  if (type === 'shape') { const h = 108 * shapeAspect(currentShape); createShape(currentShape, { x: cx - 54, y: cy - h / 2, w: 108, h }); return; }
+  if (type === 'shape') {
+    if (SHAPES[currentShape].line) { createShapeLine(currentShape, { x1: cx - 54, y1: cy, x2: cx + 54, y2: cy }); return; }
+    const r = defaultShapeBox(currentShape, 0, 0);
+    createShape(currentShape, { x: cx - r.w / 2, y: cy - r.h / 2, w: r.w, h: r.h });
+    return;
+  }
   if (type === 'line') createObject('line', { x1: cx - 54, y1: cy, x2: cx + 54, y2: cy });
   else if (type === 'text') createObject('text', { x: cx - 72, y: cy - 36, w: 144, h: 72 });
   else createObject(type, { x: cx - 36, y: cy - 36, w: 72, h: 72 });
@@ -8586,7 +9205,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 3;                         // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts)
+const PROJECT_VERSION = 5;                         // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -8989,6 +9608,7 @@ function checkObject(r, known, groups) {
     o.story = checkId(r.story);
   } else if (r.type === 'line') {
     o.x1 = num(r.x1, -POS, POS); o.y1 = num(r.y1, -POS, POS); o.x2 = num(r.x2, -POS, POS); o.y2 = num(r.y2, -POS, POS);
+    if (['start', 'end', 'both'].includes(r.arrows)) o.arrows = r.arrows;
     look(false);
   } else if (r.type === 'picture') {
     box();
@@ -9016,6 +9636,10 @@ function checkObject(r, known, groups) {
   } else {
     box();
     look(true);
+  }
+  // Text wrap (pictures and shapes).
+  if (o.type !== 'text' && r.wrap && typeof r.wrap === 'object' && WRAP_MODES.includes(r.wrap.mode) && r.wrap.mode !== 'none') {
+    o.wrap = { mode: r.wrap.mode, gap: r.wrap.gap == null ? 9 : num(r.wrap.gap, 0, 144) };
   }
   // Rounded corners (rectangles and rectangular picture frames).
   if ((o.type === 'rect' || o.type === 'picture') && r.radius != null) { const rad = num(r.radius, 0, POS); if (rad) o.radius = rad; }
@@ -9360,7 +9984,12 @@ function pdfShape(ops, o, L, op) {
   const hasStroke = !!(o.stroke && o.strokeWidth > 0);
   if (hasStroke) ops.push(L.setStrokingRgbColor(...rgb01(o.stroke)), L.setLineWidth(o.strokeWidth), L.setLineCap(L.LineCapStyle.Butt));
   if (o.type === 'line') {
-    if (hasStroke) ops.push(L.moveTo(o.x1, o.y1), L.lineTo(o.x2, o.y2), L.stroke());
+    if (!hasStroke) return;
+    const lp = lineParts(o);
+    ops.push(L.moveTo(lp.x1, lp.y1), L.lineTo(lp.x2, lp.y2), L.stroke());
+    for (const h of lp.heads) {
+      ops.push(L.setFillingRgbColor(...rgb01(o.stroke)), L.moveTo(h[0][0], h[0][1]), L.lineTo(h[1][0], h[1][1]), L.lineTo(h[2][0], h[2][1]), L.closePath(), op(L.PDFOperatorNames.FillNonZero));
+    }
     return;
   }
   const hasFill = !!o.fill;
@@ -9546,8 +10175,10 @@ async function pageCanvas(pi, k, opts = {}) {
     if (o.type === 'text') {
       for (const run of texts[o.id] || []) { g.fillStyle = run.fill; g.fill(new Path2D(run.d)); }
     } else if (o.type === 'line') {
-      const p = new Path2D(); p.moveTo(o.x1, o.y1); p.lineTo(o.x2, o.y2);
+      const lp = lineParts(o);
+      const p = new Path2D(); p.moveTo(lp.x1, lp.y1); p.lineTo(lp.x2, lp.y2);
       strokeIt(p);
+      if (o.stroke && o.strokeWidth > 0) for (const h of lp.heads) { g.fillStyle = o.stroke; g.fill(new Path2D(headPath(h))); }
     } else if (o.type === 'picture') {
       const im = o.image && images[o.image];
       if (im && imageFiles[o.image]) {
@@ -9628,6 +10259,26 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.11.0", date: "2026-10-06", title: "", notes: [
+    "115 shapes, in sections like Publisher's (the Shapes tool, U, then U again or a second click for the gallery): Recently used, Lines, Basic shapes, Block arrows, Flowchart, Callouts, Stars and banners, Shields and Signs and symbols. The gallery is a grid of small pictures; the name of the one under the pointer or focus shows below it (and every button is named for screen readers). Arrow keys move around it (up and down by rows, across sections), Home and End jump to the ends.",
+    "The nine shields from VCTREDTR, with exactly the same outlines: Classic, Heater, Pointed, Round, Arched, Dipped, Notched, Peaked and Scalloped.",
+    "New lines: Arrow line and Double arrow line (drawn from where the drag starts to where it ends; Shift for 45 degrees), plus curves, an arc, an elbow, a wavy line, a zigzag, brackets and braces (outline only).",
+    "Arrowheads on any line: Look, Arrowheads: none, at the end, at the start, or both. They grow with the line's thickness and print in the PDF and PNG.",
+    "New basic shapes (trapezoid, heptagon to dodecagon, pie, teardrop, arch, half frame, L-shape, plaque, snipped and folded corners, cylinder, cube, ring, \"no\" sign, smiley face), block arrows (four directions, up-down, four-way, notched, striped, pentagon, bent and U-turn), 25 flowchart shapes, more callouts (square, pointing left, thought bubble), more stars (4 to 32 points, an explosion) and banners (wave, double wave), and symbols (sun, check mark, X mark, house, gear).",
+    "A click without a drag makes a shape at its own proportions, fitting a 1.5 inch square, so a bracket comes out tall and thin.",
+    "A line from the gallery can be picked by clicking on the line itself.",
+    "Recently used shapes are remembered in this browser only.",
+    "Project files are now version 5 (lines can have arrowheads)."
+  ] },
+  { version: "0.10.0", date: "2026-10-06", title: "", notes: [
+    "Phase 2 begins: text wrap.",
+    "Text wrap for any picture, shape or line: pick it, open Text wrap in the Inspector, and choose how text goes around it: - No wrap (as before): text runs over or under it. - Around its box. - Tight, around its shape: an ellipse, a star, a merged shape, or, for a PNG with a see-through background, around what shows (the see-through part is left out). A JPEG photo has no see-through parts, so tight follows its frame. - Above and below only: nothing beside it. - Distance from the text, in the units you use (1/8 inch to start).",
+    "A line goes on the wider side of what it wraps around, never on both sides at once (easier to read), and needs room for about six letters; where there isn't, or a word would have to be cut in two, the text carries on below.",
+    "Picked objects show their wrap: a dashed outline (traced, for a PNG) with a pale band as wide as the distance.",
+    "A wrap never pushes text out of a box that sits entirely on top of it, so a coloured panel can wrap the column beside it and still hold its own text.",
+    "Works with turned text boxes, linked boxes, undo, copy and paste, saved projects (now version 4), the PDF and the PNG.",
+    "Fixed: fields with units in their labels (Rounded corners, Distance, column Gap, Page setup's Width and Height) showed the label broken over three lines."
+  ] },
   { version: "0.9.0", date: "2026-10-06", title: "", notes: [
     "Nine more fonts, built in (all free, SIL Open Font License), each with bold and italics unless noted: Andika (made for beginning readers), Lexend (made for easy reading; no italics), Comfortaa (rounded; no italics), Comic Neue (casual), Literata (serif for long reading), Fraunces (headline serif), Zilla Slab (friendly slab), Archivo Black (big, blocky headlines; one weight) and Atkinson Hyperlegible Mono. Atkinson Hyperlegible stays the default. Pick one for a paragraph style (Paragraph, Font, with a sample line) or for any words (Characters, Font). Fonts load the first time they are used, so the app still starts quickly. A font without bold or italics uses the nearest style it has, and Characters says so.",
     "Your own fonts: add .ttf, .otf or .woff files (Document, \"Add font files...\", the end of either font list, or drop them on the page). They are grouped into families by the name inside them and saved inside the project, so it opens the same anywhere. Each file is checked first (a real font, at most 15 MB, 40 per document); WOFF2 and font collections can't be read yet, and DSKEDTR says so. Remove one from Document: words using it go back to Atkinson Hyperlegible (one undo step).",
@@ -10227,6 +10878,7 @@ async function start() {
   wireClipboard();
   wireStyleEditor();
   wireChars();
+  wireWrap();
   wireA11y();
   wireAltDialog();
   wirePictureInput();

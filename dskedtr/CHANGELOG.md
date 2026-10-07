@@ -1,5 +1,65 @@
 # DSKEDTR changelog
 
+## 0.11.0 - 2026-10-06
+
+- **115 shapes, in sections like Publisher's** (the Shapes tool, U, then U
+  again or a second click for the gallery): Recently used, Lines, Basic
+  shapes, Block arrows, Flowchart, Callouts, Stars and banners, Shields and
+  Signs and symbols. The gallery is a grid of small pictures; the name of
+  the one under the pointer or focus shows below it (and every button is
+  named for screen readers). Arrow keys move around it (up and down by
+  rows, across sections), Home and End jump to the ends.
+- **The nine shields from VCTREDTR**, with exactly the same outlines:
+  Classic, Heater, Pointed, Round, Arched, Dipped, Notched, Peaked and
+  Scalloped.
+- **New lines:** Arrow line and Double arrow line (drawn from where the
+  drag starts to where it ends; Shift for 45 degrees), plus curves, an arc,
+  an elbow, a wavy line, a zigzag, brackets and braces (outline only).
+- **Arrowheads on any line:** Look, Arrowheads: none, at the end, at the
+  start, or both. They grow with the line's thickness and print in the
+  PDF and PNG.
+- New basic shapes (trapezoid, heptagon to dodecagon, pie, teardrop, arch,
+  half frame, L-shape, plaque, snipped and folded corners, cylinder, cube,
+  ring, "no" sign, smiley face), block arrows (four directions, up-down,
+  four-way, notched, striped, pentagon, bent and U-turn), 25 flowchart
+  shapes, more callouts (square, pointing left, thought bubble), more
+  stars (4 to 32 points, an explosion) and banners (wave, double wave),
+  and symbols (sun, check mark, X mark, house, gear).
+- A click without a drag makes a shape at its own proportions, fitting a
+  1.5 inch square, so a bracket comes out tall and thin.
+- A line from the gallery can be picked by clicking on the line itself.
+- Recently used shapes are remembered in this browser only.
+- Project files are now version 5 (lines can have arrowheads).
+
+## 0.10.0 - 2026-10-06
+
+Phase 2 begins: text wrap.
+
+- **Text wrap** for any picture, shape or line: pick it, open Text wrap in
+  the Inspector, and choose how text goes around it:
+  - **No wrap** (as before): text runs over or under it.
+  - **Around its box.**
+  - **Tight**, around its shape: an ellipse, a star, a merged shape, or,
+    for a **PNG with a see-through background, around what shows** (the
+    see-through part is left out). A JPEG photo has no see-through parts,
+    so tight follows its frame.
+  - **Above and below only**: nothing beside it.
+  - **Distance from the text**, in the units you use (1/8 inch to start).
+- A line goes on the wider side of what it wraps around, never on both
+  sides at once (easier to read), and needs room for about six letters;
+  where there isn't, or a word would have to be cut in two, the text
+  carries on below.
+- Picked objects show their wrap: a dashed outline (traced, for a PNG)
+  with a pale band as wide as the distance.
+- A wrap never pushes text out of a box that sits entirely on top of it,
+  so a coloured panel can wrap the column beside it and still hold its
+  own text.
+- Works with turned text boxes, linked boxes, undo, copy and paste, saved
+  projects (now version 4), the PDF and the PNG.
+- Fixed: fields with units in their labels (Rounded corners, Distance,
+  column Gap, Page setup's Width and Height) showed the label broken over
+  three lines.
+
 ## 0.9.0 - 2026-10-06
 
 - **Nine more fonts, built in** (all free, SIL Open Font License), each
