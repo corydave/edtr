@@ -206,6 +206,7 @@ body {
 .quick-menu .qm-key { margin-left: auto; padding-left: 12px; font-size: 12px; color: var(--muted); }
 .quick-menu .qm-tick { width: 16px; flex: none; text-align: center; font-weight: 700; color: var(--accent-text); }
 .quick-menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 4px; }
+.quick-menu .qm-head { margin: 2px 10px 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
 @media (pointer: coarse) { .quick-menu button { padding: 12px 12px; } }
 #inspectorBtn { position: relative; }
 #inspectorBtn[aria-pressed="false"].has-pick::after { content: ''; position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--panel); }      /* let grid columns shrink instead of pushing the page wider */
@@ -363,6 +364,13 @@ input[type="text"], textarea.field-text {
 .filmstrip { display: flex; gap: 8px; align-items: stretch; background: var(--panel); border-top: 1px solid var(--line); padding: 6px 8px; min-width: 0; }
 .film-tools { display: flex; flex-direction: column; justify-content: center; gap: 2px; }
 .film-tools .icon-btn { width: 32px; height: 30px; }
+.filmstrip { position: relative; }               /* the page pill is placed against it */
+/* The page pill: the quick-bar look, floating just above the filmstrip over
+   the page that was clicked. A greyed button (aria-disabled) can't act: the
+   first page can't move left, the only page can't be deleted. */
+#pagePill { bottom: calc(100% + 6px); }
+.quick-bar button[aria-disabled="true"] { opacity: .35; cursor: default; }
+.quick-bar button[aria-disabled="true"]:hover { background: transparent; }
 .page-list { display: flex; gap: 10px; list-style: none; margin: 0; padding: 4px; overflow-x: auto; flex: 1; min-width: 0; }
 .thumb { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
 .thumb-master { display: inline-block; max-width: 4.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 10px; font-weight: 700; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-text); }
@@ -523,7 +531,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
   box-shadow: 0 24px 70px rgba(0, 0, 0, .35);
   font: inherit; font-size: 14px; line-height: 1.45;
 }
-.suite-splash { width: min(620px, 94vw); max-height: 92vh; overflow: auto; }
+.suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
+  max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
 .suite-backup-dlg { width: min(440px, 92vw); }
 .suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
 .suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
@@ -584,12 +593,13 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash-family { margin-top: 20px; padding-top: 14px;
   border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
 .suite-splash-family h3 { margin: 0 0 10px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
-/* An even grid: with eight apps, the seven others fit one line on a computer
-   and wrap into two rows on a phone (4 + 3). */
+/* An even grid: with nine apps, the eight others fit one line on a computer
+   (the splash is 660px wide so each gets about 70px, room for the longest
+   names, SCRNCSTR and VCTREDTR) and wrap into two rows on a phone (4 + 4). */
 ul.suite-splash-list { list-style: none; margin: 0; padding: 0; display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 4px; }
+  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 4px; }
 ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
-@media (max-width: 560px) { ul.suite-splash-list { grid-template-columns: repeat(4, 1fr); } }   /* phones: 4 + 3 */
+@media (max-width: 560px) { ul.suite-splash-list { grid-template-columns: repeat(4, 1fr); } }   /* phones: 4 + 4 */
 .suite-splash-app {
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 2px;
   border-radius: 10px; color: inherit; text-decoration: none; min-height: 44px;
@@ -675,7 +685,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   .work.inspector-hidden .side > :not(.sheet-handle) { display: none; }
   /* A smaller filmstrip, so the page gets the room. */
   .filmstrip { padding: 4px 8px; gap: 6px; }
-  .film-tools { display: grid; grid-template-columns: repeat(3, 34px); align-content: center; gap: 2px; }
+  .film-tools { display: grid; grid-template-columns: 34px; align-content: center; gap: 2px; }
   .film-tools .icon-btn { width: 34px; height: 30px; }
   .thumb { padding: 2px; }
   .thumb-svg { height: 52px; }
@@ -892,18 +902,10 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <!-- The pages, along the bottom (the suite's filmstrip). -->
   <div class="filmstrip">
     <div class="film-tools" role="group" aria-label="Pages">
+      <!-- +: a new page after this one. With master pages in the document it
+           first asks which master the new page uses (a small menu). -->
       <button class="icon-btn" id="addPageBtn" aria-label="Add a page after this one" title="Add a page after this one">
-        <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 9v6M9 12h6"/></svg>
-      </button>
-      <button class="icon-btn" id="dupPageBtn" aria-label="Duplicate this page" title="Duplicate this page">
-        <svg viewBox="0 0 24 24"><rect x="8" y="7" width="12" height="15" rx="2"/><path d="M5 17V4a2 2 0 0 1 2-2h9"/></svg>
-      </button>
-      <button class="icon-btn" id="delPageBtn" aria-label="Delete this page" title="Delete this page">
-        <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4h6v3"/></svg>
-      </button>
-      <!-- Which master page the page showing uses: a small menu (it hides while the masters are showing). -->
-      <button class="icon-btn" id="pageMasterBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="pageMasterMenu" aria-label="Master page for this page" title="Master page for this page">
-        <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><rect x="8" y="6" width="8" height="3" rx=".5" fill="currentColor"/><path d="M8 13h8M8 16.5h5"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
       </button>
       <!-- Master pages: the filmstrip lists them instead of the pages while this is pressed. -->
       <button class="icon-btn tb-toggle" id="masterMode" aria-pressed="false" aria-label="Master pages" title="Master pages: things that show on many pages (a masthead, page numbers)">
@@ -912,8 +914,25 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     </div>
     <ul class="page-list" id="pageList" role="listbox" aria-label="Pages" aria-orientation="horizontal"
         aria-describedby="filmHelp"></ul>
+    <!-- The page pill: opens above a page when it is clicked or tapped (or when
+         the keyboard is in the filmstrip: Tab from the pages). Move left and
+         right are the no-drag way to reorder pages (dragging still works). -->
+    <div class="quick-bar" id="pagePill" role="toolbar" aria-label="Page" hidden>
+      <button type="button" data-pact="left" aria-label="Move page left" title="Move page left (Alt+Left)">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button type="button" data-pact="right" aria-label="Move page right" title="Move page right (Alt+Right)">
+        <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+      <span class="qb-sep" aria-hidden="true"></span>
+      <!-- Which master page this page uses: a small menu (hidden while the masters are showing). -->
+      <button type="button" data-pact="master" id="pageMasterBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="pageMasterMenu" aria-label="Master page for this page" title="Master page for this page">
+        <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><rect x="8" y="6" width="8" height="3" rx=".5" fill="currentColor"/><path d="M8 13h8M8 16.5h5"/></svg></button>
+      <button type="button" data-pact="duplicate" id="dupPageBtn" aria-label="Duplicate this page" title="Duplicate this page">
+        <svg viewBox="0 0 24 24"><rect x="8" y="7" width="12" height="15" rx="2"/><path d="M5 17V4a2 2 0 0 1 2-2h9"/></svg></button>
+      <button type="button" data-pact="delete" id="delPageBtn" class="danger" aria-label="Delete this page" title="Delete this page">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4h6v3"/></svg></button>
+    </div>
     <span id="deskKeys" class="sr-only">Arrow keys move what is picked, Delete removes it, Enter types in a picked text box, and Alt+F10 goes to its quick actions. Question mark lists every key.</span>
-    <span id="filmHelp" class="sr-only">Left and Right go to a page. Alt with Left or Right moves the page.</span>
+    <span id="filmHelp" class="sr-only">Left and Right go to a page. Alt with Left or Right moves the page. Tab goes on to the page's buttons: move, master page, duplicate, delete.</span>
   </div>
   </div>
 
@@ -1278,7 +1297,10 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <p class="muted" style="font-size:12px;margin-bottom:0">Pick one, then drag on the page. Shift keeps it in proportion. Round a rectangle's corners in Look.</p>
 </div>
 
-<!-- ===================== MASTER FOR THIS PAGE (a menu from the filmstrip) ===================== -->
+<!-- ===================== NEW PAGE: WHICH MASTER (a menu from the filmstrip's +) ===================== -->
+<div class="quick-menu" id="addPageMenu" popover role="menu" aria-label="New page"></div>
+
+<!-- ===================== MASTER FOR THIS PAGE (a menu from the page pill) ===================== -->
 <div class="quick-menu" id="pageMasterMenu" popover role="menu" aria-labelledby="pageMasterBtn"></div>
 
 <!-- ===================== GUIDES AND GRID (a popover from the top bar) ===================== -->
@@ -1430,7 +1452,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <h3>3. Pictures and shapes</h3>
       <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector).</p>
       <h3>4. Pages</h3>
-      <p>The filmstrip along the bottom shows every page: add, copy, delete and drag them into order there.</p>
+      <p>The filmstrip along the bottom shows every page. + adds one after the page showing (with master pages, it asks which one the new page uses). Click or tap a page for its buttons: move it left or right, its master page, duplicate, delete. You can also drag pages into order, or use Alt with Left or Right.</p>
       <h3>5. Reading order</h3>
       <p>Screen readers read each page in its reading order: the Reading order section of the Inspector, or the Reading order tool (N), where you click things in the order they should be read.</p>
       <h3>Check it</h3>
@@ -1520,7 +1542,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.15.0';
+const APP_VERSION = '0.16.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -5148,16 +5170,21 @@ function insertIntoStory(text) {
 
 function blankPage() { return { id: newId('p'), objects: [], readingOrder: [], readingOrderAuto: true }; }
 
-function addPage() {
+/**
+ * A new page after the one showing. masterId: the master it uses ('' for
+ * none); left out, it uses the same master as the page before it.
+ */
+function addPage(masterId) {
   if (editingMaster()) { addMaster(); return; }
   recordUndo('other');
   const pg = blankPage();
-  if (curPage().master) pg.master = curPage().master;       // a new page uses the same master as the one before it
+  if (typeof masterId === 'string') { if (masterId && masterById(masterId)) pg.master = masterId; }
+  else if (curPage().master) pg.master = curPage().master;  // a new page uses the same master as the one before it
   doc.pages.splice(pageIndex + 1, 0, pg);
   reindex();
   goToPage(pageIndex + 1);
   renderFilmstrip();
-  announce('Added page ' + (pageIndex + 1) + ' of ' + doc.pages.length);
+  announce('Added page ' + (pageIndex + 1) + ' of ' + doc.pages.length + (pg.master ? ', using ' + masterById(pg.master).name : ''));
 }
 
 /** A copy of the page showing, right after it. Text boxes keep the text they show, unlinked. */
@@ -6982,8 +7009,7 @@ function showPageMasterBtn() {
 }
 function wirePageMasterMenu() {
   const b = $('pageMasterBtn'), menu = $('pageMasterMenu');
-  b.addEventListener('click', () => { fillPageMasterMenu(); openMenuFrom(menu, b, 'above'); });
-  wireMenu(menu, b);
+  wireMenu(menu, b);                                  // it opens from the page pill (see wirePagePill)
 }
 
 /** Alt+F10: move the keyboard into the pill. True if it is showing. */
@@ -8146,13 +8172,150 @@ function renderFilmstrip() {
   if (hadFocus) focusThumb();
   const cur = $('thumb-' + curPage().id);
   if (cur) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  $('delPageBtn').disabled = !masters && doc.pages.length < 2;
   showPageMasterBtn();
-  // The three buttons act on masters while the masters are showing.
+  // The buttons act on masters while the masters are showing.
   const what = masters ? 'master page' : 'page';
   for (const [id, words] of [['addPageBtn', 'Add a ' + what + (masters ? '' : ' after this one')], ['dupPageBtn', 'Duplicate this ' + what], ['delPageBtn', 'Delete this ' + what]]) {
     $(id).setAttribute('aria-label', words); $(id).title = words;
   }
+  $('addPageBtn').setAttribute('aria-haspopup', !masters && masterList().length ? 'menu' : 'false');
+  updatePagePill();
+}
+
+/* ---------- The page pill ----------
+   Click or tap a page in the filmstrip and a small pill opens above it:
+     - Move left / Move right (the no-drag way to put pages in order: needed
+       for touch screens, and for anyone who can't drag - WCAG 2.5.7);
+     - Master page (which master this page uses: a small menu);
+     - Duplicate and Delete.
+   While the master pages are showing it acts on the master: Duplicate and
+   Delete only. It also opens when the keyboard comes into the filmstrip (Tab
+   from the pages reaches it), and closes on a click elsewhere, on Escape,
+   or when the keyboard leaves. */
+let pagePillOpen = false;
+/** Put the keyboard back on the page's thumbnail without that reopening the pill. */
+function focusThumbQuietly() { pagePillQuiet = true; focusThumb(); pagePillQuiet = false; }
+let pagePillQuiet = false;
+function setPagePill(open) {
+  pagePillOpen = open;
+  updatePagePill();
+}
+function updatePagePill() {
+  const pill = $('pagePill');
+  if (!pill) return;
+  if (!pagePillOpen || printPreview) {
+    if (pill.contains(document.activeElement)) focusThumbQuietly();
+    pill.hidden = true;
+    return;
+  }
+  const masters = editingMaster();
+  const last = masters ? pageCount() - 1 : doc.pages.length - 1, first = masters ? doc.pages.length : 0;
+  const shown = { left: !masters, right: !masters, master: !masters, duplicate: true, delete: true };
+  for (const b of pill.querySelectorAll('button')) b.hidden = !shown[b.dataset.pact];
+  pill.querySelector('.qb-sep').hidden = masters;
+  // Greyed, not removed, so the buttons don't jump about: the ends can't move further, the only page can't go.
+  const off = { left: pageIndex <= first, right: pageIndex >= last, delete: !masters && doc.pages.length < 2 };
+  for (const [act, isOff] of Object.entries(off)) pill.querySelector('[data-pact=' + act + ']').setAttribute('aria-disabled', String(isOff));
+  pill.setAttribute('aria-label', masters ? curPage().name : 'Page ' + (pageIndex + 1) + ' of ' + doc.pages.length);
+  pill.hidden = false;
+  const btns = [...pill.querySelectorAll('button')].filter((b) => !b.hidden);
+  if (!btns.some((b) => b.tabIndex === 0)) btns.forEach((b, i) => { b.tabIndex = i ? -1 : 0; });
+  placePagePill();
+}
+/** Centre the pill above the page's thumbnail, inside the filmstrip's width. */
+function placePagePill() {
+  const pill = $('pagePill'), strip = pill.parentElement.getBoundingClientRect();
+  const thumb = $('thumb-' + curPage().id);
+  if (!thumb || pill.hidden) return;
+  const r = thumb.getBoundingClientRect(), w = pill.offsetWidth;
+  const x = Math.max(4, Math.min(strip.width - w - 4, r.left + r.width / 2 - strip.left - w / 2));
+  pill.style.left = Math.round(x) + 'px';
+}
+function wirePagePill() {
+  const pill = $('pagePill'), list = $('pageList'), strip = pill.parentElement;
+  const menus = () => [$('pageMasterMenu'), $('addPageMenu')];
+  pill.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b || b.hidden || b.getAttribute('aria-disabled') === 'true') return;
+    switch (b.dataset.pact) {
+      case 'left': movePage(pageIndex, pageIndex - 1); b.focus({ preventScroll: true }); break;
+      case 'right': movePage(pageIndex, pageIndex + 1); b.focus({ preventScroll: true }); break;
+      case 'master': fillPageMasterMenu(); openMenuFrom($('pageMasterMenu'), b, 'above'); break;
+      case 'duplicate': duplicatePage(); b.focus({ preventScroll: true }); break;
+      case 'delete': deletePage(); b.focus({ preventScroll: true }); break;
+    }
+  });
+  // Left and Right along the pill (one Tab stop); Escape closes it and goes back to the page.
+  pill.addEventListener('keydown', (e) => {
+    const btns = [...pill.querySelectorAll('button')].filter((x) => !x.hidden), i = btns.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setPagePill(false); focusThumbQuietly(); return; }
+    let j = null;
+    if (e.key === 'ArrowRight') j = (i + 1) % btns.length;
+    else if (e.key === 'ArrowLeft') j = (i - 1 + btns.length) % btns.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = btns.length - 1;
+    if (j == null) return;
+    e.preventDefault(); e.stopPropagation();
+    btns.forEach((x, n) => { x.tabIndex = n === j ? 0 : -1; });
+    btns[j].focus();
+  });
+  // Open: a click or tap on a page, or the keyboard arriving in the filmstrip.
+  list.addEventListener('click', (e) => { if (e.target.closest('li[data-index]')) setPagePill(true); });
+  // (Moving between pages, or coming back from the pill, leaves it as it is.)
+  list.addEventListener('focusin', (e) => {
+    const from = e.relatedTarget;
+    if (!pagePillOpen && !pagePillQuiet && !(from && (list.contains(from) || pill.contains(from)))) setPagePill(true);
+  });
+  list.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pagePillOpen) { e.preventDefault(); setPagePill(false); } });
+  // Close: a press anywhere else, or the keyboard leaving the filmstrip (its menus count as inside).
+  document.addEventListener('pointerdown', (e) => {
+    if (!pagePillOpen) return;
+    if (strip.contains(e.target) || menus().some((m) => m.contains(e.target))) return;
+    setPagePill(false);
+  }, true);
+  strip.addEventListener('focusout', (e) => {
+    const to = e.relatedTarget;
+    if (!to || strip.contains(to) || menus().some((m) => m.contains(to))) return;
+    setPagePill(false);
+  });
+  list.addEventListener('scroll', placePagePill, { passive: true });
+  window.addEventListener('resize', placePagePill);
+}
+
+/* ---------- +: a new page, and which master it uses ----------
+   With no master pages (or while the masters are showing) + simply adds.
+   Otherwise it first asks: no master, or one of the masters. The page
+   showing's master comes first in focus, since a new page usually wants
+   the same one. */
+function fillAddPageMenu() {
+  const menu = $('addPageMenu');
+  clear(menu);
+  const now = curPage().master || '';
+  const item = (label, masterId) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'menuitemradio');
+    b.setAttribute('aria-checked', String(masterId === now));   // "the same as this page" is the one that starts picked
+    const tick = document.createElement('span');
+    tick.className = 'qm-tick'; tick.setAttribute('aria-hidden', 'true'); tick.textContent = masterId === now ? '\u2713' : '';
+    b.append(tick, document.createTextNode(label));
+    b.addEventListener('click', () => { menu.hidePopover(); addPage(masterId); $('addPageBtn').focus({ preventScroll: true }); });
+    menu.appendChild(b);
+  };
+  const head = document.createElement('p');
+  head.className = 'qm-head'; head.setAttribute('aria-hidden', 'true'); head.textContent = 'New page, using:';
+  menu.appendChild(head);
+  item('No master page', '');
+  for (const m of masterList()) item(m.name, m.id);
+}
+function wireAddPage() {
+  const b = $('addPageBtn'), menu = $('addPageMenu');
+  b.addEventListener('click', () => {
+    if (editingMaster() || !masterList().length) { addPage(); return; }
+    fillAddPageMenu();
+    openMenuFrom(menu, b, 'above');
+  });
+  wireMenu(menu, b);
 }
 function renderThumbnails() {
   renderFilmstrip();                 // in case overflow dots changed
@@ -8207,11 +8370,10 @@ function wireFilmstrip() {
     dragFrom = null;
   });
   list.addEventListener('dragend', () => { dragFrom = null; clearMarks(); });
-  $('addPageBtn').addEventListener('click', addPage);
   $('masterMode').addEventListener('click', toggleMasters);
   $('masterBack').addEventListener('click', () => { toggleMasters(); $('desk').focus({ preventScroll: true }); });
-  $('dupPageBtn').addEventListener('click', duplicatePage);
-  $('delPageBtn').addEventListener('click', deletePage);
+  wirePagePill();
+  wireAddPage();
 }
 
 /* ======================================================================
@@ -9357,8 +9519,7 @@ function wirePictureInput() {
    SUITE BLOCK v4 - START
    -------------------------------------------------------------------------
    This block is IDENTICAL in every app in the family (TXTEDTR, PDFEDTR,
-   IMGEDTR, SNDEDTR, VIDEDTR, SCRNCSTR, VCTREDTR, 3DEDTR, and DSKEDTR while
-   it is being built). To add or change an
+   IMGEDTR, SNDEDTR, VIDEDTR, SCRNCSTR, VCTREDTR, 3DEDTR and DSKEDTR). To add or change an
    app, edit SUITE_APPS below, then paste the whole block - START to END - into every
    app so they all stay in step. Nothing in here depends on the app around
    it; the app just calls renderSuiteApps() with an empty element to fill.
@@ -9422,8 +9583,7 @@ const SUITE_APPS = [
   { id: '3dedtr',   name: '3DEDTR',   color: '#7a4100', url: 'https://3dedtr.app/',
     blurb: '3D modeling with shape merging, ready for 3D printing.',
     icon: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>' },
-  // Being built: not shown to the other apps yet (listed: false).
-  { id: 'dskedtr',  name: 'DSKEDTR',  color: '#065f46', url: 'https://dskedtr.app/', listed: false,
+  { id: 'dskedtr',  name: 'DSKEDTR',  color: '#065f46', url: 'https://dskedtr.app/',
     blurb: 'Desktop publishing: newsletters, flyers and booklets, with text that flows between boxes.',
     icon: '<path d="M2 5h8a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H2z"/><path d="M22 5h-8a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h8z"/>' }
 ];
@@ -11537,6 +11697,15 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.16.0", date: "2026-10-07", title: "", notes: [
+    "A tidier filmstrip. Its own buttons are now just + and Master pages (the way into the master page editor).",
+    "+ asks which master page. With master pages in the document, + opens a short menu: \"No master page\" or one of the masters, with the page showing's own master already picked. With none, it simply adds a page.",
+    "The page pill. Click or tap a page in the filmstrip and a pill opens above it: Move left, Move right, Master page (which master this page uses), Duplicate and Delete. Move left and right are the no-drag way to put pages in order, on a phone and on a computer (dragging and Alt with Left or Right still work). A greyed arrow means that page is already at that end. While the master pages are showing, the pill acts on the master (Duplicate and Delete). From the keyboard, Tab from the pages reaches it; Left and Right move along it; Escape closes it."
+  ] },
+  { version: "0.15.1", date: "2026-10-07", title: "", notes: [
+    "DSKEDTR joins the family. It now shows in the other apps' More apps and on their splash screens, with its own icon (the shared block's listed: false is gone).",
+    "With nine apps in the family, the splash's row shows the eight others on one line on a computer, and 4 + 4 on a phone (shared styles pasted in again from _edtr-suite/suite-block.css)."
+  ] },
   { version: "0.15.0", date: "2026-10-07", title: "", notes: [
     "Arrange in the quick pill. A stack-of-layers button opens a small menu: Bring to front, Bring forward, Send backward, Send to back (with their keys). It stays open, so stepping something forward three times is three taps; tap elsewhere or press Escape to close it.",
     "Group and Ungroup in the pill. With two or more things picked, the pill offers Group; with a group (or anything in one) picked, Ungroup. Several picked things also get Arrange, Duplicate, Copy, Paste and Delete.",

@@ -1,5 +1,26 @@
 # DSKEDTR changelog
 
+## 0.16.0 - 2026-10-07
+
+- **A tidier filmstrip.** Its own buttons are now just **+** and **Master
+  pages** (the way into the master page editor).
+- **+ asks which master page.** With master pages in the document, + opens a
+  short menu: "No master page" or one of the masters, with the page
+  showing's own master already picked. With none, it simply adds a page.
+- **The page pill.** Click or tap a page in the filmstrip and a pill opens
+  above it: Move left, Move right, Master page (which master this page
+  uses), Duplicate and Delete. Move left and right are the no-drag way to put
+  pages in order, on a phone and on a computer (dragging and Alt with Left
+  or Right still work). A greyed arrow means that page is already at that
+  end. While the master pages are showing, the pill acts on the master
+  (Duplicate and Delete). From the keyboard, Tab from the pages reaches it;
+  Left and Right move along it; Escape closes it.
+
+## 0.15.1 - 2026-10-07
+
+- **DSKEDTR joins the family.** It now shows in the other apps' More apps and on their splash screens, with its own icon (the shared block's `listed: false` is gone).
+- With nine apps in the family, the splash's row shows the eight others on one line on a computer, and 4 + 4 on a phone (shared styles pasted in again from `_edtr-suite/suite-block.css`).
+
 ## 0.15.0 - 2026-10-07
 
 - **Arrange in the quick pill.** A stack-of-layers button opens a small menu:

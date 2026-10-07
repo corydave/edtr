@@ -553,6 +553,20 @@ building blocks, the starter template gallery.
   `#desk` is `tabindex="0"` with a `:focus-visible` ring and an
   `aria-describedby` key summary (axe's scrollable-region-focusable on a
   page with no text boxes).
+- 0.16.0: filmstrip tools are `#addPageBtn` (+) and `#masterMode`. With
+  masters, + opens `#addPageMenu` (`fillAddPageMenu`, `wireAddPage`;
+  `addPage(masterId)`, '' for none, undefined to copy the page showing's).
+  The page pill `#pagePill` (`.quick-bar`, role toolbar, inside
+  `.filmstrip`, `bottom: calc(100% + 6px)`): Move left / right
+  (`movePage`; `aria-disabled` at the ends, so focus never falls off),
+  Master (`#pageMasterBtn`, `#pageMasterMenu`), Duplicate (`#dupPageBtn`),
+  Delete (`#delPageBtn`). `setPagePill`, `updatePagePill` (from
+  `renderFilmstrip`), `placePagePill`, `wirePagePill`. Opens on a page
+  click, or when focus arrives in the page list from anywhere but another
+  page or the pill; closes on a press outside the filmstrip and its menus,
+  on Escape, or when focus leaves the filmstrip (`focusThumbQuietly` puts
+  focus back without reopening it). Covers WCAG 2.5.7 (a single-pointer
+  alternative to dragging pages).
 
 **Phase 3 - polish.** Colour schemes, drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,
