@@ -422,6 +422,9 @@ body.clean-view .axes-key, body.clean-view .empty-hint { display: none; }
 .edit-banner { background: #0b5563; }
 .edit-box { position: absolute; z-index: 3; pointer-events: none; border: 1px dashed var(--select, #f59e0b); background: rgba(244, 89, 34, .12); }
 #stage.grabbing-points { cursor: move; }
+.knife-line { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+.knife-line line { stroke: var(--select, #f45922); stroke-width: 2; stroke-dasharray: 6 4; }
+@media (forced-colors: active) { .knife-line line { stroke: Highlight; } }
 @media (forced-colors: active) { .edit-box { border-color: Highlight; } }
 #stage.space-pan { cursor: grab; }
 #stage.space-pan:active { cursor: grabbing; }
@@ -962,6 +965,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       <button type="button" class="btn" id="editDone" title="Back to objects (Tab)">Done</button></div>
     <!-- The box drawn while box-selecting points. -->
     <div class="edit-box" id="editBox" hidden aria-hidden="true"></div>
+    <!-- The Knife's line, from its first click to the pointer. -->
+    <svg class="knife-line" id="knifeLine" hidden aria-hidden="true"><line x1="0" y1="0" x2="0" y2="0"/></svg>
 
     <!-- Shown only if the 3D engine could not be loaded. -->
     <div class="no-engine" id="noEngine" hidden>
@@ -1369,10 +1374,15 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.16.0';
+const APP_VERSION = '0.17.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 const CHANGELOG = [
+  { version: '0.17.0', date: '2026-10-08', notes: [
+    'Symmetry, in the Inspector\'s Symmetry, shrink, wall and smooth section. Mirror (across X, Y and/or Z) keeps one half and mirrors it; Around keeps one slice and repeats it round an axis - 6 copies for a hexagon, 8 for a flower. Edit the piece\'s points (Tab) and every copy changes too; points on a cut stay on it, so the copies always meet. Off keeps the whole shape as it looks.',
+    'Pattern, On a surface: scatter copies of an object over another one\'s surface (sprinkles on icing), each standing up from where it lands, with a random twist, sizes that vary, a lift, kept apart, and a shuffle number for a different scatter. Only where it faces up, if you like.',
+    'More in Edit mode: Bevel (Ctrl+B) cuts off the picked corners; the Knife (K) cuts the faces you can see between two clicks, and Cut across X, Y or Z does a straight cut from the Inspector; Ctrl+L picks everything joined to the picked points.'
+  ] },
   { version: '0.16.0', date: '2026-10-07', notes: [
     'Copy, cut and paste: Ctrl+C, Ctrl+X and Ctrl+V (Cmd on a Mac) in the 3D view or the Scene list. Each paste lands 10 mm to the right of the last; after a cut, the first paste goes back where it was. What you copied stays ready to paste even after the original changes or goes.',
     'Edit mode builds now: Extrude (E) pulls the picked faces out as new geometry - or, with just an edge picked, grows a new strip from it - and drags it straight away with the pointer over the 3D view (click keeps it, Escape takes it all back). Merge (M) makes the picked points one, at their middle; Merge close points tidies up points almost on top of each other. Fill (Shift+F) closes a hole whose rim is picked, or makes a face from three or four points.',
@@ -4522,8 +4532,184 @@ function refreshWraps() {
     m.userData.wrapSig = sig;
   }
 }
+/* ---- Symmetry: Mirror and Around (0.17.0) ----
+   Like Blender's Mirror modifier, plus a "radial" version: the object keeps
+   just ONE piece of itself (a half, a quarter, a sixth...) and is drawn
+   with copies of that piece mirrored or turned round to make the whole.
+   Edit the piece (in Edit mode, say) and every copy changes with it.
+   mods.sym is { kind: 'mirror', x, y, z } (true for each mirror plane) or
+   { kind: 'around', count: 2-64, axis: 'x' | 'y' | 'z' }.
+   Everything happens in the object's own space, through its own origin. */
+// (A function, not a table made at start-up: the 3D engine, and with it THREE, loads after this script runs.)
+const axisVec = (a) => new THREE.Vector3(a === 'x' ? 1 : 0, a === 'y' ? 1 : 0, a === 'z' ? 1 : 0);
+/**
+ * The flat "walls" that bound the kept piece, each as the direction it
+ * faces (planes through the origin): points with p . n >= 0 are kept.
+ */
+function symPlanes(sym) {
+  if (sym.kind === 'mirror') return ['x', 'y', 'z'].filter((a) => sym[a]).map(axisVec);
+  // Around: a wedge from direction u0, turning through 360 / count degrees about the axis.
+  const a = axisVec(sym.axis), u0 = axisVec(sym.axis === 'x' ? 'y' : 'x');
+  const v0 = a.clone().cross(u0);                       // points just past u0 (turning the right-hand way) have p . v0 > 0
+  const step = (Math.PI * 2) / sym.count;
+  const v1 = v0.clone().applyAxisAngle(a, step);
+  // A half (count 2) has one wall; a narrower wedge has two.
+  return sym.count === 2 ? [v0] : [v0, v1.negate()];
+}
+/** The copies that make the whole: a list of { matrix, flip } (flip: it is a mirror image, so its faces turn inside out). */
+function symCopies(sym) {
+  if (sym.kind === 'mirror') {
+    let list = [{ s: new THREE.Vector3(1, 1, 1) }];
+    for (const a of ['x', 'y', 'z']) {
+      if (!sym[a]) continue;
+      list = list.concat(list.map((c) => { const s = c.s.clone(); s[a] = -s[a]; return { s }; }));
+    }
+    return list.map((c) => ({ matrix: new THREE.Matrix4().makeScale(c.s.x, c.s.y, c.s.z), flip: c.s.x * c.s.y * c.s.z < 0 }));
+  }
+  const out = [];
+  for (let k = 0; k < sym.count; k++) out.push({ matrix: new THREE.Matrix4().makeRotationAxis(axisVec(sym.axis), (k * Math.PI * 2) / sym.count), flip: false });
+  return out;
+}
+/**
+ * Cut a welded surface { pos, col, tris } down to the side of a plane
+ * through the origin that `n` faces (p . n >= 0). Triangles across the
+ * plane are cut along it; the new corners lie exactly on it. The cut is
+ * left open: the copies close it.
+ */
+function clipToPlane(w, n) {
+  const pos = Array.from(w.pos), col = w.col ? Array.from(w.col) : null, out = [];
+  const d = (i) => pos[i * 3] * n.x + pos[i * 3 + 1] * n.y + pos[i * 3 + 2] * n.z;   // which side, and how far
+  const cuts = new Map();                                 // an edge cut once, shared by both its triangles
+  const cutPoint = (i, j) => {
+    const key = i < j ? i + ',' + j : j + ',' + i;
+    if (cuts.has(key)) return cuts.get(key);
+    const di = d(i), dj = d(j), t = di / (di - dj);
+    const v = pos.length / 3;
+    for (let k = 0; k < 3; k++) pos.push(pos[i * 3 + k] + (pos[j * 3 + k] - pos[i * 3 + k]) * t);
+    if (col) for (let k = 0; k < 3; k++) col.push(col[i * 3 + k] + (col[j * 3 + k] - col[i * 3 + k]) * t);
+    // Put it exactly on the plane (the sum above can be a hair off).
+    const off = d(v);
+    for (let k = 0; k < 3; k++) pos[v * 3 + k] -= off * [n.x, n.y, n.z][k];
+    cuts.set(key, v);
+    return v;
+  };
+  const eps = 1e-9;
+  for (let k = 0; k < w.tris.length; k += 3) {
+    const t = [w.tris[k], w.tris[k + 1], w.tris[k + 2]];
+    const inside = t.map((v) => d(v) >= -eps);
+    if (inside.every(Boolean)) { out.push(...t); continue; }
+    if (!inside.some(Boolean)) continue;
+    // Walk round the triangle, keeping inside corners and adding a point where an edge crosses (Sutherland-Hodgman).
+    const poly = [];
+    for (let e = 0; e < 3; e++) {
+      const a = t[e], b = t[(e + 1) % 3], ia = inside[e], ib = inside[(e + 1) % 3];
+      if (ia) poly.push(a);
+      if (ia !== ib) poly.push(cutPoint(a, b));
+    }
+    for (let i = 1; i + 1 < poly.length; i++) out.push(poly[0], poly[i], poly[i + 1]);
+  }
+  return { pos: new Float32Array(pos), col: col ? new Float32Array(col) : null, tris: new Uint32Array(out) };
+}
+/**
+ * Which points are within `dist` of each other: point i becomes into[i]
+ * (one point of each close bunch). Points go into boxes `dist` wide, so
+ * each is only checked against its neighbours' boxes. mask (optional):
+ * only points with mask[i] set take part.
+ */
+function closeGroups(pos, n, dist, mask = null) {
+  const into = new Int32Array(n).map((_, i) => i);
+  const find = (i) => { while (into[i] !== i) { into[i] = into[into[i]]; i = into[i]; } return i; };
+  const cell = Math.max(dist, 1e-9), grid = new Map(), key = (x, y, z) => x + ',' + y + ',' + z;
+  for (let i = 0; i < n; i++) {
+    if (mask && !mask[i]) continue;
+    const gx = Math.floor(pos[i * 3] / cell), gy = Math.floor(pos[i * 3 + 1] / cell), gz = Math.floor(pos[i * 3 + 2] / cell);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+      for (const j of grid.get(key(gx + dx, gy + dy, gz + dz)) || []) {
+        const d2 = (pos[i * 3] - pos[j * 3]) ** 2 + (pos[i * 3 + 1] - pos[j * 3 + 1]) ** 2 + (pos[i * 3 + 2] - pos[j * 3 + 2]) ** 2;
+        if (d2 <= dist * dist) into[find(i)] = find(j);
+      }
+    }
+    const k = key(gx, gy, gz);
+    if (!grid.has(k)) grid.set(k, []);
+    grid.get(k).push(i);
+  }
+  for (let i = 0; i < n; i++) into[i] = find(i);
+  return into;
+}
+/**
+ * Make the whole from the kept piece: the piece, plus its mirror images or
+ * turned copies, joined along the cuts into one closed surface.
+ */
+function applySymmetry(w, sym) {
+  const planes = symPlanes(sym), copies = symCopies(sym);
+  const n = w.pos.length / 3;
+  if (!n) return w;
+  // How close counts as "the same point": a hundred-thousandth of the piece's size.
+  let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], w.pos[i * 3 + k]); hi[k] = Math.max(hi[k], w.pos[i * 3 + k]); }
+  const eps = Math.max(1e-5, Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) * 1e-5);
+  // 1. Points a hair off a cut are put right on it, so each copy's edge meets the next one's exactly.
+  const base = Float32Array.from(w.pos), onPlane = planes.map(() => new Uint8Array(n));
+  planes.forEach((p, k) => {
+    for (let i = 0; i < n; i++) {
+      const dd = base[i * 3] * p.x + base[i * 3 + 1] * p.y + base[i * 3 + 2] * p.z;
+      if (Math.abs(dd) <= eps) { base[i * 3] -= dd * p.x; base[i * 3 + 1] -= dd * p.y; base[i * 3 + 2] -= dd * p.z; onPlane[k][i] = 1; }
+    }
+  });
+  // 2. Faces lying flat in a cut would end up inside the whole, back to back with their copy: leave them out.
+  const tris = [];
+  for (let k = 0; k < w.tris.length; k += 3) {
+    const a = w.tris[k], b = w.tris[k + 1], c = w.tris[k + 2];
+    if (onPlane.some((o) => o[a] && o[b] && o[c])) continue;
+    tris.push(a, b, c);
+  }
+  // 3. The copies, one after another (a mirror image is turned inside out, so its faces are run the other way).
+  const P = new Float32Array(n * 3 * copies.length), C = w.col ? new Float32Array(n * 3 * copies.length) : null, T = [];
+  const v = new THREE.Vector3();
+  copies.forEach((cp, k) => {
+    for (let i = 0; i < n; i++) {
+      v.set(base[i * 3], base[i * 3 + 1], base[i * 3 + 2]).applyMatrix4(cp.matrix);
+      P[(k * n + i) * 3] = v.x; P[(k * n + i) * 3 + 1] = v.y; P[(k * n + i) * 3 + 2] = v.z;
+      if (C) for (let j = 0; j < 3; j++) C[(k * n + i) * 3 + j] = w.col[i * 3 + j];
+    }
+    for (let t = 0; t < tris.length; t += 3) {
+      const a = k * n + tris[t], b = k * n + tris[t + 1], c = k * n + tris[t + 2];
+      if (cp.flip) T.push(a, c, b); else T.push(a, b, c);
+    }
+  });
+  // 4. Join the copies along their cuts: points on a cut that land on each other become one.
+  const mask = new Uint8Array(n * copies.length);
+  for (let k = 0; k < copies.length; k++) for (let i = 0; i < n; i++) if (onPlane.some((o) => o[i])) mask[k * n + i] = 1;
+  const into = closeGroups(P, n * copies.length, eps * 4, mask);
+  const used = new Int32Array(n * copies.length).fill(-1), pos = [], colOut = C ? [] : null, out = [];
+  for (let t = 0; t < T.length; t += 3) {
+    const a = into[T[t]], b = into[T[t + 1]], c = into[T[t + 2]];
+    if (a === b || b === c || a === c) continue;          // (a sliver on the axis folds away)
+    for (const x of [a, b, c]) {
+      if (used[x] < 0) {
+        used[x] = pos.length / 3;
+        pos.push(P[x * 3], P[x * 3 + 1], P[x * 3 + 2]);
+        if (colOut) colOut.push(C[x * 3], C[x * 3 + 1], C[x * 3 + 2]);
+      }
+      out.push(used[x]);
+    }
+  }
+  return { pos: new Float32Array(pos), col: colOut ? new Float32Array(colOut) : null, tris: new Uint32Array(out) };
+}
+/** Cut an object's own triangles down to the one piece its symmetry repeats. */
+function keepOnePiece(geo, sym) {
+  let w = weldGeometry(geo);
+  for (const p of symPlanes(sym)) w = clipToPlane(w, p);
+  return w;
+}
+/** Words for the symmetry, for the section's note and messages. */
+function symWords(sym) {
+  if (!sym) return '';
+  if (sym.kind === 'mirror') return 'Mirror ' + ['x', 'y', 'z'].filter((a) => sym[a]).map((a) => a.toUpperCase()).join(' + ');
+  return sym.count + ' around ' + sym.axis.toUpperCase();
+}
 /** Is anything set? */
-const hasMods = (m) => !!m && ((m.thick || 0) > 0 || (m.smooth || 0) > 0 || !!m.wrap);
+const hasMods = (m) => !!m && ((m.thick || 0) > 0 || (m.smooth || 0) > 0 || !!m.wrap || !!m.sym);
 /**
  * The triangles an object is drawn with: its own, with Thickness and then
  * Smooth applied (see above). Returns a NEW geometry (the original is never
@@ -4533,7 +4719,8 @@ const hasMods = (m) => !!m && ((m.thick || 0) > 0 || (m.smooth || 0) > 0 || !!m.
 function applyMods(geo, mods) {
   if (!hasMods(mods)) return geo;
   let w = weldGeometry(geo);
-  if (mods.wrap) w = wrapPoints(w, mods.wrap);           // Shrink onto first (a sheet hugs, then gets its wall)
+  if (mods.sym) w = applySymmetry(w, mods.sym);          // Mirror or Around first: the whole, from its one piece
+  if (mods.wrap) w = wrapPoints(w, mods.wrap);           // Shrink onto next (a sheet hugs, then gets its wall)
   if (mods.thick > 0) w = solidify(w, mods.thick, mods.dir || 'in');
   let steps = 0;
   if (mods.smooth > 0) {
@@ -4560,6 +4747,14 @@ function cleanMods(v) {
   if (v.wrap && typeof v.wrap === 'object' && typeof v.wrap.target === 'string' && /^o\d{1,9}$/.test(v.wrap.target)) {
     const num = (x, lo, hi) => (typeof x === 'number' && isFinite(x) ? clamp(round(x, 3), lo, hi) : 0);
     m.wrap = { target: v.wrap.target, offset: num(v.wrap.offset, -1000, 1000), reach: num(v.wrap.reach, 0, 10000) };
+  }
+  // Symmetry: Mirror (which planes) or Around (how many copies, round which axis).
+  if (v.sym && typeof v.sym === 'object') {
+    if (v.sym.kind === 'mirror' && (v.sym.x === true || v.sym.y === true || v.sym.z === true)) {
+      m.sym = { kind: 'mirror', x: v.sym.x === true, y: v.sym.y === true, z: v.sym.z === true };
+    } else if (v.sym.kind === 'around' && typeof v.sym.count === 'number' && isFinite(v.sym.count) && ['x', 'y', 'z'].includes(v.sym.axis)) {
+      m.sym = { kind: 'around', count: clamp(Math.round(v.sym.count), 2, 64), axis: v.sym.axis };
+    }
   }
   return hasMods(m) ? m : null;
 }
@@ -5266,7 +5461,7 @@ function setupPicking() {
       return;
     }
     // Edit mode with the Select tool (or after B): dragging draws a box round points, instead of turning the view.
-    if (e.button === 0 && !spacePan && (tool === 'select' || editBoxOnce)) {
+    if (e.button === 0 && !spacePan && !edit.knife && (tool === 'select' || editBoxOnce)) {
       e.stopImmediatePropagation();
       press.box = true;
       canvas.setPointerCapture(e.pointerId);
@@ -5277,6 +5472,7 @@ function setupPicking() {
   canvas.addEventListener('pointermove', (e) => {
     stagePointer = true;
     if (edit && edit.grab) { grabMove(e); return; }
+    if (edit && edit.knife) knifeDraw(e.clientX, e.clientY);
     if (!press || !press.box || press.id !== e.pointerId) return;
     const box = $('editBox'), r = canvas.getBoundingClientRect();     // (the 3D view fills its frame, where the box sits)
     const x0 = Math.min(press.x, e.clientX) - r.left, y0 = Math.min(press.y, e.clientY) - r.top;
@@ -6343,7 +6539,7 @@ let editGroup = null;            // the points and edges drawn over the object (
 let editPivot = null;            // where the Move tool's arrows sit: the middle of the picked points
 let editBoxOnce = false;         // B was pressed: the next drag draws a box
 // Proportional editing, kept while the app is open (as in Blender).
-let editProp = { on: false, radius: 10, falloff: 'smooth', mergeDist: 0.1 };   // (mergeDist: Merge close points, mm)
+let editProp = { on: false, radius: 10, falloff: 'smooth', mergeDist: 0.1, bevel: 1 };   // (bevel: Bevel's distance, mm)   // (mergeDist: Merge close points, mm)
 let stagePointer = false;        // is the pointer over the 3D view? (E then starts dragging the new points, as in Blender)
 const FALLOFFS = [['smooth', 'Smooth'], ['sphere', 'Round'], ['linear', 'Straight'], ['sharp', 'Sharp']];
 /** How much a point at distance d follows, with Proportional editing (1 at the picked points, 0 at the radius). */
@@ -6402,6 +6598,7 @@ function enterEdit(m = selection[0]) {
 function exitEdit(say = true) {
   if (!edit) return;
   if (edit.grab) cancelGrab();
+  if (edit.knife) endKnife();
   const m = edit.m;
   if (m.material) { m.material.polygonOffset = false; m.material.needsUpdate = true; }
   edit = null;
@@ -6594,6 +6791,7 @@ function editPointAt(cx, cy) {
   return best;
 }
 function editClick(e) {
+  if (edit.knife) { knifeClick(e); return; }           // the Knife is waiting for its clicks
   if (e.altKey) { editLoopClick(e); return; }          // Alt+click: a whole loop (section "Loops")
   const i = editPointAt(e.clientX, e.clientY);
   const add = e.shiftKey || pickSeveral;
@@ -6687,18 +6885,78 @@ function editStartMove(noProp = false) {
   }
   // A world move becomes a move in the object's own space (its turn and scale undone).
   const toLocal = new THREE.Matrix3().setFromMatrix4(edit.m.matrixWorld).invert();
-  edit.move = { start, weight, toLocal };
+  edit.move = { start, weight, toLocal, seam: editSeamPoints(weight) };
   return true;
 }
 /** Move the picked points (and their followers) by `d`, a distance in the world, from where they started. */
 function editApplyMove(d) {
-  const { start, weight, toLocal } = edit.move, pos = edit.w.pos;
+  const { start, weight, toLocal } = edit.move, pos = edit.w.pos;   // (weight: how much each point follows)
   const l = d.clone().applyMatrix3(toLocal);
   for (let i = 0; i < edit.n; i++) {
     const k = weight[i];
     pos[i * 3] = start[i * 3] + l.x * k; pos[i * 3 + 1] = start[i * 3 + 1] + l.y * k; pos[i * 3 + 2] = start[i * 3 + 2] + l.z * k;
   }
+  // Symmetry: points on a cut stay on it (they slide along it), so the copies stay joined (Blender's "Clipping").
+  const p = new THREE.Vector3(), seam = edit.move.seam;
+  for (const { i, planes } of seam.slide) {
+    p.set(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+    if (planes.length >= 2) {
+      // On two cuts at once: that is the axis itself, so it may only slide along the axis.
+      const axis = planes[0].clone().cross(planes[1]).normalize();
+      p.copy(axis.multiplyScalar(p.dot(axis)));
+    } else p.addScaledVector(planes[0], -p.dot(planes[0]));
+    pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z;
+  }
+  // Around: a point on the slice's first cut is the same point as its partner on the second cut, one
+  // turn of the slice along. When either moves, the other follows (turned), so the next copy still meets it.
+  for (const [a, b] of seam.pairs) {
+    const from = weight[a] ? a : weight[b] ? b : -1;
+    if (from < 0) continue;
+    const to = from === a ? b : a;
+    p.set(pos[from * 3], pos[from * 3 + 1], pos[from * 3 + 2]).applyMatrix4(from === a ? seam.turn : seam.back);
+    pos[to * 3] = p.x; pos[to * 3 + 1] = p.y; pos[to * 3 + 2] = p.z;
+  }
   editShowMoved();
+}
+/**
+ * With Symmetry on: which of the points about to move lie on a cut (where
+ * one copy meets the next) and must slide along it (slide: [{ i, planes }]),
+ * and, for Around, the pairs of points on the slice's two cuts that are one
+ * and the same point in the whole (pairs: [[on the first cut, on the second]],
+ * with turn / back, the turn by one slice and back).
+ */
+function editSeamPoints(weight) {
+  const none = { slide: [], pairs: [], turn: null, back: null };
+  const sym = edit.m.userData.mods && edit.m.userData.mods.sym;
+  if (!sym) return none;
+  const planes = symPlanes(sym), pos = edit.w.pos, n = edit.n;
+  const box = new THREE.Box3().setFromArray(pos), eps = Math.max(1e-4, box.getSize(new THREE.Vector3()).length() * 1e-5);
+  const onPlanes = (i) => planes.filter((q) => Math.abs(pos[i * 3] * q.x + pos[i * 3 + 1] * q.y + pos[i * 3 + 2] * q.z) <= eps);
+  const out = { ...none };
+  const first = [], second = [];
+  for (let i = 0; i < n; i++) {
+    const on = onPlanes(i);
+    if (!on.length) continue;
+    if (weight[i]) out.slide.push({ i, planes: on });
+    if (sym.kind === 'around' && on.length === 1) (on[0] === planes[0] ? first : second).push(i);
+  }
+  if (sym.kind === 'around' && first.length && second.length) {
+    out.turn = new THREE.Matrix4().makeRotationAxis(axisVec(sym.axis), (Math.PI * 2) / sym.count);
+    out.back = out.turn.clone().invert();
+    // Turn each second-cut point back by one slice: it lands on its partner on the first cut.
+    const P = new Float32Array((first.length + second.length) * 3), v = new THREE.Vector3();
+    first.forEach((i, k) => { P[k * 3] = pos[i * 3]; P[k * 3 + 1] = pos[i * 3 + 1]; P[k * 3 + 2] = pos[i * 3 + 2]; });
+    second.forEach((i, k) => {
+      v.set(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]).applyMatrix4(out.back);
+      const at = (first.length + k) * 3;
+      P[at] = v.x; P[at + 1] = v.y; P[at + 2] = v.z;
+    });
+    const into = closeGroups(P, first.length + second.length, eps * 4);
+    const firstOf = new Map();
+    first.forEach((i, k) => firstOf.set(into[k], i));
+    second.forEach((i, k) => { const a = firstOf.get(into[first.length + k]); if (a !== undefined) out.pairs.push([a, i]); });
+  }
+  return out;
 }
 function editEndMove(words, key = '') {
   edit.move = null;
@@ -6907,6 +7165,18 @@ function renderEditProps(body) {
     button('Fill (Shift+F)', editFill, 'Close a hole whose rim is picked, or make a face between three or four picked points'),
     button('Loop (L)', editLoopPicked, 'With two points side by side picked: pick the whole ring they are on (with a mouse: Alt+click an edge)'));
   build.body.append(rowB);
+  const rowC = el('div', 'btn-row');
+  rowC.append(button('Bevel (Ctrl+B)', () => editBevel(editProp.bevel), 'Cut off the picked corners: each becomes a small new face'),
+    button('Knife (K)', startKnife, 'Click two spots: the faces you can see between them are cut along that line'),
+    button('Linked (Ctrl+L)', editSelectLinked, 'Also pick every point joined to the picked ones'));
+  build.body.append(rowC, field('Bevel by (mm)', numberBox({ value: editProp.bevel, min: 0.01, max: 1000, step: 0.5,
+    label: 'Bevel by, in mm', onSet: (v) => { editProp.bevel = v; } })));
+  const across = el('div', 'btn-row');
+  across.setAttribute('role', 'group');
+  across.setAttribute('aria-label', 'Cut straight across');
+  for (const a of ['x', 'y', 'z']) across.append(button('Cut across ' + a.toUpperCase(), () => editCutAcross(a),
+    'A flat cut through the middle of the picked points (or the whole object), straight across the ' + a.toUpperCase() + ' direction - the keyboard way to use the Knife'));
+  build.body.append(across);
   const close = el('div', 'btn-row');
   close.append(button('Merge close points', () => editMergeClose(editProp.mergeDist),
     'Join points that are closer together than the distance below (the picked ones, or all of them with none picked)'));
@@ -6918,7 +7188,7 @@ function renderEditProps(body) {
   const row3 = el('div', 'btn-row');
   row3.append(button('Delete points', () => editDelete(false), 'Delete the picked points and every face that uses them (X or Delete)'),
     button('Delete faces', () => editDelete(true), 'Delete only the faces whose corners are all picked (Shift+Delete)'));
-  del.body.append(row3, el('p', 'hint', 'Leaves the surface open there. To print it, give it a wall (Shrink, wall and smooth, after Done) - for the donut\'s icing: delete the bottom half, then Wall outward.'));
+  del.body.append(row3, el('p', 'hint', 'Leaves the surface open there. To print it, give it a wall (Symmetry, shrink, wall and smooth, after Done) - for the donut\'s icing: delete the bottom half, then Wall outward.'));
   body.append(del.box);
   const done = el('div', 'btn-row');
   done.append(button('Done (Tab)', () => { exitEdit(); $('stage').focus({ preventScroll: true }); }, 'Back to objects'));
@@ -7046,25 +7316,9 @@ function editMergeCentre() {
  */
 function editMergeClose(dist) {
   const any = edit.sel.includes(1), pos = edit.w.pos, n = edit.n;
-  const into = new Int32Array(n).map((_, i) => i);
-  const find = (i) => { while (into[i] !== i) { into[i] = into[into[i]]; i = into[i]; } return i; };
-  // Points go into boxes `dist` wide, so each one is only checked against its neighbours' boxes.
-  const cell = Math.max(dist, 1e-6), grid = new Map(), key = (x, y, z) => x + ',' + y + ',' + z;
-  for (let i = 0; i < n; i++) {
-    if (any && !edit.sel[i]) continue;
-    const gx = Math.floor(pos[i * 3] / cell), gy = Math.floor(pos[i * 3 + 1] / cell), gz = Math.floor(pos[i * 3 + 2] / cell);
-    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
-      for (const j of grid.get(key(gx + dx, gy + dy, gz + dz)) || []) {
-        const d2 = (pos[i * 3] - pos[j * 3]) ** 2 + (pos[i * 3 + 1] - pos[j * 3 + 1]) ** 2 + (pos[i * 3 + 2] - pos[j * 3 + 2]) ** 2;
-        if (d2 <= dist * dist) into[find(i)] = find(j);
-      }
-    }
-    const k = key(gx, gy, gz);
-    if (!grid.has(k)) grid.set(k, []);
-    grid.get(k).push(i);
-  }
+  const into = closeGroups(pos, n, dist, any ? edit.sel : null);   // (see Symmetry)
   let merged = 0;
-  for (let i = 0; i < n; i++) { into[i] = find(i); if (into[i] !== i) merged++; }
+  for (let i = 0; i < n; i++) if (into[i] !== i) merged++;
   if (!merged) { toast('No points are within ' + fmt(dist) + ' mm of each other' + (any ? ' among the picked ones.' : '.')); return; }
   editMergeFinish(into, Array.from(pos), edit.w.col ? Array.from(edit.w.col) : null,
     'Merged ' + merged + (merged === 1 ? ' point' : ' points') + ' into ' + (any ? 'their neighbours' : 'the points beside them') + ' (within ' + fmt(dist) + ' mm).');
@@ -7219,6 +7473,211 @@ function editLoopPicked() {
   announce('Picked a loop of ' + loop.size + ' points. ' + editCountWords());
 }
 
+/* ---- More Edit mode tools (0.19.0): Linked, Bevel, Knife and Cut across ---- */
+
+/** Ctrl+L: also pick every point joined (by edges) to a picked one - a whole separate part, like one bead of a merge. */
+function editSelectLinked() {
+  if (!edit.sel.includes(1)) { toast('Pick a point on the part you want, then Ctrl+L picks all of that part.'); return; }
+  const queue = [];
+  for (let i = 0; i < edit.n; i++) if (edit.sel[i]) queue.push(i);
+  while (queue.length) {
+    const i = queue.pop();
+    for (const j of edit.nb[i]) if (!edit.sel[j]) { edit.sel[j] = 1; queue.push(j); }
+  }
+  editColours();
+  announce('Picked everything joined to the picked points. ' + editCountWords());
+}
+
+/**
+ * Ctrl+B: Bevel the picked points (Blender's vertex bevel): each picked
+ * corner is cut off, leaving a small new face whose corners sit `dist` mm
+ * along each edge from the old point. A cube's corners become little
+ * triangles; on a curved surface it flattens a spot.
+ */
+function editBevel(dist) {
+  const sel = edit.sel, src = edit.w.tris, pos = edit.w.pos;
+  if (!sel.includes(1)) { toast('Pick the points to bevel (cut off) first.'); return; }
+  const P = Array.from(pos), C = edit.w.col ? Array.from(edit.w.col) : null;
+  // A point on the edge from corner c towards corner t, dist mm along it (never past 45% of the edge,
+  // so the cuts from both ends of one edge can't cross). One per edge-and-end, shared by both faces.
+  const cuts = new Map(), capEdges = new Map();          // capEdges: picked point -> its new face's edges
+  const cutPoint = (c, t) => {
+    const key = c + '>' + t;
+    if (cuts.has(key)) return cuts.get(key);
+    const dx = pos[t * 3] - pos[c * 3], dy = pos[t * 3 + 1] - pos[c * 3 + 1], dz = pos[t * 3 + 2] - pos[c * 3 + 2];
+    const len = Math.hypot(dx, dy, dz) || 1, f = Math.min(dist, len * 0.45) / len;
+    const v = P.length / 3;
+    P.push(pos[c * 3] + dx * f, pos[c * 3 + 1] + dy * f, pos[c * 3 + 2] + dz * f);
+    if (C) for (let k = 0; k < 3; k++) C.push(C[c * 3 + k]);
+    cuts.set(key, v);
+    return v;
+  };
+  const out = [];
+  // Work on the faces as they were made - four-sided pieces where they can be (quadsOf, as Smooth does) -
+  // so a box's corner is cut along its real edges, not across the diagonals inside its square sides.
+  for (const t of quadsOf(pos, src)) {
+    if (!t.some((v) => sel[v])) { for (let i = 1; i + 1 < t.length; i++) out.push(t[0], t[i], t[i + 1]); continue; }
+    // Walk round the face: a picked corner is replaced by two points, one on each of its edges.
+    const poly = [], m = t.length;
+    for (let e = 0; e < m; e++) {
+      const c = t[e], prev = t[(e + m - 1) % m], next = t[(e + 1) % m];
+      if (!sel[c]) { poly.push(c); continue; }
+      const a = cutPoint(c, prev), b = cutPoint(c, next);
+      poly.push(a, b);
+      // The new face at c runs the other way round: b -> a.
+      if (!capEdges.has(c)) capEdges.set(c, new Map());
+      capEdges.get(c).set(b, a);
+    }
+    for (let i = 1; i + 1 < poly.length; i++) out.push(poly[0], poly[i], poly[i + 1]);
+  }
+  // The new faces: each picked point's edges chained into a ring (or a strip, at an open rim), then fanned.
+  let faces = 0;
+  for (const next of capEdges.values()) {
+    const starts = [...next.keys()], ends = new Set(next.values());
+    const first = starts.find((v) => !ends.has(v)) ?? starts[0];   // (an open rim starts at its free end)
+    const ring = [];
+    for (let v = first; v !== undefined && ring.length <= next.size; v = next.get(v)) { ring.push(v); if (next.get(v) === first) break; }
+    for (let i = 1; i + 1 < ring.length; i++) out.push(ring[0], ring[i], ring[i + 1]);
+    if (ring.length >= 3) faces++;
+  }
+  const newSel = new Uint8Array(P.length / 3);
+  for (const v of cuts.values()) newSel[v] = 1;          // the new corners are picked (Bevel again to round further)
+  editReplace({ pos: P, col: C, tris: out }, newSel, 'Bevelled ' + capEdges.size + (capEdges.size === 1 ? ' point' : ' points') + ' by ' + fmt(dist) + ' mm: ' + faces + ' new faces.');
+}
+
+/**
+ * Cut the surface along a flat plane (the Knife and Cut across): every face
+ * the plane crosses - only those in `keep(tri)`, when given - is split
+ * along it, and faces beside a cut edge are split there too, so the surface
+ * stays joined. plane: { n, d } in the object's own space (points with
+ * p . n = d are on it). Returns how many new points were made, all picked.
+ */
+function editCutPlane(plane, keep = null) {
+  const pos = edit.w.pos, src = edit.w.tris, n = edit.n;
+  const P = Array.from(pos), C = edit.w.col ? Array.from(edit.w.col) : null;
+  const side = (i) => P[i * 3] * plane.n.x + P[i * 3 + 1] * plane.n.y + P[i * 3 + 2] * plane.n.z - plane.d;
+  const box = new THREE.Box3().setFromArray(pos), eps = Math.max(1e-6, box.getSize(new THREE.Vector3()).length() * 1e-6);
+  // 1. Which edges the plane crosses (on the faces being cut), and the point on each.
+  const at = new Map();
+  const key = (a, b) => (a < b ? a + ',' + b : b + ',' + a);
+  for (let k = 0; k < src.length; k += 3) {
+    if (keep && !keep(k)) continue;
+    for (let e = 0; e < 3; e++) {
+      const a = src[k + e], b = src[k + (e + 1) % 3], da = side(a), db = side(b);
+      if ((da > eps && db < -eps) || (da < -eps && db > eps)) {
+        const kk = key(a, b);
+        if (at.has(kk)) continue;
+        const t = da / (da - db), v = P.length / 3;
+        for (let j = 0; j < 3; j++) P.push(pos[a * 3 + j] + (pos[b * 3 + j] - pos[a * 3 + j]) * t);
+        if (C) for (let j = 0; j < 3; j++) C.push(C[a * 3 + j] + (C[b * 3 + j] - C[a * 3 + j]) * t);
+        at.set(kk, v);
+      }
+    }
+  }
+  if (!at.size) return 0;
+  // 2. Every face with a new point on one of its edges is split there (a face the plane crosses has two:
+  //    it is split along the line between them; a face beside one has one: it is split in two from it).
+  const out = [];
+  for (let k = 0; k < src.length; k += 3) {
+    const t = [src[k], src[k + 1], src[k + 2]];
+    const poly = [], added = [];
+    for (let e = 0; e < 3; e++) {
+      poly.push(t[e]);
+      const v = at.get(key(t[e], t[(e + 1) % 3]));
+      if (v !== undefined) { added.push(poly.length); poly.push(v); }
+    }
+    if (!added.length) { out.push(...t); continue; }
+    if (added.length === 1) {
+      // [.., new, ..]: fan from the new point.
+      const s0 = added[0], m = poly.length;
+      for (let i = 1; i + 1 < m; i++) out.push(poly[s0], poly[(s0 + i) % m], poly[(s0 + i + 1) % m]);
+      continue;
+    }
+    // Two new points: the cut runs between them. Each side of it is fanned on its own.
+    const [i1, i2] = added, m = poly.length;
+    const half = (from, to) => { const h = []; for (let i = from; ; i = (i + 1) % m) { h.push(poly[i]); if (i === to) break; } return h; };
+    for (const h of [half(i1, i2), half(i2, i1)]) for (let i = 1; i + 1 < h.length; i++) out.push(h[0], h[i], h[i + 1]);
+  }
+  const sel = new Uint8Array(P.length / 3);
+  for (const v of at.values()) sel[v] = 1;               // the new points along the cut are picked
+  editReplace({ pos: P, col: C, tris: out }, sel, 'Cut the surface: ' + at.size + ' new points along the cut, picked.');
+  return at.size;
+}
+/** Cut across (Inspector): a flat cut through the middle of the picked points (or of the object), straight across X, Y or Z. */
+function editCutAcross(axis) {
+  const mid = edit.sel.includes(1) ? editMiddle() : edit.m.localToWorld(new THREE.Box3().setFromArray(edit.w.pos).getCenter(new THREE.Vector3()));
+  // The plane, in the world: across `axis` through `mid`. In the object's own space it may be turned.
+  const inv = edit.m.matrixWorld.clone().invert();
+  const p = mid.clone().applyMatrix4(inv);
+  const nWorld = axisVec(axis);
+  const n = nWorld.clone().transformDirection(edit.m.matrixWorld.clone().transpose());   // a plane's direction into the object's own space
+  if (!editCutPlane({ n, d: n.dot(p) })) toast('The cut missed: nothing of ' + edit.m.name + ' crosses that line.');
+}
+
+/* ---- K: the Knife. Click where the cut starts and where it ends; the
+   faces you can see between them are cut along that line (with X-ray on,
+   the ones behind too). ---- */
+function startKnife() {
+  edit.knife = { from: null };
+  $('stage').classList.add('placing');
+  const msg = 'Knife: click where the cut starts, then where it ends. Escape cancels.';
+  $('editText').textContent = msg;
+  announce(msg);
+  gizmo.detach(); requestRender();
+}
+function endKnife(say) {
+  if (!edit || !edit.knife) return;
+  edit.knife = null;
+  $('stage').classList.remove('placing');
+  $('knifeLine').hidden = true;
+  editBannerText();
+  attachGizmo();
+  if (say) announce(say);
+}
+/** Draw the knife's line from its first click to the pointer. */
+function knifeDraw(x, y) {
+  const k = edit && edit.knife;
+  if (!k || !k.from) return;
+  const r = $('stage').getBoundingClientRect(), line = $('knifeLine').firstElementChild;
+  $('knifeLine').hidden = false;
+  line.setAttribute('x1', k.from.x - r.left); line.setAttribute('y1', k.from.y - r.top);
+  line.setAttribute('x2', x - r.left); line.setAttribute('y2', y - r.top);
+}
+function knifeClick(e) {
+  const k = edit.knife;
+  if (!k.from) { k.from = { x: e.clientX, y: e.clientY }; knifeDraw(e.clientX, e.clientY); announce('Now click where the cut ends.'); return; }
+  const a = k.from, b = { x: e.clientX, y: e.clientY };
+  if (Math.hypot(b.x - a.x, b.y - a.y) < 4) return;       // (the same spot twice)
+  // The cut is the flat plane holding the camera's line of sight along the screen line a-b.
+  const r = $('stage').getBoundingClientRect();
+  const toWorld = (p, depth) => new THREE.Vector3(((p.x - r.left) / r.width) * 2 - 1, -((p.y - r.top) / r.height) * 2 + 1, depth).unproject(camera);
+  const a0 = toWorld(a, -1), a1 = toWorld(a, 1), b0 = toWorld(b, -1);
+  const nW = new THREE.Vector3().subVectors(a1, a0).cross(new THREE.Vector3().subVectors(b0, a0)).normalize();
+  const inv = edit.m.matrixWorld.clone().invert();
+  const p = a0.clone().applyMatrix4(inv);
+  const n = nW.clone().transformDirection(edit.m.matrixWorld.clone().transpose());   // a plane's direction into the object's own space
+  // Only faces whose middle shows between the two clicks on the screen (and can be seen, unless X-ray is on).
+  const pos = edit.w.pos, tris = edit.w.tris, abx = b.x - a.x, aby = b.y - a.y, ab2 = abx * abx + aby * aby;
+  const v = new THREE.Vector3();
+  const keep = (kk) => {
+    v.set(0, 0, 0);
+    for (let j = 0; j < 3; j++) v.x += pos[tris[kk + j] * 3] / 3, v.y += pos[tris[kk + j] * 3 + 1] / 3, v.z += pos[tris[kk + j] * 3 + 2] / 3;
+    const w = v.clone().applyMatrix4(edit.m.matrixWorld), s = w.clone().project(camera);
+    const sx = r.left + (s.x + 1) / 2 * r.width, sy = r.top + (1 - s.y) / 2 * r.height;
+    const t = ((sx - a.x) * abx + (sy - a.y) * aby) / ab2;
+    if (t < -0.02 || t > 1.02) return false;
+    if (settings.xray || !edit.bvh) return true;
+    // Seen? Look from the face's middle towards the camera.
+    const eye = camera.isOrthographicCamera ? w.clone().sub(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1e5)) : camera.position.clone();
+    const from = v.clone(), to = eye.applyMatrix4(inv), dir = to.clone().sub(from), len = dir.length();
+    dir.normalize();
+    const hit = edit.bvh.raycastFirst(new THREE.Ray(from.addScaledVector(dir, len * 1e-5 + 1e-3), dir), THREE.DoubleSide);
+    return !hit || hit.distance > len - 1e-3;
+  };
+  endKnife();
+  if (!editCutPlane({ n, d: n.dot(p) }, keep)) toast('The knife missed: draw the line across the faces you want to cut.');
+}
+
 /* ---- Proportional editing on or off (O, or the Inspector) ---- */
 function setProportional(on, rerender = true) {
   editProp.on = on;
@@ -7237,6 +7696,7 @@ function editKey(e, onStage) {
   const code = e.code;
   // While grabbing (G): Enter keeps the move, Escape cancels it, X / Y / Z keeps to one
   // direction (again: any direction), Page Up / Page Down sizes the Proportional circle.
+  if (edit.knife && e.key === 'Escape') { endKnife('Knife cancelled'); return true; }
   if (edit.grab) {
     if (e.key === 'Enter') { endGrab(); return true; }
     if (e.key === 'Escape') { cancelGrab(); return true; }
@@ -7279,6 +7739,7 @@ function editKey(e, onStage) {
     }
     case 'KeyM': editMergeCentre(); return true;
     case 'KeyL': editLoopPicked(); return true;
+    case 'KeyK': startKnife(); return true;
     case 'KeyF': if (e.shiftKey) { editFill(); return true; } return false;   // (F on its own frames the picked points)
     case 'KeyB':
       editBoxOnce = true; gizmo.detach(); requestRender();
@@ -8976,13 +9437,16 @@ function renderProps() {
 /* ---- Patterns: copies in a line or round a circle ----
    The settings are kept while the app is open, so the same pattern can be
    made again for another object. */
-const pattern = { kind: 'line', count: 4, step: [20, 0, 0], angle: 360, centre: [0, 0], face: true, group: true };
+const pattern = { kind: 'line', count: 4, step: [20, 0, 0], angle: 360, centre: [0, 0], face: true, group: true,
+  // On a surface (scatter, 0.18.0): onto which object, only its upward faces, a random twist, how much the
+  // size varies (%), a lift off the surface (mm), kept apart, and the "shuffle" number behind the random places.
+  target: '', up: true, twist: true, vary: 15, lift: 0, apart: true, seed: 1 };
 function patternSection(m) {
   const sec = section('Pattern (repeat)', false);
-  sec.body.append(el('p', 'hint', 'Make copies of ' + m.name + ' in a row, or round a circle (like bolt holes, or chairs round a table). One undo step.'));
-  const lineBox = el('div'), circleBox = el('div');
-  const show = () => { lineBox.hidden = pattern.kind !== 'line'; circleBox.hidden = pattern.kind !== 'circle'; };
-  sec.body.append(segRow('Kind', [['line', 'In a line'], ['circle', 'Round a circle']], pattern.kind, (v) => { pattern.kind = v; show(); }));
+  sec.body.append(el('p', 'hint', 'Make copies of ' + m.name + ' in a row, round a circle (like bolt holes, or chairs round a table), or scattered over another object\'s surface (sprinkles on icing). One undo step.'));
+  const lineBox = el('div'), circleBox = el('div'), surfaceBox = el('div');
+  const show = () => { lineBox.hidden = pattern.kind !== 'line'; circleBox.hidden = pattern.kind !== 'circle'; surfaceBox.hidden = pattern.kind !== 'surface'; };
+  sec.body.append(segRow('Kind', [['line', 'In a line'], ['circle', 'Round a circle'], ['surface', 'On a surface']], pattern.kind, (v) => { pattern.kind = v; show(); }, true));
   sec.body.append(field('How many in all', numberBox({ value: pattern.count, min: 2, max: 200, step: 1, int: true, label: 'How many in all, with the original',
     onSet: (v) => { pattern.count = v; } })));
   // In a line: the step from one copy to the next.
@@ -9004,7 +9468,28 @@ function patternSection(m) {
   face.checked = pattern.face;
   face.addEventListener('change', () => { pattern.face = face.checked; });
   circleBox.append(field('Turn the copies with the circle', face));
-  sec.body.append(lineBox, circleBox);
+  // On a surface: scattered over another object, each one standing up from the surface where it lands.
+  const others = meshesOf(objects).filter((o) => o !== m && !isInside(o, m));
+  const tgt = document.createElement('select');
+  for (const o of others) tgt.append(new Option(o.name, o.userData.id, false, o.userData.id === pattern.target));
+  if (!others.length) tgt.append(new Option('(add another object first)', ''));
+  if (!others.some((o) => o.userData.id === pattern.target)) pattern.target = others.length ? others[0].userData.id : '';
+  tgt.addEventListener('change', () => { pattern.target = tgt.value; });
+  surfaceBox.append(field('Onto', tgt));
+  const tick = (label, key) => {
+    const box = document.createElement('input');
+    box.type = 'checkbox'; box.checked = pattern[key];
+    box.addEventListener('change', () => { pattern[key] = box.checked; });
+    return field(label, box);
+  };
+  surfaceBox.append(tick('Only where it faces up', 'up'), tick('Turn each one a random way', 'twist'), tick('Keep them apart', 'apart'));
+  surfaceBox.append(field('Sizes vary by (%)', numberBox({ value: pattern.vary, min: 0, max: 80, step: 5, label: 'Sizes vary by, in percent', onSet: (v) => { pattern.vary = v; } })));
+  surfaceBox.append(field('Lift off the surface (mm)', numberBox({ value: pattern.lift, min: -100, max: 100, step: 0.5, label: 'Lift off the surface, in mm', onSet: (v) => { pattern.lift = v; } })));
+  surfaceBox.append(field('Shuffle number', numberBox({ value: pattern.seed, min: 1, max: 99999, step: 1, int: true, label: 'Shuffle number: a different number scatters them differently', onSet: (v) => { pattern.seed = v; } })));
+  surfaceBox.append(el('p', 'hint', 'Like Blender\'s scattering: the copies land at random spots on the other object\'s surface, standing up from it (' + m.name +
+    '\'s own "up" points out of the surface), its bottom resting on it. The same shuffle number always gives the same places; change it for a new scatter. ' +
+    m.name + ' itself stays where it is - hide or delete it after.'));
+  sec.body.append(lineBox, circleBox, surfaceBox);
   const grp = document.createElement('input');
   grp.type = 'checkbox';
   grp.checked = pattern.group;
@@ -9018,6 +9503,7 @@ function patternSection(m) {
 }
 /** Make the pattern's copies of one object (or group). */
 function makePattern(m) {
+  if (pattern.kind === 'surface') { scatterOnSurface(m); return; }
   const n = pattern.count;
   const parent = m.parent;
   const sibs = siblingsOf(m);
@@ -9069,6 +9555,99 @@ function makePattern(m) {
   toast(msg); announce(msg);
 }
 /**
+ * A random number maker that always gives the same numbers for the same
+ * seed ("mulberry32"), so a scatter can be made again exactly.
+ * Returns a function giving numbers from 0 up to (not including) 1.
+ */
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+/**
+ * Pattern "On a surface": `pattern.count` copies of m at random spots on
+ * the target's surface (bigger faces get more), each standing up from it.
+ */
+function scatterOnSurface(m) {
+  const target = meshesOf(objects).find((o) => o.userData.id === pattern.target && o !== m);
+  if (!target) { toast('Pick the object to scatter onto first (Onto).'); return; }
+  target.updateMatrixWorld(true);
+  m.updateMatrixWorld(true);
+  // 1. The target's triangles in the world, with how big each one is (and which way it faces).
+  const g = target.geometry, P = g.attributes.position, idx = g.index;
+  const corner = (t, k) => new THREE.Vector3().fromBufferAttribute(P, idx ? idx.getX(t * 3 + k) : t * 3 + k).applyMatrix4(target.matrixWorld);
+  const triCount = (idx ? idx.count : P.count) / 3;
+  const tris = [], areas = [];
+  let total = 0;
+  for (let t = 0; t < triCount; t++) {
+    const a = corner(t, 0), b = corner(t, 1), c = corner(t, 2);
+    const n = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a));
+    const area = n.length() / 2;
+    if (area <= 0) continue;
+    n.normalize();
+    if (pattern.up && n.y < 0.25) continue;               // "only where it faces up": skip sides and undersides
+    tris.push({ a, b, c, n });
+    total += area;
+    areas.push(total);                                    // running total, to pick a face by its size
+  }
+  if (!tris.length) { toast(target.name + ' has no faces that look up. Untick "Only where it faces up", or scatter onto something else.', 6000); return; }
+  // 2. Random spots: a face (bigger ones more often), then a point inside it.
+  const rnd = seededRandom(pattern.seed * 7919 + 13);
+  const size = worldBox([m]).getSize(new THREE.Vector3());
+  const gap = pattern.apart ? Math.max(size.x, size.z, 0.1) * 0.6 : 0;   // how close two copies may stand
+  const spots = [];
+  for (let tries = 0; spots.length < pattern.count && tries < pattern.count * 40; tries++) {
+    const r = rnd() * total;
+    let lo = 0, hi = areas.length - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (areas[mid] < r) lo = mid + 1; else hi = mid; }
+    const f = tris[lo];
+    let u = rnd(), v = rnd();
+    if (u + v > 1) { u = 1 - u; v = 1 - v; }               // (folds the point back inside the triangle)
+    const p = f.a.clone().addScaledVector(new THREE.Vector3().subVectors(f.b, f.a), u).addScaledVector(new THREE.Vector3().subVectors(f.c, f.a), v);
+    if (gap && spots.some((s) => s.p.distanceTo(p) < gap)) continue;   // too close to one already placed
+    spots.push({ p, n: f.n, twist: pattern.twist ? rnd() * Math.PI * 2 : 0, s: 1 + (rnd() * 2 - 1) * (pattern.vary / 100) });
+  }
+  if (!spots.length) { toast('No room found on ' + target.name + '. Untick "Keep them apart", or ask for fewer.'); return; }
+  // 3. The copies. Each keeps m's own turn and size, then: its size varies, it twists round its own up,
+  //    its up is turned to the surface's direction there, and its origin goes to the spot (plus the lift).
+  const own = new THREE.Matrix4().extractRotation(m.matrixWorld);
+  const ownScale = new THREE.Vector3().setFromMatrixScale(m.matrixWorld);
+  const base = own.clone().multiply(new THREE.Matrix4().makeScale(ownScale.x, ownScale.y, ownScale.z));
+  const up = new THREE.Vector3(0, 1, 0), made = [];
+  // How far its bottom is below its origin (once turned and sized): lifted by that, its bottom sits on the surface.
+  const below = -localBox(m).clone().applyMatrix4(base).min.y;
+  let at = siblingsOf(m).indexOf(m);
+  for (const s of spots) {
+    const d = freshIds(describe(m));
+    d.name = copyName(m.name);
+    const copy = createItem(d);
+    insertItem(copy, m.parent, ++at);
+    const align = new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(up, s.n));
+    const lift = pattern.lift + below * s.s;
+    const W = new THREE.Matrix4().makeTranslation(s.p.x + s.n.x * lift, s.p.y + s.n.y * lift, s.p.z + s.n.z * lift)
+      .multiply(align).multiply(new THREE.Matrix4().makeRotationY(s.twist))
+      .multiply(new THREE.Matrix4().makeScale(s.s, s.s, s.s)).multiply(base);
+    setWorldMatrix(copy, W);
+    made.push(copy);
+  }
+  const words = made.length + (made.length === 1 ? ' copy' : ' copies') + ' of ' + m.name + ' scattered on ' + target.name +
+    (made.length < pattern.count ? ' (only ' + made.length + ' fitted apart: untick "Keep them apart" for more)' : '');
+  if (pattern.group) {
+    setSelection(made, false);
+    const grp = groupSelection({ name: m.name + ' scatter', quiet: true });   // records the undo step
+    toast(words + (grp ? ', grouped as ' + grp.name : '')); announce(words);
+    return;
+  }
+  setSelection(made, false);
+  commit();
+  toast(words); announce(words);
+}
+/**
  * Hole mode: a hole is an object that will be cut away. It shows see-through
  * grey, is left out of exports, and any merge (or Join, for a group) cuts
  * it out of the solids.
@@ -9104,13 +9683,66 @@ function groupSection(g) {
  * steps, and a Thickness with the way it grows. A change rebuilds the
  * object's drawn copy; its own triangles and settings are untouched.
  */
+/**
+ * Turn Symmetry on, change it, or turn it off (sym null). The object's own
+ * triangles are made whole first (with the old symmetry, if any), then cut
+ * down to the one piece the new symmetry repeats - so 6 copies can become
+ * 8, or Mirror X become Mirror X + Z. Off keeps the whole, as it looks.
+ * A shape becomes a mesh (its own triangles are cut); Undo brings it back.
+ */
+function setSymmetry(m, sym) {
+  const u = m.userData, old = u.mods || null;
+  const own = u.type === 'mesh' ? (u.base || m.geometry) : buildShape(u.type, u.params, u.pivot);
+  let whole = weldGeometry(own);
+  if (u.type !== 'mesh') own.dispose();
+  if (old && old.sym) whole = applySymmetry(whole, old.sym);
+  let w = whole;
+  if (sym) for (const p of symPlanes(sym)) w = clipToPlane(w, p);
+  if (!w.tris.length) {
+    toast('Nothing of ' + m.name + ' is on that side of its centre point, so there is no piece to repeat. Move its points over, or pick another way.', 6000);
+    renderProps();
+    return;
+  }
+  // Do the copies meet? A slice of a shape that isn't that symmetric (a 6-pointed star cut for 8 copies)
+  // has cut edges that don't match their neighbour's: count the open edges before and after.
+  const gaps = sym ? weldedOpenEdges(applySymmetry(w, sym)) - weldedOpenEdges(whole) : 0;
+  const wasShape = u.type !== 'mesh';
+  const base = weldedToGeometry(w);
+  base.computeBoundingBox();
+  u.type = 'mesh'; u.params = null; u.base = base;
+  const next = { ...(old || { thick: 0, dir: 'in', smooth: 0 }) };
+  if (sym) next.sym = sym; else delete next.sym;
+  u.mods = hasMods(next) ? next : null;                // a new object each time: undo steps keep the old one
+  keepOnFloor(m, () => { rebuildMods(m); refreshWraps(); });
+  commit('', {});
+  const msg = sym ? 'Symmetry: ' + symWords(sym) + '. ' + m.name + ' keeps one piece; the copies make the rest. Edit its points (Tab) and they all change.'
+                  : 'Symmetry off: ' + m.name + ' keeps the whole shape, as one piece.';
+  announce(msg);
+  if (gaps > 0) {
+    const warn = 'The copies don\'t quite meet: ' + m.name + ' wasn\'t that symmetric to begin with, so ' + gaps + ' edges are left open. Undo, or pick a number of copies that fits its shape.';
+    toast(warn, 8000); announce(warn);
+  } else if (wasShape && sym) toast(m.name + ' is a mesh now (it keeps one piece of the shape). Undo turns it back into the shape.', 5000);
+}
+/** How many edges of welded triangles ({ tris }) are used by only one face: open edges, where the surface has a gap or a rim. */
+function weldedOpenEdges(w) {
+  const count = new Map();
+  for (let k = 0; k < w.tris.length; k += 3) {
+    for (let e = 0; e < 3; e++) {
+      const a = w.tris[k + e], b = w.tris[k + (e + 1) % 3], key = a < b ? a + ',' + b : b + ',' + a;
+      count.set(key, (count.get(key) || 0) + 1);
+    }
+  }
+  let open = 0;
+  for (const c of count.values()) if (c === 1) open++;
+  return open;
+}
 function modsSection(m) {
   const u = m.userData;
   const mods = u.mods || { thick: 0, dir: 'in', smooth: 0 };
   const targetOf = (id) => meshesOf(objects).find((o) => o.userData.id === id && o !== m);
-  const on = [mods.wrap && targetOf(mods.wrap.target) ? 'Shrunk onto ' + targetOf(mods.wrap.target).name : '',
+  const on = [symWords(mods.sym), mods.wrap && targetOf(mods.wrap.target) ? 'Shrunk onto ' + targetOf(mods.wrap.target).name : '',
     mods.thick ? 'Wall ' + fmt(mods.thick) + ' mm' : '', mods.smooth ? 'Smooth ' + mods.smooth : ''].filter(Boolean).join(', ');
-  const sec = section('Shrink, wall and smooth', false, on);
+  const sec = section('Symmetry, shrink, wall and smooth', false, on);
   const set = (change) => {
     const next = { ...mods, ...change };
     if (next.wrap === null) delete next.wrap;
@@ -9126,6 +9758,37 @@ function modsSection(m) {
     commit('', {});                                      // (redraws the Inspector: the section's note and the triangle count change)
     if (performance.now() - t0 > 1500) toast('That took a moment: Smooth on a big mesh makes a lot of triangles. Fewer steps keep it quick.', 5000);
   };
+  // 0. Symmetry (first of all: the whole is made from one piece, then shrunk, walled and smoothed).
+  const sym = mods.sym || null;
+  sec.body.append(segRow('Symmetry', [['off', 'Off'], ['mirror', 'Mirror'], ['around', 'Around']], sym ? sym.kind : 'off', (v) => {
+    if (v === 'off') setSymmetry(m, null);
+    else if (v === 'mirror') setSymmetry(m, { kind: 'mirror', x: true, y: false, z: false });
+    else setSymmetry(m, { kind: 'around', count: 6, axis: 'y' });
+  }));
+  if (sym && sym.kind === 'mirror') {
+    // Which mirrors: across X (left-right), Y (up-down) and Z (front-back), in any mix.
+    const row = el('div', 'btn-row');
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-label', 'Mirror across');
+    for (const a of ['x', 'y', 'z']) {
+      const lab = el('label', 'check'), box = document.createElement('input');
+      box.type = 'checkbox'; box.checked = !!sym[a];
+      box.addEventListener('change', () => {
+        const next = { ...sym, [a]: box.checked };
+        if (!next.x && !next.y && !next.z) { box.checked = true; toast('Keep at least one mirror on, or set Symmetry to Off.'); return; }
+        setSymmetry(m, next);
+      });
+      lab.append(box, ' ' + a.toUpperCase());
+      row.append(lab);
+    }
+    sec.body.append(el('div', 'subhead', 'Mirror across'), row);
+  }
+  if (sym && sym.kind === 'around') {
+    sec.body.append(field('Copies', numberBox({ value: sym.count, min: 2, max: 64, step: 1, int: true, label: 'Symmetry: number of copies around',
+      onSet: (v) => setSymmetry(m, { ...sym, count: v }) })));
+    sec.body.append(segRow('Round the axis', [['x', 'X'], ['y', 'Y'], ['z', 'Z']], sym.axis, (v) => setSymmetry(m, { ...sym, axis: v })));
+  }
+  sec.body.append(el('p', 'hint', 'Symmetry keeps one piece of the object - a half for Mirror, a slice for Around - and builds the rest from copies of it, through the object\'s own centre point. Edit the piece\'s points (Tab) and every copy changes too: one side of a hexagon, and all six follow. Off keeps the whole object as it looks now.'));
   // 1. Shrink onto (first: a sheet hugs the surface, then gets its wall).
   const tgt = document.createElement('select');
   tgt.append(new Option('Nothing (off)', ''));
@@ -11492,6 +12155,8 @@ const SHORTCUTS = [
     ['E', 'Extrude: pull the picked faces (or edges) out as new geometry, then drag it (click keeps, Escape takes it back)'],
     ['M', 'Merge the picked points into one, at their middle'], ['Shift+F', 'Fill a hole whose rim is picked, or make a face from 3 or 4 points'],
     ['Alt+click / L', 'Pick a whole loop: Alt+click an edge, or pick two points side by side and press L'],
+    ['Ctrl+L', 'Pick everything joined to the picked points'], ['Ctrl+B', 'Bevel: cut off the picked corners (the distance is in the Inspector)'],
+    ['K', 'Knife: click where a cut starts and ends (Inspector: Cut across X, Y or Z from the keyboard)'],
     ['F', 'Frame the picked points'], ['Alt+Z', 'X-ray: pick points behind the surface too']]],
   ['Scene list', [['Up / Down', 'Pick the next object'], ['Shift+Up / Down', 'Add the next object to the selection'],
     ['Right / Left', 'Show or hide the parts of a group'], ['F2', 'Rename'], ['H', 'Hide or show']]],
@@ -11593,6 +12258,8 @@ function setupKeyboard() {
       // Edit mode: Ctrl+A picks every point, Ctrl+I the others; duplicating and grouping wait until you are done.
       if (edit && k === 'a') { e.preventDefault(); editSelectAll(true); return; }
       if (edit && k === 'i') { e.preventDefault(); editInvert(); return; }
+      if (edit && k === 'l') { e.preventDefault(); editSelectLinked(); return; }          // (as in Blender)
+      if (edit && k === 'b') { e.preventDefault(); editBevel(editProp.bevel); return; }
       if (edit && (k === 'd' || k === 'g')) { e.preventDefault(); toast('Finish editing points first (Tab or Done).'); return; }
       if (k === 'y') { e.preventDefault(); redo(); return; }
       if (k === 'd') { e.preventDefault(); duplicateSelection(); return; }

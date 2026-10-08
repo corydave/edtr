@@ -1,5 +1,15 @@
 # 3DEDTR changelog
 
+## 0.17.0 - 2026-10-08 - Symmetry, scatter, and Bevel, Knife and Linked
+
+- **Symmetry** (the Inspector section is now *Symmetry, shrink, wall and smooth*): **Mirror** across X, Y and/or Z, or **Around** an axis with 2-64 copies (6 by default, round Y). The object keeps one piece - a half, a quarter, a slice - and the rest is made from copies of it through the object's own centre point. Edit the piece's points and every copy follows: one side of a hexagon, and all six change. Points on a cut stay on it as they move (Blender's Clipping), and for Around a point on one cut drags its partner on the other, so the copies always meet and the whole stays closed. Changing the number of copies or the mirrors re-cuts the whole; if the shape wasn't that symmetric (a 6-pointed star cut for 4 copies), it says how many edges are left open. **Off** keeps the whole shape as it looks now. Turning it on makes a shape a mesh (Undo brings the shape back). Saved in projects (`mods.sym`).
+- **Pattern, On a surface** (scatter): copies of the picked object land at random spots on another object's surface - bigger faces get more - each standing up from the surface with its bottom resting on it. Options: only where it faces up, a random twist, sizes that vary (%), a lift (mm), keep them apart, and a shuffle number (the same number always gives the same scatter). Grouped as "<name> scatter". Sprinkles on a donut, in one click.
+- **Edit mode:**
+  - **Bevel (Ctrl+B)** cuts off the picked corners, each becoming a small new face (distance in the Inspector, default 1 mm). Works on the real edges, not the diagonals across square faces.
+  - **Knife (K):** click where a cut starts and where it ends; the faces you can see between them are cut along that line (all of them with X-ray), and the new points are picked. **Cut across X / Y / Z** in the Inspector does a straight cut through the picked points' middle - the keyboard way.
+  - **Linked (Ctrl+L):** picks every point joined to the picked ones.
+- **Checked:** a 6-sided cylinder set to Around 6 keeps its exact volume and stays closed; its top raised and one corner pulled out (all six follow) stay closed; Mirror X + Z with Smooth 2 and a 1 mm wall is closed and survives a project save and reopen; 6 copies changed to 4 on a star warns about 28 open edges; 52 sprinkles scattered on a torus in one undo step; a box bevelled 4 mm at every corner is exactly 7914.67 mm³ and closed; knife and straight cuts leave boxes closed at 8000 mm³; axe finds nothing in the new Inspector parts.
+
 ## 0.16.0 - 2026-10-07 - Copy and paste; Extrude, Merge, Fill and loops
 
 - **Copy, cut and paste objects:** Ctrl+C, Ctrl+X, Ctrl+V (Cmd on a Mac) with the 3D view or the Scene list focused. Each paste lands 10 mm further right than the last; after a cut, the first paste goes back to the same spot. A copied part of a group pastes back into that group (or, if the group is gone, into the scene where it was). Keyframes come along. Copying text in a box or the Help panel works as usual. The copies live in this tab only (not the computer's clipboard).

@@ -97,7 +97,16 @@ Tab in the 3D view (with single-key shortcuts on), or **Edit points** in the Ins
   - `editMergeCentre` (M) and `editMergeClose` (a grid of boxes as wide as the distance, then union-find); `editMergeFinish` drops faces that fold to a line and pairs of faces on the same three points.
   - `editFill` (Shift+F): picked open edges are chained into rims; a rim of 3 or 4 gets one face, a longer one a fan round a new middle point. Otherwise 3 or 4 picked points make a face, ordered round their middle and turned towards the camera.
   - Loops (`editLoopFrom`): the triangles are put back into quads with `quadsOf` (as Smooth does); from an edge, the walk goes straight on through every point with exactly four edges, to the one edge that shares no piece with the incoming one. Alt+click picks the visible edge nearest the pointer (`editLoopClick`); L uses two picked neighbours.
+- **More tools (0.17.0):** `editSelectLinked` (Ctrl+L, a flood fill over `edit.nb`); `editBevel` (Ctrl+B: on the faces from `quadsOf`, each picked corner becomes two points on its edges, `bevel` mm along, at most 45% of the edge; the new face at each point is its cap edges chained into a ring and fanned - a 20 mm box with 4 mm bevels is exactly 8000 - 8 x 4³/6 mm³); `editCutPlane(plane, keep)` splits every crossed face along a plane in the object's own space and also splits the faces beside each cut edge, so nothing cracks; the Knife (K, `knifeClick`) makes that plane from two screen clicks and the camera, keeping faces whose middle is between the clicks and can be seen (all of them with X-ray); `editCutAcross` cuts straight across X, Y or Z through the picked points' middle.
 - **Copy and paste (objects):** `copySelection` keeps `describe()` of each picked object with its group's id and its world and local matrices (`clip`, in this tab only); `pasteClip` makes fresh ids, puts each copy back in its group if that group still exists (otherwise into the scene at its world place), moves it 10 mm per paste and carries its keyframes along (`keysFollow`). Only from the 3D view or the Scene list, so copying text elsewhere is untouched.
+
+## Symmetry
+
+`mods.sym` is `{ kind: 'mirror', x, y, z }` or `{ kind: 'around', count, axis }`, applied first in `applyMods` (`applySymmetry`): points within a hair of a cut are put on it, faces lying in a cut are left out, the piece is copied (mirror images with their faces reversed), and points on the cuts are joined (`closeGroups`, union-find in a grid). `setSymmetry` makes the object's triangles whole with the old symmetry, then cuts them to the new piece (`clipToPlane`, planes through the object's origin from `symPlanes`), so a shape becomes a mesh holding one piece; it warns when the copies' cuts don't match (`weldedOpenEdges` before and after). In Edit mode, `editSeamPoints` keeps moved points on their cut (on the axis: along it), and for Around moves each first-cut point's partner on the second cut with it, turned by one slice.
+
+## Pattern: On a surface
+
+`scatterOnSurface`: the target's world triangles (only those facing up, when asked) are picked by area with a seeded random maker (`seededRandom`, mulberry32), a random point in each; copies keep the object's own turn and scale, then vary in size, twist round their own up, have their up turned to the face's direction and their bottom (`localBox`) set on the surface plus the lift. "Keep them apart" refuses spots closer than 0.6 x the object's width. Grouped as "<name> scatter" by default; one undo step.
 
 ## Animated GLB
 
@@ -194,7 +203,7 @@ At 820 px wide or less the tool rail moves under the 3D view and the Inspector b
 
 ## Known gaps (later versions)
 
-- Mirroring; Edit mode has no knife, bevel or edge slide yet, and loops need four-sided pieces (they stop at triangles and poles)
+- Edit mode has no edge bevel with rounded segments or edge slide yet, and loops need four-sided pieces (they stop at triangles and poles)
 - A shell (hollow) tool, and compressed glTF
 - Overlapping shapes in an imported SVG stay overlapping solids (Merge, or Join, cleans them)
 - Raised bevelled text sunk into a plate less deep than its bevel leaves tiny slivers when merged (a CSG limit): sink it at least as deep as the bevel, or use bevel 0
