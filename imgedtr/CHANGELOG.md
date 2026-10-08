@@ -2,6 +2,19 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.15.0 - 2026-10-07 - Make a headshot
+
+- **New: Make a headshot**, a guided screen for profile photos. Start it from the splash ("Make a headshot") or the start screen ("Headshot"), and pick a photo (iPhone HEIC photos work too).
+  1. **Frame the face.** Drag the photo to put the face in the middle; the Zoom slider (100% to 500%), the mouse wheel or a trackpad pinch zooms in. On the canvas, the arrow keys move the photo (Shift: ten times further) and + and - zoom. Portrait photos start near the top, where faces usually are. **Choose a different photo** (or drop or paste one) swaps the photo and keeps the style.
+  2. **Style.** Circle or Square (Square has a Corners slider), a Border with its colour, and a Shadow with a Softness slider.
+  3. **Background.** None (see-through corners, the default), White, or a colour. A tip says to choose White if a website shows the corners black.
+  4. **Size and save.** 400, 800 (default) or 1024 pixels square. **Download PNG** (always PNG, so the corners can be see-through; named after the photo, for example *portrait-headshot.png*) and **Copy image**.
+- **The shadow is never cut off.** The photo shrinks by a margin worked out from the shadow (1.5 x its softness plus how far it falls), so the whole blur fits inside the square. Nobody has to set the margin by hand.
+- **Simple screen.** The tool rail, the Layers list and the layer action bar are hidden, and only the shortcuts that make sense still work (undo, redo, zoom, open, export, save project, copy image, help). On a phone the Inspector sheet opens by itself.
+- **Open in full editor** goes back to normal IMGEDTR with nothing lost: the headshot is one ordinary image layer (its crop is the framing, its corner radius the circle, plus its border and shadow) on a square canvas, so every tool, Undo and Save project work on it.
+- **Your style is remembered** for the next headshot (in IMGEDTR's settings in this browser; every value is checked when it is read back). Changing the size scales the border and shadow with it, so the look stays the same.
+- Undo and Redo cover every headshot change, and the panel always shows what is really in the picture.
+
 ## 1.14.1 - 2026-10-07 - DSKEDTR joins the family
 
 - **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.

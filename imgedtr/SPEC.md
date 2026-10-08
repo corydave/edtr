@@ -158,6 +158,10 @@ Perspective tilt per layer, Showcase export, brightness/contrast/saturation, alt
 - Handle `#sheetHandle` (role separator, Up/Down 8% of the screen, Home closes, End tallest, Enter/Space toggle; tap toggles, drag below 90px closes). Matches DSKEDTR 0.14.0.
 - `settings.sheet` = top of the sheet as a share of the screen from the bottom (default 1/3; the tool rail sits under the sheet). Limits: 120px open, and keep 140px of canvas. Closed on load, as before.
 
-## Roadmap (as of 1.14.0)
-1. **Animated GIFs** - see the project doc `IMGEDTR-GIF-SPEC.md`; milestones now start at 1.15.0.
-2. **Selection system** (after the GIF milestones). A real selection: the wand gets a **Select** action, plus a lasso and a rectangle select. Marching ants; actions on a selection: Fill, Recolor, Delete (erase), Copy to a new layer, Invert, Grow/Shrink, Feather; Escape clears it. The wand's Erase / Fill / Recolor stay as one-click shortcuts. Stored as recipes like the wand clicks, so it stays non-destructive.
+### 1.15.0 - Make a headshot (done)
+A guided screen (splash: "Make a headshot"; start screen: "Headshot") for round or square profile photos. One image layer on a square canvas of 400, 800 or 1024 px: the layer's crop is the framing (drag, zoom 100-500%, arrow keys, + and -), its radius makes the circle or the rounded square, plus border and shadow; the document background is None (transparent), White or a colour. The margin for the shadow is computed (ceil(1.5 x softness + drop) + 1, drop = softness / 3), so the shadow is never clipped. Rail, Layers list and layer actions are hidden; only a short list of shortcuts works. Export is always PNG. "Open in full editor" leaves the mode with nothing lost. The style is remembered in `settings.headshot` (validated key by key). Code: section 22 of `index.html`.
+
+## Roadmap (as of 1.15.0)
+1. **Animated GIFs** - see the project doc `IMGEDTR-GIF-SPEC.md`; milestones now start at 1.16.0.
+2. **Batch headshots (headshot phase 2).** Pick many photos at once (a department directory) and make them all with the same style and size: a strip of thumbnails to frame each face (auto-centred to start), then download them all (a ZIP made on the device, or one file at a time). Nothing uploaded.
+3. **Selection system** (after the GIF milestones). A real selection: the wand gets a **Select** action, plus a lasso and a rectangle select. Marching ants; actions on a selection: Fill, Recolor, Delete (erase), Copy to a new layer, Invert, Grow/Shrink, Feather; Escape clears it. The wand's Erase / Fill / Recolor stay as one-click shortcuts. Stored as recipes like the wand clicks, so it stays non-destructive.

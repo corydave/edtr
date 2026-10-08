@@ -292,7 +292,7 @@ body.layer-dragging, body.layer-dragging * { cursor: grabbing !important; user-s
 }
 .start-card h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: .06em; }
 .start-card p { margin: 0 0 20px; color: var(--text-muted); }
-.start-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.start-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .start-actions .btn { height: auto; flex-direction: column; padding: 16px 8px; gap: 8px; }
 .start-actions .btn svg { width: 26px; height: 26px; }
 .start-card kbd, .kbd { font: 12px ui-monospace, monospace; border: 1px solid var(--border); border-bottom-width: 2px;
@@ -472,6 +472,25 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 }
 /* Phones use the drawer button at the right edge instead. */
 @media (max-width: 820px) { #btnInspector { display: none; } }
+
+/* Headshot mode (section 22): a guided screen with just the picture and
+   the Headshot panel. The tool rail, the Layers list and the layer action
+   bar are hidden; "Open in full editor" brings them all back. */
+.app.headshot-mode { grid-template-columns: 1fr 292px; }
+.app.headshot-mode .rail,
+.app.headshot-mode #layersSection,
+.app.headshot-mode #layersSplitter,
+.app.headshot-mode #layerActions { display: none; }
+@media (max-width: 820px) {
+  /* Phones: no rail row at the bottom, so the sheet sits at the very bottom. */
+  .app.headshot-mode { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) 29px; }
+  .app.headshot-mode.sheet-open { grid-template-rows: minmax(0, 1fr) var(--sheet-h, calc(100vh / 3 - 56px)); }
+}
+/* Small headings that split the Headshot panel into steps. */
+.hs-step { margin: 14px 0 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.hs-step:first-child { margin-top: 0; }
+.hs-actions { display: grid; gap: 8px; margin-top: 12px; }
+.hs-actions .btn { width: 100%; justify-content: center; }
 
 /* Colours the shared splash and backup dialog use (see SUITE BLOCK styles). */
 :root { --suite-bg: var(--surface); --suite-fg: var(--text); --suite-accent: #305305; }
@@ -788,6 +807,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
           <button class="btn" id="startPaste"><span data-icon="clipboard"></span>Paste<span class="hint"><kbd>Ctrl</kbd>+<kbd>V</kbd></span></button>
           <button class="btn" id="startOpen"><span data-icon="folder"></span>Open image<span class="hint">or drop a file</span></button>
           <button class="btn" id="startNew"><span data-icon="filePlus"></span>Blank canvas<span class="hint">pick a size</span></button>
+          <button class="btn" id="startHeadshot"><span data-icon="headshot"></span>Headshot<span class="hint">round or square</span></button>
         </div>
         <p class="hint" style="margin:16px 0 0">PNG, JPEG, WebP, GIF, BMP, SVG, AVIF and iPhone HEIC photos - or an .imgedtr project.</p>
       </div>
@@ -865,6 +885,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 
 <!-- Hidden file picker, opened by the Open buttons. -->
 <input type="file" id="fileInput" accept="image/*,.heic,.heif,.imgedtr" multiple hidden>
+<!-- The photo picker for "Make a headshot" (section 22): one picture, no project files. -->
+<input type="file" id="headshotInput" accept="image/*,.heic,.heif" hidden>
 
 <!-- Screen-reader announcements (e.g. "Arrow added"). -->
 <div class="sr-only" aria-live="polite" id="announcer"></div>
@@ -1074,7 +1096,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     19. Teaching tools: steps, cursors, spotlight, redact, magnifier (Phase 3)
     20. Showcase: perspective tilt and the showcase export (Phase 4a)
     21. Finishing touches: adjustments, alt text, project files (Phase 4b)
-    (Sections 18 to 21 sit just before 16 in the file, because the
+    22. Headshot: the guided profile-photo maker
+    (Sections 18 to 22 sit just before 16 in the file, because the
      shortcut list in 16 refers to the tools they define.)
 
    BIG IDEA: every thing on the canvas (the screenshot, an arrow, a box,
@@ -1089,10 +1112,15 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.14.1';
+const APP_VERSION = '1.15.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 const CHANGELOG = [
+  { version: '1.15.0', date: '2026-10-07', notes: [
+    'New: Make a headshot, on the splash and the start screen. Pick a photo, drag it (or use the arrow keys) to put the face in the middle and zoom in, then choose a circle or a square with rounded corners, a border, a soft shadow and a background (none, white or a color). Download a PNG at 400, 800 or 1024 pixels, or copy it.',
+    'The shadow is never cut off: the photo shrinks just enough for the whole shadow to fit. With no background the corners are see-through; if a website shows them black, choose White.',
+    'The headshot screen hides the tools and layers to keep things simple. Open in full editor brings them back with nothing lost, because the headshot is one ordinary image layer. Your style is remembered for the next headshot.'
+  ] },
   { version: '1.14.1', date: '2026-10-07', notes: [
     'More apps and the splash\'s row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes.',
     'With nine apps in the family, the splash\'s row shows the eight others on one line on a computer, and 4 + 4 on a phone.'
@@ -1246,6 +1274,7 @@ const HEIC_LIB = {
 
 const MAX_SIDE = 8000;              // images bigger than this (px) are scaled down on load
 const MAX_FILE_BYTES = 150 * 1024 * 1024; // refuse files over 150 MB (protects memory)
+const HEADSHOT_SIZES = [400, 800, 1024];  // the headshot output sizes on offer, in pixels (section 22)
 const HANDLE_SIZE = 10;             // resize handle size, in screen pixels
 const ROTATE_OFFSET = 28;           // how far above a layer the rotate handle sits (screen px)
 
@@ -1329,6 +1358,7 @@ const ICONS = {
   copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   clipboard: '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   folder: '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+  headshot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 18.7a6 6 0 0 1 10 0"/>',
   filePlus: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/>',
   settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
@@ -1409,7 +1439,11 @@ const settings = {
   layersHeight: null,       // height of the Layers pane in pixels (null = automatic)
   sheet: null,              // phones: where the top of the Inspector sheet sits, as a share of the screen up from the bottom (null = 1/3)
   colorFormat: 'hex',       // how the color picker shows colors: 'hex', 'rgb' or 'cmyk'
-  disabledShortcuts: []     // ids of shortcuts the user switched off
+  disabledShortcuts: [],    // ids of shortcuts the user switched off
+  // The look of the last headshot (section 22), so the next one matches it.
+  // Sizes are in pixels at the chosen output size.
+  headshot: { size: 800, shape: 'circle', corners: 20, borderWidth: 0, borderColor: '#ffffff',
+    shadowOn: false, softness: 24, bg: 'none', bgColor: '#305305' }
 };
 function loadSettings() {
   try {
@@ -1423,6 +1457,19 @@ function loadSettings() {
     if (Number.isFinite(saved.layersHeight) && saved.layersHeight > 0 && saved.layersHeight < 5000) settings.layersHeight = saved.layersHeight;
     if (Number.isFinite(saved.sheet) && saved.sheet > 0 && saved.sheet < 1) settings.sheet = saved.sheet;
     if (Array.isArray(saved.disabledShortcuts)) settings.disabledShortcuts = saved.disabledShortcuts.filter((s) => typeof s === 'string');
+    // Headshot style: check every value on its own and keep the default for anything odd.
+    const hs = saved.headshot, d = settings.headshot;
+    if (hs && typeof hs === 'object') {
+      if (HEADSHOT_SIZES.includes(hs.size)) d.size = hs.size;
+      if (['circle', 'square'].includes(hs.shape)) d.shape = hs.shape;
+      if (Number.isFinite(hs.corners)) d.corners = clamp(Math.round(hs.corners), 0, 90);
+      if (Number.isFinite(hs.borderWidth)) d.borderWidth = clamp(Math.round(hs.borderWidth), 0, 200);
+      if (/^#[0-9a-f]{6}$/i.test(hs.borderColor || '')) d.borderColor = hs.borderColor;
+      if (typeof hs.shadowOn === 'boolean') d.shadowOn = hs.shadowOn;
+      if (Number.isFinite(hs.softness)) d.softness = clamp(Math.round(hs.softness), 0, 200);
+      if (['none', 'white', 'color'].includes(hs.bg)) d.bg = hs.bg;
+      if (/^#[0-9a-f]{6}$/i.test(hs.bgColor || '')) d.bgColor = hs.bgColor;
+    }
   } catch (e) { /* storage unavailable - defaults are fine */ }
 }
 function saveSettings() {
@@ -1461,6 +1508,7 @@ const state = {
   guides: [],              // smart-guide lines to draw while dragging (section 14)
   editingTextId: null,     // id of the text layer being typed into
   view: { zoom: 1, panX: 0, panY: 0, fitted: false, fitGrow: false },  // how the document sits in the workspace
+  headshot: null,          // while making a headshot (section 22): { layerId, name, style }; null otherwise
   counters: {}             // for naming layers "Arrow 1", "Arrow 2"...
 };
 // state.selectedId = the ONE selected layer (or null). It is an "accessor": setting it
@@ -2329,7 +2377,8 @@ async function importBlobs(blobs) {
       if (isProjectFile(blob)) { await openProject(blob); continue; }
       const { canvas, downscaled, converted } = await decodeImage(blob, blob.name);
       const name = cleanName(blob.name, 'Pasted image');
-      addImage(canvas, name);
+      // Making a headshot: a dropped or pasted photo swaps the photo instead (section 22).
+      if (state.headshot) replaceHeadshotPhoto(canvas, name); else addImage(canvas, name);
       if (converted) toast('HEIC photo converted to PNG on your device.');
       if (downscaled) toast('Large image scaled down to ' + canvas.width + ' x ' + canvas.height + ' to keep things fast.');
     } catch (err) {
@@ -3187,6 +3236,7 @@ const STYLE_KEYS = ['stroke', 'strokeWidth', 'fill', 'fillOn', 'radius', 'opacit
 function setProp(target, key, value, isLayer) {
   target[key] = value;
   if (target === toolDefaults.shape && key === 'kind') { state.lastShapeKey = value; updateShapesButton(); }
+  if (state.headshot && target === state.headshot.style) { headshotStyleChanged(key); return; }   // section 22
   if (isLayer) {
     // Remember this style for the next layer of the same type.
     // (A sign with its own colors - the red no sign - does not change the style of the next shape.)
@@ -3471,6 +3521,7 @@ function renderProps() {
   propRefs = [];
   const title = $('propsTitle');
   if (!doc) { title.textContent = 'Properties'; propsBody.append(el('p', { class: 'hint', text: 'Open or paste an image, or start a blank canvas.' })); return; }
+  if (state.headshot) { headshotPanel(title); return; }     // making a headshot: the guided panel (section 22)
 
   const L = selected();
 
@@ -4836,6 +4887,10 @@ function multiFields() {
 /** Call whenever layers were added/removed/reordered or the document changed. */
 function onDocumentShapeChanged() {
   $('startScreen').hidden = !!doc;
+  // Headshot mode (section 22) ends by itself if its photo is gone (undone, or
+  // another file opened). When its size changed (picked, or undone), re-fit the view.
+  if (state.headshot && !headshotLayer()) leaveHeadshot(false);
+  else if (state.headshot && state.headshot.shownSize !== doc.width) { state.headshot.shownSize = doc.width; fitView(true); }
   const noDoc = !doc;
   ['btnExport', 'btnCopyImage', 'btnSaveProject', 'btnZoomIn', 'btnZoomOut', 'btnZoom100', 'btnFit'].forEach((id) => { $(id).disabled = noDoc; });
   renderLayers(); renderProps(); requestRender();
@@ -7719,6 +7774,403 @@ async function openProject(file) {
 }
 
 /* -----------------------------------------------------------------------
+   22. HEADSHOT
+   A guided way to make a profile photo: pick a photo, drag it so the face
+   sits in the middle, choose a circle or a square, a border, a shadow and
+   a background, then download a PNG.
+
+   Nothing here is special underneath. A headshot is an ordinary document
+   with ONE ordinary image layer:
+     - the square canvas is the output size (400, 800 or 1024 pixels)
+     - the layer's crop picks which square of the photo shows (the framing)
+     - the layer's corner radius makes the circle (radius = half the width)
+     - the layer's border and shadow are the border and shadow
+     - the document background is the background (null = see-through)
+   So undo, Save project and "Open in full editor" all just work.
+
+   The shadow is never cut off: the photo is shrunk by a margin worked out
+   from the shadow's size, so the whole blur fits inside the canvas.
+
+   state.headshot = { layerId, name, style, shownSize } while this mode is on.
+   "style" holds the panel's choices (the same shape as settings.headshot).
+   ----------------------------------------------------------------------- */
+
+// The only shortcuts that still work while making a headshot (see the keydown handler in 16).
+const HEADSHOT_SHORTCUTS = ['undo', 'redo', 'zoom-in', 'zoom-out', 'zoom-fit', 'zoom-100', 'open', 'export',
+  'save-project', 'copy-image', 'help'];
+const HEADSHOT_ZOOM_MAX = 5;           // zoom into the photo up to 500%
+const HEADSHOT_SHADOW_OPACITY = 0.35;  // how dark the shadow is (the same as an image layer's default)
+
+/** The headshot's image layer, or null when we are not making a headshot. */
+function headshotLayer() {
+  if (!state.headshot || !doc) return null;
+  const L = getLayer(state.headshot.layerId);
+  return L && L.type === 'image' ? L : null;
+}
+
+// The largest border and shadow the sliders offer, in pixels at this size.
+const headshotMaxBorder = (size) => Math.round(size * 0.06);
+const headshotMaxSoftness = (size) => Math.round(size * 0.08);
+
+/* ---- Starting ---- */
+
+/** The splash and start screen button: ask for a photo. */
+function startHeadshot() { $('headshotInput').click(); }
+$('headshotInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';            // lets you pick the same photo twice in a row
+  if (file) makeHeadshot(file);
+});
+
+/** Open a photo as a new headshot (or, already making one, swap the photo). */
+async function makeHeadshot(file) {
+  suiteSplashClose();
+  finishTextEdit();
+  cancelCrop(false);
+  try {
+    setBusy(true, 'Opening photo...');
+    const { canvas, converted } = await decodeImage(file, file.name);
+    const name = cleanName(file.name, 'Photo');
+    if (converted) toast('HEIC photo converted to PNG on your device.');
+    if (headshotLayer()) { replaceHeadshotPhoto(canvas, name); return; }
+
+    // Start from the look used last time, kept inside the slider ranges.
+    const style = { ...settings.headshot };
+    style.borderWidth = Math.min(style.borderWidth, headshotMaxBorder(style.size));
+    style.softness = clamp(style.softness, 2, headshotMaxSoftness(style.size));
+
+    const imageId = uid();
+    imageStore.set(imageId, canvas);
+    const layer = { id: uid(), type: 'image', name, visible: true, locked: false, opacity: 1, rotation: 0,
+      imageId, x: 0, y: 0, w: style.size, h: style.size };
+    ensureImageStyle(layer);
+    const hadDoc = !!doc;
+    doc = { width: style.size, height: style.size, background: null, layers: [layer] };
+    state.selectedId = null;
+    state.headshot = { layerId: layer.id, name, style, shownSize: 0 };
+    frameWholePhoto(layer);
+    layoutHeadshot();
+    if (hadDoc) commit(); else resetHistory();     // replacing a document can be undone
+    enterHeadshotMode();
+    announce('Headshot started. Drag the photo, or use the arrow keys on the canvas, to put the face in the middle. ' +
+      'Then choose a style in the Headshot panel.');
+  } catch (err) {
+    toast(err.message || 'That photo could not be opened.', 5000);
+  } finally {
+    setBusy(false);
+  }
+}
+
+/** Swap the photo but keep the style (the "Choose a different photo" button, or a drop or paste). */
+function replaceHeadshotPhoto(canvas, name) {
+  const L = headshotLayer();
+  if (!L) return;
+  const imageId = uid();
+  imageStore.set(imageId, canvas);
+  L.imageId = imageId;
+  L.name = name;
+  delete L.erase; delete L.paint;          // erasing and colour changes belonged to the old photo
+  L.flipX = false; L.flipY = false;
+  state.headshot.name = name;
+  frameWholePhoto(L);
+  commit();
+  renderProps(); requestRender();
+  announce('Photo replaced. Drag it to frame the face.');
+}
+
+/** Show the guided screen: no tool rail, no Layers list, the Headshot panel. */
+function enterHeadshotMode() {
+  const app = document.querySelector('.app');
+  app.classList.add('headshot-mode');
+  app.classList.remove('panel-hidden');       // the panel IS the guide, so always show it
+  $('btnInspector').setAttribute('aria-pressed', 'true');
+  setTool('select');
+  if (window.matchMedia('(max-width: 820px)').matches) setSheetOpen(true);   // phones: open the sheet
+  stage.dataset.label = stage.getAttribute('aria-label');                     // put back when leaving
+  stage.setAttribute('aria-label', 'Headshot photo. Arrow keys move the photo (Shift: further); plus and minus zoom in and out.');
+  onDocumentShapeChanged();        // draws the panel and fits the picture in the window
+  stage.style.cursor = 'grab';
+}
+
+/**
+ * Leave the guided screen for the full editor. Nothing changes in the
+ * picture: it is one image layer, and every tool works on it as usual.
+ * selectPhoto = false when called because the photo is already gone.
+ */
+function leaveHeadshot(selectPhoto = true) {
+  const L = headshotLayer();
+  state.headshot = null;
+  headshotDrag = null;
+  document.querySelector('.app').classList.remove('headshot-mode');
+  if (stage.dataset.label) stage.setAttribute('aria-label', stage.dataset.label);
+  stage.style.cursor = 'default';
+  if (selectPhoto && L) {
+    selectLayer(L.id);               // shows the layer's own properties: corners, border, shadow...
+    toast('Full editor: your headshot is one image layer, so every tool works on it.');
+    stage.focus({ preventScroll: true });
+  }
+}
+
+/* ---- Framing: which square of the photo shows ---- */
+
+/** Start with the biggest square that fits. Portrait photos start near the top, where faces usually are. */
+function frameWholePhoto(L) {
+  const src = imageStore.get(L.imageId);
+  const side = Math.min(src.width, src.height);
+  const cy = src.height > src.width ? (src.height - side) * 0.2 + side / 2 : src.height / 2;
+  setHeadshotCrop(L, src.width / 2, cy, side);
+}
+
+/** Show the square of the photo centred on (cx, cy), "side" photo pixels wide, kept inside the photo. */
+function setHeadshotCrop(L, cx, cy, side) {
+  const src = imageStore.get(L.imageId);
+  const full = Math.min(src.width, src.height);
+  const c = clamp(side, full / HEADSHOT_ZOOM_MAX, full);
+  const round = (v) => Math.round(v * 100) / 100;          // tidy numbers in project files
+  L.crop = { x: round(clamp(cx - c / 2, 0, src.width - c)), y: round(clamp(cy - c / 2, 0, src.height - c)), w: round(c), h: round(c) };
+}
+
+/** How far we are zoomed into the photo: 1 = the biggest square that fits. */
+function headshotZoom(L) {
+  const src = imageStore.get(L.imageId);
+  return Math.min(src.width, src.height) / cropOf(L).w;
+}
+
+/** Zoom into the photo, keeping the middle of the view in the middle. */
+function setHeadshotZoom(z) {
+  const L = headshotLayer();
+  if (!L) return;
+  const src = imageStore.get(L.imageId), cr = cropOf(L);
+  setHeadshotCrop(L, cr.x + cr.w / 2, cr.y + cr.h / 2, Math.min(src.width, src.height) / clamp(z, 1, HEADSHOT_ZOOM_MAX));
+  commit('headshot:zoom');
+  requestRender();
+}
+/** Zoom by a factor (mouse wheel, + and - keys), then update the Zoom slider to match. */
+function zoomHeadshotBy(factor) {
+  const L = headshotLayer();
+  if (!L) return;
+  setHeadshotZoom(headshotZoom(L) * factor);
+  const zin = $('hsZoom');
+  if (zin) { zin.value = Math.round(headshotZoom(L) * 100); zin.dispatchEvent(new Event('sync')); }
+}
+
+/* ---- Style: shape, border, shadow, background, size ---- */
+
+/**
+ * Turn the style choices into the document and the layer. The margin
+ * leaves room for the shadow: a canvas blur fades out about 1.5 x its
+ * size from the edge, plus the distance the shadow drops down.
+ */
+function layoutHeadshot() {
+  const L = headshotLayer(), s = state.headshot.style;
+  doc.width = doc.height = s.size;
+  doc.background = s.bg === 'none' ? null : s.bg === 'white' ? '#ffffff' : s.bgColor;
+  const drop = Math.round(s.softness / 3);                     // how far the shadow falls
+  const margin = s.shadowOn ? Math.ceil(s.softness * 1.5 + drop) + 1 : 0;
+  L.x = L.y = margin;
+  L.w = L.h = s.size - margin * 2;
+  L.rotation = 0;
+  L.radius = s.shape === 'circle' ? L.w / 2 : (L.w / 2) * s.corners / 100;
+  L.borderWidth = s.borderWidth;
+  L.borderColor = s.borderColor;
+  L.shadowOn = s.shadowOn;
+  L.shadowBlur = s.softness;
+  L.shadowY = drop;
+  L.shadowOpacity = HEADSHOT_SHADOW_OPACITY;
+  L.shadowColor = '#000000';
+}
+
+/**
+ * Read the style back from the document (after Undo or Redo the document
+ * is the truth, and the panel must show what is really there).
+ */
+function readHeadshotStyle() {
+  const L = headshotLayer(), s = state.headshot.style;
+  s.size = doc.width;
+  s.shape = L.radius * 2 >= L.w - 0.5 ? 'circle' : 'square';
+  if (s.shape === 'square') s.corners = Math.round(L.radius / (L.w / 2) * 100);
+  s.borderWidth = L.borderWidth;
+  s.borderColor = L.borderColor;
+  s.shadowOn = !!L.shadowOn;
+  s.softness = L.shadowBlur;
+  s.bg = !doc.background ? 'none' : doc.background.toLowerCase() === '#ffffff' ? 'white' : 'color';
+  if (s.bg === 'color') s.bgColor = doc.background;
+}
+
+/** Called by setProp (section 13) when a Headshot panel control changes "key". */
+function headshotStyleChanged(key) {
+  const s = state.headshot.style;
+  if (key === 'size') {
+    // Keep the same look at the new size: the border and shadow grow or shrink with it.
+    const k = s.size / doc.width;
+    s.borderWidth = Math.round(s.borderWidth * k);
+    s.softness = Math.round(s.softness * k);
+  }
+  layoutHeadshot();
+  commit('headshot:' + key);              // slider drags become one undo step
+  settings.headshot = { ...s };           // the next headshot starts with this look
+  saveSettings();
+  requestRender();
+  if (key === 'size') { state.headshot.shownSize = s.size; fitView(true); }
+  // These change which controls the panel shows, or the sliders' ranges: rebuild it.
+  if (['size', 'shape', 'bg'].includes(key)) rebuildPanelKeepingFocus();
+}
+
+/** Rebuild the panel, then put keyboard focus back on the same control. */
+function rebuildPanelKeepingFocus() {
+  const a = document.activeElement;
+  const label = a && propsBody.contains(a) ? a.getAttribute('aria-label') : null;
+  renderProps();
+  if (!label) return;
+  const again = [...propsBody.querySelectorAll('[aria-label]')].find((n) => n.getAttribute('aria-label') === label);
+  if (again) again.focus();
+}
+
+/* ---- The Headshot panel (in the Inspector) ---- */
+function headshotPanel(title) {
+  const L = headshotLayer();
+  if (!L) return;
+  readHeadshotStyle();
+  const s = state.headshot.style;
+  title.textContent = 'Headshot';
+  const step = (text) => el('h3', { class: 'hs-step', text });
+
+  // Step 1: frame the face.
+  propsBody.append(step('1. Frame the face'));
+  propsBody.append(el('p', { class: 'hint', text: 'Drag the photo to put the face in the middle. ' +
+    'On the canvas, the arrow keys move it and + and - zoom.' }));
+  const zin = el('input', { type: 'range', id: 'hsZoom', min: 100, max: HEADSHOT_ZOOM_MAX * 100, step: 1,
+    value: Math.round(headshotZoom(L) * 100) });
+  const zout = el('output', { for: 'hsZoom', text: zin.value + '%' });
+  zin.addEventListener('input', () => { setHeadshotZoom(Number(zin.value) / 100); zout.textContent = zin.value + '%'; });
+  zin.addEventListener('sync', () => { zout.textContent = zin.value + '%'; });     // zoomed some other way
+  propsBody.append(el('div', { class: 'field' }, el('label', { for: 'hsZoom', text: 'Zoom' }), el('div', { class: 'range-wrap' }, zin, zout)));
+  propsBody.append(el('div', { class: 'btn-row' },
+    el('button', { type: 'button', class: 'btn', text: 'Choose a different photo', onclick: startHeadshot })));
+
+  // Step 2: the shape, border and shadow.
+  propsBody.append(step('2. Style'));
+  propsBody.append(segField('Shape', s, [
+    { key: 'shape', value: 'circle', text: 'Circle', aria: 'Circle' },
+    { key: 'shape', value: 'square', text: 'Square', aria: 'Square' }], false));
+  if (s.shape === 'square') propsBody.append(rangeField('Corners', s, 'corners', false, 0, 90, 1, 1, '%'));
+  propsBody.append(rangeField('Border', s, 'borderWidth', false, 0, headshotMaxBorder(s.size), 1, 1, ' px'));
+  propsBody.append(colorField('Border color', s, 'borderColor', false));
+  propsBody.append(checkField('Shadow', s, 'shadowOn', false));
+  propsBody.append(rangeField('Softness', s, 'softness', false, 2, headshotMaxSoftness(s.size), 1, 1, ' px'));
+
+  // Step 3: what fills the corners.
+  propsBody.append(step('3. Background'));
+  propsBody.append(segField('Background', s, [
+    { key: 'bg', value: 'none', text: 'None', aria: 'No background, see-through' },
+    { key: 'bg', value: 'white', text: 'White', aria: 'White background' },
+    { key: 'bg', value: 'color', text: 'Color', aria: 'Background color of your choice' }], false));
+  if (s.bg === 'color') propsBody.append(colorField('Color', s, 'bgColor', false));
+  propsBody.append(el('p', { class: 'hint', text: 'None keeps the corners see-through, which suits most websites. ' +
+    'If the corners come out black after you upload it somewhere, choose White.' }));
+
+  // Step 4: the size, and getting it out.
+  propsBody.append(step('4. Size and save'));
+  propsBody.append(segField('Size (px)', s, HEADSHOT_SIZES.map((n) =>
+    ({ key: 'size', value: n, text: String(n), aria: n + ' by ' + n + ' pixels' })), false));
+  propsBody.append(el('div', { class: 'hs-actions' },
+    el('button', { type: 'button', class: 'btn primary', text: 'Download PNG', onclick: downloadHeadshot }),
+    el('button', { type: 'button', class: 'btn', text: 'Copy image', onclick: copyImage }),
+    el('button', { type: 'button', class: 'btn', text: 'Open in full editor', onclick: () => leaveHeadshot() })));
+  propsBody.append(el('p', { class: 'hint', text: 'Your photo stays on this device. The PNG has no camera or location details.' }));
+}
+
+/** Download the headshot as a PNG (always PNG, so the corners can be see-through). */
+async function downloadHeadshot() {
+  if (!headshotLayer()) return;
+  try {
+    setBusy(true, 'Exporting...');
+    const blob = await exportBlob('image/png');
+    const url = URL.createObjectURL(blob);
+    const a = el('a', { href: url, download: safeFileName(state.headshot.name + '-headshot', 'png') });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);    // free the memory afterwards
+    exportedSnapshot = history.current;      // no "unsaved work" warning now
+    backup.markSafe();                       // ...and no crash backup needed
+    toast('Downloaded ' + a.download + ' (' + doc.width + ' x ' + doc.height + ' pixels)');
+  } catch (e) {
+    toast('Export failed. Please try again.');
+  } finally { setBusy(false); }
+}
+
+/* ---- Dragging, the mouse wheel and keys on the canvas ----
+   These listeners use the "capture" phase, so they run BEFORE the normal
+   tool code in section 11. In headshot mode they handle the event and
+   stop it there; otherwise they do nothing and the tools work as usual. */
+let headshotDrag = null;     // the drag in progress: { id, p (start point), cx, cy (start crop centre) }
+
+stage.addEventListener('pointerdown', (e) => {
+  if (!state.headshot) return;
+  e.stopImmediatePropagation();
+  stage.focus({ preventScroll: true, focusVisible: false });
+  const L = headshotLayer();
+  if (!L || headshotDrag || e.button !== 0) return;     // one finger or button at a time
+  e.preventDefault();
+  const sp = stagePoint(e), cr = cropOf(L);
+  headshotDrag = { id: e.pointerId, p: screenToDoc(sp.x, sp.y), cx: cr.x + cr.w / 2, cy: cr.y + cr.h / 2 };
+  stage.setPointerCapture(e.pointerId);
+  stage.style.cursor = 'grabbing';
+}, true);
+
+stage.addEventListener('pointermove', (e) => {
+  if (!state.headshot) return;
+  e.stopImmediatePropagation();
+  const L = headshotLayer();
+  if (!L || !headshotDrag || e.pointerId !== headshotDrag.id) { stage.style.cursor = 'grab'; return; }
+  const sp = stagePoint(e), p = screenToDoc(sp.x, sp.y), cr = cropOf(L);
+  const k = cr.w / L.w;            // photo pixels per canvas pixel
+  // The photo follows the pointer, so the visible square moves the other way.
+  setHeadshotCrop(L, headshotDrag.cx - (p.x - headshotDrag.p.x) * k, headshotDrag.cy - (p.y - headshotDrag.p.y) * k, cr.w);
+  requestRender();
+}, true);
+
+function endHeadshotDrag(e) {
+  if (!state.headshot) return;
+  e.stopImmediatePropagation();
+  if (!headshotDrag || e.pointerId !== headshotDrag.id) return;
+  headshotDrag = null;
+  stage.style.cursor = 'grab';
+  commit();                       // one undo step per drag
+}
+stage.addEventListener('pointerup', endHeadshotDrag, true);
+stage.addEventListener('pointercancel', endHeadshotDrag, true);
+// A double-click would start cropping the layer: not needed here.
+stage.addEventListener('dblclick', (e) => { if (state.headshot) e.stopImmediatePropagation(); }, true);
+
+// Mouse wheel or trackpad pinch: zoom into the photo (not the view).
+stage.addEventListener('wheel', (e) => {
+  if (!state.headshot) return;
+  e.stopImmediatePropagation();
+  e.preventDefault();
+  zoomHeadshotBy(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)));
+}, { capture: true, passive: false });
+
+// Keys on the canvas: arrows move the photo (Shift: ten times further), + and - zoom.
+stage.addEventListener('keydown', (e) => {
+  if (!state.headshot || e.ctrlKey || e.metaKey || e.altKey) return;
+  const L = headshotLayer();
+  if (!L) return;
+  const cr = cropOf(L);
+  const d = cr.w * (e.shiftKey ? 0.1 : 0.01);
+  // Arrow right moves the PHOTO right, so the visible square moves left.
+  const move = { ArrowLeft: [d, 0], ArrowRight: [-d, 0], ArrowUp: [0, d], ArrowDown: [0, -d] }[e.key];
+  if (move) {
+    setHeadshotCrop(L, cr.x + cr.w / 2 + move[0], cr.y + cr.h / 2 + move[1], cr.w);
+    commit('headshot:move');
+    requestRender();
+  } else if (e.key === '+' || e.key === '=') zoomHeadshotBy(1.1);
+  else if (e.key === '-' || e.key === '_') zoomHeadshotBy(1 / 1.1);
+  else return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+}, true);
+
+/* -----------------------------------------------------------------------
    16. KEYBOARD SHORTCUTS
    Each shortcut can be switched off in the Info panel (for example when a
    Chromebook or OS shortcut clashes). "mod" = Ctrl on Windows/Chromebook,
@@ -7819,6 +8271,8 @@ document.addEventListener('keydown', (e) => {
   // Inside the layer list, arrow keys belong to the list.
   if (e.key.startsWith('Arrow') && layerList.contains(e.target)) return;
   for (const sc of SHORTCUTS) {
+    // Headshot mode has no tools or layer list, so only a few shortcuts make sense there.
+    if (state.headshot && !HEADSHOT_SHORTCUTS.includes(sc.id)) continue;
     if (shortcutOn(sc.id) && sc.test(e)) {
       if (!doc && !['open', 'help', 'escape'].includes(sc.id) && !sc.id.startsWith('tool-')) return;
       if (!sc.allowDefault) e.preventDefault();
@@ -9017,6 +9471,7 @@ $('startNew').addEventListener('click', openNew);
 $('btnOpen').addEventListener('click', openPicker);
 $('btnSaveProject').addEventListener('click', saveProject);
 $('startOpen').addEventListener('click', openPicker);
+$('startHeadshot').addEventListener('click', startHeadshot);
 $('btnPaste').addEventListener('click', pasteFromButton);
 $('startPaste').addEventListener('click', pasteFromButton);
 $('btnUndo').addEventListener('click', undo);
@@ -9442,7 +9897,8 @@ async function startUp() {
     actions: [
       { label: 'Open an image', detail: 'PNG, JPEG, WebP, HEIC and more, or an .imgedtr project', run: openPicker, primary: true },
       { label: 'Paste from clipboard', detail: 'A screenshot you just copied', run: pasteFromButton },
-      { label: 'Blank canvas', detail: 'Pick a size and start drawing', run: openNew }
+      { label: 'Blank canvas', detail: 'Pick a size and start drawing', run: openNew },
+      { label: 'Make a headshot', detail: 'A round or square profile photo with a see-through background', run: startHeadshot }
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
     hint: 'You can also drop or paste an image anywhere in this window.'
