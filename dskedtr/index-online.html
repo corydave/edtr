@@ -460,6 +460,21 @@ legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
 .tpl-thumb { display: grid; place-items: center; height: 124px; background: var(--bg); border-radius: 6px; padding: 6px; }
 .tpl-thumb svg { max-width: 100%; max-height: 112px; width: auto; height: auto; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
 .tpl-name { font-weight: 700; }
+/* Colour schemes: a strip of the six colours; cards that show which is in use; the six fields. */
+.scheme-strip { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); flex: none; }
+.scheme-strip span { width: 14px; height: 18px; }
+.scheme-btn { display: flex; width: 100%; align-items: center; justify-content: flex-start; gap: 10px; text-align: left; }
+.scheme-thumb { display: flex; flex-direction: column; gap: 6px; }
+.scheme-thumb svg { max-height: 86px; }
+.tpl-card[aria-pressed="true"] { border: 2px solid var(--accent-text); padding: 7px; }
+.scheme-own { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 8px; }
+.scheme-slot { display: flex; align-items: center; gap: 8px; }
+/* Swatches under the Inspector's colour fields: the scheme's six. */
+.swatch-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.swatch { all: unset; box-sizing: border-box; width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--fg); }
+.swatch:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.swatch:disabled { opacity: .35; cursor: default; }
 .tpl-detail { font-size: 12px; color: var(--muted); }
 .help-dialog .dlg-head { padding: 0 16px 8px; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); padding: 0 16px; overflow-x: auto; scrollbar-width: thin; }
@@ -886,6 +901,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <svg viewBox="0 0 24 24"><g transform="rotate(-45 12 12)"><rect x="1.5" y="9" width="8.5" height="6" rx="3"/><rect x="14" y="9" width="8.5" height="6" rx="3"/></g><path d="M8 8 6 6M16 16l2 2"/></svg></button>
     <button type="button" data-act="crop" aria-pressed="false" aria-label="Crop" title="Crop: move and size the picture inside its frame (Enter)">
       <svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/></svg></button>
+    <button type="button" data-act="cropShape" aria-label="Crop to shape" title="Crop to shape: cut the picture to the shape (Alt+Shift+P)">
+      <svg viewBox="0 0 24 24"><path d="M12 2.5l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 16.9 6.3 20l1.2-6.4-4.7-4.4 6.4-.8Z"/><path d="M7.5 15.5l3-3.5 2.5 2.5 1.5-1.5 2.5 2.5" stroke-width="1.5"/></svg></button>
     <button type="button" data-act="unlock" aria-label="Unlock" title="Unlock: it can be moved and picked on the page again">
       <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></button>
     <button type="button" data-act="group" aria-label="Group" title="Group: they move and size together (Ctrl+G)">
@@ -1002,11 +1019,18 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <div class="fold-body" id="docBody" hidden>
       <label class="field">Title (screen readers and PDF viewers show it)<input type="text" id="docTitle" maxlength="200"></label>
       <label class="field" style="margin-top:8px">Language<select id="docLang"></select></label>
+      <!-- Colour scheme (section 2): its six colours and name; opens the Colour scheme dialog. -->
+      <button class="btn scheme-btn" id="schemeBtn" aria-haspopup="dialog" style="margin-top:10px"></button>
       <p class="muted reserve2" id="pageInfo" style="font-size:12px;margin-top:8px"></p>
       <button class="btn" id="pageSetupBtn">Page setup…</button>
       <div id="pageMasterRow">
         <label class="field" style="margin-top:12px"><span id="pageMasterLabel">Master page for this page</span><select id="pageMaster"></select></label>
         <div class="btn-row"><button class="btn" id="masterAllBtn">Use it for every page</button><button class="btn" id="masterEditBtn">Edit master pages</button></div>
+        <!-- The master's empty picture frames this page can fill with its own picture (see fillPlaceholderList). -->
+        <div role="group" aria-labelledby="capPlaceholders" id="placeholderRow" hidden style="margin-top:10px">
+          <span class="tool-caption" id="capPlaceholders">Picture placeholders on this page</span>
+          <div class="btn-row" id="placeholderList" style="margin-top:0"></div>
+        </div>
       </div>
       <span class="tool-caption" style="margin-top:14px">Your fonts</span>
       <ul class="font-list" id="fontList"></ul>
@@ -1094,6 +1118,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <h2><button class="fold" data-fold="pictureBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Picture</span><span class="fold-note" id="pictureNote"></span></button></h2>
       <div class="fold-body" id="pictureBody" hidden>
       <p id="picInfo" class="muted reserve2"></p>
+      <p id="picPlaceholder" class="muted" hidden></p>
       <p id="picWarn" class="warn reserve2" role="status"></p>
       <div class="row">
         <button class="btn" id="picChooseBtn">Choose picture…</button>
@@ -1117,6 +1142,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <label class="check"><input type="radio" name="frameShape" value="shape"> <span id="frameShapeName">A shape from the gallery</span></label>
         <div class="btn-row"><button class="btn" id="frameShapeBtn" aria-haspopup="dialog">Choose a shape…</button></div>
         <label class="field" style="margin-top:8px" id="picRadiusRow"><span>Rounded corners (<span class="u-short">in</span>)</span><input type="number" id="picRadius" class="u-input" min="0"></label>
+        <p class="muted" style="font-size:12px;margin:8px 0 0">Or cut it to a shape on the page: put the shape over the picture, pick both, then Crop to shape (in the pill, in Arrange, or Alt+Shift+P).</p>
       </fieldset>
       </div>
     </section>
@@ -1236,8 +1262,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       </div>
       <hr class="rule">
       <div role="group" aria-labelledby="capMerge">
-        <span class="tool-caption" id="capMerge">Merge shapes (two or more rectangles, ellipses or merged shapes)</span>
-        <div class="icon-row"><button class="icon-sm" data-merge="union" aria-label="Union: join into one shape" title="Union: join into one shape (Alt+Shift+U)"><svg viewBox="0 0 24 24"><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 1 0 12 6.8Z" fill="currentColor" fill-opacity=".35"/></svg></button><button class="icon-sm" data-merge="combine" aria-label="Combine: join, cutting out the overlap" title="Combine: join, cutting out the overlap (Alt+Shift+C)"><svg viewBox="0 0 24 24"><path d="M3 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0ZM9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" fill="currentColor" fill-opacity=".35" fill-rule="evenodd"/></svg></button><button class="icon-sm" data-merge="fragment" aria-label="Fragment: break into pieces where they overlap" title="Fragment: break into pieces where they overlap (Alt+Shift+F)"><svg viewBox="0 0 24 24"><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 1 1 12 17.2A6 6 0 0 0 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".6"/></svg></button><button class="icon-sm" data-merge="intersect" aria-label="Intersect: keep only the overlap" title="Intersect: keep only the overlap (Alt+Shift+I)"><svg viewBox="0 0 24 24"><path d="M3 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".45"/></svg></button><button class="icon-sm" data-merge="subtract" aria-label="Subtract: cut the others out of the first one picked" title="Subtract: cut the others out of the first one picked (Alt+Shift+S)"><svg viewBox="0 0 24 24"><path d="M9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".35"/></svg></button></div>
+        <span class="tool-caption" id="capMerge">Merge shapes (two or more rectangles, ellipses or merged shapes; or a picture and a shape)</span>
+        <div class="icon-row"><button class="icon-sm" data-merge="union" aria-label="Union: join into one shape" title="Union: join into one shape (Alt+Shift+U)"><svg viewBox="0 0 24 24"><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 1 0 12 6.8Z" fill="currentColor" fill-opacity=".35"/></svg></button><button class="icon-sm" data-merge="combine" aria-label="Combine: join, cutting out the overlap" title="Combine: join, cutting out the overlap (Alt+Shift+C)"><svg viewBox="0 0 24 24"><path d="M3 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0ZM9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" fill="currentColor" fill-opacity=".35" fill-rule="evenodd"/></svg></button><button class="icon-sm" data-merge="fragment" aria-label="Fragment: break into pieces where they overlap" title="Fragment: break into pieces where they overlap (Alt+Shift+F)"><svg viewBox="0 0 24 24"><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 1 1 12 17.2A6 6 0 0 0 12 6.8Z" fill="currentColor" fill-opacity=".2"/><path d="M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".6"/></svg></button><button class="icon-sm" data-merge="intersect" aria-label="Intersect: keep only the overlap" title="Intersect: keep only the overlap (Alt+Shift+I)"><svg viewBox="0 0 24 24"><path d="M3 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".45"/></svg></button><button class="icon-sm" data-merge="subtract" aria-label="Subtract: cut the others out of the first one picked" title="Subtract: cut the others out of the first one picked (Alt+Shift+S)"><svg viewBox="0 0 24 24"><path d="M9 12a6 6 0 1 0 12 0a6 6 0 1 0-12 0Z" stroke-dasharray="2 2" stroke-width="1.5"/><path d="M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8Z" fill="currentColor" fill-opacity=".35"/></svg></button><button class="icon-sm" id="cropShapeBtn" aria-label="Crop to shape: cut the picture to the shape" title="Crop to shape: cut the picture to the shape picked with it (Alt+Shift+P)"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 16.9 6.3 20l1.2-6.4-4.7-4.4 6.4-.8Z"/><path d="M7.5 15.5l3-3.5 2.5 2.5 1.5-1.5 2.5 2.5" stroke-width="1.5"/></svg></button></div>
       </div>
       </div>
     </section>
@@ -1557,11 +1583,11 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <div role="tabpanel" id="paneStart" aria-labelledby="tabStart" tabindex="0" hidden>
       <p style="margin-top:0">DSKEDTR makes things to print or share as a PDF: newsletters, flyers, posters, programs, booklets. Here is a newsletter from start to finish.</p>
       <h3>1. Start</h3>
-      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card or a sign), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border. Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
+      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card or a sign), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border. Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
       <h3>2. Text boxes, and text that flows</h3>
       <p>Pick the Text box tool (T) and drag on the page. Type. Headings are paragraph roles: Heading 1, Heading 2, Body and Caption, in the Inspector's Paragraph section (or Ctrl+Alt+1, 2, 0, 9). Below the role is its style: size, line and letter spacing, kerning, space above and below, alignment and colour. Changing it changes every paragraph with that role, so all your headings stay alike. When a box is too full, a red <strong>+</strong> appears. Click or tap the round chain-link tab just below its bottom-right corner (or Link in the floating pill), then click an empty text box, even on another page: the text carries on there. Unlink in the pill stops the flow again. A text box can also split into columns (up to six, with the gap you choose): Text flow, in the Inspector. The text fills one column, then the next, then the next linked box.</p>
       <h3>3. Pictures and shapes</h3>
-      <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector).</p>
+      <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector). To cut a picture to a shape, put the shape over it where you want the cut, pick both, and choose <strong>Crop to shape</strong> in the floating pill (or Alt+Shift+P). An empty picture frame on a <strong>master page</strong> is a placeholder: on each page that uses the master, double-click it or drop a picture on it to give that page its own picture (the Document section lists them too).</p>
       <h3>Tables</h3>
       <p>The Table tool (B) draws a table: drag for one that size, or click for one that fits its words. Type in a cell; Tab goes to the next one, row by row. Each row grows to fit what is in it. The Inspector's Table section adds and deletes rows and columns (beside the cell you are typing in), turns the header row and banded rows on or off, and sets their colours; Look sets the lines. While you type in a cell, the floating pill above the table inserts a row above or below it, or a column left or right of it, or deletes its row or column. Drag the line between two columns, or the green tab above it, to change their widths. Screen readers read a table's cells row by row, and the header row tells them what each column holds.</p>
       <h3>4. Pages</h3>
@@ -1571,7 +1597,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <h3>Check it</h3>
       <p>The <strong>Accessibility</strong> tab beside the Inspector (or the person button in the top bar, which shows how many problems there are) lists what to fix: a missing title, missing alt text, text too faint against what is behind it, text that doesn't fit, and more. Each has a button that goes straight to it. It can also show the page as someone with colour blindness or blurred vision sees it.</p>
       <h3>6. Save and share</h3>
-      <p><strong>Save project</strong> (Ctrl+Shift+S) keeps everything editable in a <em>.dskedtr</em> file, with the pictures inside. <strong>Export</strong> (Ctrl+S) makes a PDF of every page for printing or sharing, or a PNG picture of one page. If the browser closes before you save, DSKEDTR offers your work back the next time it opens (that copy stays in this browser only).</p>
+      <p><strong>Save project</strong> (Ctrl+Shift+S) keeps everything editable in a <em>.dskedtr</em> file, with the pictures inside. <strong>Export</strong> (Ctrl+S) makes a PDF of every page for printing or sharing, or a PNG picture of one page. The PDF is tagged: screen readers get its headings and paragraphs in your reading order, the alt text of pictures and shapes, tables with their header rows, and links (decoration is marked to be skipped). If the browser closes before you save, DSKEDTR offers your work back the next time it opens (that copy stays in this browser only).</p>
     </div>
     <div role="tabpanel" id="paneAbout" aria-labelledby="tabAbout" tabindex="0" hidden>
       <p style="margin-top:0"><strong>DSKEDTR</strong> <span id="aboutVersion"></span> is desktop publishing in the browser, for the things people used Microsoft Publisher for. It is being built in steps; the Changelog says what each one added.</p>
@@ -1651,6 +1677,22 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <div class="tpl-grid" id="newTplGrid" role="group" aria-labelledby="newTplHead"></div>
 </dialog>
 
+<!-- ===================== COLOUR SCHEME ===================== -->
+<dialog id="schemeDialog" class="tpl-dialog" aria-labelledby="schemeTitle" aria-describedby="schemeNote">
+  <div class="dlg-head">
+    <h2 id="schemeTitle">Colour scheme</h2>
+    <button class="icon-btn" id="schemeClose" aria-label="Close" title="Close">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <p class="muted tpl-note" id="schemeNote">Six colours that go together. Pick a scheme and everything that uses the old scheme's colours (or a lighter or darker shade of one) changes to match; your own colours stay. Each card shows this page in that scheme. Undo (Ctrl+Z) puts the colours back.</p>
+  <div class="tpl-grid" id="schemeGrid" role="group" aria-labelledby="schemeTitle"></div>
+  <h3 class="tpl-sub" id="schemeOwnHead">This document's colours: <span id="schemeOwnName"></span></h3>
+  <p class="muted tpl-note">Change one, and everything that uses it changes too. Text: body text. Main: headings, bands and rules. Accent 1 and 2: more colours. Pale and Light: fills behind text.</p>
+  <div class="scheme-own" id="schemeOwn" role="group" aria-labelledby="schemeOwnHead"></div>
+  <p id="schemeWarn" class="warn reserve2" role="status"></p>
+</dialog>
+
 <!-- ===================== BUILDING BLOCKS ===================== -->
 <dialog id="blocksDialog" class="tpl-dialog" aria-labelledby="blocksTitle" aria-describedby="blocksNote">
   <div class="dlg-head">
@@ -1698,7 +1740,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.21.3';
+const APP_VERSION = '0.24.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -2065,6 +2107,121 @@ const ROLES = {
 const ROLE_KEYS = { '1': 'h1', '2': 'h2', '0': 'body', '9': 'caption' };
 const TEXT_COLOUR = '#1b1f24';
 
+/* ---------- Colour schemes (0.24.0) ----------
+   A document has a colour scheme (doc.scheme): six colours that go
+   together, as Publisher's colour schemes do. Each has a job:
+     0 Text      body text: dark, at least 7:1 on white and on Pale
+     1 Main      headings, bands, rules (white words on it read clearly)
+     2 Accent 1  a second colour
+     3 Accent 2  a third colour, often a warm one
+     4 Pale      a light fill: sidebars, table headers, shapes
+     5 Light     a light, nearly neutral fill: banded table rows
+   Colours are still stored as plain "#rrggbb" everywhere (so drawing,
+   printing and checking never change). Picking another scheme RECOLOURS
+   the document: every colour that is one of the old scheme's colours
+   becomes the new scheme's colour for that job, and a lighter or darker
+   shade of one (mixed with white or black) becomes the same shade of the
+   new one. Anything else (white, black, your own colours) stays as it is.
+   New shapes, tables and building blocks start in the scheme's colours,
+   and every colour field in the Inspector offers the six as swatches. */
+const SCHEME_SLOTS = ['Text', 'Main', 'Accent 1', 'Accent 2', 'Pale', 'Light'];
+const SCHEMES = [
+  { name: 'Lakeside',  colours: ['#1b1f24', '#065f46', '#10b981', '#b45309', '#d1fae5', '#f1f5f9'] },   // DSKEDTR's own emerald
+  { name: 'Harbor',    colours: ['#1b1f24', '#1e3a8a', '#3b82f6', '#f59e0b', '#dbeafe', '#f1f5f9'] },
+  { name: 'Harvest',   colours: ['#1c1917', '#78350f', '#b45309', '#fbbf24', '#fef3c7', '#fafaf9'] },
+  { name: 'Ember',     colours: ['#1c1917', '#9a3412', '#ea580c', '#ca8a04', '#ffedd5', '#fafaf9'] },
+  { name: 'Orchard',   colours: ['#1b1f24', '#991b1b', '#dc2626', '#65a30d', '#fee2e2', '#f8fafc'] },
+  { name: 'Meadow',    colours: ['#1a2e05', '#3f6212', '#65a30d', '#ca8a04', '#ecfccb', '#fafaf9'] },
+  { name: 'Ocean',     colours: ['#0f1f24', '#115e59', '#14b8a6', '#0369a1', '#ccfbf1', '#f1f5f9'] },
+  { name: 'Sunrise',   colours: ['#1b1f24', '#0f766e', '#ea580c', '#eab308', '#ffedd5', '#f8fafc'] },
+  { name: 'Lilac',     colours: ['#1e1b2e', '#5b21b6', '#8b5cf6', '#db2777', '#ede9fe', '#f8fafc'] },
+  { name: 'Berry',     colours: ['#1b1f24', '#9d174d', '#ec4899', '#7c3aed', '#fce7f3', '#f8fafc'] },
+  { name: 'Classroom', colours: ['#1b1f24', '#1d4ed8', '#dc2626', '#facc15', '#fef9c3', '#f1f5f9'] },
+  { name: 'Slate',     colours: ['#0f172a', '#334155', '#64748b', '#0ea5e9', '#e2e8f0', '#f8fafc'] },
+  { name: 'Grayscale', colours: ['#111111', '#333333', '#777777', '#555555', '#e5e5e5', '#f5f5f5'] }
+];
+const schemeNamed = (name) => SCHEMES.find((sc) => sc.name === name) || SCHEMES[0];
+/** The six colours by job, for code that reads better with names: c.main, c.pale... */
+const slots = (c) => ({ text: c[0], main: c[1], accent1: c[2], accent2: c[3], pale: c[4], light: c[5] });
+const LAKESIDE = slots(SCHEMES[0].colours);
+/** The scheme of document d (a document from before 0.24.0 has Lakeside's). */
+function schemeOf(d) {
+  const dd = d || doc;
+  return dd && dd.scheme && Array.isArray(dd.scheme.colours) ? dd.scheme : SCHEMES[0];
+}
+/** The open document's colour for a job: 0 Text, 1 Main, 2 Accent 1, 3 Accent 2, 4 Pale, 5 Light. */
+const schemeColour = (slot) => schemeOf().colours[slot];
+/** "#rrggbb" as [r, g, b], and back (each 0 to 255). */
+const rgbOfHex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const hexOfRgb = (a) => '#' + a.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+/** Colour `hex` mixed with white: t = 0 is the colour itself, t = 1 is white (a lighter tint). */
+const tint = (hex, t) => hexOfRgb(rgbOfHex(hex).map((v) => v + (255 - v) * t));
+
+/**
+ * A function that recolours one "#rrggbb" from scheme `from` to scheme
+ * `to` (each an array of six colours). A colour that IS one of from's
+ * becomes to's colour for the same job. A shade of one (that colour mixed
+ * with white, or with black, by some amount t, to within 2.5 levels in
+ * each of red, green and blue) becomes the same mix of to's colour.
+ * Anything else comes back unchanged. Answers are remembered, since a
+ * document uses the same few colours many times.
+ */
+function colourMapper(from, to) {
+  const memo = new Map();
+  return (c) => {
+    if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return c;
+    c = c.toLowerCase();
+    if (memo.has(c)) return memo.get(c);
+    let out = c;
+    const exact = from.indexOf(c);
+    if (exact >= 0) out = to[exact];
+    else {
+      const v = rgbOfHex(c);
+      let best = null;
+      from.forEach((slot, k) => {
+        if (slot === to[k]) return;                    // that job's colour isn't changing
+        const a = rgbOfHex(slot);
+        for (const base of [255, 0]) {                 // mixed with white, then with black
+          // The amount t that comes closest (least squares over the three channels).
+          let num = 0, den = 0;
+          for (let j = 0; j < 3; j++) { num += (v[j] - a[j]) * (base - a[j]); den += (base - a[j]) ** 2; }
+          if (den < 300) continue;                     // the slot colour is (almost) white or black already
+          const t = num / den;
+          if (t <= 0.02 || t >= 0.98) continue;        // not really a mix
+          const err = Math.max(...[0, 1, 2].map((j) => Math.abs(a[j] + (base - a[j]) * t - v[j])));
+          if (err <= 2.5 && (!best || err < best.err)) best = { k, base, t, err };
+        }
+      });
+      if (best) out = hexOfRgb(rgbOfHex(to[best.k]).map((x) => x + (best.base - x) * best.t));
+    }
+    memo.set(c, out);
+    return out;
+  };
+}
+/**
+ * Recolour document d (or just some of its objects and stories) with
+ * `map`: every fill, outline, table shading, shadow, text colour and
+ * paragraph style colour. Returns how many colours changed.
+ */
+function recolourDoc(d, map, only) {
+  let n = 0;
+  const swap = (holder, key) => {
+    const v = holder[key];
+    if (typeof v !== 'string') return;
+    const w = map(v);
+    if (w !== v) { holder[key] = w; n++; }
+  };
+  const objects = only ? only.objects : d.pages.concat(d.masters || []).flatMap((pg) => pg.objects);
+  for (const o of objects) {
+    for (const key of ['fill', 'stroke', 'headerFill', 'bandFill']) swap(o, key);
+    if (o.shadow) swap(o.shadow, 'colour');
+  }
+  const stories = only ? only.stories : Object.values(d.stories);
+  for (const st of stories) for (const r of st.runs || []) swap(r, 'c');
+  if (!only) for (const role in d.styles) swap(d.styles[role], 'colour');
+  return n;
+}
+
 /* Each document keeps its own copy of how every role looks (doc.styles),
    so a newsletter's headings can be bigger, centred or green without
    changing what they MEAN. A style is:
@@ -2189,7 +2346,7 @@ function sampleDocument() {
     pages: [
       { id: 'p1', master: 'm1', readingOrder: [], readingOrderAuto: true, objects: [
         // inset = the gap between a text box's edge and its text
-        { id: 'd1', type: 'rect', name: 'Sidebar background', x: 402, y: 146, w: 156, h: 210, fill: '#e7f6ef', stroke: null, strokeWidth: 0, decorative: true, alt: '', group: 'g1' },
+        { id: 'd1', type: 'rect', name: 'Sidebar background', x: 402, y: 146, w: 156, h: 210, fill: tint(LAKESIDE.pale, 0.45), stroke: null, strokeWidth: 0, decorative: true, alt: '', group: 'g1' },
         { id: 'd0', type: 'line', name: 'Rule under the title', x1: 54, y1: 127.5, x2: 558, y2: 127.5, stroke: '#065f46', strokeWidth: 3, decorative: true, alt: '' },
         { id: 'f0', type: 'text', story: 's0', x: 54,  y: 54,  w: 504, h: 66,  inset: 3 },
         { id: 'f1', type: 'text', story: 's1', x: 54,  y: 146, w: 156, h: 440, inset: 3 },
@@ -2251,10 +2408,45 @@ function masterFor(pi) {
   if (m && m.even && (pi + 1) % 2 === 0) m = masterById(m.even) || m;
   return m;
 }
+/*
+ * Picture placeholders on a master. An EMPTY picture frame on a master page
+ * is a placeholder: every page that uses that master can put its own picture
+ * in it. The page then gets its own copy of the frame, with the picture in
+ * it (o.fromMaster names the master's frame), and the master's empty frame
+ * is left out on that page. Deleting the page's copy brings the empty
+ * placeholder back. The copy is an ordinary picture: it moves, crops,
+ * prints, wraps text and takes alt text like any other.
+ */
+const isPlaceholder = (o) => o.type === 'picture' && !o.image && !o.hidden;
+/** The master's things that page pi shows: all of them, except placeholders this page has filled. */
+function masterObjectsOn(pi) {
+  const m = masterFor(pi);
+  if (!m) return [];
+  const filled = new Set(pageNo(pi).objects.map((o) => o.fromMaster).filter(Boolean));
+  return filled.size ? m.objects.filter((o) => !filled.has(o.id)) : m.objects;
+}
+/** The master's empty picture frames that page pi can still fill. */
+const placeholdersOn = (pi) => masterObjectsOn(pi).filter(isPlaceholder);
+/** The topmost master placeholder under point p on page pi (or null). */
+function placeholderAt(p, pi = pageIndex) {
+  const list = placeholdersOn(pi);
+  for (let i = list.length - 1; i >= 0; i--) if (hitObject(list[i], p)) return list[i];
+  return null;
+}
+/** Page pi's own copy of master placeholder m (empty for now), behind everything else on the page. */
+function fillPlaceholder(m, pi) {
+  const o = JSON.parse(JSON.stringify(m));          // the same frame: place, size, shape, outline, wrap, alt text
+  o.id = newId('o');
+  o.fromMaster = m.id;
+  delete o.locked; delete o.group;                  // the master's lock and groups stay on the master
+  pageNo(pi).objects.unshift(o);
+  reindex();
+  return o;
+}
+
 /** What page pi shows, back to front: its master's things first, then its own. */
 function pageObjectsWithMaster(pi) {
-  const m = masterFor(pi);
-  return (m ? m.objects : []).concat(pageNo(pi).objects);
+  return masterObjectsOn(pi).concat(pageNo(pi).objects);
 }
 
 const curPage = () => pageNo(pageIndex);
@@ -2472,7 +2664,7 @@ function makeTable(id, r, rows, cols) {
   const t = {
     id, type: 'table', name: TYPE_NAMES.table + ' ' + (countOf('table') + 1), x: r.x, y: r.y, w: r.w, h: r.h || 1,
     cols: new Array(cols).fill(r.w / cols), rows: new Array(rows).fill(r.h > 0 ? r.h / rows : 0), cells: [],
-    header: true, banded: false, headerFill: '#d1fae5', bandFill: '#f1f5f9', fill: null,
+    header: true, banded: false, headerFill: schemeColour(4), bandFill: schemeColour(5), fill: null,   // the scheme's Pale and Light
     stroke: '#475569', strokeWidth: 0.75, pad: 4
   };
   for (let i = 0; i < rows; i++) { const row = []; for (let j = 0; j < cols; j++) row.push(makeCell(t)); t.cells.push(row); }
@@ -2954,8 +3146,7 @@ function wrapObstacles(f, cache) {
   if (page) {
     const fb = bounds(f), fc = centreOf(f);
     const local = (poly) => (f.rotation ? poly.map((q) => rotatePoint(q, -f.rotation, fc)) : poly);
-    const m = masterFor(pi);
-    for (const o of (m ? m.objects : []).concat(page.objects)) {
+    for (const o of masterObjectsOn(pi).concat(page.objects)) {
       if (!o.wrap || o.wrap.mode === 'none' || o.hidden || o.type === 'text') continue;
       const gap = (o.wrap.gap || 0) + (o.stroke && o.strokeWidth > 0 ? o.strokeWidth / 2 : 0);
       const b = bounds(o);
@@ -3649,7 +3840,7 @@ function snapshot() {
   return {
     state: JSON.stringify({
       title: doc.title, lang: doc.lang, page: doc.page, styles: doc.styles, stories: doc.stories, groups: doc.groups,
-      pages: doc.pages, masters: masterList(), guides: doc.guides, nextId: doc.nextId
+      pages: doc.pages, masters: masterList(), guides: doc.guides, scheme: schemeOf(), nextId: doc.nextId
     }),
     pageIndex, storyId: id, sel, editing: focusedStoryId != null, selected: selectedIds.slice()
   };
@@ -4083,6 +4274,198 @@ function wireWrap() {
   });
 }
 
+/* ---------- Colour schemes in the Inspector (section 2) ---------- */
+/**
+ * Make `colours` (six) the document's scheme, recolouring everything that
+ * used the old one. One undo step (`undoKind` groups a run of changes
+ * from one colour field). Returns how many colours changed.
+ */
+function setScheme(colours, name, undoKind) {
+  const from = schemeOf().colours.slice();
+  recordUndo(undoKind || 'other');
+  const n = recolourDoc(doc, colourMapper(from, colours));
+  doc.scheme = { name, colours: colours.slice() };
+  relayoutAndRender();
+  updateInspector();
+  return n;
+}
+/** A small row of the six colours (for the Document section, cards and the dialog). */
+function schemeStrip(colours) {
+  const strip = document.createElement('span');
+  strip.className = 'scheme-strip';
+  strip.setAttribute('aria-hidden', 'true');
+  for (const c of colours) { const sw = document.createElement('span'); sw.style.background = c; strip.append(sw); }
+  return strip;
+}
+/** The Document section's scheme button: its name and colours. */
+function fillSchemeButton() {
+  const sc = schemeOf();
+  const sig = sc.name + sc.colours.join('');
+  const btn = $('schemeBtn');
+  if (btn.dataset.sig === sig) return;
+  btn.dataset.sig = sig;
+  clear(btn);
+  btn.append(schemeStrip(sc.colours));
+  const t = document.createElement('span');
+  t.textContent = 'Colour scheme: ' + sc.name;
+  btn.append(t);
+}
+/** Which preset these six colours are (or null: the document's own). */
+const presetFor = (colours) => SCHEMES.find((sc) => sc.colours.every((c, i) => c === colours[i])) || null;
+/** Contrast warnings for six colours: where text would be hard to read. */
+function schemeWarnings(c) {
+  const out = [];
+  const need = (a, b, min, words) => { const r = contrastRatio(a, b); if (r < min) out.push(words + ' is ' + r.toFixed(1) + ':1 (needs ' + min + ':1)'); };
+  need(c[0], '#ffffff', 4.5, 'Text on white');
+  need(c[0], c[4], 4.5, 'Text on Pale');
+  need(c[0], c[5], 4.5, 'Text on Light');
+  need(c[1], '#ffffff', 4.5, 'Main on white (and white on Main)');
+  return out;
+}
+/** The Colour scheme dialog: a card per scheme (your page, in its colours), and the document's own six. */
+function openSchemes() {
+  if (printPreview) setPrintPreview(false);
+  if (focusedStoryId) stopEditingToFrame(focusedStoryId);
+  const grid = $('schemeGrid');
+  clear(grid);
+  const pi = isMasterIndex(pageIndex) ? 0 : pageIndex;
+  const cur = schemeOf().colours;
+  for (const sc of SCHEMES) {
+    const card = galleryCard(sc.name, '', null, () => {
+      if (sc.colours.every((c, i) => c === schemeOf().colours[i])) return;
+      const n = setScheme(sc.colours, sc.name);
+      fillSchemeDialog();
+      announce('Colour scheme: ' + sc.name + '. ' + (n ? n + ' colour' + (n === 1 ? '' : 's') + ' changed.' : 'Nothing in the document used the old colours yet.'));
+    }, sc.name);
+    card.querySelector('.tpl-thumb').classList.add('scheme-thumb');
+    card.querySelector('.tpl-thumb').append(schemeStrip(sc.colours));
+    grid.append(card);
+  }
+  fillSchemeDialog();
+  $('schemeDialog').showModal();
+  (grid.querySelector('[aria-pressed="true"]') || grid.querySelector('button')).focus();
+  // This page, in each scheme's colours: drawn one at a time, so the dialog opens at once.
+  const d0 = JSON.parse(JSON.stringify(doc));
+  let i = 0;
+  const next = () => {
+    if (i >= SCHEMES.length || !$('schemeDialog').open) return;
+    const sc = SCHEMES[i++];
+    const d = JSON.parse(JSON.stringify(d0));
+    recolourDoc(d, colourMapper(cur, sc.colours));
+    const box = grid.querySelector('[data-key="' + sc.name + '"] .tpl-thumb');
+    if (box) box.prepend(previewSVG(d, pi, null, 'sch-' + i));
+    requestAnimationFrame(next);
+  };
+  requestAnimationFrame(next);
+}
+/** Mark the scheme in use, and fill in the document's own six colours and any warnings. */
+function fillSchemeDialog() {
+  const sc = schemeOf();
+  for (const card of $('schemeGrid').querySelectorAll('.tpl-card')) {
+    const on = card.dataset.key === sc.name && !!presetFor(sc.colours);
+    card.setAttribute('aria-pressed', String(on));
+    card.querySelector('.tpl-detail').textContent = on ? 'In use' : '';
+  }
+  SCHEME_SLOTS.forEach((label, k) => setField($('schemeSlot' + k), sc.colours[k]));
+  setText('schemeOwnName', sc.name);
+  const warn = schemeWarnings(sc.colours);
+  setText('schemeWarn', warn.length ? 'Hard to read: ' + warn.join('; ') + '.' : '');
+}
+function wireSchemes() {
+  $('schemeBtn').addEventListener('click', openSchemes);
+  $('schemeClose').addEventListener('click', () => $('schemeDialog').close());
+  // The document's own six: change one, and everything that used it changes too.
+  const own = $('schemeOwn');
+  SCHEME_SLOTS.forEach((label, k) => {
+    const lab = document.createElement('label');
+    lab.className = 'scheme-slot';
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.id = 'schemeSlot' + k;
+    const words = document.createElement('span');
+    words.textContent = label;
+    lab.append(input, words);
+    own.append(lab);
+    input.addEventListener('input', () => {
+      const colours = schemeOf().colours.slice();
+      colours[k] = input.value.toLowerCase();
+      const preset = presetFor(colours);
+      setScheme(colours, preset ? preset.name : 'Your own', 'field:scheme' + k);   // a preset's colours again: its name again
+      fillSchemeDialog();
+    });
+  });
+  wireSwatches();
+}
+
+/*
+ * Swatches: under each colour field in the Inspector, the scheme's six
+ * colours as small buttons. One Tab stop per row (Left and Right move
+ * along it); pressing one sets the field, exactly as picking that colour
+ * in the field would. A mouse press doesn't take focus, so a word being
+ * coloured stays highlighted.
+ */
+const SWATCH_FIELDS = [['fillColor', 'Fill'], ['strokeColor', 'Outline'], ['chColour', 'Text'], ['stColour', 'Text'], ['tblHeadFill', 'Header row'], ['tblBandFill', 'Band']];
+function wireSwatches() {
+  for (const [id, what] of SWATCH_FIELDS) {
+    const input = $(id), row = document.createElement('div');
+    // Fill and Outline: a swatch works even when the field is off ("None"): it gives the shape that colour.
+    const always = id === 'fillColor' || id === 'strokeColor';
+    if (always) row.dataset.always = '1';
+    row.className = 'swatch-row';
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-label', what + ': scheme colours');
+    row.dataset.for = id;
+    SCHEME_SLOTS.forEach((label, k) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'swatch';
+      b.dataset.slot = k;
+      b.setAttribute('aria-label', label);
+      b.tabIndex = k ? -1 : 0;
+      b.addEventListener('mousedown', (e) => e.preventDefault());
+      b.addEventListener('click', () => {
+        if (input.disabled && !always) return;
+        if (input.disabled) {
+          // "None" was ticked: untick it first (that also gives an outline a width), then set the colour.
+          const none = $(id === 'fillColor' ? 'fillNone' : 'strokeNone');
+          none.checked = false;
+          none.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        input.value = schemeColour(k);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        updateSwatches();
+      });
+      row.append(b);
+    });
+    row.addEventListener('keydown', (e) => {
+      const all = [...row.querySelectorAll('.swatch')], i = all.indexOf(document.activeElement);
+      if (i < 0) return;
+      const j = e.key === 'ArrowRight' ? (i + 1) % all.length : e.key === 'ArrowLeft' ? (i + all.length - 1) % all.length : e.key === 'Home' ? 0 : e.key === 'End' ? all.length - 1 : -1;
+      if (j < 0) return;
+      e.preventDefault();
+      all.forEach((x, n) => { x.tabIndex = n === j ? 0 : -1; });
+      all[j].focus();
+    });
+    input.closest('.color-row').after(row);
+  }
+  updateSwatches();
+}
+/** Each swatch row: the scheme's colours now, which one the field has, and off when the field is. */
+function updateSwatches() {
+  const c = schemeOf().colours;
+  for (const row of document.querySelectorAll('.swatch-row')) {
+    const input = $(row.dataset.for), v = (input.value || '').toLowerCase();
+    for (const b of row.querySelectorAll('.swatch')) {
+      const hex = c[b.dataset.slot];
+      b.style.background = hex;
+      b.title = SCHEME_SLOTS[b.dataset.slot] + ' (' + hex + ')';
+      b.disabled = input.disabled && !row.dataset.always;
+      b.setAttribute('aria-pressed', String(v === hex));
+    }
+  }
+}
+
 /* ---------- Masters in the Inspector ---------- */
 function masterOptions(sel, none, skipId) {
   const sig = none + '|' + masterList().map((m) => m.id + ':' + m.name).join('|') + '|' + skipId;
@@ -4095,11 +4478,30 @@ function masterOptions(sel, none, skipId) {
 }
 /** Document section: which master this page uses. */
 function fillPageMaster() {
+  fillSchemeButton();
   const sel = $('pageMaster');
   masterOptions(sel, 'None', '');
   setText('pageMasterLabel', 'Master page for page ' + (pageIndex + 1));
   setField(sel, curPage().master || '');
   $('masterAllBtn').disabled = !masterList().length;
+  fillPlaceholderList();
+}
+/** One button per master placeholder this page hasn't filled yet: each opens the file picker for it. */
+function fillPlaceholderList() {
+  const list = isMasterIndex(pageIndex) ? [] : placeholdersOn(pageIndex);
+  show('placeholderRow', list.length > 0);
+  const box = $('placeholderList');
+  const sig = pageIndex + '|' + list.map((o) => o.id + ':' + objName(o)).join('|');
+  if (box.dataset.sig === sig) return;             // unchanged: keep the buttons (and the focus on one)
+  box.dataset.sig = sig;
+  clear(box);
+  for (const o of list) {
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.textContent = 'Add a picture to ' + objName(o) + '\u2026';
+    b.addEventListener('click', () => choosePicture({ placeholderId: o.id, pi: pageIndex }));
+    box.appendChild(b);
+  }
 }
 /** The Master page section, for the master showing. */
 function fillMaster() {
@@ -4108,9 +4510,11 @@ function fillMaster() {
   masterOptions($('masterEven'), 'This master (the same on every page)', m.id);
   setField($('masterEven'), m.even || '');
   const users = doc.pages.map((pg, i) => (pg.master === m.id ? i + 1 : 0)).filter(Boolean);
-  setText('masterInfo', users.length ? 'Used by page' + (users.length > 1 ? 's ' : ' ') + users.join(', ') + '. Things here show behind each page’s own; they can only be changed here.' : 'No page uses it yet: pick it for a page in Document (nothing picked, on that page).');
+  setText('masterInfo', (users.length ? 'Used by page' + (users.length > 1 ? 's ' : ' ') + users.join(', ') + '. Things here show behind each page’s own; they can only be changed here.' : 'No page uses it yet: pick it for a page in Document (nothing picked, on that page).') +
+    ' An empty picture frame here is a placeholder: each page can put its own picture in it.');
 }
 function wireMasters() {
+  wireSchemes();
   $('pageMaster').addEventListener('change', () => setPageMaster(pageIndex, $('pageMaster').value));
   $('masterAllBtn').addEventListener('click', () => useMasterEverywhere($('pageMaster').value));
   $('masterEditBtn').addEventListener('click', toggleMasters);
@@ -4518,7 +4922,7 @@ function lineLinks(ln, text) {
     let a = i - ln.paraStart, b = a;
     while (a > 0 && looks[a - 1].href === href) a--;
     while (b < last && looks[b + 1].href === href) b++;
-    cur = { x1: ln.x0 + ln.xs[i - ln.start], x2, href, text: text.slice(ln.paraStart + a, ln.paraStart + b + 1).trim() };
+    cur = { x1: ln.x0 + ln.xs[i - ln.start], x2, href, start: ln.paraStart + a, text: text.slice(ln.paraStart + a, ln.paraStart + b + 1).trim() };
     out.push(cur);
   }
   return out;
@@ -4710,16 +5114,34 @@ function renderFrames() {
     layers.frames.appendChild(svgEl('path', { d: tableLinesD(o), fill: 'none', stroke: '#94a3b8', 'stroke-width': 0.75, 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke' }));
   }
   // Empty picture frames: a pale box with a cross, until a picture goes in.
-  for (const o of pageObjs()) {
-    if (o.type !== 'picture' || o.image || o.hidden) continue;
+  // On a master, each one is a placeholder (it says so); on a page, the
+  // master's placeholders show in teal, saying how to fill them.
+  const onMaster = editingMaster();
+  const emptyFrame = (o, placeholder, words) => {
     const g = withRot(svgEl('g', {}), o);
-    g.appendChild(frameShapeEl(o, { fill: 'rgba(148,163,184,0.14)', stroke: '#94a3b8', 'stroke-width': 1, 'stroke-dasharray': '4 3', 'vector-effect': 'non-scaling-stroke' }));
+    const line = placeholder ? '#0d9488' : '#94a3b8';
+    g.appendChild(frameShapeEl(o, { fill: placeholder ? 'rgba(13,148,136,0.08)' : 'rgba(148,163,184,0.14)', stroke: line, 'stroke-width': 1, 'stroke-dasharray': '4 3', 'vector-effect': 'non-scaling-stroke' }));
     // The cross goes corner to corner (for an ellipse: to the points on its edge at 45 degrees).
     const k = o.frameShape === 'ellipse' ? Math.SQRT1_2 : 1;
     const cx = o.x + o.w / 2, cy = o.y + o.h / 2, dx = o.w / 2 * k, dy = o.h / 2 * k;
-    g.appendChild(svgEl('path', { d: 'M' + (cx - dx) + ' ' + (cy - dy) + 'L' + (cx + dx) + ' ' + (cy + dy) + 'M' + (cx + dx) + ' ' + (cy - dy) + 'L' + (cx - dx) + ' ' + (cy + dy), stroke: '#cbd5e1', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+    g.appendChild(svgEl('path', { d: 'M' + (cx - dx) + ' ' + (cy - dy) + 'L' + (cx + dx) + ' ' + (cy + dy) + 'M' + (cx + dx) + ' ' + (cy - dy) + 'L' + (cx - dx) + ' ' + (cy + dy), stroke: placeholder ? '#99d5cf' : '#cbd5e1', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+    // A label in the middle: the long words if they fit across the frame, else the short ones, else none.
+    // (About 6.5 screen pixels a letter at this size; an ellipse has less room across than its box.)
+    const room = o.w * (o.frameShape === 'ellipse' || hasMask(o) ? 0.8 : 0.94);
+    words = (words || []).find((w) => w.length * 6.5 * px <= room);
+    if (words && o.h > 28 * px) {
+      const t = svgEl('text', { x: cx, y: cy + 4 * px, 'text-anchor': 'middle', 'font-size': 12 * px, 'font-weight': 600,
+        'font-family': 'system-ui, sans-serif', fill: '#115e59', stroke: '#ffffff', 'stroke-width': 3 * px, 'paint-order': 'stroke' });
+      t.textContent = words;
+      g.appendChild(t);
+    }
     layers.frames.appendChild(g);
+  };
+  for (const o of pageObjs()) {
+    if (o.type !== 'picture' || o.image || o.hidden) continue;
+    emptyFrame(o, onMaster, onMaster ? ['Placeholder: each page adds its own', 'Placeholder'] : null);
   }
+  if (!onMaster) for (const o of placeholdersOn(pageIndex)) emptyFrame(o, true, ['Double-click or drop a picture', 'Add a picture']);
   if (focusStory && doc.stories[focusStory] && isCellStory(focusStory)) {
     // Typing in a table: the cell gets a green outline (cells have no ports: they never link).
     const cell = obj(doc.stories[focusStory].frames[0]);
@@ -5068,10 +5490,11 @@ function createObject(type, r) {
     o = makeTable(id, r, 3, 3);                      // three rows (the first a header row) and three columns
   } else if (type === 'line') {
     o = { id, type: 'line', name: 'Line ' + (countOf('line') + 1), x1: r.x1, y1: r.y1, x2: r.x2, y2: r.y2,
-          stroke: '#1b1f24', strokeWidth: 1, decorative: true, alt: '' };
+          stroke: schemeColour(0), strokeWidth: 1, decorative: true, alt: '' };
   } else {
+    // A new rectangle or ellipse: the scheme's Pale fill and Main outline.
     o = { id, type, name: TYPE_NAMES[type] + ' ' + (countOf(type) + 1), x: r.x, y: r.y, w: r.w, h: r.h,
-          fill: '#d1fae5', stroke: '#065f46', strokeWidth: 1, decorative: true, alt: '' };
+          fill: schemeColour(4), stroke: schemeColour(1), strokeWidth: 1, decorative: true, alt: '' };
   }
   pageObjs().push(o);
   reindex();
@@ -5198,6 +5621,7 @@ function copyObject(o, dx, dy, groupMap) {
   const c = JSON.parse(JSON.stringify(o));
   c.id = newId('o');
   objIndex.set(c.id, c);                             // reserve the id at once
+  delete c.fromMaster;                               // a copy never stands in for a master's placeholder (a duplicated page puts it back)
   moveObj(c, dx, dy);
   if (c.group) {
     if (!groupMap[c.group]) {
@@ -5313,6 +5737,7 @@ function placeItems(src, off, suffix) {
   for (const c of src.items) {
     const o = JSON.parse(JSON.stringify(c));
     delete o.copiedText; delete o.copiedRoles; delete o.copiedRuns;
+    delete o.fromMaster;                            // a copy never stands in for a master's placeholder
     o.id = newId('o');
     objIndex.set(o.id, o);
     moveObj(o, off, off);
@@ -5826,7 +6251,11 @@ function duplicatePage() {
   const pg = blankPage();
   if (src.master) pg.master = src.master;
   const groupMap = {};
-  for (const o of src.objects) pg.objects.push(copyObject(o, 0, 0, groupMap));
+  for (const o of src.objects) {
+    const c = copyObject(o, 0, 0, groupMap);
+    if (o.fromMaster) c.fromMaster = o.fromMaster;   // the new page fills the same master placeholder
+    pg.objects.push(c);
+  }
   doc.pages.splice(pageIndex + 1, 0, pg);
   reindex();
   syncInputs();
@@ -6019,6 +6448,14 @@ async function addPictureFiles(files, target) {
   recordUndo('other');
   const added = [];
   let frame = target && target.frameId ? obj(target.frameId) : null;
+  // A master's placeholder: this page gets its own copy of the frame, and the picture goes in that.
+  if (!frame && target && target.placeholderId) {
+    const m = obj(target.placeholderId), pi = target.pi;
+    if (m && pageNo(pi) && !isMasterIndex(pi) && placeholdersOn(pi).includes(m)) {
+      if (pi !== pageIndex) goToPage(pi);
+      frame = fillPlaceholder(m, pi);
+    }
+  }
   for (const [n, imageId] of ids.entries()) {
     if (frame && n === 0) {
       frame.image = imageId;
@@ -6040,7 +6477,7 @@ async function addPictureFiles(files, target) {
   else announce(added.length + ' pictures added. Each needs alt text: pick one and open Meaning.');
 }
 
-/** Open the file picker. `target` says where the picture goes: { frameId } or { point }. */
+/** Open the file picker. `target` says where the picture goes: { frameId }, { placeholderId, pi } (a master's placeholder on page pi) or { point }. */
 function choosePicture(target) {
   placingInto = target || null;
   const input = $('pictureInput');
@@ -6364,6 +6801,83 @@ function mergeShapes(op) {
     (skipped ? '. ' + skipped + ' picked item' + (skipped === 1 ? ' was' : 's were') + ' left out (text, lines and pictures can’t be merged).' : '.'));
 }
 
+/*
+ * Crop to shape: pick a picture and a shape on the page (a rectangle, an
+ * ellipse, a gallery shape or a merged shape; several shapes are joined
+ * first), and the picture's frame becomes that outline, right where the
+ * shape lies, like a cookie cutter. The picture stays where it is inside
+ * (if it no longer covers the new frame, it slides or grows to fill it), and the
+ * shape goes. One undo puts everything back.
+ */
+const isCutter = (o) => isMergeable(o) && !(o.type === 'path' && o.contours.some((c) => !c.closed));   // closed outlines only (not a gallery line)
+/** { pic, shapes } when what is picked is exactly one picture and one or more shapes to cut it with, else null. */
+function cropToShapeParts(list) {
+  const pics = list.filter((o) => o.type === 'picture'), shapes = list.filter(isCutter);
+  if (pics.length !== 1 || !shapes.length || pics.length + shapes.length !== list.length || pics[0].locked || pics[0].hidden) return null;
+  if (shapes.some((o) => pageOf(o.id) !== pageOf(pics[0].id))) return null;     // all on the same page
+  return { pic: pics[0], shapes };
+}
+function cropToShape() {
+  const parts = cropToShapeParts(selectedIds.map(obj).filter(Boolean));
+  if (!parts) {
+    announce('Pick one picture and the shape to cut it to: click the picture, then Shift+click the shape.');
+    return;
+  }
+  if (!setupPaper()) { announce('The shape engine (Paper.js) didn’t load, so pictures can’t be cut to shapes right now.'); return; }
+  const { pic, shapes } = parts;
+  let outline;
+  try {
+    const items = shapes.map(toPaper);                // each as it looks on the page (turned, if it is)
+    outline = items.length > 1 ? chainOp('union', items) : items[0];
+  } catch (err) {
+    announce('That shape could not be used. Try a simpler shape.');
+    return;
+  }
+  if (!hasArea(outline)) { announce('That shape has no inside to show the picture in.'); return; }
+  // Into the picture's own (unturned) frame: turn the outline back by the picture's turn, around its centre.
+  const c = centreOf(pic), turn = pic.rotation || 0;
+  if (turn) outline.rotate(-turn, new paper.Point(c.x, c.y));
+  const cut = fromPaper(outline, {}, '');           // the outline, relative to its own box (cut.x, cut.y, cut.w, cut.h)
+  // That box's centre, on the page, is where the turned picture shows it; the new frame is centred there.
+  const nc = rotatePoint({ x: cut.x + cut.w / 2, y: cut.y + cut.h / 2 }, turn, c);
+  recordUndo('other');
+  const imgX = pic.x + pic.ox, imgY = pic.y + pic.oy;   // the picture's top-left corner, in the frame's own space
+  pic.ox = imgX - cut.x; pic.oy = imgY - cut.y;           // ...measured from the new frame's corner instead
+  pic.x = nc.x - cut.w / 2; pic.y = nc.y - cut.h / 2; pic.w = cut.w; pic.h = cut.h;
+  pic.frameShape = 'shape';
+  const label = shapes.length === 1 ? String(shapes[0].name || objName(shapes[0])).replace(/\s+\d+$/, '') : 'Joined shapes';
+  pic.mask = { label: cleanText(label, 60) || 'Shape', w0: cut.w0, h0: cut.h0, contours: cut.contours };
+  delete pic.radius;
+  // The picture keeps its place. If it doesn't reach every edge of the new frame,
+  // it changes as little as it can to fill it: it grows only if it is too small,
+  // then slides just far enough to cover every edge.
+  let fixed = '';
+  if (pic.image && images[pic.image]) {
+    const im = images[pic.image], eps = 0.01;
+    pic.fit = 'custom';
+    const need = Math.max(pic.w / im.w, pic.h / im.h);   // the smallest size that can cover the frame
+    if (pic.s < need - 1e-9) {
+      // Grow around the middle of the frame, so what is there stays there.
+      const k = need / pic.s, cx = pic.w / 2, cy = pic.h / 2;
+      pic.ox = cx - (cx - pic.ox) * k; pic.oy = cy - (cy - pic.oy) * k; pic.s = need;
+      fixed = 'grew';
+    }
+    const iw = im.w * pic.s, ih = im.h * pic.s;
+    const ox = Math.min(0, Math.max(pic.w - iw, pic.ox)), oy = Math.min(0, Math.max(pic.h - ih, pic.oy));
+    if (Math.abs(ox - pic.ox) > eps || Math.abs(oy - pic.oy) > eps) { pic.ox = ox; pic.oy = oy; fixed = fixed || 'slid'; }
+  }
+  // The shapes go (they became the frame).
+  const gone = new Set(shapes.map((o) => o.id));
+  for (const pg of allPages()) if (pg.objects.some((o) => gone.has(o.id))) pg.objects = pg.objects.filter((o) => !gone.has(o.id));
+  pruneGroups();
+  reindex();
+  selectObjects([pic.id]);
+  relayoutAndRender();
+  updateInspector();
+  announce(objName(pic) + ' is cut to shape (' + pic.mask.label + ')' +
+    (fixed === 'grew' ? ', and the picture grew to fill it' : fixed === 'slid' ? ', and the picture moved over to fill it' : '') + '. Double-click it to move the picture inside.');
+}
+
 /** Is a point inside a path object's outline? (Checked with the browser's own path tester.) */
 let pathTester = null;
 function pointInPath(o, p) {
@@ -6659,7 +7173,7 @@ function createShape(key, r) {
   recordUndo('other');
   const count = allObjects().filter((o) => o.type === 'path' && (o.name || '').startsWith(def.label + ' ')).length;
   // Lines in the gallery (open shapes) have an outline and no fill.
-  const look = def.open ? { fill: null, stroke: '#1b1f24', strokeWidth: 2 } : { fill: '#d1fae5', stroke: '#065f46', strokeWidth: 1 };
+  const look = def.open ? { fill: null, stroke: schemeColour(0), strokeWidth: 2 } : { fill: schemeColour(4), stroke: schemeColour(1), strokeWidth: 1 };   // the scheme's colours
   const o = fromPaper(item, Object.assign(look, { decorative: true, alt: '' }), def.label + ' ' + (count + 1));
   o.x = r.x; o.y = r.y; o.w = Math.max(r.w, 1); o.h = Math.max(r.h, 1);
   pageObjs().push(o);
@@ -7149,8 +7663,9 @@ let lastHint = '';
 function lockedHint(p) {
   const locked = objectAt(p, true);
   const m = masterFor(pageIndex);
-  const fromMaster = !locked && m ? [...m.objects].reverse().find((o) => !o.hidden && hitObject(o, p)) : null;
+  const fromMaster = !locked && m ? [...masterObjectsOn(pageIndex)].reverse().find((o) => !o.hidden && hitObject(o, p)) : null;
   const msg = locked && locked.locked ? objName(locked) + ' is locked. To change it, pick it in Layers and unlock it (Ctrl+Shift+L, or the padlock).'
+    : fromMaster && isPlaceholder(fromMaster) ? objName(fromMaster) + ' is a picture placeholder on ' + m.name + '. Double-click it, or drop a picture on it, to give this page its own picture.'
     : fromMaster ? objName(fromMaster) + ' is on ' + m.name + '. To change it, open the master pages (the button under the page buttons).' : '';
   if (!msg || msg === lastHint) return;
   lastHint = msg;
@@ -7455,6 +7970,9 @@ function wirePointer() {
         announceSelection();
         return;
       }
+      // A master's picture placeholder: double-click (or double-tap) it to give this page its own picture.
+      const ph = placeholderAt(p);
+      if (ph && clicks >= 2) { choosePicture({ placeholderId: ph.id, pi: pageIndex }); return; }
       // Nothing to pick here: a locked thing, or a master page's thing, says how to change it.
       if (clicks === 1) lockedHint(p);
       // A guide: drag it along, or off the page to remove it.
@@ -7616,6 +8134,7 @@ function updateQuickBar() {
     link: !st.only && !!story && !flowsOn && !locked,
     unlink: !st.only && !!story && flowsOn && !locked,
     crop: !st.only && !!one && one.type === 'picture' && !locked,
+    cropShape: !st.only && !!cropToShapeParts(st.list),
     unlock: !st.only && locked,
     // Typing in a cell: rows and columns beside it (never the last row or column away, never past the limits).
     rowAbove: st.only === 'cell' && !locked && st.list[0].cells.length < TABLE_MAX_ROWS,
@@ -7636,7 +8155,7 @@ function updateQuickBar() {
     delete: !st.only && !locked
   };
   for (const b of bar.querySelectorAll('button')) b.hidden = !show[b.dataset.act];
-  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.unlock || show.group || show.ungroup || show.addRow) || st.only;
+  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.cropShape || show.unlock || show.group || show.ungroup || show.addRow) || st.only;
   const crop = bar.querySelector('[data-act=crop]');
   crop.setAttribute('aria-pressed', String(!!one && cropId === one.id));
   crop.setAttribute('aria-label', one && cropId === one.id ? 'Done cropping' : 'Crop');
@@ -7780,6 +8299,7 @@ function wireQuickBar() {
       case 'link': if (one) startLinkPick(one.id); break;
       case 'unlink': if (one) unlinkAfter(one.id); break;
       case 'crop': if (one) { if (cropId === one.id) endCrop(); else startCrop(one); } break;
+      case 'cropShape': cropToShape(); break;
       case 'unlock': toggleFlag(list, 'locked'); break;
       case 'addRow': if (one && one.type === 'table') tableAddRow(one, one.cells.length); break;
       case 'rowAbove': case 'rowBelow': case 'rowDel': case 'colLeft': case 'colRight': case 'colDel': {
@@ -8179,6 +8699,7 @@ const setText = (id, text) => { if ($(id).textContent !== text) $(id).textConten
 function setField(el, v) { if (document.activeElement !== el && el.value !== String(v)) el.value = String(v); }
 
 function updateInspector() {
+  if (document.querySelector('.swatch-row')) requestAnimationFrame(updateSwatches);   // after the fields below are filled
   showInspectorDot();
   const picked = selectedIds.map(obj).filter(Boolean);
   const typing = !!(activeStoryId && doc.stories[activeStoryId]);
@@ -8229,6 +8750,7 @@ function updateInspector() {
     $('ungroupBtn').disabled = !picked.some((o) => o.group);
     const mergeCount = picked.filter(isMergeable).length;
     for (const b of document.querySelectorAll('[data-merge]')) b.disabled = mergeCount < 2;
+    $('cropShapeBtn').disabled = !cropToShapeParts(picked);
   }
   renderLayers();
   show('unlockAllRow', pageObjs().some((o) => o.locked));
@@ -8367,6 +8889,13 @@ function fillLook(o) {
 /** The Picture section: what is in the frame, how sharp it will print, how it sits. */
 function fillPicture(o) {
   const has = !!(o.image && images[o.image]);
+  // A master's placeholder, or a page's own picture in one (section 4: master pages).
+  const ph = o.fromMaster ? obj(o.fromMaster) : null;
+  const phMaster = ph ? pageNo(pageOf(ph.id)) : null;
+  const phWords = isMasterIndex(pageOf(o.id)) && !has ? 'On a master, an empty frame is a placeholder: each page that uses this master can put its own picture in it (double-click it there, or drop a picture on it).'
+    : ph && phMaster ? 'This page’s own picture in the placeholder from ' + phMaster.name + '. Delete it to get the empty placeholder back.' : '';
+  setText('picPlaceholder', phWords);
+  show('picPlaceholder', !!phWords);
   setText('picChooseBtn', has ? 'Replace picture\u2026' : 'Choose picture\u2026');
   $('picCropBtn').disabled = !has;
   $('picCropBtn').setAttribute('aria-pressed', String(cropId === o.id));
@@ -8687,7 +9216,7 @@ function wireInspector() {
     });
     $(part + 'None').addEventListener('change', () => {
       const o = picked(); if (!o) return;
-      setProp('other', part, $(part + 'None').checked ? null : ($(part + 'Hex').value && cleanHex($(part + 'Hex').value)) || '#065f46');
+      setProp('other', part, $(part + 'None').checked ? null : ($(part + 'Hex').value && cleanHex($(part + 'Hex').value)) || schemeColour(part === 'fill' ? 4 : 1));
       if (part === 'stroke' && o.stroke && !o.strokeWidth) { o.strokeWidth = 1; relayoutAndRender(); updateInspector(); }
     });
   }
@@ -8760,6 +9289,7 @@ function wireInspector() {
   });
   $('groupBtn').addEventListener('click', groupSelected);
   for (const b of document.querySelectorAll('[data-merge]')) b.addEventListener('click', () => mergeShapes(b.dataset.merge));
+  $('cropShapeBtn').addEventListener('click', cropToShape);
   // Picture section
   const pic = () => { const o = obj(selectedIds[0]); return o && o.type === 'picture' ? o : null; };
   $('picChooseBtn').addEventListener('click', () => { const o = pic(); if (o) choosePicture({ frameId: o.id }); });
@@ -10271,6 +10801,7 @@ function wireChrome() {
     ['Pictures', 'Picture tool: click to add one, drag to draw a frame. Or drop picture files on the page (on a frame to fill it), or paste one'],
     ['Double-click a picture, or Enter', 'Crop: drag to move it in its frame, drag its corners to size it, arrow keys to nudge; Escape or Enter when done'],
     [alt + ' + Shift + U / C / F / I / S', 'Merge Shapes: Union, Combine, Fragment, Intersect, Subtract'],
+    [alt + ' + Shift + P', 'Crop to shape: cut the picked picture to the shape picked with it'],
     ['Drag on the page', 'Draw with the tool you picked (Shift: square, circle or 45° line)'],
     ['Click, Shift+click, drag', 'Select: pick one, add or remove, or drag a box around several'],
     ['Drag a handle', 'Resize (Shift on a corner keeps the shape)'],
@@ -10381,6 +10912,7 @@ function wireChrome() {
     if (e.altKey && e.shiftKey && !mod2) {
       const op = { KeyU: 'union', KeyC: 'combine', KeyF: 'fragment', KeyI: 'intersect', KeyS: 'subtract' }[e.code];
       if (op) { e.preventDefault(); mergeShapes(op); return; }
+      if (e.code === 'KeyP') { e.preventDefault(); cropToShape(); return; }   // Crop to shape
     }
     if (mod2 || e.altKey) return;
 
@@ -10453,7 +10985,7 @@ function showDropTarget(o) {
   const b = bounds(o);
   const label = svgEl('text', { x: b.x + b.w / 2, y: b.y - 8 * px, 'text-anchor': 'middle', 'font-size': 13 * px, 'font-weight': 700,
     'font-family': 'system-ui, sans-serif', fill: '#065f46', stroke: '#ffffff', 'stroke-width': 4 * px, 'paint-order': 'stroke' });
-  label.textContent = o.image ? 'Drop to replace this picture' : 'Drop to fill this frame';   // our own words, never document text
+  label.textContent = o.image ? 'Drop to replace this picture' : isMasterIndex(pageOf(o.id)) && !editingMaster() ? 'Drop to fill this placeholder (this page only)' : 'Drop to fill this frame';   // our own words, never document text
   layers.snap.appendChild(label);
 }
 
@@ -10471,8 +11003,9 @@ function wirePictureInput() {
     if (!hasFiles(e)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-    const under = objectAt(toPage(e));
-    showDropTarget(under && under.type === 'picture' ? under : null);   // the frame it would go in, in green
+    const at = toPage(e), under = objectAt(at);
+    // The frame it would go in, in green: a picture on the page, else a master's placeholder there.
+    showDropTarget(under && under.type === 'picture' ? under : placeholderAt(at));
   });
   // Leaving the page area (not just moving between the things drawn on it), or the drag ending: no highlight.
   desk.addEventListener('dragleave', (e) => { if (!e.relatedTarget || !desk.contains(e.relatedTarget)) showDropTarget(null); });
@@ -10482,8 +11015,9 @@ function wirePictureInput() {
     e.preventDefault();
     showDropTarget(null);
     const p = toPage(e);
-    const under = objectAt(p);
-    openFiles(e.dataTransfer.files, under && under.type === 'picture' ? { frameId: under.id } : { point: p });
+    const under = objectAt(p), ph = under && under.type === 'picture' ? null : placeholderAt(p);
+    openFiles(e.dataTransfer.files, under && under.type === 'picture' ? { frameId: under.id }
+      : ph ? { placeholderId: ph.id, pi: pageIndex } : { point: p });
   });
   // Dropped anywhere else in the window: a project opens, pictures go in the middle
   // of the page. (And the browser never leaves the app to show the file.)
@@ -11500,7 +12034,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 11;                        // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames; 8: columns in a text box; 9: facing pages, bleed; 10: tables; 11: folds)
+const PROJECT_VERSION = 13;                        // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames; 8: columns in a text box; 9: facing pages, bleed; 10: tables; 11: folds; 12: master picture placeholders; 13: colour schemes)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -11640,6 +12174,8 @@ function docMaker(page) {
       return t;
     },
     group(name, list) { const g = nid('g'); d.groups[g] = { id: g, name }; for (const o of list) o.group = g; },
+    /** Use colour scheme `name` (section 2); returns its colours by job: c.main, c.pale... */
+    scheme(name) { const sc = schemeNamed(name); d.scheme = { name: sc.name, colours: sc.colours.slice() }; return slots(sc.colours); },
     done() { d.nextId = n; return d; }
   };
 }
@@ -11653,15 +12189,16 @@ const allIn = (f) => [['*', f]];
 const TEMPLATES = [
   { key: 'flyer', name: 'Flyer', detail: 'One page: a big headline, a photo and the details', make() {
     const k = docMaker(letterPage());
+    const c = k.scheme('Lakeside');
     k.d.title = 'Fall Book Swap';
     k.style('h1', { family: 'archivo', size: 54, leading: 1.0, colour: '#ffffff' });
-    k.style('h2', { family: 'archivo', size: 16, colour: '#065f46', spaceBefore: 8 });
+    k.style('h2', { family: 'archivo', size: 16, colour: c.main, spaceBefore: 8 });
     k.style('body', { size: 13, leading: 1.4 });
     k.style('caption', { size: 10.5 });
     const pg = k.page();
-    k.rect(pg, [0, 0, 612, 252], { name: 'Headline band', fill: '#065f46' });
+    k.rect(pg, [0, 0, 612, 252], { name: 'Headline band', fill: c.main });
     k.text(pg, [54, 66, 504, 176], [
-      ['caption', 'Free for all ages', allIn({ b: true, c: '#a7f3d0', sz: 13 })],
+      ['caption', 'Free for all ages', allIn({ b: true, c: tint(c.accent1, 0.6), sz: 13 })],
       ['h1', 'Fall Book Swap'],
       ['body', 'Saturday, November 14 · 10 a.m. to 2 p.m.', allIn({ c: '#ffffff', sz: 18 })]
     ]);
@@ -11671,28 +12208,29 @@ const TEMPLATES = [
       ['body', 'Bring the books you have finished with and leave with new ones to read. Every book you drop off earns a ticket for one you take home.'],
       ['body', 'Books left at the end go to the school library and the children’s hospital.']
     ]);
-    const panel = k.rect(pg, [372, 512, 186, 180], { name: 'Details panel', fill: '#ecfdf5' });
+    const panel = k.rect(pg, [372, 512, 186, 180], { name: 'Details panel', fill: tint(c.pale, 0.55) });
     const det = k.text(pg, [372, 512, 186, 180], [
       ['h2', 'Where'], ['body', 'Lakeside Community Center, 42 Elm Street'],
       ['h2', 'Bring'], ['body', 'Up to ten books in good shape']
     ], { inset: 12 });
     k.group('Details', [panel, det]);
-    k.line(pg, [54, 712, 558, 712], { name: 'Footer rule', stroke: '#065f46', strokeWidth: 1.5 });
+    k.line(pg, [54, 712, 558, 712], { name: 'Footer rule', stroke: c.main, strokeWidth: 1.5 });
     k.text(pg, [54, 718, 504, 24], [['caption', 'Questions? Call 555-0142 or ask at the library desk.']]);
     return k.done();
   } },
   { key: 'newsletter', name: 'Newsletter', detail: 'Two pages: a masthead, a story in columns, events', make() {
     const k = docMaker(letterPage());
+    const c = k.scheme('Lakeside');
     k.d.title = 'The Riverside Report, Spring 2027';
-    k.style('h1', { family: 'fraunces', size: 40, colour: '#065f46' });
-    k.style('h2', { family: 'fraunces', size: 15, colour: '#065f46' });
+    k.style('h1', { family: 'fraunces', size: 40, colour: c.main });
+    k.style('h2', { family: 'fraunces', size: 15, colour: c.main });
     k.style('body', { family: 'literata', size: 10, leading: 1.4 });
     const m = k.master('Master A');
-    k.line(m, [54, 744, 558, 744], { name: 'Footer rule', stroke: '#065f46', strokeWidth: 0.75 });
+    k.line(m, [54, 744, 558, 744], { name: 'Footer rule', stroke: c.main, strokeWidth: 0.75 });
     k.text(m, [54, 748, 504, 20], [['caption', 'The Riverside Report · Spring 2027 · Page ' + FIELD_CHARS.page + ' of ' + FIELD_CHARS.pages]]);
     const p1 = k.page(m), p2 = k.page(m);
     k.text(p1, [54, 54, 504, 72], [['h1', 'The Riverside Report'], ['caption', 'Spring 2027 · News from the Riverside Neighborhood Association']]);
-    k.line(p1, [54, 132, 558, 132], { name: 'Rule under the title', stroke: '#065f46', strokeWidth: 3 });
+    k.line(p1, [54, 132, 558, 132], { name: 'Rule under the title', stroke: c.main, strokeWidth: 3 });
     const main = k.text(p1, [54, 150, 330, 400], [
       ['h2', 'Neighbors fill forty bags at the park cleanup'],
       ['body', 'More than sixty neighbors turned out on a cool Saturday morning in March to clear winter litter from Riverside Park. Volunteers of every age worked along the river path, around the playground and under the big willows by the footbridge.'],
@@ -11704,7 +12242,7 @@ const TEMPLATES = [
       ['body', 'The next cleanup is set for the second Saturday in June, when the focus moves to the boat launch and the trail along the east bank. Gloves and bags will be provided. Wear sturdy shoes and bring a water bottle.'],
       ['body', 'If your group would like to adopt a stretch of the river path for the summer, the association will supply a sign with your group’s name and a starter kit of tools. Talk to any board member, or leave a note in the box at the library.']
     ], { cols: 2, gutter: 18, contNext: true });
-    const side = k.rect(p1, [402, 150, 156, 236], { name: 'Sidebar background', fill: '#ecfdf5' });
+    const side = k.rect(p1, [402, 150, 156, 236], { name: 'Sidebar background', fill: tint(c.pale, 0.55) });
     const sideText = k.text(p1, [402, 150, 156, 236], [
       ['h2', 'In this issue'],
       ['body', 'Park cleanup · page 1', [['Park cleanup', { b: true }]]],
@@ -11713,12 +12251,12 @@ const TEMPLATES = [
       ['body', 'Upcoming events · page 2', [['Upcoming events', { b: true }]]]
     ], { inset: 10 });
     k.group('Sidebar', [side, sideText]);
-    const q1 = k.line(p1, [402, 404, 558, 404], { name: 'Rule above', stroke: '#065f46', strokeWidth: 2 });
+    const q1 = k.line(p1, [402, 404, 558, 404], { name: 'Rule above', stroke: c.main, strokeWidth: 2 });
     const qt = k.text(p1, [402, 410, 156, 88], [
-      ['body', '“We filled forty bags before lunch.”', allIn({ i: true, sz: 15, c: '#065f46' })],
+      ['body', '“We filled forty bags before lunch.”', allIn({ i: true, sz: 15, c: c.main })],
       ['caption', 'Dana Ortiz, cleanup volunteer']
     ]);
-    const q2 = k.line(p1, [402, 502, 558, 502], { name: 'Rule below', stroke: '#065f46', strokeWidth: 2 });
+    const q2 = k.line(p1, [402, 502, 558, 502], { name: 'Rule below', stroke: c.main, strokeWidth: 2 });
     k.group('Pull quote', [q1, qt, q2]);
     k.text(p1, [402, 516, 156, 212], [
       ['h2', 'A safer crossing on Mill Street'],
@@ -11744,7 +12282,7 @@ const TEMPLATES = [
       ['June 14', 'River cleanup', 'Boat launch'],
       ['July 4', 'Porch music night', 'Front porches on Elm Street']
     ], { cols: [96, 240, 168], banded: true });
-    const panel = k.rect(p2, [54, 600, 504, 110], { name: 'Contact panel', fill: '#065f46' });
+    const panel = k.rect(p2, [54, 600, 504, 110], { name: 'Contact panel', fill: c.main });
     const contact = k.text(p2, [54, 600, 504, 110], [
       ['h2', 'Get involved', allIn({ c: '#ffffff' })],
       ['body', 'The association meets the first Tuesday of each month at 7 p.m. in the library community room. Everyone who lives or works in the neighborhood is welcome.', allIn({ c: '#ffffff' })],
@@ -11755,10 +12293,11 @@ const TEMPLATES = [
   } },
   { key: 'trifold', name: 'Tri-fold brochure', detail: 'Two sides of a wide page, folded in three', make() {
     const k = docMaker(letterWide(36));
+    const c = k.scheme('Harbor');
     k.d.title = 'Riverbend Nature Center';
     k.d.page.fold = 'tri';                            // the two folds (section 4c)
     k.style('h1', { family: 'zilla', size: 30, leading: 1.05 });
-    k.style('h2', { family: 'zilla', size: 15, colour: '#1e3a8a', spaceBefore: 8 });
+    k.style('h2', { family: 'zilla', size: 15, colour: c.main, spaceBefore: 8 });
     // The outside: the inside flap (left), the back (middle), the cover (right).
     const out = k.page(), inside = k.page();
     k.text(out, [36, 36, 192, 540], [
@@ -11775,10 +12314,10 @@ const TEMPLATES = [
       ['body', '1200 Riverbend Road, Greenfield'], ['body', 'Phone 555-0187'], ['body', 'riverbend.example'],
       ['caption', 'Parking is free. The visitor center and the main trails are wheelchair accessible.']
     ]);
-    k.rect(out, [528, 0, 264, 612], { name: 'Cover panel', fill: '#1e3a8a' });
+    k.rect(out, [528, 0, 264, 612], { name: 'Cover panel', fill: c.main });
     k.text(out, [564, 54, 192, 210], [
       ['h1', 'Riverbend Nature Center', allIn({ c: '#ffffff' })],
-      ['body', 'Trails, programs and a place to slow down', allIn({ c: '#dbeafe', sz: 13 })]
+      ['body', 'Trails, programs and a place to slow down', allIn({ c: c.pale, sz: 13 })]
     ]);
     k.picture(out, [576, 300, 168, 168], 'Cover photo', 'ellipse', { stroke: '#ffffff', strokeWidth: 3 });
     k.text(out, [564, 520, 192, 40], [['caption', 'Open all year', allIn({ c: '#ffffff', b: true })]]);
@@ -11802,29 +12341,30 @@ const TEMPLATES = [
     k.text(inside, [564, 36, 192, 100], [['h2', 'Programs this season'], ['body', 'Free with admission. Meet at the visitor center.']]);
     k.table(inside, [564, 140, 192], [
       ['Program', 'When'], ['Bird walk', 'Saturdays, 8 a.m.'], ['Pond study', 'Wednesdays, 4 p.m.'], ['Night hike', 'Last Friday of the month'], ['Story time', 'Sundays, 11 a.m.']
-    ], { cols: [78, 114], headerFill: '#dbeafe', stroke: '#1e3a8a' });
+    ], { cols: [78, 114], headerFill: c.pale, stroke: c.main });
     k.picture(inside, [564, 380, 192, 196], 'Trail photo');
     return k.done();
   } },
   { key: 'certificate', name: 'Certificate', detail: 'A wide page with a border, a seal and signatures', make() {
     const k = docMaker(letterWide(54));
+    const c = k.scheme('Harvest');
     k.d.title = 'Certificate of Achievement';
-    k.style('h1', { family: 'fraunces', size: 44, colour: '#78350f', align: 'center' });
+    k.style('h1', { family: 'fraunces', size: 44, colour: c.main, align: 'center' });
     k.style('h2', { family: 'fraunces', size: 30, align: 'center', spaceBefore: 0 });
     k.style('body', { family: 'literata', size: 14, leading: 1.4, align: 'center' });
     k.style('caption', { size: 11, align: 'center' });
     const pg = k.page();
-    const b1 = k.rect(pg, [24, 24, 744, 564], { name: 'Outer border', stroke: '#b45309', strokeWidth: 6 });
-    const b2 = k.rect(pg, [38, 38, 716, 536], { name: 'Inner border', stroke: '#b45309', strokeWidth: 1.5 });
+    const b1 = k.rect(pg, [24, 24, 744, 564], { name: 'Outer border', stroke: c.accent1, strokeWidth: 6 });
+    const b2 = k.rect(pg, [38, 38, 716, 536], { name: 'Inner border', stroke: c.accent1, strokeWidth: 1.5 });
     k.group('Border', [b1, b2]);
     k.text(pg, [96, 82, 600, 24], [['caption', 'Lakeside Elementary School', allIn({ b: true })]]);
     k.text(pg, [96, 108, 600, 64], [['h1', 'Certificate of Achievement']]);
     k.text(pg, [96, 194, 600, 28], [['body', 'This certificate is proudly presented to']]);
     k.text(pg, [146, 226, 500, 46], [['h2', 'Student Name']]);
-    k.line(pg, [196, 276, 596, 276], { name: 'Name line', stroke: '#78350f', strokeWidth: 1 });
+    k.line(pg, [196, 276, 596, 276], { name: 'Name line', stroke: c.main, strokeWidth: 1 });
     k.text(pg, [146, 290, 500, 64], [['body', 'for outstanding effort, curiosity and kindness all year long']]);
-    const s1 = k.ellipse(pg, [356, 380, 80, 80], { name: 'Seal', fill: '#fbbf24', stroke: '#b45309', strokeWidth: 2 });
-    const s2 = k.ellipse(pg, [364, 388, 64, 64], { name: 'Seal ring', stroke: '#b45309', strokeWidth: 1 });
+    const s1 = k.ellipse(pg, [356, 380, 80, 80], { name: 'Seal', fill: c.accent2, stroke: c.accent1, strokeWidth: 2 });
+    const s2 = k.ellipse(pg, [364, 388, 64, 64], { name: 'Seal ring', stroke: c.accent1, strokeWidth: 1 });
     k.group('Seal', [s1, s2]);
     k.line(pg, [120, 480, 300, 480], { name: 'Signature line 1' });
     k.line(pg, [492, 480, 672, 480], { name: 'Signature line 2' });
@@ -11834,16 +12374,17 @@ const TEMPLATES = [
   } },
   { key: 'card', name: 'Greeting card', detail: 'A wide page folded in half: outside, then inside', make() {
     const k = docMaker(letterWide(36));
+    const c = k.scheme('Ember');
     k.d.title = 'Thank-you card';
     k.d.page.fold = 'half';                           // the fold (section 4c)
-    k.style('h1', { family: 'comfortaa', size: 40, colour: '#9a3412', align: 'center' });
-    k.style('h2', { family: 'comfortaa', size: 20, colour: '#9a3412', align: 'center' });
+    k.style('h1', { family: 'comfortaa', size: 40, colour: c.main, align: 'center' });
+    k.style('h2', { family: 'comfortaa', size: 20, colour: c.main, align: 'center' });
     k.style('body', { family: 'andika', size: 14, leading: 1.45, align: 'center' });
     k.style('caption', { family: 'andika', size: 11, align: 'center' });
     // Outside: the back on the left half, the front on the right half.
     const out = k.page(), inside = k.page();
     k.text(out, [36, 540, 324, 30], [['caption', 'Made with care by Room 12']]);
-    k.rect(out, [396, 0, 396, 612], { name: 'Front panel', fill: '#fef3c7' });
+    k.rect(out, [396, 0, 396, 612], { name: 'Front panel', fill: c.pale });
     k.picture(out, [474, 96, 240, 240], 'Front picture', 'ellipse');
     k.text(out, [432, 366, 324, 110], [['h1', 'Thank you!']]);
     // Inside: the message on the right half (the left stays clear to write on).
@@ -11857,15 +12398,16 @@ const TEMPLATES = [
   } },
   { key: 'sign', name: 'Sign', detail: 'Big, high-contrast words that read from across a room', make() {
     const k = docMaker(letterWide(54));
+    const c = k.scheme('Harbor');
     k.d.title = 'Registration sign';
-    k.style('h1', { family: 'archivo', size: 76, leading: 1.0, colour: '#1e3a8a', align: 'center' });
+    k.style('h1', { family: 'archivo', size: 76, leading: 1.0, colour: c.main, align: 'center' });
     k.style('body', { size: 28, leading: 1.3, align: 'center' });
     k.style('caption', { size: 16, align: 'center' });
     const pg = k.page();
-    k.rect(pg, [0, 0, 792, 110], { name: 'Top band', fill: '#1e3a8a' });
+    k.rect(pg, [0, 0, 792, 110], { name: 'Top band', fill: c.main });
     k.text(pg, [54, 38, 684, 40], [['caption', 'Lakeside Community Center', allIn({ c: '#ffffff', b: true, sz: 20 })]]);
     k.text(pg, [54, 160, 684, 110], [['h1', 'Registration']]);
-    k.line(pg, [246, 340, 546, 340], { name: 'Arrow', stroke: '#1e3a8a', strokeWidth: 16, arrows: 'end', decorative: false, alt: 'Arrow pointing right' });
+    k.line(pg, [246, 340, 546, 340], { name: 'Arrow', stroke: c.main, strokeWidth: 16, arrows: 'end', decorative: false, alt: 'Arrow pointing right' });
     k.text(pg, [54, 390, 684, 100], [['body', 'This way to Room 104, at the end of the hall']]);
     k.text(pg, [54, 520, 684, 30], [['caption', 'Doors open at 8:30 a.m.']]);
     return k.done();
@@ -11878,16 +12420,16 @@ const TEMPLATES = [
    margins, 'top' or 'bottom' of them, or 'fill' (built around the margins). */
 const BLOCKS = [
   { key: 'pullquote', name: 'Pull quote', detail: 'A line from the story, big, between two rules', size: () => [216, 106], make(k, pg) {
-    const a = k.line(pg, [0, 1, 216, 1], { name: 'Rule above', stroke: '#065f46', strokeWidth: 2 });
+    const a = k.line(pg, [0, 1, 216, 1], { name: 'Rule above', stroke: LAKESIDE.main, strokeWidth: 2 });
     const t = k.text(pg, [0, 8, 216, 92], [
-      ['body', '“A sentence from the story that makes people want to read it.”', allIn({ i: true, sz: 16, c: '#065f46' })],
+      ['body', '“A sentence from the story that makes people want to read it.”', allIn({ i: true, sz: 16, c: LAKESIDE.main })],
       ['caption', 'Who said it, and who they are']
     ]);
-    const b = k.line(pg, [0, 105, 216, 105], { name: 'Rule below', stroke: '#065f46', strokeWidth: 2 });
+    const b = k.line(pg, [0, 105, 216, 105], { name: 'Rule below', stroke: LAKESIDE.main, strokeWidth: 2 });
     k.group('Pull quote', [a, t, b]);
   } },
   { key: 'sidebar', name: 'Sidebar', detail: 'A tinted box for a tip, a fact or a list', size: () => [180, 216], make(k, pg) {
-    const r = k.rect(pg, [0, 0, 180, 216], { name: 'Sidebar background', fill: '#ecfdf5' });
+    const r = k.rect(pg, [0, 0, 180, 216], { name: 'Sidebar background', fill: tint(LAKESIDE.pale, 0.55) });
     const t = k.text(pg, [0, 0, 180, 216], [
       ['h2', 'Did you know?'],
       ['body', 'A sidebar holds something extra: a tip, a fact or a short list. Readers take it in at a glance.'],
@@ -11896,7 +12438,7 @@ const BLOCKS = [
     k.group('Sidebar', [r, t]);
   } },
   { key: 'coupon', name: 'Coupon', detail: 'An offer in a double border, to cut out', size: () => [252, 144], make(k, pg) {
-    const a = k.rect(pg, [0, 0, 252, 144], { name: 'Coupon border', fill: '#fffbeb', stroke: TEXT_COLOUR, strokeWidth: 2 });
+    const a = k.rect(pg, [0, 0, 252, 144], { name: 'Coupon border', fill: tint(LAKESIDE.accent2, 0.94), stroke: TEXT_COLOUR, strokeWidth: 2 });
     const b = k.rect(pg, [6, 6, 240, 132], { name: 'Coupon inner border', stroke: TEXT_COLOUR, strokeWidth: 0.75 });
     const t = k.text(pg, [12, 12, 228, 120], [
       ['h2', 'Save 20%'],
@@ -11921,16 +12463,16 @@ const BLOCKS = [
   } },
   { key: 'heading', name: 'Section heading', detail: 'A heading with a rule under it, margin to margin', size: (m) => [m.w, 36], make(k, pg, m) {
     const t = k.text(pg, [0, 0, m.w, 30], [['h2', 'Section heading']]);
-    const l = k.line(pg, [0, 34, m.w, 34], { name: 'Heading rule', stroke: '#065f46', strokeWidth: 1.5 });
+    const l = k.line(pg, [0, 34, m.w, 34], { name: 'Heading rule', stroke: LAKESIDE.main, strokeWidth: 1.5 });
     k.group('Section heading', [t, l]);
   } },
   { key: 'masthead', name: 'Masthead', detail: 'A newsletter’s name and issue line, at the top', place: 'top', size: (m) => [m.w, 78], make(k, pg, m) {
     const t = k.text(pg, [0, 0, m.w, 68], [['h1', 'Newsletter name'], ['caption', 'Issue date · Who it is for']]);
-    const l = k.line(pg, [0, 76, m.w, 76], { name: 'Masthead rule', stroke: '#065f46', strokeWidth: 3 });
+    const l = k.line(pg, [0, 76, m.w, 76], { name: 'Masthead rule', stroke: LAKESIDE.main, strokeWidth: 3 });
     k.group('Masthead', [t, l]);
   } },
   { key: 'contact', name: 'Contact strip', detail: 'How to reach you, on a band at the bottom', place: 'bottom', size: (m) => [m.w, 64], make(k, pg, m) {
-    const r = k.rect(pg, [0, 0, m.w, 64], { name: 'Contact band', fill: '#065f46' });
+    const r = k.rect(pg, [0, 0, m.w, 64], { name: 'Contact band', fill: LAKESIDE.main });
     const t = k.text(pg, [0, 0, m.w, 64], [
       ['h2', 'Get in touch', allIn({ c: '#ffffff' })],
       ['body', 'Phone 555-0100 · hello@example.org · 12 Main Street', allIn({ c: '#ffffff' })]
@@ -11940,8 +12482,8 @@ const BLOCKS = [
   { key: 'border', name: 'Page border', detail: 'A double line around the page, just outside the margins', place: 'fill', size: (m) => [m.w, m.h], make(k, pg, m) {
     // As far outside the margins as there is room for (at most a quarter inch), never off the page.
     const e = Math.max(2, Math.min(18, m.left - 6, m.top - 6, m.right - 6, m.bottom - 6));
-    const a = k.rect(pg, [-e, -e, m.w + 2 * e, m.h + 2 * e], { name: 'Border', stroke: '#065f46', strokeWidth: 3 });
-    const b = k.rect(pg, [-e + 6, -e + 6, m.w + 2 * e - 12, m.h + 2 * e - 12], { name: 'Inner border', stroke: '#065f46', strokeWidth: 0.75 });
+    const a = k.rect(pg, [-e, -e, m.w + 2 * e, m.h + 2 * e], { name: 'Border', stroke: LAKESIDE.main, strokeWidth: 3 });
+    const b = k.rect(pg, [-e + 6, -e + 6, m.w + 2 * e - 12, m.h + 2 * e - 12], { name: 'Inner border', stroke: LAKESIDE.main, strokeWidth: 0.75 });
     k.group('Page border', [a, b]);
   } }
 ];
@@ -11958,6 +12500,8 @@ function buildBlock(bl) {
   k.d.styles = JSON.parse(JSON.stringify(doc.styles));
   const pg = k.page();
   bl.make(k, pg, m);
+  // Made in Lakeside's colours: into this document's scheme.
+  recolourDoc(k.d, colourMapper(SCHEMES[0].colours, schemeOf().colours), { objects: pg.objects.concat(pg.objects.flatMap((o) => o.type === 'table' ? tableCells(o) : [])), stories: Object.values(k.d.stories) });
   const [w, h] = bl.size(m);
   const place = bl.place || 'centre';
   const at = place === 'top' || place === 'fill' ? [mb.x, mb.y] : place === 'bottom' ? [mb.x, mb.y + mb.h - h] : [mb.x + (mb.w - w) / 2, mb.y + (mb.h - h) / 2];
@@ -12121,6 +12665,7 @@ function blankDocument(page) {
     pages: [{ id: 'p1', objects: [], readingOrder: [], readingOrderAuto: true }],
     masters: [],
     guides: { v: [], h: [] },
+    scheme: { name: SCHEMES[0].name, colours: SCHEMES[0].colours.slice() },   // section 2: colour schemes
     nextId: 1
   };
 }
@@ -12332,6 +12877,10 @@ function checkDocument(raw, known, knownFonts) {
   const out = blankDocument();
   out.title = cleanText(raw.title, 200);
   out.lang = typeof raw.lang === 'string' && /^[A-Za-z]{2,3}(-[A-Za-z0-9]{1,8}){0,3}$/.test(raw.lang) ? raw.lang : 'en';
+  // The colour scheme (version 13): a name and six colours, each checked. Older projects keep Lakeside.
+  if (raw.scheme && typeof raw.scheme === 'object' && Array.isArray(raw.scheme.colours) && raw.scheme.colours.length === 6 && raw.scheme.colours.every((c) => colour(c))) {
+    out.scheme = { name: cleanText(raw.scheme.name, 40).trim() || 'Your own', colours: raw.scheme.colours.map(colour) };
+  }
 
   // The page: a size browsers and printers can handle, margins that fit.
   const pg = raw.page || bad('That project has no page size.');
@@ -12540,6 +13089,8 @@ function checkObject(r, known, groups) {
     o.s = num(r.s, 1e-6, 1000);
     o.ox = num(r.ox, -1e6, 1e6); o.oy = num(r.oy, -1e6, 1e6);
     o.fit = ['fill', 'fit', 'custom'].includes(r.fit) ? r.fit : 'custom';
+    // A page's own picture in a master's placeholder (version 12): the id of the master's frame.
+    if (typeof r.fromMaster === 'string' && ID_RE.test(r.fromMaster)) o.fromMaster = r.fromMaster;
     look(false);
   } else if (r.type === 'table') {
     // Tables (version 10): a rectangular grid of cells, each naming its own story.
@@ -12852,6 +13403,144 @@ function linesByFrame(pi) {
 /** Objects that print, back to front (its master's first; not hidden, not out in the staging area). */
 const printedObjects = (pi) => pageObjectsWithMaster(pi).filter((o) => !o.hidden && onPageArea(o));
 
+/* ---------- Tagged PDF (section 4e) ----------
+   A tagged PDF carries the document's structure along with its look, so
+   screen readers, reflow on phones and "Save as text" get the words in
+   the right order with their meaning: headings (H1, H2), paragraphs (P),
+   pictures and meaningful shapes with their alt text (Figure), tables
+   (Table, TR, TH for the header row, TD) and links (Link). Everything else
+   drawn on the page (decoration, lines between table cells, underlines,
+   crop marks, a master page's repeated things, "Continued on page...")
+   is marked as an Artifact, which readers skip.
+
+   How it is made: before drawing, a tree of elements is laid out in each
+   page's reading order (section 11). While drawing, every stretch of
+   letters (a line, or the part of a line inside a link) is wrapped in a
+   numbered "marked content" sequence, and that number is filed under its
+   element. At the end the tree is written into the PDF: a StructTreeRoot,
+   the elements, and a ParentTree that leads from each page (and each link)
+   back to its elements. */
+function pdfTagTree(pdf, L) {
+  const ctx = pdf.context;
+  let order = 0;                                     // insertion order, for elements filed in reading order
+  const make = (type, parent, extra) => {
+    const e = Object.assign({ ref: ctx.nextRef(), type, parent, kids: [] }, extra || {});
+    if (parent) parent.kids.push({ key: order++, e });
+    return e;
+  };
+  const root = make('Document', null);
+  const paras = new Map();                           // "story id|paragraph" -> its element
+  const links = new Map();                           // "story id|start of the link" -> its Link element
+  const figures = new Map();                         // object id -> its Figure element
+  const lineIdx = new Map();                         // story id -> Map(line -> its place in the story)
+  const sheets = [];
+  let sheet = null, nextKey = 0;                     // nextKey: the ParentTree's numbers (pages and links share them)
+  const ROLE_TAGS = { h1: 'H1', h2: 'H2' };          // Body and Caption are paragraphs (P)
+
+  /** A story's paragraphs, as elements under `parent`, in order. */
+  const addStory = (parent, story) => {
+    story.roles.forEach((role, i) => paras.set(story.id + '|' + i, make(ROLE_TAGS[role] || 'P', parent)));
+  };
+  /** A table: rows, then header cells (TH, read as each column's heading) or data cells (TD), each holding its paragraphs. */
+  const addTable = (t) => {
+    const table = make('Table', root);
+    t.cells.forEach((row, r) => {
+      const tr = make('TR', table);
+      for (const cell of row) {
+        const head = t.header && r === 0;
+        const td = make(head ? 'TH' : 'TD', tr, head ? { attrs: { O: 'Table', Scope: 'Column' } } : null);
+        if (doc.stories[cell.story]) addStory(td, doc.stories[cell.story]);
+      }
+    });
+  };
+  // The tree, page by page in each page's reading order.
+  for (const pg of doc.pages) {
+    for (const id of pg.readingOrder) {
+      if (doc.stories[id]) { addStory(root, doc.stories[id]); continue; }
+      const o = obj(id);
+      if (!o || o.hidden) continue;
+      if (o.type === 'table') addTable(o);
+      else if (!o.decorative && (o.alt || '').trim() && !(o.type === 'picture' && !o.image)) figures.set(o.id, make('Figure', root, { alt: o.alt.trim() }));
+    }
+  }
+
+  return {
+    /** Start a new sheet of the PDF (its marked-content numbers start again at 0). */
+    beginSheet(page) { sheet = { page, mcids: [], key: nextKey++ }; sheets.push(sheet); },
+    /** File the next marked-content number on this sheet under element e (sortKey: its place among e's contents). */
+    mcr(e, sortKey) { const mcid = sheet.mcids.length; sheet.mcids.push(e); e.kids.push({ key: sortKey, mcid, page: sheet.page }); return mcid; },
+    /** A paragraph's element (one made here, at the end, if it was not in any reading order). */
+    para(story, p) {
+      const k = story.id + '|' + p;
+      if (!paras.has(k)) paras.set(k, make(ROLE_TAGS[story.roles[p]] || 'P', root));
+      return paras.get(k);
+    },
+    /** A link's element, inside its paragraph (made the first time; sortKey places it among the paragraph's words). */
+    link(story, start, paraElem, sortKey) {
+      const k = story.id + '|' + start;
+      if (!links.has(k)) { const e = make('Link', null); e.parent = paraElem; paraElem.kids.push({ key: sortKey, e }); links.set(k, e); }
+      return links.get(k);
+    },
+    figure(o) { return figures.get(o.id) || null; },
+    /** A line's place in its story (so a paragraph's pieces read in order, whichever box is drawn first). */
+    lineKey(story, ln) {
+      if (!lineIdx.has(story.id)) lineIdx.set(story.id, new Map(((layouts[story.id] || {}).lines || []).map((l, i) => [l, i])));
+      const i = lineIdx.get(story.id).get(ln);
+      return (i == null ? 1e6 : i) * 10000;          // (then + the letter's place in its line)
+    },
+    /** A link's clickable area (annotation): filed under its Link element, and given its own ParentTree number. */
+    annot(linkElem, annotDict, annotRef, sortKey) {
+      const key = nextKey++;
+      annotDict.set(L.PDFName.of('StructParent'), L.PDFNumber.of(key));
+      linkElem.kids.push({ key: sortKey + 9999, objr: annotRef, page: sheet.page });
+      sheet.annots = (sheet.annots || []).concat([[key, linkElem]]);
+    },
+    /** Write the tree into the PDF and mark the document as tagged. */
+    finish() {
+      // Elements nothing ended up in (an empty paragraph, a picture that was not printed) are left out.
+      const prune = (e) => {
+        e.kids = e.kids.filter((k) => !k.e || prune(k.e));
+        return e.kids.length > 0;
+      };
+      prune(root);
+      const treeRef = ctx.nextRef();
+      const write = (e) => {
+        e.kids.sort((a, b) => a.key - b.key);
+        const K = e.kids.map((k) => (k.e ? k.e.ref
+          : k.objr ? ctx.obj({ Type: 'OBJR', Obj: k.objr, Pg: k.page.ref })
+          : ctx.obj({ Type: 'MCR', Pg: k.page.ref, MCID: k.mcid })));
+        const d = { Type: 'StructElem', S: e.type, P: e.parent ? e.parent.ref : treeRef, K };
+        if (e.alt) d.Alt = L.PDFHexString.fromText(e.alt);
+        const attrs = e.attrs || (e.bbox ? { O: 'Layout', BBox: e.bbox } : null);
+        if (attrs) d.A = attrs;
+        ctx.assign(e.ref, ctx.obj(d));
+        for (const k of e.kids) if (k.e) write(k.e);
+      };
+      write(root);
+      // The ParentTree: page number -> the elements of its marked content, by number; link number -> its Link.
+      const nums = [];
+      for (const sh of sheets) {
+        nums.push(sh.key, ctx.obj(sh.mcids.map((e) => e.ref)));
+        for (const [key, e] of sh.annots || []) nums.push(key, e.ref);
+        sh.page.node.set(L.PDFName.of('StructParents'), L.PDFNumber.of(sh.key));
+        sh.page.node.set(L.PDFName.of('Tabs'), L.PDFName.of('S'));   // Tab moves through links in structure order
+      }
+      // (The numbers must be in order: pages and their links were numbered as they came, so they are.)
+      const pairs = [];
+      for (let i = 0; i < nums.length; i += 2) pairs.push([nums[i], nums[i + 1]]);
+      pairs.sort((a, b) => a[0] - b[0]);
+      const parentTree = ctx.register(ctx.obj({ Nums: pairs.flat() }));
+      ctx.assign(treeRef, ctx.obj({ Type: 'StructTreeRoot', K: root.ref, ParentTree: parentTree, ParentTreeNextKey: nextKey }));
+      pdf.catalog.set(L.PDFName.of('StructTreeRoot'), treeRef);
+      pdf.catalog.set(L.PDFName.of('MarkInfo'), ctx.obj({ Marked: true }));
+    }
+  };
+}
+/** Marked-content operators: begin with a numbered tag (BDC), begin an artifact (BMC), end (EMC). */
+const pdfBDC = (L, pdf, tagName, props) => L.PDFOperator.of('BDC', [L.PDFName.of(tagName), pdf.context.obj(props)]);
+const pdfArtifact = (L) => L.beginMarkedContent('Artifact');
+const pdfEMC = (L) => L.endMarkedContent();
+
 /* ---------- The PDF ---------- */
 /** opts: { bleed: include the bleed, marks: crop marks } (section 4c). */
 async function exportPDF(name, opts = {}) {
@@ -12897,12 +13586,19 @@ async function exportPDF(name, opts = {}) {
   // a booklet, or copies to cut apart, with the bleed and marks.
   const H = PAGE.height;
   const kit = { pdf, L, op, fonts, hexFor, pdfImages, shadowBitmaps };
+  const tags = pdfTagTree(pdf, L);                    // the structure (section 4e)
+  const tagged = new Set();                          // pages already tagged (copies of a page are tagged once)
   for (const sh of printPlan(opts).sheets) {
     const page = pdf.addPage([sh.w, sh.h]);
     if (sh.trim) page.setTrimBox(...sh.trim);        // the finished size, for the print shop
     if (sh.bleedBox) page.setBleedBox(...sh.bleedBox);
+    tags.beginSheet(page);
     const ops = [];
     for (const pl of sh.places) {
+      // Two or four copies of a page on a sheet: only the first is read; the others are artifacts.
+      const tag = tagged.has(pl.pi) ? null : tags;
+      tagged.add(pl.pi);
+      if (!tag) ops.push(pdfArtifact(L));
       ops.push(L.pushGraphicsState());
       // PDF pages count up from the BOTTOM; ours count down from the top.
       // One flip (and a scale, for copies made smaller to fit) lets every
@@ -12912,12 +13608,14 @@ async function exportPDF(name, opts = {}) {
       // waits in the grey staging area never prints.
       ops.push(L.rectangle(...pl.clip), L.clip(), L.endPath());
       const toSheet = (x, y) => [pl.x + x * pl.s, pl.y + (H - y) * pl.s];   // a point on the page -> on the sheet (for links)
-      await pdfPageContent(ops, pl.pi, page, kit, toSheet);
+      await pdfPageContent(ops, pl.pi, page, kit, toSheet, tag);
       ops.push(L.popGraphicsState());
+      if (!tag) ops.push(pdfEMC(L));
     }
-    if (sh.marks.length) pdfMarks(ops, L, sh.marks);
+    if (sh.marks.length) { ops.push(pdfArtifact(L)); pdfMarks(ops, L, sh.marks); ops.push(pdfEMC(L)); }   // crop, cut and fold marks: never read
     page.pushOperators(...ops);
   }
+  tags.finish();
   for (const id in shadowBitmaps) shadowBitmaps[id].close();
   const bytes = await pdf.save();
   downloadBlob(new Blob([bytes], { type: 'application/pdf' }), name + '.pdf');
@@ -12925,12 +13623,22 @@ async function exportPDF(name, opts = {}) {
 }
 
 /** Everything printed on page pi, drawn into ops (already flipped and clipped). toSheet: page point -> sheet point, for link areas. */
-async function pdfPageContent(ops, pi, page, kit, toSheet) {
+async function pdfPageContent(ops, pi, page, kit, toSheet, tags) {
   const { pdf, L, op, fonts, hexFor, pdfImages, shadowBitmaps } = kit;
   {
     const text = linesByFrame(pi);
+    // A master page's things repeat on every page (a footer, a page number): artifacts, like InDesign's.
+    const fromMaster = new Set((masterFor(pi) ? masterFor(pi).objects : []).map((o) => o.id));
     for (const o of printedObjects(pi)) {
-      if (o.type !== 'text' && o.shadow) await pdfShadow(ops, o, pdf, page, L, shadowBitmaps, o.type === 'table' ? pageTextPaths(pi) : {});
+      const tag = tags && !fromMaster.has(o.id) ? tags : null;
+      if (o.type !== 'text' && o.shadow) {
+        if (tags) ops.push(pdfArtifact(L));          // a shadow is decoration
+        await pdfShadow(ops, o, pdf, page, L, shadowBitmaps, o.type === 'table' ? pageTextPaths(pi) : {});
+        if (tags) ops.push(pdfEMC(L));
+      }
+      // A picture or shape with alt text is a Figure; other pictures, shapes and lines are artifacts.
+      const fig = tag && o.type !== 'text' && o.type !== 'table' ? tag.figure(o) : null;
+      const asArtifact = !!tags && (!tag || (o.type !== 'text' && o.type !== 'table' && !fig));
       ops.push(L.pushGraphicsState());
       if (o.type !== 'text' && o.opacity != null && o.opacity < 1) ops.push(L.setGraphicsState(pdfOpacity(page, pdf, o.opacity)));
       if (o.rotation && o.type !== 'line') {
@@ -12938,13 +13646,21 @@ async function pdfPageContent(ops, pi, page, kit, toSheet) {
         const c = centreOf(o), a = o.rotation * Math.PI / 180, cos = Math.cos(a), sin = Math.sin(a);
         ops.push(L.concatTransformationMatrix(cos, sin, -sin, cos, c.x - c.x * cos + c.y * sin, c.y - c.x * sin - c.y * cos));
       }
-      if (o.type === 'text') pdfText(ops, text[o.id] || [], fonts, hexFor, page, pdf, L, op);
-      else if (o.type === 'table') pdfTable(ops, o, text, fonts, hexFor, page, pdf, L, op);
+      if (asArtifact) ops.push(pdfArtifact(L));
+      if (fig) {
+        ops.push(pdfBDC(L, pdf, 'Figure', { MCID: tag.mcr(fig, 0) }));
+        // Where it is on the sheet (Layout BBox), for tools that reflow or highlight it.
+        const b = bounds(o), q = [toSheet(b.x, b.y), toSheet(b.x + b.w, b.y + b.h)];
+        fig.bbox = [r2(Math.min(q[0][0], q[1][0])), r2(Math.min(q[0][1], q[1][1])), r2(Math.max(q[0][0], q[1][0])), r2(Math.max(q[0][1], q[1][1]))];
+      }
+      if (o.type === 'text') pdfText(ops, text[o.id] || [], fonts, hexFor, page, pdf, L, op, tag);
+      else if (o.type === 'table') pdfTable(ops, o, text, fonts, hexFor, page, pdf, L, op, tag);
       else if (o.type === 'picture') await pdfPicture(ops, o, pdf, page, pdfImages, L);
       else pdfShape(ops, o, L, op);
+      if (fig || asArtifact) ops.push(pdfEMC(L));
       ops.push(L.popGraphicsState());
-      if (o.type === 'text') pdfLinks(o, text[o.id] || [], page, pdf, L, toSheet);
-      if (o.type === 'table') for (const c of tableCells(o)) pdfLinks(c, text[c.id] || [], page, pdf, L, toSheet);
+      if (o.type === 'text') pdfLinks(o, text[o.id] || [], page, pdf, L, toSheet, tag);
+      if (o.type === 'table') for (const c of tableCells(o)) pdfLinks(c, text[c.id] || [], page, pdf, L, toSheet, tag);
     }
   }
 }
@@ -13116,9 +13832,10 @@ function pdfShape(ops, o, L, op) {
 }
 
 /** A table: each row's colour, the lines of the grid, then every cell's words as real text (row by row, the order they are read in). */
-function pdfTable(ops, t, text, fonts, hexFor, page, pdf, L, op) {
+function pdfTable(ops, t, text, fonts, hexFor, page, pdf, L, op, tag) {
   const { xs, ys } = tableEdges(t);
   const left = xs[0], right = xs[xs.length - 1];
+  if (tag) ops.push(pdfArtifact(L));                 // the shading and lines: decoration (the structure says it is a table)
   t.cells.forEach((row, r) => {
     const fill = rowFill(t, r);
     if (fill) ops.push(L.setFillingRgbColor(...rgb01(fill)), L.rectangle(left, ys[r], right - left, ys[r + 1] - ys[r]), op(L.PDFOperatorNames.FillNonZero));
@@ -13129,7 +13846,8 @@ function pdfTable(ops, t, text, fonts, hexFor, page, pdf, L, op) {
     for (const x of xs) ops.push(L.moveTo(x, ys[0]), L.lineTo(x, ys[ys.length - 1]));
     ops.push(L.stroke());
   }
-  for (const c of tableCells(t)) pdfText(ops, text[c.id] || [], fonts, hexFor, page, pdf, L, op);
+  if (tag) ops.push(pdfEMC(L));
+  for (const c of tableCells(t)) pdfText(ops, text[c.id] || [], fonts, hexFor, page, pdf, L, op, tag);
 }
 
 /** A picture: clipped to its frame's shape, at full resolution, then the frame's outline. */
@@ -13161,12 +13879,17 @@ async function pdfPicture(ops, o, pdf, page, pdfImages, L) {
  * starting point, and inside a word every letter's place is set from our
  * own layout (kerning included), so the PDF matches the desk exactly.
  */
-function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
+function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op, tag) {
   if (!lines.length) return;
   ops.push(L.beginText());
   let lastFont = null, lastSize = 0, lastColour = null;
   for (const { ln, story } of lines) {
     let items = [], pen = 0, hex = '';
+    // Tagging (section 4e): a "Continued on page..." line is an artifact; other lines are filed under their
+    // paragraph, a new numbered stretch starting wherever a link starts or ends.
+    const tagged = !!tag && !ln.note;
+    if (tag && ln.note) ops.push(L.PDFOperator.of('BDC', [L.PDFName.of('Artifact'), pdf.context.obj({ Type: 'Pagination' })]));
+    let segKey = null;
     const flush = () => {
       if (hex) { items.push(L.PDFHexString.of(hex)); hex = ''; }
       if (items.length) ops.push(op(L.PDFOperatorNames.ShowTextAdjusted, [pdf.context.obj(items)]));
@@ -13176,8 +13899,25 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
       const k = i - ln.paraStart, g = ln.m.glyphs[k];
       if (!g) continue;                              // a tab (just space) or the second half of an emoji
       const look = ln.m.looks[k], fontKey = ln.m.fontKeys[k], size = ln.m.sizes[k];
-      if (!fonts[fontKey]) continue;                 // a font that can't go in the PDF: drawn as shapes below
+      if (!fonts[fontKey]) {                         // a font that can't go in the PDF: drawn as shapes below
+        if (tagged && segKey !== null) { flush(); ops.push(pdfEMC(L)); segKey = null; }   // (its words are tagged there, in their place)
+        continue;
+      }
       const x = ln.xs[i - ln.start];
+      if (tagged) {
+        // Which stretch this letter is in: the paragraph's own words ('P'), or a link (by where the link starts).
+        let key = 'P', start = 0;
+        if (look.href) { let a = k; while (a > 0 && ln.m.looks[a - 1].href === look.href) a--; start = ln.paraStart + a; key = 'L' + start; }
+        if (key !== segKey) {
+          flush();                                   // (a marked stretch never splits a run of letters)
+          if (segKey !== null) ops.push(pdfEMC(L));
+          const sortKey = tag.lineKey(story, ln) + (i - ln.start);   // read in the order of the letters
+          let e = tag.para(story, ln.para);
+          if (look.href) e = tag.link(story, start, e, sortKey);
+          ops.push(pdfBDC(L, pdf, look.href ? 'Link' : e.type, { MCID: tag.mcr(e, sortKey) }));
+          segKey = key;
+        }
+      }
       const cp = story.text.codePointAt(i);
       const wordStart = i === ln.start || /\s/.test(story.text[i - 1]);
       const newColour = look.colour !== lastColour, newFont = fontKey !== lastFont || size !== lastSize;
@@ -13202,25 +13942,43 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op) {
       pen = x + g.advanceWidth * size / FONTS[fontKey].unitsPerEm;   // where the PDF's pen goes by itself (letter spacing comes from the nudges)
     }
     flush();
+    if (segKey !== null) ops.push(pdfEMC(L));
+    if (tag && ln.note) ops.push(pdfEMC(L));
   }
   ops.push(L.endText());
-  // Letters in fonts that can't go inside a PDF: their outlines, filled.
+  // Letters in fonts that can't go inside a PDF: their outlines, filled. Tagged, each run of
+  // them carries its real words as ActualText, filed in its place in the line, so they are
+  // still read (in the right order) and searched.
+  const isShape = (ln, i) => { const g = ln.m.glyphs[i - ln.paraStart]; return !!g && !fonts[ln.m.fontKeys[i - ln.paraStart]]; };
   for (const { ln, story } of lines) {
     for (let i = ln.start; i < ln.end; i++) {
-      const k = i - ln.paraStart, g = ln.m.glyphs[k], fontKey = ln.m.fontKeys[k];
-      if (!g || fonts[fontKey] || story.text.charCodeAt(i) === 32) continue;
-      ops.push(L.setFillingRgbColor(...rgb01(ln.m.looks[k].colour)));
-      const size = ln.m.sizes[k], x = ln.x0 + ln.xs[i - ln.start];
-      for (const pt of g.parts || [{ g, dx: 0 }]) pdfGlyphShape(ops, outline(fontKey, pt.g, size), x + pt.dx * size / FONTS[fontKey].unitsPerEm, ln.baseline, L);
-      ops.push(op(L.PDFOperatorNames.FillNonZero));
+      if (!isShape(ln, i)) continue;
+      // A run: shape letters, and the spaces between them.
+      let j = i;
+      while (j + 1 < ln.end && (isShape(ln, j + 1) || (story.text[j + 1] === ' ' && j + 2 < ln.end && isShape(ln, j + 2)))) j++;
+      const tagged = !!tag && !ln.note;
+      if (tagged) ops.push(pdfBDC(L, pdf, 'Span', { MCID: tag.mcr(tag.para(story, ln.para), tag.lineKey(story, ln) + (i - ln.start)), ActualText: L.PDFHexString.fromText(story.text.slice(i, j + 1)) }));
+      else if (tag) ops.push(pdfArtifact(L));
+      for (let n = i; n <= j; n++) {
+        const k = n - ln.paraStart, g = ln.m.glyphs[k], fontKey = ln.m.fontKeys[k];
+        if (!g || fonts[fontKey] || story.text.charCodeAt(n) === 32) continue;
+        ops.push(L.setFillingRgbColor(...rgb01(ln.m.looks[k].colour)));
+        const size = ln.m.sizes[k], x = ln.x0 + ln.xs[n - ln.start];
+        for (const pt of g.parts || [{ g, dx: 0 }]) pdfGlyphShape(ops, outline(fontKey, pt.g, size), x + pt.dx * size / FONTS[fontKey].unitsPerEm, ln.baseline, L);
+        ops.push(op(L.PDFOperatorNames.FillNonZero));
+      }
+      if (tag) ops.push(pdfEMC(L));
+      i = j;
     }
   }
-  // Underlines: thin filled bars, after the letters.
+  // Underlines: thin filled bars, after the letters (decoration: the words are already read).
+  if (tag) ops.push(pdfArtifact(L));
   for (const { ln, story } of lines) {
     for (const u of lineUnderlines(ln, story.text)) {
       ops.push(L.setFillingRgbColor(...rgb01(u.colour)), L.rectangle(r2(u.x1), r2(u.y), r2(u.x2 - u.x1), r2(u.h)), op(L.PDFOperatorNames.FillNonZero));
     }
   }
+  if (tag) ops.push(pdfEMC(L));
 }
 
 /** A PDF graphics state for see-through drawing (fill and outline alike), named on this page. */
@@ -13282,7 +14040,7 @@ function pdfGlyphShape(ops, cmds, dx, dy, L) {
  * screen readers announce. A turned box gets the area around its turned
  * letters. Only addresses cleanLink allows ever get here.
  */
-function pdfLinks(o, lines, page, pdf, L, toSheet) {
+function pdfLinks(o, lines, page, pdf, L, toSheet, tag) {
   // toSheet: a point on the page -> where it lands on the PDF's sheet (one page per sheet, a booklet, copies).
   const map = toSheet || ((x, y) => [x, PAGE.height - y]);
   const c = centreOf(o);
@@ -13299,7 +14057,13 @@ function pdfLinks(o, lines, page, pdf, L, toSheet) {
         Contents: L.PDFHexString.fromText(lk.text || lk.href),
         A: { Type: 'Action', S: 'URI', URI: L.PDFString.of(lk.href) }
       });
-      page.node.addAnnot(pdf.context.register(annot));
+      const ref = pdf.context.register(annot);
+      page.node.addAnnot(ref);
+      // Tagged: the clickable area joins its Link element (section 4e), so it is read with the link's words.
+      if (tag && !ln.note) {
+        const sortKey = tag.lineKey(story, ln);
+        tag.annot(tag.link(story, lk.start, tag.para(story, ln.para), sortKey), annot, ref, sortKey);
+      }
     }
   }
 }
@@ -13439,7 +14203,7 @@ function updateExportDialog() {
     return;
   }
   const n = doc.pages.length;
-  const tagged = ' Text stays real text: it can be selected, searched and copied. The PDF is not tagged yet, so screen readers won’t get your headings, reading order or alt text from it.';
+  const tagged = ' Text stays real text: it can be selected, searched and copied. The PDF is tagged, so screen readers get your headings, reading order, alt text, tables and links.';
   if (layout === 'booklet') {
     const m = Math.ceil(n / 4) * 4;
     $('expNote').textContent = n + (n === 1 ? ' page' : ' pages') + (m > n ? ', plus ' + (m - n) + ' blank at the end' : '') + ', on ' + m / 4 + (m === 4 ? ' sheet' : ' sheets') +
@@ -13484,6 +14248,19 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.24.0", date: "2026-10-08", title: "", notes: [
+    "Colour schemes. Every document now has a colour scheme: six colours that go together (Text, Main, Accent 1, Accent 2, Pale and Light). The Colour scheme button in the Document section opens a gallery of 13 schemes, each card showing your page in its colours. Pick one and everything that used the old scheme's colours changes to match, including lighter and darker shades of them; colours you chose yourself stay as they are. One undo puts it back. You can also change any of the six colours yourself, and DSKEDTR warns when text would be hard to read.",
+    "Each template comes in its own scheme (the tri-fold and sign in Harbor, the certificate in Harvest, the card in Ember), so one click restyles a template. New shapes, lines, tables and building blocks start in the document's scheme.",
+    "Scheme swatches under the Inspector's colour fields (fill, outline, text colour, paragraph style colour and table shading): one Tab stop, arrow keys to move along. Pressing one while words are highlighted colours them and keeps them highlighted. Projects are now version 13."
+  ] },
+  { version: "0.23.0", date: "2026-10-08", title: "", notes: [
+    "Crop to shape. Put a shape over a picture where you want the cut (a star, a heart, any gallery shape, a rectangle, an ellipse or a merged shape; pick several and they are joined), pick the picture and the shape, and choose Crop to shape: in the floating pill, beside Merge Shapes in Arrange, or Alt+Shift+P. The picture's frame becomes that outline right where the shape was, like a cookie cutter, and the shape goes. The picture stays where it was inside the frame; if it no longer reaches every edge, it grows or slides only as much as it needs to. It works on turned pictures too, and one undo puts everything back.",
+    "Picture placeholders on master pages. An empty picture frame on a master page is now a placeholder: every page that uses the master can put its own picture in it. On a page, placeholders show in teal with \"Double-click or drop a picture\"; drop a picture file on one (it lights up and says \"this page only\"), double-click or double-tap it, or use the \"Add a picture to ...\" buttons in the Document section (the keyboard way). The page gets its own copy of the frame, with the same place, shape, outline, text wrap and alt text, and the picture in it; it moves, crops, prints and is read in the PDF like any picture. Delete it to get the empty placeholder back. Projects are now version 12."
+  ] },
+  { version: "0.22.0", date: "2026-10-08", title: "", notes: [
+    "Tagged PDF. The PDF now carries the document's structure as well as its look, so screen readers, reading apps and copy-and-paste get the words in the right order with their meaning: headings and paragraphs (Heading 1 and 2 as H1 and H2, Body and Caption as P) in each page's reading order, a story that continues on another page kept in one piece; pictures and shapes with alt text as figures carrying that alt text; tables as tables, the header row's cells marked as column headings; links as links, their clickable areas joined to their words, with Tab moving through them in reading order; and letters in a font that can't go inside a PDF (drawn as shapes) carrying their real words, in their place.",
+    "Everything else is marked as an artifact, so it is skipped: decoration, the lines and shading of tables, underlines, a master page's repeated things (footers, page numbers), \"Continued on page...\" lines, crop, cut and fold marks, and the extra copies when two or four go on a sheet. The Export dialog and the help say the PDF is tagged."
+  ] },
   { version: "0.21.3", date: "2026-10-07", title: "", notes: [
     "Two new shapes in the gallery's Basic shapes: a puffy square (a rounded square pinched in at the middle of each side) and a scalloped circle (thirteen soft bumps round the edge). Like every gallery shape they can be drawn with the Shapes tool or used as a picture frame's shape, and they print as smooth curves."
   ] },

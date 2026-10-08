@@ -1,5 +1,66 @@
 # DSKEDTR changelog
 
+## 0.24.0 - 2026-10-08
+
+- **Colour schemes.** Every document now has a colour scheme: six colours
+  that go together (Text, Main, Accent 1, Accent 2, Pale and Light). The
+  Colour scheme button in the Document section opens a gallery of 13
+  schemes, each card showing your page in its colours. Pick one and
+  everything that used the old scheme's colours changes to match,
+  including lighter and darker shades of them; colours you chose yourself
+  stay as they are. One undo puts it back. You can also change any of
+  the six colours yourself, and DSKEDTR warns when text would be hard to
+  read.
+- Each template comes in its own scheme (the tri-fold and sign in Harbor,
+  the certificate in Harvest, the card in Ember), so one click restyles a
+  template. New shapes, lines, tables and building blocks start in the
+  document's scheme.
+- **Scheme swatches** under the Inspector's colour fields (fill, outline,
+  text colour, paragraph style colour and table shading): one Tab stop,
+  arrow keys to move along. Pressing one while words are highlighted
+  colours them and keeps them highlighted. Projects are now version 13.
+
+## 0.23.0 - 2026-10-08
+
+- **Crop to shape.** Put a shape over a picture where you want the cut
+  (a star, a heart, any gallery shape, a rectangle, an ellipse or a
+  merged shape; pick several and they are joined), pick the picture and
+  the shape, and choose Crop to shape: in the floating pill, beside Merge
+  Shapes in Arrange, or Alt+Shift+P. The picture's frame becomes that
+  outline right where the shape was, like a cookie cutter, and the shape
+  goes. The picture stays where it was inside the frame; if it no longer
+  reaches every edge, it grows or slides only as much as it needs to.
+  It works on turned pictures too, and one undo puts everything back.
+- **Picture placeholders on master pages.** An empty picture frame on a
+  master page is now a placeholder: every page that uses the master can
+  put its own picture in it. On a page, placeholders show in teal with
+  "Double-click or drop a picture"; drop a picture file on one (it lights
+  up and says "this page only"), double-click or double-tap it, or use the
+  "Add a picture to ..." buttons in the Document section (the keyboard
+  way). The page gets its own copy of the frame, with the same place,
+  shape, outline, text wrap and alt text, and the picture in it; it moves,
+  crops, prints and is read in the PDF like any picture. Delete it to get
+  the empty placeholder back. Projects are now version 12.
+
+## 0.22.0 - 2026-10-08
+
+- **Tagged PDF.** The PDF now carries the document's structure as well as
+  its look, so screen readers, reading apps and copy-and-paste get the
+  words in the right order with their meaning: headings and paragraphs
+  (Heading 1 and 2 as H1 and H2, Body and Caption as P) in each page's
+  reading order, a story that continues on another page kept in one
+  piece; pictures and shapes with alt text as figures carrying that alt
+  text; tables as tables, the header row's cells marked as column
+  headings; links as links, their clickable areas joined to their words,
+  with Tab moving through them in reading order; and letters in a font
+  that can't go inside a PDF (drawn as shapes) carrying their real words,
+  in their place.
+- Everything else is marked as an artifact, so it is skipped:
+  decoration, the lines and shading of tables, underlines, a master
+  page's repeated things (footers, page numbers), "Continued on page..."
+  lines, crop, cut and fold marks, and the extra copies when two or four
+  go on a sheet. The Export dialog and the help say the PDF is tagged.
+
 ## 0.21.3 - 2026-10-07
 
 - **Two new shapes** in the gallery's Basic shapes: a puffy square (a

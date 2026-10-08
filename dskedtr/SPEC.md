@@ -135,7 +135,8 @@ colour is never the only difference: the icon's drawing and the name carry it.
   pen paths (from VCTREDTR).
 - Merge Shapes: union, combine, fragment, intersect, subtract (from VCTREDTR).
 - Picture frames: crop by moving the picture inside its frame; fit, fill,
-  centre. Picture placeholders on masters.
+  centre. Picture placeholders on masters (0.23.0). Crop a picture to any
+  shape on the page (0.23.0).
 - A warning when a picture is too low-resolution for its printed size.
 - Alt text on every picture and meaningful shape or group (required; see
   Accessibility).
@@ -145,7 +146,7 @@ colour is never the only difference: the icon's drawing and the name carry it.
 - Group, ungroup, lock, hide, flip, rotate, z-order.
 - Exact X, Y, width, height and rotation in the Inspector.
 - Format painter.
-- Colour schemes: a document palette that can be swapped in one step.
+- Colour schemes: a document palette that can be swapped in one step (0.24.0).
 
 ### Snapping and alignment
 
@@ -678,10 +679,79 @@ building blocks, the starter template gallery (all done by 0.21.0, below).
   angle, stretched to the 0-100 box): `puffySquarePath()` is
   |x|^2.4 + |y|^2.4 = 1 times (1 - 0.2 cos^2 2t); `scallopPath(13)` is
   1 + 0.06 sqrt(cos^2(6.5 (t + pi/2)) + 0.06).
+- 0.22.0: tagged PDF (section 4e). `pdfTagTree(pdf, L)` lays out the
+  elements first, page by page in reading order (stories -> H1/H2/P per
+  paragraph; tables -> Table/TR/TH (A /O /Table /Scope /Column)/TD with
+  their paragraphs; pictures and shapes with alt text -> Figure with /Alt
+  and a Layout BBox), then hands out MCIDs while drawing: `beginSheet`,
+  `mcr(elem, sortKey)`, `para`, `link` (a Link inside its paragraph),
+  `figure`, `lineKey` (line index x 10000 + letter offset, so kids sort
+  into reading order whatever the drawing order), `annot` (StructParent
+  on the link annotation, an OBJR kid), and `finish` (prunes empty
+  elements, writes StructElems, the ParentTree, StructTreeRoot, MarkInfo,
+  each page's StructParents and /Tabs /S). `pdfText` wraps each stretch of
+  letters in BDC/EMC (split at link edges and around shape-drawn letters,
+  which get Span + ActualText); notes, underlines, table grids, shadows,
+  decoration, master objects and N-up copies after the first are
+  /Artifact. Tested with pdfinfo -struct-text and a content-stream audit
+  (no painting operator outside marked content, MCIDs match the
+  ParentTree). Not yet: lists (L/LI), XMP metadata with a PDF/UA
+  identifier, a check against veraPDF.
+- **Crop to shape and master picture placeholders (0.23.0, done).**
+  `cropToShape` (section 10c, beside Merge Shapes): one picture plus one
+  or more closed shapes on its page (`cropToShapeParts`; rect, ellipse,
+  gallery or merged shape, not an open gallery line). The shapes are
+  joined (Paper.js unite), turned back by the picture's rotation about its
+  centre, and become `o.mask` (frameShape 'shape') exactly where they lay;
+  the new frame's centre is placed where the turned picture shows that
+  point, and ox/oy are re-measured so the picture doesn't move. If the
+  picture no longer covers the frame it grows (about the frame's middle)
+  only as much as needed, then slides just far enough. The shapes are
+  removed; one undo. In the pill (`cropShape`), Arrange (`#cropShapeBtn`)
+  and Alt+Shift+P. Placeholders (section 4, master pages): an empty,
+  visible picture frame on a master is a placeholder. A page fills one by
+  getting its own copy of the frame (`fillPlaceholder`: same box, shape,
+  outline, wrap and alt text; `o.fromMaster` = the master frame's id;
+  first in the page's objects), and `masterObjectsOn(pi)` leaves that
+  master frame out on that page everywhere (drawing, printing, wrap,
+  tagging, hints), so `pageObjectsWithMaster` stays the one source.
+  Ways in: drop a picture file on it (it lights up: "this page only"),
+  double-click or double-tap it, or the Document section's "Add a picture
+  to ..." buttons (the keyboard way). Placeholders show in teal with a
+  label that fits; the page's copy is an ordinary picture (a Figure in
+  the PDF, not an artifact). Deleting the copy brings the placeholder
+  back. Copies made with Duplicate, paste or Ctrl+drag drop `fromMaster`;
+  a duplicated page keeps it. Project version 12 (`fromMaster` checked
+  against ID_RE; anything else is dropped). Not yet: text placeholders,
+  a page's copy following later moves of the master frame.
 
-**Phase 3 - polish.** Colour schemes, drop caps and tab
+- **Colour schemes (0.24.0, phase 3, done).** `doc.scheme = { name,
+  colours: [Text, Main, Accent 1, Accent 2, Pale, Light] }` (section 2,
+  `SCHEMES`: 13 presets, Lakeside first and the default; each checked for
+  Text at least 7:1 on white, Pale and Light, Main at least 4.5:1 with
+  white). Colours stay plain hex everywhere; a swap RECOLOURS
+  (`colourMapper(from, to)`: an exact slot colour becomes the new slot's;
+  a mix of a slot with white or black, found by least squares to within
+  2.5 levels a channel, becomes the same mix of the new one; anything else
+  stays). `recolourDoc` covers fills, outlines, table header and band
+  shading, shadows, text runs and role styles, on pages and masters.
+  `setScheme` is one undo step (the snapshot carries the scheme). The
+  Document section's scheme button opens `#schemeDialog`: a card per
+  preset showing the current page recoloured (`previewSVG`, one per
+  animation frame), the one in use pressed, and the document's own six
+  colour fields with contrast warnings. Swatch rows (one Tab stop, arrow
+  keys) under Fill, Outline, text colour, style colour and table shading;
+  Fill and Outline swatches untick None. New rectangles, ellipses, gallery
+  shapes, lines and tables start in the scheme; building blocks are made
+  in Lakeside then recoloured; each template sets its scheme (`k.scheme`)
+  and uses its colours or `tint()`s of them. Project version 13 (a
+  scheme is six valid colours and a cleaned name, else Lakeside). Not
+  yet: choosing a scheme in the New dialog, schemes saved for reuse
+  across documents.
+
+**Phase 3 - polish.** Colour schemes (done, 0.24.0), drop caps and tab
 leaders, hyphenation, text on a path, picture resolution warnings,
-calendars, accessible HTML export, tagged PDF (below), and a look at
+calendars, accessible HTML export, tagged PDF (done, 0.22.0), and a look at
 `.pub` import (below).
 
 **Down the road - the DSKEDTR reader.** A reading view for published
