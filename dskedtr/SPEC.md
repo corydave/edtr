@@ -360,6 +360,18 @@ Phase 1 is built in milestones, each stopping for Dave's review:
      8000 px a side (read from the header before decoding) and must decode.
      Crash backups (IndexedDB, with the pictures as Blobs) go through the
      same checks.
+   - **Since 0.33.0 the project file is a zip** (Dave asked for smaller
+     files; base64 made pictures a third bigger): `mimetype`
+     (`application/x-dskedtr`, first and stored, as EPUB does),
+     `project.json` (deflated; pictures and fonts named by `path`),
+     `pictures/<id>.jpg|png` and `fonts/<key>-<variant>.font`, stored as
+     they are. Our own small zip writer and reader (no library): every
+     offset and size checked, CRC-32 checked, at most 20,000 entries,
+     encrypted entries refused, unpacking capped per file (pictures 40 MB,
+     fonts 15 MB, anything 300 MB), names only looked up. Older one-JSON
+     files still open (told apart by their first bytes, "PK"). Considered
+     and not chosen: saving only picture file names (the project would
+     break as soon as it moved to another computer).
    - **PDF:** pdf-lib 1.17.1 with @pdf-lib/fontkit 1.1.1 (both pinned with
      SRI, inlined in the one-file edition). The page is flipped once so all
      numbers match the desk. Text is real text in the embedded, subset
@@ -749,10 +761,142 @@ building blocks, the starter template gallery (all done by 0.21.0, below).
   yet: choosing a scheme in the New dialog, schemes saved for reuse
   across documents.
 
+- **Drop caps, tab stops and leaders (0.25.0, phase 3, done).** Drop cap:
+  `story.dropCap = { lines 2-5, font 'text'|'h1', main }` on the story's
+  first letter (a letter or digit). `applyDropCap` swaps the measured
+  letter for a big one (cap height spanning the lines, from the font's
+  OS/2 sCapHeight or its H), widens it by the letter plus a gap, and marks
+  `m.drop`; `lineMetrics` ignores it; lines 2..N of the paragraph (same
+  box and column) get that indent on the left (also through
+  `placeWrappedLine`); line 0 records `drop.baseline` = line N's baseline
+  (a short paragraph pushes the next one clear). `baselineAt(ln, i)` gives
+  every drawer (desk, PNG, PDF real text and shape letters) the letter's
+  baseline. Main colour is read from the scheme at layout, so it follows a
+  swap. In Story (Inspector); copied with its box; checked on load
+  (`cleanDropCap`). Tabs: typed with Ctrl+Alt+Shift+T or Insert, Tab (Tab
+  itself still moves to the next story). `style.tabs` (per role, at most
+  8): `{ at (pt from the line's left, or null = the right edge), align
+  left|center|right, leader none|dots|line }`; past the last stop, every
+  36 pt. `tabWidth` is used by `breakLine` and by the x positions; a line
+  with a tab isn't justified. Leaders (`line.leaders` -> `leaderMarks`):
+  the font's own full stop every half em on a shared grid (columns of dots
+  line up), or an underline-weight rule, drawn as shapes on the desk and
+  as artifacts in the PDF (never text). Edited in Paragraph's style box
+  (`fillTabStops`, `setTabStops`). Project version 14. Not yet: decimal
+  tabs, tab stops for a single paragraph, a ruler to drag stops on.
+
+- **Hyphenation (0.26.0, phase 3, done).** `style.hyphenate` per role,
+  English documents only (`hyphenationLang`). Liang's method: the
+  hyph_en_US patterns (Hyphen / Pyphen, after plain TeX hyphen.tex and the
+  TUGboat exceptions; BSD-style), ASCII patterns only (9,782, about 93 KB),
+  in a `<script type="text/plain" id="hyphEnUs">` block read once
+  (`hyphenPatterns`); `hyphenPoints(word)` (2 letters before, 3 after,
+  cached). `breakLine` now returns `{ end, hyphen }`: when a word runs over
+  and breaking at the last space would leave more than 8% of the line
+  empty (or there is no space), `hyphenBreak` breaks it at the latest
+  point where the part plus a hyphen fits. Never words in capitals, with
+  digits, or under 5 letters; at most 2 hyphenated lines in a row. The
+  hyphen is drawn (with the leaders, `leaderMarks`), never typed: the text
+  doesn't change, the PDF tags the word whole and the hyphen is an
+  artifact. A hyphenated break isn't "forced" for text wrap. The
+  newsletter template hyphenates its body. Project version 15. Not yet:
+  other languages, soft hyphens typed by hand, a hyphenation zone setting.
+
+- **Text on a curve (0.27.0, phase 3, done).** `o.curve = { kind:
+  arch|dip|circle, bend 10-100 }` on a text box (Text flow, "Shape of the
+  text"). The story is laid out flat as usual; `curveMap(f, vRef)` takes a
+  flat point to the curve plus a turn (arch: centre below, the box's width
+  bending through bend% of a full turn on the first baseline, lower lines
+  on smaller circles; dip: centre above, the ends on the first baseline;
+  circle: round a circle that fits the box, a line as long as the circle
+  is round via `columnLimits`). `curvedLetter` places each letter by its
+  middle and turns it; `frameCurves(lines, flatStory)` finds each box's
+  first baseline. Drawn on the desk, thumbnails and PNG (`pageTextPaths`,
+  through `pushOutline(..., T)`), and in the PDF as real text with a turned
+  text matrix per letter `[cos, sin, sin, -cos]` (shape letters through
+  `pdfGlyphShape(..., T)`); underlines follow the curve (`curvedBar`), link
+  areas cover the curved words, the contrast checker samples where the
+  letters really are. The box being typed in shows flat on the desk. A
+  curved box has one column and ignores text wrap. Project version 16.
+  Not yet: text along any shape's outline, tab leaders on a curve,
+  dragging the bend on the page.
+
+- **Calendars (0.28.0, phase 3, done).** `calendarBlock(cfg)` makes a
+  building block (`{ year, month, weekStart 0|1, fill page|half, role,
+  lang }`): the month as a heading, then a real table (`monthWeeks`):
+  a header row of day names (`weekdayNames`, long when a column is at
+  least 70 pt wide, else short; `Intl` in the document's language), a row
+  per week, each row's minimum height sharing the room left so there is
+  space to write; grouped, named "Calendar, <month>". The Building blocks
+  card (`ask: true`) opens `#calDialog` (month, year 1600-2400 checked by
+  us, week start, size). A "Monthly calendar" template (Ocean scheme, a
+  photo placeholder, this month). Not yet: several months at once, a
+  year-at-a-glance page, holidays or dates filled in automatically.
+
+- **Accessible HTML export (0.29.0, phase 3, done).** Export's third
+  choice: one .html file (`buildHTML`, `exportHTML`). Built with
+  `document.implementation.createHTMLDocument` and DOM calls only (text
+  always as text nodes), serialized at the end. Each page a `<section
+  aria-label="Page N">` (one page: straight into `<main>`), following its
+  reading order: stories as h1 / h2 / p / p.caption with strong, em, u,
+  coloured spans and links (`htmlParagraphs`, runs by `charLook`; tabs as
+  `span.tab`; page-number fields as numbers; a drop cap as a class);
+  tables with `th scope=col` header rows and a caption when named
+  (`htmlTable`); pictures as figures with their alt text (cropped or
+  shaped frames drawn to a PNG of just what shows) and meaningful shapes
+  as inline SVG `role=img` named by their alt (`htmlFigure`). Decoration,
+  empty frames and master pages are left out. Styles from the roles (em
+  sizes from Body, family names with a generic fallback, hyphens: auto
+  where on). The file's CSP: `default-src 'none'; img-src data:;
+  style-src 'unsafe-inline'`, no scripts, nothing fetched; a skip link;
+  passes axe (WCAG 2.2 AA and best practice). Not yet: fonts inside the
+  file, the text boxes' own fills and backgrounds, lists.
+
+- **Tables, round 2 (0.30.0, done).** Merged cells: `cell.rs` / `cell.cs`
+  on the top-left cell; the cells under it stay in the grid, empty, their
+  typing areas hidden (`tableCover`, `visibleCells`). Merge right / down
+  moves the other cells' words in as paragraphs (`moveCellWords`), refuses
+  to merge the header row down or into another merged cell; Split undoes
+  it; a row or column inserted or deleted through a merged cell splits it
+  (`unmergeAcross`). Layout: each visible cell measured at its own width;
+  rows from one-row cells and `t.rows`, a merged cell taller than its rows
+  growing the last one; `t.heights` kept for drawing. Lines as segments
+  that skip merged insides (`tableSegments`), fills per cell (`cell.fill`
+  over the row's, `cellFill`). `t.valign` (middle, bottom) via `cell.vOff`,
+  added where `layoutStory` starts. Row heights: drag the line under a
+  row (`tableRowAt`, drag kind `tableRow`, row-resize pointer) or "This
+  row's height". "Move this row and the ones below to the next page"
+  (`tableBreak`): a new table at the next page's top margin (a page is
+  added if needed), the header row copied, one undo step; the checker
+  suggests it for a table off the bottom. Tagged PDF: hidden cells left
+  out, `RowSpan` / `ColSpan` attributes, a row whose cells are all under
+  merged ones kept as an empty TR; the web page uses rowspan / colspan.
+  Project version 17 (spans cut to the table, overlapping ones split,
+  first come first served). Not yet: tables that flow across pages by
+  themselves, picking several cells with the mouse to merge them.
+
+- **Performance (0.31.0, done).** Layout only what changed: each story's
+  layout is kept with a fingerprint (`storyLayoutKey`: its text, roles,
+  runs and drop cap; each box's place, size, settings and page; and
+  `wrapKey`, every wrap object on those pages and their masters, with the
+  PNG trace state). `globalLayoutKey` (styles, fonts loaded, page count,
+  language, scheme, masters) clears them all when it changes; tables keep
+  their rows and columns while `tableLayoutKey` matches. Drawing: each
+  box's letters are kept while its line objects are the same ones
+  (`textPathMemo`, keyed also on being typed in and on its curve), and a
+  letter's outline is cached as relative path text placed with one "M x
+  y" (`relOutline`, `pushGlyph`; points rounded first, so no drift).
+  Typing in a 22-page newsletter went from about 90 ms a key to about
+  16; a layout after no change takes about 1 ms instead of 36. Tested by
+  an oracle: after each of 17 kinds of change, the kept layouts and
+  drawing equal a fresh layout of everything. Not yet: redrawing only the
+  boxes that changed in the page's SVG (the browser's own drawing is now
+  most of the time left).
+
 **Phase 3 - polish.** Colour schemes (done, 0.24.0), drop caps and tab
-leaders, hyphenation, text on a path, picture resolution warnings,
-calendars, accessible HTML export, tagged PDF (done, 0.22.0), and a look at
-`.pub` import (below).
+leaders (done, 0.25.0), hyphenation (done, 0.26.0), text on a path (done, 0.27.0: arch, dip, circle), picture resolution warnings,
+calendars (done, 0.28.0), accessible HTML export (done, 0.29.0), tagged PDF (done, 0.22.0), and
+`.pub` import (done, 0.32.0; below).
 
 **Down the road - the DSKEDTR reader.** A reading view for published
 documents, built on the same reading order and roles: a screen reader gets
@@ -811,6 +955,56 @@ an OLE compound file (the same container old `.doc` and `.xls` files use),
 so the first step is a small, careful reader for that container. Treat every
 `.pub` as untrusted: strict bounds checks on every offset and length, limits
 on sizes and counts, no recursion without a depth cap.
+
+**Built (0.32.0, 2026-10-08): option 2, inside DSKEDTR.** Section 16b of
+the code, our own JavaScript with libmspub's source as the format map
+(MPL-2.0; nothing copied, credited in About). Tested on four real files
+from Dave (three Publisher 2000 worksheets, one Publisher 2002+ flyer),
+compared page by page with LibreOffice's conversions; on several points
+DSKEDTR now reads more than LibreOffice does (Publisher 2000 fonts, clip
+art pictures, the embedded equation).
+
+How it works, in order:
+1. **The container** (`readCompoundFile`): FAT and DIFAT, mini stream,
+   the directory tree; every chain checked for loops and length, streams
+   capped at 120 MB, files at 150 MB.
+2. **The words** (`readQuill`): TEXT, STRS, SYID, FDPC/FDPP (character
+   and paragraph formatting), STSH (defaults), FONT, PL (text colours),
+   TCD (table cell ends). Publisher 2000 stores a run's font number
+   directly in its font block; 2002+ one container deeper.
+3. **Pages and shapes**: `readContents2k` (Publisher 2000: a chunk index
+   at 0x16; shapes positioned from the page centre, in EMUs) and
+   `readContents2002` (blocks; a trailer directory of chunks; pages,
+   masters, shape chunks with text ids, tables with their row and column
+   sizes and merged cells; positions, fills, outlines, shadows, alt text
+   and pictures from the Escher drawing, through its groups).
+4. **Pictures**: PNG and JPEG as they are; DIB bitmaps get their file
+   header back; WMF and EMF (clip art, OLE presentations such as MathType
+   equations) are played onto a canvas by a small metafile player
+   (`drawMetafile`); each is redrawn at its frame's size, cropped and
+   stretched as Publisher showed it.
+5. **The project** (`pubToProject`): roles from size and weight against
+   the document's usual text; role styles from the majority look;
+   letters that differ keep their own format; paragraphs keep their own
+   alignment (format field `al`, version 18). Stand-in fonts are matched
+   in width to the originals (`widthMatch`: closer letters, then a little
+   smaller, line spacing from the original size), and any box that still
+   overflows is fitted (`shrinkToFit`). The result opens through
+   `openProjectData`, so it passes every project check.
+
+Not yet, roughly in order of what teachers' files will need:
+- **Paragraph indents** (left, first line, hanging). Worksheets use them
+  for "a)  ..." answers; today the text starts at the box edge, so lines
+  can break a little differently.
+- Text boxes linked across pages in Publisher 2000 (2002+ shared text
+  ids are joined into one story; no 2000 sample had links).
+- Border art, gradient and picture fills (the first colour stands in),
+  WordArt, superscript and subscript, per-side borders on boxes, page
+  backgrounds, Publisher 98 and earlier.
+- A standalone converter page (drop in a .pub, get a PDF), sharing the
+  reader.
+- More sample files: newsletters, brochures, a file from Publisher 2016
+  or 365 with linked boxes and WordArt.
 
 ## Security and privacy
 

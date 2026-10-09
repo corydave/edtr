@@ -1,5 +1,167 @@
 # DSKEDTR changelog
 
+## 0.33.1 - 2026-10-09
+
+- **Export can save the project too.** Its last choice, "A DSKEDTR
+  project (.dskedtr)", does what Save project does, with the file name
+  typed there, so the .dskedtr file is wherever you look for it.
+
+## 0.33.0 - 2026-10-09
+
+- **Smaller project files.** A .dskedtr file is now a zip (the same kind
+  of box .docx and .epub files are): the document, plus each picture and
+  font as the file it is. Before, pictures went inside as text, which
+  made them a third bigger. Nothing else changes: Save project (the disk
+  button, Ctrl+Shift+S) makes one, Open brings it back, and projects saved
+  by earlier versions still open. Any zip tool can look inside.
+- Opening one is as careful as before: every position and size in the
+  zip is checked, each file's check number must match (so damage is
+  caught), a picture that would unpack to more than 40 MB is left out,
+  and names inside are only looked up, never used as paths.
+- **The Inspector button is filled** in DSKEDTR's colour while the
+  Inspector is open, so you can tell at a glance, in light and dark (it
+  was a small dot before, easy to miss).
+
+## 0.32.0 - 2026-10-08 (opening Publisher files)
+
+- **Open Publisher files (.pub).** Open (Ctrl+O), or drop one on the
+  window: files from Publisher 2000 to today open as a DSKEDTR document
+  you can edit. Pages and their size, master pages, text boxes with their
+  words (bold, italics, underlines, sizes, colours, tab stops), tables
+  (with merged cells), pictures, clip art and embedded equations (drawn
+  from the pictures Publisher keeps of them), shapes, lines, arrows,
+  groups, turned boxes and the scheme colours all come across, in the
+  places Publisher put them.
+- **Honest roles.** Each paragraph gets a role from how it looks (big
+  short lines are headings, small print is a caption), and each role's
+  style takes the look most of its paragraphs have, so the Inspector and
+  the screen reader structure work straight away.
+- **Fonts.** A .pub doesn't carry its fonts, so the closest built-in font
+  stands in (Times New Roman: Literata; Arial and Calibri: Atkinson
+  Hyperlegible; Comic Sans: Comic Neue, and so on). Where a stand-in is
+  wider, its letters are set a little closer or smaller so lines break
+  where they did, and a box that still overflows is fitted. Greek
+  letters, arrows and maths signs (and the Symbol font's letters) come
+  through as real characters, drawn from two small built-in Symbols fonts
+  (from DejaVu) when a font lacks them.
+- **A report** says what came across, which font stands in for which,
+  and anything left out. Nothing is saved until you save it as a DSKEDTR
+  project; the .pub itself is never changed. Installed, DSKEDTR can open
+  .pub files from the computer's files.
+- **A paragraph's own alignment.** Paragraphs from a Publisher file keep
+  their alignment even when their role's style says otherwise. The
+  Paragraph section says so, with "Use the style's alignment" to drop it.
+  (Project files are now version 18.)
+- **Careful with files from anywhere.** The file is read as data: every
+  position and length in it is checked, every loop has a limit, pictures
+  are redrawn, and the result goes through the same checks as a project.
+  Damaged copies of the test files open or are refused with a reason,
+  never crash. Publisher 98 and older files can't be opened yet.
+- Thanks to libmspub (the Document Liberation Project), whose source was
+  the map of the format; DSKEDTR's importer is its own code.
+
+## 0.31.0 - 2026-10-08
+
+- **Faster in long documents.** DSKEDTR now lays out only the stories
+  that changed (a story whose words, boxes and the things wrapped around
+  them are as they were keeps its layout), keeps each text box's drawing
+  until its lines change, and draws letters from shapes it has already
+  worked out. Typing in a 22-page newsletter is about five times quicker
+  (around 16 ms a key, down from about 90), and moving and resizing
+  things is quicker too. Nothing looks different: the layouts it keeps
+  are checked against fresh ones after every kind of change.
+
+## 0.30.0 - 2026-10-08
+
+- **Merged cells.** While you type in a cell, the Table section can merge
+  it with the cell to its right or below it, again and again for bigger
+  ones, and split it back. Nothing is lost: the other cells' words join
+  it. Screen readers hear how many rows and columns a merged cell spans,
+  and the PDF and web page say so too.
+- **Cell colours.** A colour behind this cell, this row or this column
+  (with the scheme's swatches), over the header and band colours.
+- **Words in the middle or at the bottom** of their cells ("Words in the
+  cells").
+- **Row heights.** Drag the line under a row on the page, or type its
+  height. Words can still make a row taller, so a table never hides
+  text.
+- **Long tables.** "Move this row and the ones below to the next page"
+  continues a table on the next page (adding one if needed), with its
+  header row repeated there. The checker suggests it when a table runs
+  off the bottom of its page. Projects are now version 17.
+
+## 0.29.0 - 2026-10-08
+
+- **An accessible web page.** Export can now make one HTML file as well
+  as a PDF or PNG. The document becomes a web page that fits any screen,
+  from a phone to a projector, and works with screen readers, magnifiers
+  and reading apps. It follows each page's reading order, with headings
+  and paragraphs, bold, italics, colours and links, tables with their
+  column headings, and pictures and meaningful shapes with their alt
+  text. Decoration and master pages (footers, page numbers) are left out,
+  as in the tagged PDF.
+- The file is safe to share: everything is inside it (pictures too),
+  nothing in it can run, and it loads nothing from anywhere. It passes an
+  automatic accessibility check (axe) with no problems.
+
+## 0.28.0 - 2026-10-08
+
+- **Calendars.** A Calendar building block: pick the month and year,
+  whether the week starts on Sunday or Monday, and the whole page or the
+  top half. The month arrives as a heading and a real table, with the
+  days of the week as its header row (so a screen reader says which day
+  each date is) and a row for each week, with room to write in each day.
+  Type in a day's cell to add an event. Day and month names follow the
+  document's language (lundi, octubre...), and the colours follow its
+  scheme.
+- A new **Monthly calendar** template: a photo frame on top, then this
+  month.
+
+## 0.27.0 - 2026-10-08
+
+- **Text on a curve.** A text box can bend its text into an arch (like a
+  rainbow), a dip (like a smile) or all the way round a circle, for
+  badges, seals, banners and headings: "Shape of the text" in Text flow,
+  with a Bend slider for arches and dips. Each letter follows the curve
+  and turns with it, and links stay underlined along it. The words are
+  still real text: typed, checked, read in order and copied as usual, and
+  real, selectable text in the PDF. While you type in the box it shows
+  straight, so the cursor is where you expect, and it bends again when
+  you're done. A curved box has one column and ignores text wrap.
+  Projects are now version 16.
+
+## 0.26.0 - 2026-10-08
+
+- **Hyphenation.** Long words can break with a hyphen at the ends of
+  lines, which keeps narrow columns and justified text even. Turn it on
+  for a role in Paragraph ("Hyphenate long words at the ends of lines").
+  Words break where a US English dictionary says they may (the same
+  patterns TeX uses), with at least two letters before a break and three
+  after; words in capitals and short words are left whole, and no more
+  than two lines in a row end with a hyphen. The hyphen is only drawn:
+  the text itself doesn't change, so the word is still read, searched and
+  copied whole, in DSKEDTR and in the PDF. English documents only, for
+  now. The newsletter template uses it in its columns. Projects are now
+  version 15.
+
+## 0.25.0 - 2026-10-08
+
+- **Drop caps.** A story can start with a drop cap: its first letter, two
+  to five lines tall, with the lines beside it moved over to make room
+  (Story, in the Inspector). It can use Heading 1's font, and the colour
+  scheme's Main colour (which then changes with the scheme). The letter is
+  still part of the text, so it is typed, copied, searched and read
+  aloud as usual, and the tagged PDF reads the word whole.
+- **Tab stops and leaders.** Put a tab between words (Insert, Tab in
+  Characters, or Ctrl+Alt+Shift+T while typing; Tab itself still moves to
+  the next story, so the keyboard is never trapped). Set where tabs go
+  for each role in Paragraph: up to eight stops, each left, centred or
+  right aligned, or right at the box's edge, with dots or a line leading
+  up to them. That covers price lists, programs, tables of contents and
+  fill-in forms. With no stops set, tabs go every half inch. The dots are
+  the font's own full stops, lined up in neat columns, and in the PDF
+  they are decoration (not read, not copied). Projects are now version 14.
+
 ## 0.24.0 - 2026-10-08
 
 - **Colour schemes.** Every document now has a colour scheme: six colours

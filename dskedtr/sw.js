@@ -29,7 +29,8 @@ const APP_FILES = ['./', './index.html', './index-online.html', './manifest.webm
   './fonts/fraunces-700-italic.woff', './fonts/fraunces-700.woff', './fonts/lexend-400.woff',
   './fonts/lexend-700.woff', './fonts/literata-400-italic.woff', './fonts/literata-400.woff',
   './fonts/literata-700-italic.woff', './fonts/literata-700.woff', './fonts/zilla-slab-400-italic.woff',
-  './fonts/zilla-slab-400.woff', './fonts/zilla-slab-700-italic.woff', './fonts/zilla-slab-700.woff'];
+  './fonts/zilla-slab-400.woff', './fonts/zilla-slab-700-italic.woff', './fonts/zilla-slab-700.woff',
+  './fonts/dskedtr-symbols-sans-400.woff', './fonts/dskedtr-symbols-serif-400.woff'];
 
 // The only outside files allowed: the four pinned libraries the online
 // edition loads. The page checks each one's fingerprint (integrity) every time.

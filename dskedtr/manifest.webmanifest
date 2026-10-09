@@ -15,7 +15,7 @@
   "file_handlers": [
     {
       "action": "./",
-      "accept": { "application/x-dskedtr": [".dskedtr"] }
+      "accept": { "application/x-dskedtr": [".dskedtr"], "application/x-mspublisher": [".pub"] }
     }
   ]
 }
