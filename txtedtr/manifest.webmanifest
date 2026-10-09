@@ -3,7 +3,8 @@
   "short_name": "TXTEDTR",
   "description": "A small text editor with syntax highlighting, tabs and no build step.",
 
-  "start_url": "./index.html",
+  "id": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
 
@@ -21,7 +22,7 @@
 
   "file_handlers": [
     {
-      "action": "./index.html",
+      "action": "./",
       "accept": {
         "text/plain":       [".txt", ".log", ".text", ".webmanifest"],
         "text/html":        [".html", ".htm", ".xhtml", ".vue", ".svelte"],

@@ -1924,7 +1924,7 @@ body.dragging .editor-area { outline: 3px dashed var(--accent); outline-offset: 
 
 /* Shown in the About tab, and used as the service worker's cache version -
    so bumping this one number is also how you retire the old offline copy. */
-const APP_VERSION = "1.17";
+const APP_VERSION = "1.18";
 
 /* Every keyboard shortcut, in one table. This is the single source for three
    things: the rows in the Keyboard shortcuts panel, the checkbox that turns
@@ -1970,6 +1970,9 @@ const MOD_KEY = /Mac|iPhone|iPad/i.test(
    No dates. The releases went out when they went out and nobody wrote it
    down, and inventing plausible ones would be worse than leaving them off. */
 const CHANGELOG = [
+  { version: "1.18", changes: [
+    ["fixed", "The installed app opens again on txtedtr.app's new host. It now starts at txtedtr.app/ instead of /index.html, which the new host redirects, and Chrome refused to open the app window with that redirect (\"This site can't be reached\"). Opening files from the computer with TXTEDTR works again too."]
+  ]},
   { version: "1.17", changes: [
     ["changed", "Help -> More apps and the row of apps on the no-file-open screen now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes."],
     ["changed", "With nine apps in the family, that row shows 4 + 4 on a phone."]

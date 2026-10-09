@@ -31,12 +31,34 @@ const VERSION = new URL(self.location).searchParams.get("v") || "dev";
 const CACHE = "txtedtr-v" + VERSION;
 
 const SHELL = [
-  "./index.html",
+  "./",          /* the app itself - "./" rather than "./index.html", see below */
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
   "./icon-maskable-512.png"
 ];
+
+/* WHY "./" AND NOT "./index.html", AND WHY cleanResponse() EXISTS
+   ---------------------------------------------------------------
+   Cloudflare tidies addresses: a request for /index.html is answered with a
+   redirect to /. fetch() follows that redirect quietly, but the response it
+   hands back is marked "redirected". Chrome refuses to open an app window
+   (a navigation) with a redirected response from a service worker - the
+   window shows "This site can't be reached" (ERR_FAILED). That is exactly
+   what happened to installed copies of TXTEDTR after the move from HostGator.
+
+   So the app now starts at "./" (see manifest.webmanifest), and as a safety
+   net for shortcuts that still point at /index.html, any redirected response
+   is copied into a fresh, unmarked one before it is handed to the page.
+   The copy has the same body, status and headers - only the mark is gone. */
+function cleanResponse(response) {
+  if (!response || !response.redirected) return response;
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -80,7 +102,9 @@ self.addEventListener("fetch", (event) => {
          the entire point of going to the network first. Measured: without this,
          a freshly uploaded index.html does not reach the page. */
       fetch(url.href, { cache: "no-store", credentials: "same-origin" })
-        .then((response) => {
+        .then((networkResponse) => {
+          /* Remove any "redirected" mark first (see cleanResponse above). */
+          const response = cleanResponse(networkResponse);
           /* Keep the offline copy in step with what was just served. The
              response body can only be read once, hence the clone. */
           const copy = response.clone();
@@ -88,7 +112,9 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => caches.match(request)
-          .then((hit) => hit || caches.match("./index.html")))
+          .then((hit) => hit || caches.match("./"))
+          .then((hit) => hit || caches.match("./index.html"))   /* older caches */
+          .then(cleanResponse))
     );
     return;
   }

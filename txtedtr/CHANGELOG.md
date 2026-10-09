@@ -18,6 +18,15 @@ never had.
 
 ---
 
+## 1.18
+
+**Fixed** - the installed app opens again after the move to the new host.
+
+After txtedtr.app moved from HostGator to Cloudflare, the installed app (and "Open with TXTEDTR" from the computer) showed "This site can't be reached" (ERR_FAILED) until a hard refresh. Cause: the app started at `./index.html`, Cloudflare answers `/index.html` with a redirect to `/`, and Chrome will not open an app window with a redirected response handed over by a service worker. The other apps start at `./`, so they never hit it.
+
+- `manifest.webmanifest`: `start_url` and the file handler's `action` are now `./`. An explicit `"id": "./index.html"` keeps the app's identity the same, so existing installs update in place rather than becoming a second app.
+- `sw.js`: caches `./` instead of `./index.html`, and a new `cleanResponse()` copies any redirected response into a clean one before handing it over, so old shortcuts that still point at `/index.html` open too, online and offline.
+
 ## 1.17
 
 **Changed** - DSKEDTR joins the family.
