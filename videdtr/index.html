@@ -993,6 +993,13 @@ body.resizing-pool * { cursor: col-resize !important; }
 .shape-card .shape-size { font-size: 11.5px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .shape-card .shape-use { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; line-height: 1.3; }
 
+/* ---- A checkbox with its words beside it (3.27) ----
+   The whole row is the label, so clicking the words ticks the box, and the
+   box is a real checkbox: Space toggles it, screen readers read it. */
+.check-row { display: flex; align-items: center; gap: 8px; min-height: 32px; margin: 8px 0 4px;
+             font-size: 13px; cursor: pointer; }
+.check-row input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: 0 0 auto; }
+
 /* ---- Filter preset chips ---- */
 .preset-row { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
 .preset-row button { padding: 4px 9px; font-size: 11.5px; }
@@ -2614,7 +2621,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
      and the drop zone are the real, labeled ways in. -->
 <input type="file" id="file-input" multiple accept="video/*,audio/*,image/*"
        class="sr-only" tabindex="-1" aria-hidden="true">
-<input type="file" id="project-input" accept=".vidproj,.json,application/json"
+<input type="file" id="project-input" accept=".videdtr,.vidproj,.json,application/x-videdtr,application/json"
        class="sr-only" tabindex="-1" aria-hidden="true">
 <input type="file" id="relink-input" multiple accept="video/*,audio/*,image/*"
        class="sr-only" tabindex="-1" aria-hidden="true">
@@ -2649,15 +2656,20 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     <!-- ===== Project file ===== -->
     <div id="pane-project" role="tabpanel" aria-labelledby="tab-project" hidden>
       <div class="note">
-        <strong>A .vidproj file is your edit, not your video.</strong>
-        It records every clip, cut, crop and fade as plain JSON - usually a few
-        kilobytes. Small enough to email, to keep in version control, or to read
-        in a text editor.
+        <strong>A .videdtr file keeps your whole project in one file:</strong>
+        every clip, cut, crop and fade, and the media itself - the video, sound
+        and picture files, byte for byte. Move it to another computer, open it,
+        and everything is there. (Inside, it is a zip: any zip tool can open it
+        and take a file back out.)
       </div>
-      <div class="note warn">
-        It does <strong>not</strong> contain your media. Opening one asks you to
-        point at the original files again, matched by name and size. That is why
-        it stays tiny.
+      <label class="check-row">
+        <input type="checkbox" id="pack-media" checked>
+        Put the media files inside the project file
+      </label>
+      <div class="note" id="pack-media-note">
+        The project file is about as big as your media together. Switch this
+        off for a tiny file with only the edit; opening it then asks you to
+        point at the original files again, matched by name and size.
       </div>
       <div id="project-summary" class="note"></div>
     </div>
@@ -2896,6 +2908,20 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   </div>
 </dialog>
 
+<!-- A "working on it" box for saving and opening big projects (3.27). -->
+<dialog id="dlg-busy" aria-labelledby="busy-title">
+  <div class="dlg-head">
+    <h2 id="busy-title">Working&hellip;</h2>
+  </div>
+  <div class="dlg-body">
+    <div class="progress"><i id="busy-bar"></i></div>
+    <p id="busy-detail" class="note" aria-live="polite" style="margin-top:8px"></p>
+  </div>
+  <div class="dlg-foot">
+    <button id="busy-cancel">Cancel</button>
+  </div>
+</dialog>
+
 <!-- Relink media after opening a project -->
 <dialog id="dlg-relink" aria-labelledby="dlg-relink-title">
   <div class="dlg-head">
@@ -2904,9 +2930,9 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   </div>
   <div class="dlg-body">
     <div class="note">
-      <strong>Project files do not contain your video.</strong> They only record
-      your edits, which keeps them tiny. Select the original media files again
-      and they will be matched up by name and size.
+      <strong>These files are not inside the project file</strong> - it was
+      saved without its media, or is an older .vidproj. Select the original
+      files again and they will be matched up by name and size.
     </div>
     <ul id="relink-list" class="media-list"></ul>
   </div>
@@ -3176,7 +3202,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
           <tr><td>Sound</td><td>Pitch moves with speed, the way a tape machine does. The preview and the exported file always agree.</td></tr>
           <tr><td>On the clip</td><td>Anything not running at normal speed carries a small badge like <strong>2&times;</strong> in its corner.</td></tr>
           <tr><td>Range</td><td>A quarter speed up to four times. Beyond that browsers decode unreliably and the sound falls apart.</td></tr>
-          <tr><td>Exporting</td><td>A <code>.vidproj</code> keeps speed exactly. Premiere and Resolve XML carries it as a Time Remap; an EDL carries it as an M2 record.</td></tr>
+          <tr><td>Exporting</td><td>A <code>.videdtr</code> project keeps speed exactly. Premiere and Resolve XML carries it as a Time Remap; an EDL carries it as an M2 record.</td></tr>
         </tbody>
       </table>
 
@@ -3341,7 +3367,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     <table class="shortcuts">
       <tbody>
         <tr><td>Video file</td><td>Renders the finished thing to .mp4, or .webm where H.264 is unavailable. The cut is baked in.</td></tr>
-        <tr><td>Project file</td><td>A few kilobytes of JSON holding your edit. Reopen it here later; it asks you to point at the media again.</td></tr>
+        <tr><td>Project file</td><td>A .videdtr: your edit and, unless you switch it off, the media files themselves, in one file you can open here on any computer. (Older .vidproj files still open; they ask you to point at the media again.)</td></tr>
         <tr><td>Premiere / Resolve</td><td>Final Cut Pro 7 XML. Tracks, cuts and source ranges transfer frame-accurately; effects are best-effort. Both applications have read this format for years.</td></tr>
         <tr><td>EDL</td><td>One track of straight cuts as plain text. No effects, but readable by essentially every editing system ever made.</td></tr>
       </tbody>
@@ -4664,13 +4690,13 @@ function removeMedia(mediaId) {
  *                         parent is another folder's id, or null for the top
  *   project.mediaFolders  { mediaId: folderId }
  *                         a file with no entry sits at the top of the pool
- * Being in the project means folders are saved in the .vidproj, kept in the
+ * Being in the project means folders are saved in the project file, kept in the
  * crash backup, and undone with everything else - and because a media file
  * keeps its id when it is reconnected after opening a project, every file
  * lands back in its folder on its own.
  *
  * IMPORTING A FOLDER copies its shape: each folder on disk that holds media
- * becomes a folder in the pool. If the folder has a .vidproj in it, you are
+ * becomes a folder in the pool. If the folder has a project file in it, you are
  * offered the project, with its media reconnected from that same folder.
  * ====================================================================== */
 
@@ -5031,7 +5057,7 @@ async function importEntries(entries, parentFolderId) {
   // A project file in the folder? Offer it - the likeliest reason to import
   // a whole folder is to pick a project back up. The one nearest the top of
   // the folder wins; between equals, the most recently saved.
-  const projects = usable.filter((entry) => /\.vidproj$/i.test(entry.file.name));
+  const projects = usable.filter((entry) => /\.(videdtr|vidproj)$/i.test(entry.file.name));
   if (projects.length) {
     projects.sort((a, b) => (a.path.split("/").length - b.path.split("/").length)
                           || (b.file.lastModified - a.file.lastModified));
@@ -11480,7 +11506,7 @@ function renderTimeline() {
  *
  * Markers belong to the TIMELINE, not to any clip, so moving or deleting
  * clips leaves them where they are. They are part of the project: saved in
- * the .vidproj, kept in the crash backup, undone with Ctrl+Z, and written into
+ * the project file, kept in the crash backup, undone with Ctrl+Z, and written into
  * the Premiere / Resolve XML as sequence markers.
  * ====================================================================== */
 
@@ -14525,12 +14551,12 @@ function renderSizeAndCrop(body, clip, media, beginEdit, commitEdit) {
 /* =========================================================================
  * 12. SAVING AND OPENING PROJECTS
  * -------------------------------------------------------------------------
- * A project file records your edits, not your video. That keeps it a few
- * kilobytes instead of a few gigabytes, and it means the file is safe to email
- * or put in version control.
+ * A project file records your edits. Since 3.27 it is a .videdtr - a zip
+ * that can carry the media as well (see THE .videdtr PROJECT FILE below);
+ * the edit itself is the same JSON a .vidproj always was.
  *
  * SECURITY NOTE: everything that comes out of a project file is treated as
- * hostile. A .vidproj file could have been edited by hand, or sent to the user
+ * hostile. A project file could have been edited by hand, or sent to the user
  * by someone else. The validation below rebuilds the project object field by
  * field - it never merges the parsed JSON into state directly. That means a
  * file containing extra or malicious properties simply has them ignored,
@@ -14734,7 +14760,7 @@ function showStartScreen() {
     actions: [
       { label: "Import media", detail: "Video, audio or images to edit", primary: true,
         run: () => $("#file-input").click() },
-      { label: "Open a project", detail: "A .vidproj you saved earlier",
+      { label: "Open a project", detail: "A .videdtr (or older .vidproj) you saved earlier",
         run: () => $("#project-input").click() },
       { label: "Start a new project", detail: "Pick its shape: widescreen, vertical, square and more",
         run: openNewProjectDialog },
@@ -14828,23 +14854,535 @@ function projectFileBase() {
 }
 
 
-function saveProject() {
+/* =========================================================================
+ * THE .videdtr PROJECT FILE (3.27) - a zip, with the media inside
+ * -------------------------------------------------------------------------
+ * The same idea as DSKEDTR's .dskedtr: a project file is a zip (the box
+ * .docx and .epub files are made of), so it can carry the media files as the
+ * files they are, and any zip tool can look inside one:
+ *
+ *   mimetype                "application/x-videdtr" - first, never squeezed,
+ *                           so the kind of file is easy to tell (as EPUB does)
+ *   project.json            the edit: tracks, clips, folders, markers, and a
+ *                           list of the media, each naming its file below
+ *   media/interview.mp4     the media files, byte for byte as you imported
+ *   media/logo.png          them (video, sound and pictures are compressed
+ *   ...                     already, so they are stored, not squeezed again)
+ *
+ * WHY THIS IS NOT DSKEDTR'S CODE COPIED OVER
+ * DSKEDTR's pictures are a few megabytes, so it builds its zip in memory.
+ * Video is different: one screen recording can be several gigabytes, more
+ * than a browser tab can hold at once. So here nothing big is ever loaded:
+ *   - Saving: the zip is a Blob made of PIECES - small headers we write, and
+ *     the media Files themselves. A Blob made of Files does not copy them;
+ *     the browser reads each one from disk as it writes the download. Only
+ *     the CRC-32 check number (which every zip entry needs) means reading
+ *     each file once, a slice at a time, with a progress bar.
+ *   - Opening: only the end of the zip (its directory) and project.json are
+ *     read. Each media file becomes a Blob SLICE of the project file - again
+ *     no copy - which the video element plays and seeks like any file.
+ *   - Zips over 4 GB, or with a file over 4 GB in them, need the "ZIP64"
+ *     extension (the original format kept sizes in 32 bits). It is written
+ *     only when needed, and read whenever it is there.
+ *
+ * SECURITY. A project file can come from anywhere, so it is read as data:
+ * every position and size is checked against the file's real length, names
+ * inside the zip are only ever LOOKED UP (never used as paths), encrypted
+ * entries are refused, at most 20,000 entries, project.json at most 40 MB and
+ * checked against its CRC, media must be stored (not squeezed) and is then
+ * checked the same way as any file you import - classified by its name and
+ * opened by the browser's own decoders. project.json goes through
+ * validateProject, exactly as an old .vidproj does.
+ *
+ * Old .vidproj files (one JSON text file, no media) still open; the two are
+ * told apart by their first bytes ("PK" starts every zip).
+ * ====================================================================== */
+
+const PACKAGE_EXT = ".videdtr";
+const PACKAGE_MIME = "application/x-videdtr";
+const ZIP_MAX_ENTRIES = 20000;
+const ZIP_MAX_JSON = 40 * 1024 * 1024;     // project.json is text: 40 MB is absurdly generous
+// Media files up to this size are checked against their CRC when a project
+// opens (reading them once). Above it, checking would mean reading gigabytes
+// before you could start, so it is skipped: a damaged video still cannot do
+// harm, it just fails to play, exactly like a damaged file you import.
+const ZIP_CHECK_MEDIA_UP_TO = 128 * 1024 * 1024;
+
+/* --- The CRC-32 check number ---------------------------------------------
+   Every file in a zip carries one, so damage can be noticed. It is the same
+   table-driven calculation DSKEDTR uses, split into "start / add bytes /
+   finish" so a huge file can be fed through it a slice at a time. */
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+function crc32Add(crc, bytes) {
+  let c = crc;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 255] ^ (c >>> 8);
+  return c;
+}
+function crc32(bytes) { return (crc32Add(0xffffffff, bytes) ^ 0xffffffff) >>> 0; }
+
+/**
+ * The CRC-32 of a whole Blob or File, read a slice at a time so a file of
+ * any size works. `onBytes(n)` is told how many bytes have been read so far
+ * (for the progress bar); `isCanceled()` is asked between slices.
+ */
+async function crc32OfBlob(blob, onBytes, isCanceled) {
+  const SLICE = 8 * 1024 * 1024;              // 8 MB at a time
+  let c = 0xffffffff;
+  for (let at = 0; at < blob.size; at += SLICE) {
+    if (isCanceled && isCanceled()) throw new Error("canceled");
+    const bytes = new Uint8Array(await blob.slice(at, Math.min(blob.size, at + SLICE)).arrayBuffer());
+    c = crc32Add(c, bytes);
+    if (onBytes) onBytes(Math.min(blob.size, at + SLICE));
+  }
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+/** Squeeze bytes (zip's "deflate"), or null where the browser cannot. */
+async function deflateBytes(bytes) {
+  if (typeof CompressionStream !== "function") return null;
+  try {
+    const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  } catch (_) { return null; }
+}
+
+/**
+ * Unsqueeze bytes, refusing to make more than `limit` bytes (a "zip bomb" is
+ * a tiny file that unpacks to gigabytes; this stops it at the size the
+ * directory promised).
+ */
+async function inflateBytes(bytes, limit) {
+  if (typeof DecompressionStream !== "function") return null;
+  const reader = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw")).getReader();
+  const parts = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > limit) { try { reader.cancel(); } catch (_) {} return null; }
+    parts.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const part of parts) { out.set(part, at); at += part.length; }
+  return out;
+}
+
+/** The time and date in the old MS-DOS form zips use. */
+function zipDosTime(when) {
+  return {
+    time: (when.getHours() << 11) | (when.getMinutes() << 5) | (when.getSeconds() >> 1),
+    date: ((Math.max(1980, when.getFullYear()) - 1980) << 9) | ((when.getMonth() + 1) << 5) | when.getDate(),
+  };
+}
+
+/** A little helper for writing numbers into a header, low byte first. */
+function zipWriter(length) {
+  const view = new DataView(new ArrayBuffer(length));
+  let at = 0;
+  return {
+    u16(v) { view.setUint16(at, v, true); at += 2; },
+    u32(v) { view.setUint32(at, v >>> 0, true); at += 4; },
+    // 64-bit numbers as two halves: plain numbers are exact up to 2^53, far
+    // past any file a browser could hand us.
+    u64(v) { view.setUint32(at, v % 4294967296, true); view.setUint32(at + 4, Math.floor(v / 4294967296), true); at += 8; },
+    bytes(b) { new Uint8Array(view.buffer).set(b, at); at += b.length; },
+    buffer: view.buffer,
+  };
+}
+
+/**
+ * Build a zip as a Blob from entries [{ name, data (Uint8Array or Blob),
+ * squeeze, crc? }]. Blob data is never loaded whole: only its CRC is worked
+ * out (a slice at a time), unless the entry already brings one.
+ * `progress(done, total)` reports bytes checked; `isCanceled()` can stop it.
+ */
+async function buildZipBlob(entries, progress, isCanceled) {
+  const FFFF32 = 0xffffffff;
+  const { time, date } = zipDosTime(new Date());
+  const parts = [], central = [];
+  let offset = 0;
+  const totalBytes = entries.reduce((n, e) => n + (e.data.size !== undefined ? e.data.size : e.data.length), 0);
+  let doneBytes = 0;
+
+  for (const entry of entries) {
+    const name = new TextEncoder().encode(entry.name);
+    // Small text gets squeezed; media is stored as it is.
+    let data = entry.data, method = 0, size, crc;
+    if (data instanceof Blob) {
+      size = data.size;
+      crc = entry.crc !== undefined ? entry.crc
+        : await crc32OfBlob(data, (n) => progress && progress(doneBytes + n, totalBytes), isCanceled);
+      entry.crc = crc;                 // handed back, so the caller can remember it
+    } else {
+      size = data.length;
+      crc = crc32(data);
+      if (entry.squeeze) {
+        const squeezed = await deflateBytes(data);
+        if (squeezed && squeezed.length < data.length) { data = squeezed; method = 8; }
+      }
+    }
+    doneBytes += size;
+    if (progress) progress(doneBytes, totalBytes);
+    const packed = data instanceof Blob ? data.size : data.length;
+
+    // Does this entry need ZIP64? Only if a size or its position will not
+    // fit in 32 bits.
+    const big = size >= FFFF32 || packed >= FFFF32;
+    const farAway = offset >= FFFF32;
+    const needs64 = big || farAway;
+    const version = needs64 ? 45 : 20;
+
+    // The local header, in front of the file's bytes.
+    const localExtra = big ? 20 : 0;
+    const local = zipWriter(30 + name.length + localExtra);
+    local.u32(0x04034b50); local.u16(version); local.u16(0x0800);    // 0x0800: names are UTF-8
+    local.u16(method); local.u16(time); local.u16(date); local.u32(crc);
+    local.u32(big ? FFFF32 : packed); local.u32(big ? FFFF32 : size);
+    local.u16(name.length); local.u16(localExtra); local.bytes(name);
+    if (big) { local.u16(0x0001); local.u16(16); local.u64(size); local.u64(packed); }
+    parts.push(local.buffer, data);
+
+    // Its entry in the directory at the end.
+    const extraFields = [];
+    if (big) extraFields.push(size, packed);
+    if (farAway) extraFields.push(offset);
+    const centralExtra = extraFields.length ? 4 + extraFields.length * 8 : 0;
+    const dir = zipWriter(46 + name.length + centralExtra);
+    dir.u32(0x02014b50); dir.u16(version); dir.u16(version); dir.u16(0x0800);
+    dir.u16(method); dir.u16(time); dir.u16(date); dir.u32(crc);
+    dir.u32(big ? FFFF32 : packed); dir.u32(big ? FFFF32 : size);
+    dir.u16(name.length); dir.u16(centralExtra); dir.u16(0); dir.u16(0); dir.u16(0); dir.u32(0);
+    dir.u32(farAway ? FFFF32 : offset);
+    dir.bytes(name);
+    if (extraFields.length) { dir.u16(0x0001); dir.u16(extraFields.length * 8); for (const v of extraFields) dir.u64(v); }
+    central.push(dir.buffer);
+
+    offset += 30 + name.length + localExtra + packed;
+  }
+
+  const dirSize = central.reduce((n, b) => n + b.byteLength, 0);
+  const dirAt = offset;
+  const tail = [];
+  const needs64End = entries.length >= 0xffff || dirAt >= FFFF32 || dirSize >= FFFF32;
+  if (needs64End) {
+    // The ZIP64 end record, and a "locator" pointing at it.
+    const end64 = zipWriter(56);
+    end64.u32(0x06064b50); end64.u64(44); end64.u16(45); end64.u16(45);
+    end64.u32(0); end64.u32(0); end64.u64(entries.length); end64.u64(entries.length);
+    end64.u64(dirSize); end64.u64(dirAt);
+    const locator = zipWriter(20);
+    locator.u32(0x07064b50); locator.u32(0); locator.u64(dirAt + dirSize); locator.u32(1);
+    tail.push(end64.buffer, locator.buffer);
+  }
+  const end = zipWriter(22);
+  end.u32(0x06054b50); end.u16(0); end.u16(0);
+  end.u16(needs64End ? 0xffff : entries.length); end.u16(needs64End ? 0xffff : entries.length);
+  end.u32(needs64End ? FFFF32 : dirSize); end.u32(needs64End ? FFFF32 : dirAt); end.u16(0);
+  tail.push(end.buffer);
+
+  return new Blob(parts.concat(central, tail), { type: PACKAGE_MIME });
+}
+
+/**
+ * Read a zip's directory from a File without loading the File: only its last
+ * 64 KB (where the directory's end record is) and the directory itself.
+ * Returns { names, has(name), entry(name), bytes(name, limit), blob(name) }.
+ * Throws an Error with a message fit to show if the zip is damaged.
+ */
+async function openZipFile(file) {
+  const damaged = () => { throw new Error("the file is damaged: its zip directory does not add up"); };
+  const n = file.size;
+  if (n < 22) damaged();
+  const read = async (from, to) => {
+    if (from < 0 || to > n || to < from) damaged();
+    return new Uint8Array(await file.slice(from, to).arrayBuffer());
+  };
+  const u64 = (view, at) => view.getUint32(at, true) + view.getUint32(at + 4, true) * 4294967296;
+
+  // 1. The end record: in the last 22 bytes, or up to 64 KB earlier if the
+  //    zip has a comment.
+  const tailStart = Math.max(0, n - 22 - 65535);
+  const tail = await read(tailStart, n);
+  const tv = new DataView(tail.buffer);
+  let endAt = -1;
+  for (let i = tail.length - 22; i >= 0; i--) if (tv.getUint32(i, true) === 0x06054b50) { endAt = i; break; }
+  if (endAt < 0) damaged();
+  let count = tv.getUint16(endAt + 10, true);
+  let dirSize = tv.getUint32(endAt + 12, true);
+  let dirAt = tv.getUint32(endAt + 16, true);
+
+  // 2. ZIP64? Then the real numbers are in the ZIP64 end record, found
+  //    through the locator just before the ordinary end record.
+  if (count === 0xffff || dirSize === 0xffffffff || dirAt === 0xffffffff) {
+    const locAt = endAt - 20;
+    if (locAt < 0 || tv.getUint32(locAt, true) !== 0x07064b50) damaged();
+    const end64At = u64(tv, locAt + 8);
+    const e64 = await read(end64At, end64At + 56);
+    const ev = new DataView(e64.buffer);
+    if (ev.getUint32(0, true) !== 0x06064b50) damaged();
+    count = u64(ev, 32);
+    dirSize = u64(ev, 40);
+    dirAt = u64(ev, 48);
+  }
+  if (count > ZIP_MAX_ENTRIES || dirSize > 64 * 1024 * 1024 || dirAt + dirSize > n) damaged();
+
+  // 3. The directory: one record per file.
+  const dir = await read(dirAt, dirAt + dirSize);
+  const dv = new DataView(dir.buffer);
+  const files = new Map();
+  let p = 0;
+  for (let k = 0; k < count; k++) {
+    if (p + 46 > dir.length || dv.getUint32(p, true) !== 0x02014b50) damaged();
+    const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true), crc = dv.getUint32(p + 16, true);
+    let packed = dv.getUint32(p + 20, true), size = dv.getUint32(p + 24, true);
+    const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), commentLen = dv.getUint16(p + 32, true);
+    let local = dv.getUint32(p + 42, true);
+    if (p + 46 + nameLen + extraLen + commentLen > dir.length) damaged();
+    const name = new TextDecoder().decode(dir.subarray(p + 46, p + 46 + nameLen));
+    // ZIP64 sizes and position, in the order the format sets, for whichever
+    // of the three were too big for their 32-bit slots.
+    let e = p + 46 + nameLen;
+    const extraEnd = e + extraLen;
+    while (e + 4 <= extraEnd) {
+      const id = dv.getUint16(e, true), len = dv.getUint16(e + 2, true);
+      if (e + 4 + len > extraEnd) damaged();
+      if (id === 0x0001) {
+        let q = e + 4;
+        const take = () => { if (q + 8 > e + 4 + len) damaged(); const v = u64(dv, q); q += 8; return v; };
+        if (size === 0xffffffff) size = take();
+        if (packed === 0xffffffff) packed = take();
+        if (local === 0xffffffff) local = take();
+      }
+      e += 4 + len;
+    }
+    if (!files.has(name)) files.set(name, { flags, method, crc, packed, size, local });
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+
+  /** Where an entry's bytes start: after its local header, which says how long its own name and extra are. */
+  const dataStart = async (f) => {
+    if (f.flags & 1) throw new Error("the file is locked with a password, which VIDEDTR does not open");
+    const head = await read(f.local, f.local + 30);
+    const hv = new DataView(head.buffer);
+    if (hv.getUint32(0, true) !== 0x04034b50) damaged();
+    const start = f.local + 30 + hv.getUint16(26, true) + hv.getUint16(28, true);
+    if (start + f.packed > n) damaged();
+    return start;
+  };
+
+  return {
+    names: Array.from(files.keys()),
+    has: (name) => files.has(name),
+    entry: (name) => files.get(name) || null,
+    /** A (small) file's bytes, unsqueezed and checked against its CRC; null if too big or absent. */
+    async bytes(name, limit) {
+      const f = files.get(name);
+      if (!f || f.size > limit || f.packed > limit) return null;
+      const start = await dataStart(f);
+      const raw = await read(start, start + f.packed);
+      let out = null;
+      if (f.method === 0) out = raw;
+      else if (f.method === 8) out = await inflateBytes(raw, f.size);
+      else throw new Error("it is packed in a way VIDEDTR does not read");
+      if (!out || out.length !== f.size || crc32(out) !== f.crc) {
+        throw new Error("the file is damaged: " + name + " inside it fails its check");
+      }
+      return out;
+    },
+    /** A stored file as a slice of the zip - no copy, however big. Null if absent or squeezed. */
+    async blob(name, type) {
+      const f = files.get(name);
+      if (!f || f.method !== 0 || f.packed !== f.size) return null;
+      const start = await dataStart(f);
+      return file.slice(start, start + f.size, type || "");
+    },
+  };
+}
+
+/** Is this file a zip (a .videdtr) rather than an old JSON .vidproj? */
+async function looksLikeZip(file) {
+  if (file.size < 4) return false;
+  const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+  return head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04;   // "PK\3\4"
+}
+
+/* --- A small "working on it" box, for saving and opening big projects --- */
+
+let busyCanceled = false;
+function busyStart(title) {
+  busyCanceled = false;
+  $("#busy-title").textContent = title;
+  $("#busy-detail").textContent = "";
+  $("#busy-bar").style.width = "0%";
+  const dlg = $("#dlg-busy");
+  if (!dlg.open) dlg.showModal();
+}
+function busyProgress(fraction, detail) {
+  $("#busy-bar").style.width = (clamp(fraction, 0, 1) * 100).toFixed(1) + "%";
+  if (detail !== undefined) $("#busy-detail").textContent = detail;
+}
+function busyEnd() {
+  const dlg = $("#dlg-busy");
+  if (dlg.open) dlg.close();
+}
+
+/** "1.4 GB", for the progress line. */
+function bytesLabel(n) {
+  return n >= 1e9 ? (n / 1e9).toFixed(1) + " GB" : n >= 1e6 ? Math.round(n / 1e6) + " MB" : Math.max(1, Math.round(n / 1e3)) + " KB";
+}
+
+/**
+ * Whether Save puts the media inside the project file. On unless you turned
+ * it off in Export > Project file; remembered in this browser only (and the
+ * page works the same if the browser will not remember anything).
+ */
+function packageIncludesMedia() {
+  try { return localStorage.getItem("videdtr.packMedia") !== "no"; } catch (_) { return true; }
+}
+function setPackageIncludesMedia(on) {
+  try { localStorage.setItem("videdtr.packMedia", on ? "yes" : "no"); } catch (_) { /* fine: it just will not be remembered */ }
+}
+
+/**
+ * A file name for a media file inside the package: its own name, made safe
+ * for any zip tool and any disk ("media/Interview 2.mp4"), with a number
+ * added if two files share a name.
+ */
+function packageMediaName(media, taken) {
+  const clean = String(media.name || "media").replace(/[^\w .()+-]+/g, "_").replace(/^[. ]+/, "").slice(0, 120) || "media";
+  let name = "media/" + clean;
+  for (let n = 2; taken.has(name.toLowerCase()); n++) {
+    const dot = clean.lastIndexOf(".");
+    name = "media/" + (dot > 0 ? clean.slice(0, dot) + " (" + n + ")" + clean.slice(dot) : clean + " (" + n + ")");
+  }
+  taken.add(name.toLowerCase());
+  return name;
+}
+
+/**
+ * Save project: a .videdtr with the edit, and (unless switched off) every
+ * media file in the pool inside it. Built-in sound effects are left out -
+ * VIDEDTR makes them again on opening - and so is anything whose file is not
+ * here (media still waiting to be relinked).
+ */
+async function saveProject() {
+  const withMedia = packageIncludesMedia();
+  const manifest = mediaManifest();
+  const entries = [{ name: "mimetype", data: new TextEncoder().encode(PACKAGE_MIME) }];
+  const taken = new Set();
+  let packedCount = 0, packedBytes = 0;
+  if (withMedia) {
+    for (const item of manifest) {
+      const media = state.media.get(item.id);
+      if (!media || media.builtin || !(media.file instanceof Blob)) continue;
+      item.zip = packageMediaName(media, taken);
+      // media.packCrc: this file's check number, remembered from the last
+      // save (or from the package it came out of), so saving again does not
+      // have to read every gigabyte a second time.
+      entries.push({ name: item.zip, data: media.file, crc: media.packCrc, media: media });
+      packedCount++;
+      packedBytes += media.file.size;
+    }
+  }
   const payload = {
     format: PROJECT_FORMAT,
     app: "VIDEDTR",
     appVersion: APP_VERSION,
     saved: new Date().toISOString(),
     project: state.project,
-    // A manifest so we can match the right files up again on reopening.
-    media: mediaManifest(),
+    // Every media file: what it is, where it was, and (when it is inside
+    // this file) its name in the zip.
+    media: manifest,
   };
+  entries.splice(1, 0, { name: "project.json", data: new TextEncoder().encode(JSON.stringify(payload, null, 2)), squeeze: true });
 
-  downloadText(projectFileBase() + ".vidproj",
-               JSON.stringify(payload, null, 2),
-               "application/json");
-  markBackupSafe();                  // you have the project file now
-  toast("Project saved.", "good");
+  const fileName = projectFileBase() + PACKAGE_EXT;
+  // Reading gigabytes for the check numbers takes a few seconds: show it.
+  const showBox = packedBytes > 64 * 1024 * 1024;
+  if (showBox) busyStart("Saving " + fileName);
+  try {
+    const blob = await buildZipBlob(entries, (done, total) => {
+      if (showBox) busyProgress(total ? done / total : 1, "Checking the media: " + bytesLabel(done) + " of " + bytesLabel(total));
+    }, () => busyCanceled);
+    for (const entry of entries) if (entry.media) entry.media.packCrc = entry.crc;
+    downloadBlob(blob, fileName);
+    markBackupSafe();                // you have the project file now
+    toast("Saved " + fileName + (withMedia
+      ? " with " + packedCount + " media file" + (packedCount === 1 ? "" : "s") + " inside (" + bytesLabel(blob.size) + ")."
+      : ". The media is not inside: opening it will ask for the files."), "good", 7000);
+  } catch (err) {
+    if (String(err && err.message) === "canceled") toast("Save canceled.", "warn");
+    else toast("The project could not be saved: " + (err && err.message || err), "bad", 8000);
+  } finally {
+    if (showBox) busyEnd();
+  }
 }
+
+/** Hand a Blob to the browser to save, under this name. */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = el("a", { href: url, download: filename });
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // A big download reads from the Blob for a while; give it a full minute
+  // before letting the browser forget the address.
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+/**
+ * Opening a .videdtr: bring each media file in the package back into the
+ * pool, under the id the project expects (so every clip, and every folder,
+ * finds it again). Called from openProjectFile with the files still missing.
+ * Returns how many came back.
+ */
+async function restorePackedMedia(zip) {
+  const wanted = pendingRelink.filter((entry) => entry.zip && zip.has(entry.zip));
+  let restored = 0;
+  const showBox = wanted.length > 1;
+  if (showBox) busyStart("Opening the project's media");
+  try {
+    for (let i = 0; i < wanted.length; i++) {
+      if (busyCanceled) break;                   // the rest will be asked for, as with an old .vidproj
+      const entry = wanted[i];
+      if (showBox) busyProgress(i / wanted.length, entry.name + " (" + (i + 1) + " of " + wanted.length + ")");
+      const info = zip.entry(entry.zip);
+      const blob = await zip.blob(entry.zip);
+      if (!blob) continue;                       // squeezed or missing: it will be asked for instead
+      // Small enough to check cheaply? Then make sure it is not damaged.
+      if (info.size <= ZIP_CHECK_MEDIA_UP_TO && await crc32OfBlob(blob) !== info.crc) {
+        toast('"' + entry.name + '" inside the project file is damaged, so it was left out.', "warn", 8000);
+        continue;
+      }
+      // Its own name again, so the pool, the clips and any relinking later
+      // show the file you imported, not its name inside the zip.
+      const file = new File([blob], entry.name, { lastModified: Date.now() });
+      const media = await importFile(file, { quiet: true, path: entry.path || "" });
+      if (!media) continue;
+      media.packCrc = info.crc;                  // the same bytes, so the same check number
+      state.media.delete(media.id);              // take on the id the clips refer to
+      media.id = entry.id;
+      state.media.set(media.id, media);
+      pendingRelink = pendingRelink.filter((e) => e.id !== entry.id);
+      restored++;
+    }
+  } finally {
+    if (showBox) busyEnd();
+  }
+  if (restored) renderAll();
+  return restored;
+}
+
 
 /* --- Validation helpers: coerce anything into a safe value --- */
 
@@ -15159,6 +15697,9 @@ function validateProject(raw) {
       duration: safeNumber(m.duration, 0, 86400, 0),
       // Only ever compared with other paths, never used to open anything.
       path: safeString(m.path, 1000, ""),
+      // Its name inside a .videdtr (3.27). Only ever LOOKED UP in the zip's
+      // own directory - never used as a path on disk.
+      zip: typeof m.zip === "string" && m.zip.length <= 300 ? m.zip : null,
       // Only a name from our own list of sounds survives; anything else is
       // treated as an ordinary file to be found.
       builtin: typeof m.builtin === "string" && Object.prototype.hasOwnProperty.call(SOUND_EFFECTS, m.builtin)
@@ -15205,7 +15746,7 @@ function validateProject(raw) {
 }
 
 /**
- * @param {File} file - the .vidproj
+ * @param {File} file - the .videdtr (or an older .vidproj)
  * @param {object} [options]
  * @param {{file: File, path: string}[]} [options.relinkFrom] - the files of
  *        the folder it came in (3.10): its media is reconnected from these
@@ -15215,12 +15756,24 @@ async function openProjectFile(file, options) {
   suiteSplashClose();
   const opts = options || {};
   let parsed;
+  let zip = null;                      // a .videdtr's zip, when it is one (3.27)
   try {
-    const text = await file.text();
-    if (text.length > 40 * 1024 * 1024) throw new Error("file is implausibly large");
-    parsed = JSON.parse(text);
+    if (await looksLikeZip(file)) {
+      // A .videdtr: read its directory and project.json - not the media,
+      // which stays in the file until each one is brought in below.
+      zip = await openZipFile(file);
+      const mime = await zip.bytes("mimetype", 100);
+      if (mime && new TextDecoder().decode(mime) !== PACKAGE_MIME) throw new Error("it is a zip, but not a VIDEDTR project");
+      const json = await zip.bytes("project.json", ZIP_MAX_JSON);
+      if (!json) throw new Error("it has no project.json inside");
+      parsed = JSON.parse(new TextDecoder().decode(json));
+    } else {
+      // An older .vidproj: one JSON text file.
+      if (file.size > ZIP_MAX_JSON) throw new Error("file is implausibly large");
+      parsed = JSON.parse(await file.text());
+    }
   } catch (err) {
-    toast("That does not look like a valid project file.", "bad");
+    toast("That does not look like a valid project file" + (err && err.message ? " (" + err.message + ")." : "."), "bad", 7000);
     return;
   }
 
@@ -15254,6 +15807,8 @@ async function openProjectFile(file, options) {
   pendingRelink = result.manifest.filter((entry) => !state.media.has(entry.id));
   // Sound effects are made again rather than looked for (3.20).
   await restoreBuiltinSounds();
+  // Media packed inside a .videdtr comes straight out of it (3.27).
+  if (zip && pendingRelink.length) await restorePackedMedia(zip);
   if (pendingRelink.length && opts.relinkFrom) {
     // Opened out of a folder: look for its media in that same folder first.
     await relinkEntries(opts.relinkFrom, { quietMatches: true });
@@ -18805,7 +19360,7 @@ let exportTab = "video";
 
 const EXPORT_TABS = {
   video:   { pane: "pane-video",   button: "Start export" },
-  project: { pane: "pane-project", button: "Download .vidproj" },
+  project: { pane: "pane-project", button: "Save .videdtr" },
   xml:     { pane: "pane-xml",     button: "Download .xml" },
   edl:     { pane: "pane-edl",     button: "Download .edl" },
 };
@@ -19833,6 +20388,12 @@ function openHelp(tab = "keys") {
    CHANGELOG.md beside this file - add each release to both. Releases before
    3.4 went out without notes, so they are not listed rather than guessed at. */
 const CHANGELOG = [
+  { version: "3.27", date: "2026-10-09", notes: [
+    "Projects save as .videdtr files, with the media inside: the video, sound and picture files, byte for byte, alongside the edit. Open one on any computer and everything is there - no pointing at files again.",
+    "Inside, a .videdtr is a zip (like DSKEDTR's .dskedtr), so any zip tool can open it and take a file back out.",
+    "Big projects are fine: nothing is loaded into memory to save or open one, and files over 4 GB are handled (ZIP64). A progress box shows while a big project saves.",
+    "Export > Project file can leave the media out, for a tiny file with only the edit. Older .vidproj files still open as before.",
+  ] },
   { version: "3.26", date: "2026-10-09", notes: [
     "Fixed: with a cross dissolve on a cut, the incoming clip's sound started up to a second before the cut in the preview, at full volume and ignoring the clip volume, track mute and preview mute. It now starts at the cut, as in the export.",
   ] },
@@ -20016,9 +20577,15 @@ function refreshExportSummaries() {
   const media = state.media.size;
   const fps = state.project.fps;
 
+  // What Save would put in the file, so a 6 GB save is never a surprise.
+  const packable = Array.from(state.media.values()).filter((m) => !m.builtin && m.file instanceof Blob);
+  const packBytes = packable.reduce((n, m) => n + m.file.size, 0);
+  $("#pack-media").checked = packageIncludesMedia();
   $("#project-summary").textContent =
-    state.project.tracks.length + " track(s), " + (clips + texts) + " clip(s), " +
-    media + " media file(s) referenced by name.";
+    state.project.tracks.length + " track(s), " + (clips + texts) + " clip(s), " + media + " media file(s). "
+    + (packageIncludesMedia()
+        ? "With the media inside, the file will be about " + bytesLabel(packBytes + 20000) + "."
+        : "Without the media, it will be a few kilobytes.");
 
   $("#xml-summary").textContent =
     clips + " clip(s) across " + state.project.tracks.length + " track(s) at " +
@@ -20636,6 +21203,17 @@ function setupUI() {
   $("#proj-apply").addEventListener("click", applyProjectSettings);
   buildShapeCards();
   $("#new-create").addEventListener("click", startNewProject);
+  // 3.27: the .videdtr options.
+  $("#pack-media").addEventListener("change", (event) => {
+    setPackageIncludesMedia(event.target.checked);
+    refreshExportSummaries();
+  });
+  $("#busy-cancel").addEventListener("click", () => {
+    busyCanceled = true;
+    $("#busy-detail").textContent = "Stopping\u2026";
+  });
+  // Escape on the busy box means Cancel, not "close and leave it running".
+  $("#dlg-busy").addEventListener("cancel", (event) => { event.preventDefault(); busyCanceled = true; });
   $("#btn-clear-backup").addEventListener("click", () => {
     clearBackup();
     syncProjectDialog();
@@ -20969,7 +21547,7 @@ function init() {
 /* The single source of truth for the version. The header, the help dialog and
    every saved project file read it from here, so there is exactly one line to
    change at release and no way for them to disagree. */
-const APP_VERSION = "3.26";
+const APP_VERSION = "3.27";
 const APP_BUILT = "2026-09-26";
 
 /* ===========================================================================

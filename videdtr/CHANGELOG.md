@@ -12,6 +12,14 @@ refreshes the page inside it, and Check for updates compares the server's
 Releases before 3.4 went out without notes. Rather than guess at them, this
 file starts at 3.4.
 
+## 3.27 - 2026-10-09 - .videdtr project files, with the media inside
+
+- **Projects save as `.videdtr`, with the media inside.** Save project (the disk button, Ctrl+S, or Export > Project file) writes one file holding the edit and every media file in the pool, byte for byte. Open it on any computer and everything is there, with no relinking. Built-in sound effects are left out, because VIDEDTR makes them again.
+- **It is a zip**, laid out like DSKEDTR's `.dskedtr`: `mimetype` (`application/x-videdtr`, first and stored), `project.json` (the same JSON a `.vidproj` holds, plus each file's name inside the zip, deflated), and `media/<the file's own name>`, stored as it is. Any zip tool can open one.
+- **Built for video sizes.** Nothing is loaded into memory: saving makes the zip from the media Files themselves (the browser reads them as the download is written), and opening reads only the zip's directory and `project.json`, then hands each media file to the player as a slice of the project file. Zips and files over 4 GB use ZIP64. The one cost is reading each file once to work out its CRC-32 check number, shown in a progress box (with Cancel) for big projects; the number is remembered, so saving again is quick.
+- **Checked like any file from outside.** Every position and size is checked against the file; names inside are only looked up; encrypted entries refused; at most 20,000 entries; `project.json` at most 40 MB, CRC-checked and then validated field by field as before; media must be stored, is CRC-checked up to 128 MB a file, and is opened by the browser's own decoders like any import.
+- **Leave the media out** with the new checkbox in Export > Project file, for a tiny file with only the edit (remembered in this browser). Older `.vidproj` files still open, and a folder import still offers a project file inside it, now either kind.
+
 ## 3.26 - 2026-10-09 - Dissolve sound fix
 
 - **Fixed: sound starting early under a cross dissolve.** During a dissolve the incoming clip's picture starts before the cut, so its video element plays early - and its sound, which was not yet routed through VIDEDTR's audio graph, went straight to the speakers for up to a second before the cut, at full volume, ignoring the clip's volume, the track's mute and the preview's mute. Both pieces were heard at once, which could make a split sound as if it had not happened. The element is now routed (and held silent) before it plays, so the sound starts at the cut, as it always did in the export. Preview only; exported files were never affected.
