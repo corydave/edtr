@@ -9467,7 +9467,14 @@ function syncPlayback(time) {
     if (!rt) continue;
 
     if (runOver) {
-      if (rt.gain) rt.gain.gain.value = 0;              // picture only
+      // Picture only. The element's sound is routed through a gain node held
+      // at zero - but only once it HAS a gain node. Before 3.26 the incoming
+      // clip of a dissolve got here first, still unrouted, and played its own
+      // sound straight to the speakers for up to a second before the cut, at
+      // full volume, ignoring the clip's volume, the track's mute and the
+      // preview's mute. Routing it here first is what keeps it silent.
+      ensureClipAudio(clip);
+      if (rt.gain) rt.gain.gain.value = 0;
       const wanted = pictureSourceTime(clip, time);
       const raw = sourceTimeAt(clip, time);
       // Off either end of the file: hold that frame rather than play.
@@ -19826,6 +19833,9 @@ function openHelp(tab = "keys") {
    CHANGELOG.md beside this file - add each release to both. Releases before
    3.4 went out without notes, so they are not listed rather than guessed at. */
 const CHANGELOG = [
+  { version: "3.26", date: "2026-10-09", notes: [
+    "Fixed: with a cross dissolve on a cut, the incoming clip's sound started up to a second before the cut in the preview, at full volume and ignoring the clip volume, track mute and preview mute. It now starts at the cut, as in the export.",
+  ] },
   { version: "3.25", date: "2026-10-07", notes: [
     "More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes.",
     "With nine apps in the family, the splash's row shows the eight others on one line on a computer, and 4 + 4 on a phone."
@@ -20959,7 +20969,7 @@ function init() {
 /* The single source of truth for the version. The header, the help dialog and
    every saved project file read it from here, so there is exactly one line to
    change at release and no way for them to disagree. */
-const APP_VERSION = "3.25";
+const APP_VERSION = "3.26";
 const APP_BUILT = "2026-09-26";
 
 /* ===========================================================================

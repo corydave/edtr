@@ -12,6 +12,10 @@ refreshes the page inside it, and Check for updates compares the server's
 Releases before 3.4 went out without notes. Rather than guess at them, this
 file starts at 3.4.
 
+## 3.26 - 2026-10-09 - Dissolve sound fix
+
+- **Fixed: sound starting early under a cross dissolve.** During a dissolve the incoming clip's picture starts before the cut, so its video element plays early - and its sound, which was not yet routed through VIDEDTR's audio graph, went straight to the speakers for up to a second before the cut, at full volume, ignoring the clip's volume, the track's mute and the preview's mute. Both pieces were heard at once, which could make a split sound as if it had not happened. The element is now routed (and held silent) before it plays, so the sound starts at the cut, as it always did in the export. Preview only; exported files were never affected.
+
 ## 3.25 - 2026-10-07 - DSKEDTR joins the family
 
 - **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.
