@@ -992,10 +992,19 @@ How it works, in order:
    overflows is fitted (`shrinkToFit`). The result opens through
    `openProjectData`, so it passes every project check.
 
+**Indents (0.34.0).** Styles have `indentLeft`, `indentFirst` (negative:
+hanging) and `indentRight`, in points; a paragraph can carry its own
+(`li`, `fi`, `ri`) and its own tab stops (`tb`, positions), as formats
+on its first letter, like `al`. Layout: `lineIndents` (at least 12 pt
+left for words) and `lineTabs` (stops measured from where the line
+starts; a hanging indent adds a stop at the left indent, as Word and
+Publisher do; the every-half-inch stops stay put on the page). The
+Publisher import takes each role's majority indents and tab stops and
+keeps the rest per paragraph. Checked against the Weekly Review
+worksheet: where LibreOffice puts "Find" after "A." further right, the
+file's own tab stop (0.25 in) puts it where DSKEDTR does.
+
 Not yet, roughly in order of what teachers' files will need:
-- **Paragraph indents** (left, first line, hanging). Worksheets use them
-  for "a)  ..." answers; today the text starts at the box edge, so lines
-  can break a little differently.
 - Text boxes linked across pages in Publisher 2000 (2002+ shared text
   ids are joined into one story; no 2000 sample had links).
 - Border art, gradient and picture fills (the first colour stands in),

@@ -1,5 +1,23 @@
 # DSKEDTR changelog
 
+## 0.34.0 - 2026-10-09
+
+- **Indents.** A paragraph style can now push its lines in from the
+  left and right edges, and its first line further in, or further out:
+  a **hanging indent** (say Indent left 18, First line -18) for "a)" and
+  "1." questions, where the lines after the first line up under the
+  words. A tab after "a)" goes to where those lines start, as in
+  Publisher and Word. The three fields are in the Paragraph section,
+  under the role's style. The PDF, the web page and the tab stops all
+  follow them.
+- **Publisher files keep their indents and tab stops.** Worksheets that
+  used hanging indents in Publisher now come in with them, and a
+  paragraph whose indents or tab stops differ from its role's style keeps
+  its own (as alignment already did). The Paragraph section says so, and
+  "Use the style's settings" drops them. Publisher 2000 tab stops are now
+  read too (they were missed before).
+- Project files are now version 19.
+
 ## 0.33.1 - 2026-10-09
 
 - **Export can save the project too.** Its last choice, "A DSKEDTR

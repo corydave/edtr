@@ -1354,7 +1354,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <label class="field">Role
         <select id="roleSelect"></select>
       </label>
-      <p id="ownAlign" class="muted" style="font-size:12px" hidden><span id="ownAlignText"></span> <button class="btn" type="button" id="ownAlignClear">Use the style's alignment</button></p>
+      <p id="ownAlign" class="muted" style="font-size:12px" hidden><span id="ownAlignText"></span> <button class="btn" type="button" id="ownAlignClear">Use the style's settings</button></p>
       <p class="muted" style="font-size:12px">Shortcuts: <kbd id="kbdMod">Ctrl+Alt</kbd>+<kbd>1</kbd>/<kbd>2</kbd> headings, <kbd>0</kbd> body, <kbd>9</kbd> caption.</p>
       <!-- The look of this paragraph's role: changing it changes every
            paragraph with that role in the document (what it MEANS stays). -->
@@ -1371,7 +1371,11 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
           <label class="field">Letter spacing (%)<input type="number" id="stTracking" min="-20" max="100" step="0.5"></label>
           <label class="field">Space before (pt)<input type="number" id="stBefore" min="0" max="300" step="1"></label>
           <label class="field">Space after (pt)<input type="number" id="stAfter" min="0" max="300" step="1"></label>
+          <label class="field">Indent left (pt)<input type="number" id="stIndL" min="0" max="1000" step="1"></label>
+          <label class="field">First line (pt)<input type="number" id="stIndF" min="-1000" max="1000" step="1" aria-describedby="stIndNote"></label>
+          <label class="field">Indent right (pt)<input type="number" id="stIndR" min="0" max="1000" step="1"></label>
         </div>
+        <p class="muted" id="stIndNote" style="font-size:12px;margin:4px 0 0">First line: more than 0 starts it further in; less than 0 (say Indent left 18, First line -18) hangs it out, for "a)" or "1." with the words lined up after a tab.</p>
         <span class="tool-caption" id="capAlign" style="margin-top:8px">Alignment</span>
         <div class="icon-row" role="radiogroup" aria-labelledby="capAlign" id="stAlign">
           <button class="icon-sm" role="radio" data-align-text="left" aria-checked="true" aria-label="Left" title="Left"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h12M3 18h16"/></svg></button>
@@ -1637,7 +1641,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <h3>Publisher files</h3>
       <p>Open (Ctrl+O, or drop it on the window) also opens Microsoft Publisher files (<strong>.pub</strong>, from Publisher 2000 to today). Pages, text boxes with their words and formatting, tables, pictures (clip art and equations too), shapes, lines, groups and master pages come across as things you can edit. A .pub doesn't carry its fonts, so the closest built-in ones stand in, and a short report says what came across and what didn't. Save it as a DSKEDTR project to keep working on it; the .pub itself is never changed. Publisher 98 and older files can't be opened yet.</p>
       <h3>2. Text boxes, and text that flows</h3>
-      <p>Pick the Text box tool (T) and drag on the page. Type. Headings are paragraph roles: Heading 1, Heading 2, Body and Caption, in the Inspector's Paragraph section (or Ctrl+Alt+1, 2, 0, 9). Below the role is its style: size, line and letter spacing, kerning, space above and below, alignment and colour. Changing it changes every paragraph with that role, so all your headings stay alike. When a box is too full, a red <strong>+</strong> appears. Click or tap the round chain-link tab just below its bottom-right corner (or Link in the floating pill), then click an empty text box, even on another page: the text carries on there. Unlink in the pill stops the flow again. A text box can also split into columns (up to six, with the gap you choose): Text flow, in the Inspector. Text can follow a curve: an arch, a dip or a circle (<strong>Shape of the text</strong>, in Text flow); it straightens while you type in it. A story can start with a <strong>drop cap</strong> (its first letter, two to five lines tall): Story, in the Inspector. Long words can break with a hyphen at the ends of lines: <strong>Hyphenate</strong>, in a role's style in Paragraph (English documents). For a price list, a program or a form, put a tab between the words (Insert, Tab, or Ctrl+Alt+Shift+T) and set <strong>tab stops</strong> for the paragraph's role in Paragraph: left, centred or right, or right at the edge, with dots or a line leading up to them. The text fills one column, then the next, then the next linked box.</p>
+      <p>Pick the Text box tool (T) and drag on the page. Type. Headings are paragraph roles: Heading 1, Heading 2, Body and Caption, in the Inspector's Paragraph section (or Ctrl+Alt+1, 2, 0, 9). Below the role is its style: size, line and letter spacing, kerning, space above and below, indents (left, right, and the first line: in, or hanging out for "a)" and "1." lists), alignment and colour. Changing it changes every paragraph with that role, so all your headings stay alike. When a box is too full, a red <strong>+</strong> appears. Click or tap the round chain-link tab just below its bottom-right corner (or Link in the floating pill), then click an empty text box, even on another page: the text carries on there. Unlink in the pill stops the flow again. A text box can also split into columns (up to six, with the gap you choose): Text flow, in the Inspector. Text can follow a curve: an arch, a dip or a circle (<strong>Shape of the text</strong>, in Text flow); it straightens while you type in it. A story can start with a <strong>drop cap</strong> (its first letter, two to five lines tall): Story, in the Inspector. Long words can break with a hyphen at the ends of lines: <strong>Hyphenate</strong>, in a role's style in Paragraph (English documents). For a price list, a program or a form, put a tab between the words (Insert, Tab, or Ctrl+Alt+Shift+T) and set <strong>tab stops</strong> for the paragraph's role in Paragraph: left, centred or right, or right at the edge, with dots or a line leading up to them. The text fills one column, then the next, then the next linked box.</p>
       <h3>3. Pictures and shapes</h3>
       <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector). To cut a picture to a shape, put the shape over it where you want the cut, pick both, and choose <strong>Crop to shape</strong> in the floating pill (or Alt+Shift+P). An empty picture frame on a <strong>master page</strong> is a placeholder: on each page that uses the master, double-click it or drop a picture on it to give that page its own picture (the Document section lists them too).</p>
       <h3>Tables</h3>
@@ -1940,7 +1944,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.33.1';
+const APP_VERSION = '0.34.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -2976,7 +2980,7 @@ const isCoveredCell = (cell) => { const t = cellTable(cell); return !!t && table
    (packRuns). Stories are small, so this simple way is plenty fast and
    hard to get wrong. Formats are never changed in place, only replaced.
    ====================================================================== */
-const FORMAT_FIELDS = ['b', 'i', 'u', 'c', 'sz', 'href', 'k', 'f', 'al'];   // al: the paragraph's own alignment (on its letters; see layoutStory)
+const FORMAT_FIELDS = ['b', 'i', 'u', 'c', 'sz', 'href', 'k', 'f', 'al', 'li', 'fi', 'ri', 'tb'];   // al, li, fi, ri, tb: a paragraph's own alignment, indents and tab stops (on its letters; see layoutStory)
 
 /** A text "fingerprint" of a format, so two formats can be compared ('' = plain). */
 function formatKey(f) {
@@ -3407,14 +3411,17 @@ const TAB_LEADERS = ['none', 'dots', 'line'];
  * How wide the tab at text[i] is when it starts x points from the line's
  * left edge (a line maxWidth wide): { w, stop }. For a centre or right
  * stop, the words after the tab (up to the next tab or `upTo`) decide.
+ * `origin`: how far the line starts in from the box's edge (an indent),
+ * so the every-half-inch stops stay where they are on the page (0.34.0).
  */
-function tabWidth(text, m, paraStart, i, x, upTo, tabs, maxWidth) {
+function tabWidth(text, m, paraStart, i, x, upTo, tabs, maxWidth, origin) {
+  const o = origin || 0;
   let stop = null;
   for (const t of tabs || []) {
     const at = t.at == null ? maxWidth : t.at;
     if (at > x + 0.01) { stop = { at, align: t.align, leader: t.leader }; break; }
   }
-  if (!stop) stop = { at: (Math.floor(x / DEFAULT_TAB + 0.0001) + 1) * DEFAULT_TAB, align: 'left', leader: 'none' };
+  if (!stop) stop = { at: (Math.floor((x + o) / DEFAULT_TAB + 0.0001) + 1) * DEFAULT_TAB - o, align: 'left', leader: 'none' };
   if (stop.align === 'left') return { w: stop.at - x, stop };
   let run = 0;
   for (let j = i + 1; j < upTo && text[j] !== '\t'; j++) run += (j > i + 1 ? m.kernBefore[j - paraStart] : 0) + m.adv[j - paraStart];
@@ -3423,19 +3430,53 @@ function tabWidth(text, m, paraStart, i, x, upTo, tabs, maxWidth) {
 }
 
 /**
+ * Indents (0.34.0). A paragraph's style can push its lines in from the
+ * box's left and right edges, and its first line further in (a positive
+ * "first line") or further out (a negative one: a hanging indent, as in
+ * "a)  Sketch a diagram..." where the later lines line up under the
+ * words). A paragraph from a Publisher file can have its own (formats
+ * li, fi and ri on its first letter, like its own alignment, al).
+ * Returns { left, right } for one line, in points from the column's edges,
+ * leaving at least 12 points of room for the words.
+ */
+function lineIndents(role, first, room) {
+  let left = Math.max(0, (role.indentLeft || 0) + (first ? (role.indentFirst || 0) : 0));
+  let right = Math.max(0, role.indentRight || 0);
+  left = Math.min(left, Math.max(0, room - 12));
+  right = Math.min(right, Math.max(0, room - 12 - left));
+  return { left, right };
+}
+/**
+ * The tab stops for one line that starts `origin` points in from the
+ * column's edge: the role's stops, measured from the line's start instead.
+ * A hanging indent adds a stop where the later lines start, so
+ * "a)" + tab lines the first line's words up with the rest (as Publisher
+ * and Word do).
+ */
+function lineTabs(role, origin, first) {
+  const out = [];
+  if (first && (role.indentFirst || 0) < 0 && (role.indentLeft || 0) - origin > 0.01) out.push({ at: role.indentLeft - origin, align: 'left', leader: 'none' });
+  for (const t of role.tabs || []) {
+    if (t.at == null) out.push(t);
+    else if (t.at - origin > 0.01) out.push(Object.assign({}, t, { at: t.at - origin }));
+  }
+  if (!out.length) return role.tabs;
+  return out.sort((a, b) => (a.at == null ? 1e9 : a.at) - (b.at == null ? 1e9 : b.at));
+}
+/**
  * Where should a line that starts at `start` end, to fit `maxWidth`?
  * Breaks after spaces and hyphens; spaces at the end of a line "hang"
  * past the edge (they don't count). A single word wider than the box is
  * broken wherever it has to be, so nothing is ever lost. A tab is as wide
  * as it takes to reach its stop (`tabs`: the role's tab stops).
  */
-function breakLine(text, m, paraStart, start, paraEnd, maxWidth, tabs, hyphenate) {
+function breakLine(text, m, paraStart, start, paraEnd, maxWidth, tabs, hyphenate, origin) {
   let x = 0, lastBreak = -1, xAtBreak = 0;
   for (let i = start; i < paraEnd; i++) {
     const k = i - paraStart;
     const ch = text[i];
     const isSpace = ch === ' ' || ch === '\t';
-    const w = ch === '\t' ? tabWidth(text, m, paraStart, i, x, paraEnd, tabs, maxWidth).w : (i > start ? m.kernBefore[k] : 0) + m.adv[k];
+    const w = ch === '\t' ? tabWidth(text, m, paraStart, i, x, paraEnd, tabs, maxWidth, origin).w : (i > start ? m.kernBefore[k] : 0) + m.adv[k];
     if (!isSpace && x + w > maxWidth + 0.01 && i > start) {
       // Hyphenation (when on): break the word that ran over, if breaking at the last
       // space would leave more than a little room (8% of the line) or there is no space.
@@ -3507,10 +3548,14 @@ function layoutStory(story, ctx) {
   paraLoop:
   for (let p = 0; p < paras.length; p++) {
     const paraEnd = paraStart + paras[p].length;
-    // The paragraph's role's style; a paragraph with its own alignment (kept from a
-    // Publisher file, 0.32.0) carries it on its first letter (or its empty line's mark).
-    const own = fmts[paraStart] && fmts[paraStart].al;
-    const role = own ? Object.assign({}, roleStyle(story, p), { align: own }) : roleStyle(story, p);
+    // The paragraph's role's style; a paragraph with its own alignment or indents (kept from a
+    // Publisher file, 0.32.0 and 0.34.0) carries them on its first letter (or its empty line's mark).
+    const f0 = fmts[paraStart];
+    const role = f0 && (f0.al || f0.li != null || f0.fi != null || f0.ri != null || f0.tb)
+      ? Object.assign({}, roleStyle(story, p), f0.al ? { align: f0.al } : {}, f0.li != null ? { indentLeft: f0.li } : {},
+        f0.fi != null ? { indentFirst: f0.fi } : {}, f0.ri != null ? { indentRight: f0.ri } : {},
+        f0.tb ? { tabs: f0.tb.map((at) => ({ at, align: 'left', leader: 'none' })) } : {})
+      : roleStyle(story, p);
     const m = measureParagraph(text, paraStart, paraEnd, role, fmts, ctx);
     let pos = paraStart;
     let firstLineOfPara = true;
@@ -3522,7 +3567,7 @@ function layoutStory(story, ctx) {
       // (Break it to the box's width first: how tall it is depends on its letters.)
       // Pictures and shapes with text wrap (section 5b) can push a line
       // sideways (into the widest gap beside them) or down (below them).
-      let before, end, met, seg, hyphen = false;
+      let before, end, met, seg, hyphen = false, tabs = role.tabs, origin = 0;
       // Hyphenate here? (The role says so, the document is in English, and fewer than 2 lines in a row just did.)
       const mayHyphenate = !!role.hyphenate && hyphenRun < 2 && hyphenationLang();
       for (;;) {
@@ -3535,18 +3580,22 @@ function layoutStory(story, ctx) {
         const obs = wrapObstacles(f, wrapCache);
         // A drop cap (below) pushes the lines beside it (after the first) to its right.
         const ind = drop && lineNo >= 1 && lineNo < drop.lines && dropLine && dropLine.frame === f.id && dropLine.col === ci ? drop.indent : 0;
+        // The paragraph's indents (and the tab stops, measured from where this line starts).
+        const indent = lineIndents(role, firstLineOfPara, lim.R - lim.L - ind);
+        origin = indent.left;
+        tabs = lineTabs(role, origin, firstLineOfPara);
         if (!obs.length) {
-          seg = { x: lim.L + ind, w: lim.R - lim.L - ind };
-          ({ end, hyphen } = breakLine(text, m, paraStart, pos, paraEnd, seg.w, role.tabs, mayHyphenate));
+          seg = { x: lim.L + ind + indent.left, w: lim.R - lim.L - ind - indent.left - indent.right };
+          ({ end, hyphen } = breakLine(text, m, paraStart, pos, paraEnd, seg.w, tabs, mayHyphenate, origin));
           met = lineMetrics(m, pos - paraStart, end - paraStart, role);
           if (y + before + met.lineH <= bottom) break;
         } else {
           const placed = placeWrappedLine(f, obs, y + before, bottom, (w) => {
-            const br = breakLine(text, m, paraStart, pos, paraEnd, w, role.tabs, mayHyphenate), e = br.end;
+            const br = breakLine(text, m, paraStart, pos, paraEnd, w, tabs, mayHyphenate, origin), e = br.end;
             // "forced": a word too long for the width had to be cut in two (a hyphenated break is fine).
             const forced = e < paraEnd && e > pos && !/[ \t-]/.test(text[e - 1]) && !br.hyphen;
             return { end: e, hyphen: br.hyphen, forced, met: lineMetrics(m, pos - paraStart, e - paraStart, role) };
-          }, Math.max(36, role.size * 6), ind ? { L: lim.L + ind, R: lim.R } : lim);
+          }, Math.max(36, role.size * 6), { L: lim.L + ind + indent.left, R: lim.R - indent.right });
           if (placed) { ({ seg, end, met, hyphen } = placed); y = placed.top - before; break; }
         }
         // No room left here: the next column of this box, else the next box.
@@ -3565,7 +3614,7 @@ function layoutStory(story, ctx) {
         if (i > pos && text[i - 1] !== '\t') x += m.kernBefore[k];
         xs.push(x);
         if (text[i] === '\t') {
-          const t = tabWidth(text, m, paraStart, i, x, end, role.tabs, seg.w);
+          const t = tabWidth(text, m, paraStart, i, x, end, tabs, seg.w, origin);
           if (t.stop.leader && t.stop.leader !== 'none' && t.w > 0) leaders.push({ x1: x, x2: x + t.w, kind: t.stop.leader, k: Math.min(k + 1, m.looks.length - 1) });
           x += t.w;
           hasTab = true;
@@ -9898,20 +9947,24 @@ function fillParagraph() {
   const roles = new Set(story.roles.slice(from, to + 1));
   $('roleSelect').value = roles.size === 1 ? [...roles][0] : '';
   fillStyle(roles.size === 1 ? [...roles][0] : null);
-  // Paragraphs here with an alignment of their own (from a Publisher file).
+  // Paragraphs here with an alignment or indents of their own (from a Publisher file).
   const fmts = charFormats(story), own = new Set();
-  let start = story.text.lastIndexOf('\n', sel.start - 1) + 1;
+  let start = story.text.lastIndexOf('\n', sel.start - 1) + 1, ownIndents = false, ownTabs = false;
   for (let p = from; p <= to; p++) {
     if (fmts[start] && fmts[start].al) own.add(fmts[start].al);
+    if (fmts[start] && (fmts[start].li != null || fmts[start].fi != null || fmts[start].ri != null)) ownIndents = true;
+    if (fmts[start] && fmts[start].tb) ownTabs = true;
     const nl = story.text.indexOf('\n', start);
     if (nl < 0) break;
     start = nl + 1;
   }
-  $('ownAlign').hidden = !own.size;
+  $('ownAlign').hidden = !own.size && !ownIndents && !ownTabs;
   const names = { left: 'left', center: 'centred', right: 'right', justify: 'justified' };
-  if (own.size) setText('ownAlignText', (to > from ? 'Some of these paragraphs are' : 'This paragraph is') + ' aligned ' + [...own].map((a) => names[a]).join(' or ') + ' on ' + (to > from ? 'their' : 'its') + ' own (kept from the file it came from), whatever the style says.');
+  const what = [own.size ? 'alignment (' + [...own].map((a) => names[a]).join(' or ') + ')' : '', ownIndents ? 'indents' : '', ownTabs ? 'tab stops' : ''].filter(Boolean);
+  const list = what.length > 1 ? what.slice(0, -1).join(', ') + ' and ' + what[what.length - 1] : what[0];
+  if (what.length) setText('ownAlignText', (to > from ? 'Some of these paragraphs have their' : 'This paragraph has its') + ' own ' + list + ', kept from the file it came from; the style doesn\u2019t change ' + (to > from ? 'those.' : 'it.'));
 }
-/** Make the paragraphs picked follow their style's alignment again (they drop their own). */
+/** Make the paragraphs picked follow their style's alignment, indents and tab stops again (they drop their own). */
 function clearOwnAlign() {
   const story = doc.stories[activeStoryId];
   if (!story) return;
@@ -9921,11 +9974,11 @@ function clearOwnAlign() {
   b = b < 0 ? story.text.length : b + 1;                         // (its mark too: an empty line keeps it there)
   recordUndo('other');
   const fmts = charFormats(story);
-  for (let i = a; i < b; i++) fmts[i] = patchFormat(fmts[i], { al: null });
+  for (let i = a; i < b; i++) fmts[i] = patchFormat(fmts[i], { al: null, li: null, fi: null, ri: null, tb: null });
   packRuns(story, fmts);
   relayoutAndRender();
   fillParagraph();
-  announce('Now aligned as the style says.');
+  announce('Now set out as the style says.');
 }
 
 /* ---------- The style of a role (the Paragraph section) ---------- */
@@ -9946,6 +9999,9 @@ function fillStyle(role) {
   setField($('stTracking'), Math.round(s.tracking) / 10);
   setField($('stBefore'), s.spaceBefore);
   setField($('stAfter'), s.spaceAfter);
+  setField($('stIndL'), s.indentLeft || 0);
+  setField($('stIndF'), s.indentFirst || 0);
+  setField($('stIndR'), s.indentRight || 0);
   setField($('stColour'), s.colour);
   fillTabStops();
   setField($('stHex'), s.colour);
@@ -9986,7 +10042,8 @@ function wireStyleEditor() {
   wireDropCap();
   // Number fields: [field id, style key, min, max, what is stored per unit shown]
   const nums = [['stSize', 'size', 4, 200, 1], ['stLeading', 'leading', 0.7, 4, 1], ['stTracking', 'tracking', -20, 100, 10],
-    ['stBefore', 'spaceBefore', 0, 300, 1], ['stAfter', 'spaceAfter', 0, 300, 1]];
+    ['stBefore', 'spaceBefore', 0, 300, 1], ['stAfter', 'spaceAfter', 0, 300, 1],
+    ['stIndL', 'indentLeft', 0, 1000, 1], ['stIndF', 'indentFirst', -1000, 1000, 1], ['stIndR', 'indentRight', 0, 1000, 1]];
   for (const [id, key, min, max, k] of nums) {
     $(id).addEventListener('input', () => {
       const v = parseFloat($(id).value);
@@ -13187,7 +13244,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 18;                        // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames; 8: columns in a text box; 9: facing pages, bleed; 10: tables; 11: folds; 12: master picture placeholders; 13: colour schemes; 14: drop caps, tab stops; 15: hyphenation; 16: text on a curve; 17: merged cells, cell colours, vertical alignment; 18: a paragraph's own alignment)
+const PROJECT_VERSION = 19;                        // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames; 8: columns in a text box; 9: facing pages, bleed; 10: tables; 11: folds; 12: master picture placeholders; 13: colour schemes; 14: drop caps, tab stops; 15: hyphenation; 16: text on a curve; 17: merged cells, cell colours, vertical alignment; 18: a paragraph's own alignment; 19: indents)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -14277,6 +14334,13 @@ function cleanFormat(r, fontOK) {
   if (typeof r.href === 'string') { const h = cleanLink(r.href); if (h) f.href = h; }
   if (typeof r.k === 'number' && Number.isFinite(r.k) && Math.round(r.k)) f.k = Math.max(-500, Math.min(1000, Math.round(r.k)));
   if (ALIGNS.includes(r.al)) f.al = r.al;                       // (version 18)
+  // A paragraph's own indents, in points (version 19): left and right 0 to 1000, the first line -1000 to 1000.
+  for (const [key, min] of [['li', 0], ['fi', -1000], ['ri', 0]]) if (typeof r[key] === 'number' && Number.isFinite(r[key])) f[key] = Math.max(min, Math.min(1000, r[key]));
+  // Its own tab stops (version 19): up to 8 positions in points, left-aligned, in order.
+  if (Array.isArray(r.tb)) {
+    const tb = r.tb.slice(0, 8).filter((v) => typeof v === 'number' && Number.isFinite(v) && v > 0 && v <= 2000).map((v) => Math.round(v * 100) / 100).sort((a, b) => a - b);
+    if (tb.length) f.tb = tb;
+  }
   return Object.keys(f).length ? f : null;
 }
 /** A drop cap from a file or a copy: 2 to 5 lines, a font choice and a colour choice; anything else: none. */
@@ -14334,6 +14398,8 @@ function checkDocument(raw, known, knownFonts) {
       align: ALIGNS.includes(s.align) ? s.align : 'left', colour: colour(s.colour) || d.colour
     };
     if (s.hyphenate === true) out.styles[key].hyphenate = true;   // hyphenation (version 15)
+    // Indents (version 19), in points: only kept when not 0.
+    for (const [k2, min] of [['indentLeft', 0], ['indentFirst', -1000], ['indentRight', 0]]) { const v = n(s[k2], min, 1000, 0); if (v) out.styles[key][k2] = v; }
     // Tab stops (version 14): at most 8, each a position (or null: the right edge), an alignment and a leader.
     if (Array.isArray(s.tabs)) {
       const tabs = s.tabs.slice(0, 8).filter((t) => t && typeof t === 'object').map((t) => ({
@@ -15159,9 +15225,11 @@ function pubParaStyle(r, p) {
           for (const list of pubChildren(r, b)) {
             if (list.id !== 0x28 || !PUB_VAR_TYPES.has(list.type)) continue;
             for (const entry of pubChildren(r, list)) {
-              if (!PUB_VAR_TYPES.has(entry.type)) continue;
+              if (s.tabs.length >= 20) break;
+              // (Publisher 2000: each stop's position directly; 2002+: inside a container of its own.)
+              if (!PUB_VAR_TYPES.has(entry.type)) { if (entry.id === 0x00) s.tabs.push(entry.data / EMU_PER_PT); continue; }
               const first = pubChildren(r, entry)[0];
-              if (first && first.id === 0x00 && s.tabs.length < 20) s.tabs.push(first.data / EMU_PER_PT);
+              if (first && first.id === 0x00) s.tabs.push(first.data / EMU_PER_PT);
             }
           }
         }
@@ -16527,7 +16595,8 @@ async function pubToProject(pub, onStep) {
       const ps = p.ps || {};
       const looks = p.looks.map((at) => look(at));
       return { text: p.text, looks, markLook: look(p.mark), align: ps.align || 'left', spaceBefore: ps.spaceBefore || 0, spaceAfter: ps.spaceAfter || 0,
-        lineSp: ps.lineSp, linePt: ps.linePt, tabs: ps.tabs || null };
+        lineSp: ps.lineSp, linePt: ps.linePt, tabs: ps.tabs || null,
+        indentLeft: Math.max(0, ps.leftIndent || 0), indentFirst: ps.firstIndent || 0, indentRight: Math.max(0, ps.rightIndent || 0) };
     });
   }
   /** One letter's look in our terms. */
@@ -16588,7 +16657,7 @@ async function pubToProject(pub, onStep) {
   for (const role of Object.keys(ROLES)) {
     const mine = allParas.filter((p) => p.role === role);
     if (!mine.length) { doc.styles[role].family = role === 'body' || role === 'caption' ? bodyFamily : doc.styles[role].family; continue; }
-    const trk = new Map(), fam = new Map(), sz = new Map(), bd = new Map(), al = new Map(), col = new Map(), sb = new Map(), sa = new Map(), lead = new Map(), tabs = new Map();
+    const ind = new Map(), trk = new Map(), fam = new Map(), sz = new Map(), bd = new Map(), al = new Map(), col = new Map(), sb = new Map(), sa = new Map(), lead = new Map(), tabs = new Map();
     for (const p of mine) {
       const n = Math.max(1, p.text.length), lk = p.main;
       if (lk.family) tally(fam, lk.family, n);
@@ -16598,7 +16667,8 @@ async function pubToProject(pub, onStep) {
       // (Line spacing from the original size: the stand-in may be set a little smaller, the lines stay as far apart.)
       tally(lead, Math.round((p.linePt ? p.linePt : (p.lineSp || 1) * (lk.line || 1.17) * (lk.pubSize || lk.size)) / lk.size * 100) / 100, n);
       tally(trk, lk.k || 0, n);
-      if (p.tabs && p.tabs.length) tally(tabs, JSON.stringify(p.tabs.slice(0, 8)), n);
+      tally(ind, [p.indentLeft, p.indentFirst, p.indentRight].map((v) => Math.round(v * 2) / 2).join(','), n);
+      tally(tabs, p.tabs && p.tabs.length ? JSON.stringify(p.tabs.slice(0, 8)) : '', n);   // ('' : no stops of its own, which counts too)
     }
     const s = doc.styles[role];
     s.family = top(fam, bodyFamily);
@@ -16610,6 +16680,11 @@ async function pubToProject(pub, onStep) {
     s.spaceAfter = Math.min(300, top(sa, 0));
     s.leading = Math.max(0.7, Math.min(4, top(lead, 1.2)));
     s.tracking = top(trk, 0);
+    // Indents: the ones most of the role's paragraphs have (others keep their own, below).
+    const [iL, iF, iR] = top(ind, '0,0,0').split(',').map(Number);
+    if (iL) s.indentLeft = Math.min(1000, iL);
+    if (iF) s.indentFirst = Math.max(-1000, Math.min(1000, iF));
+    if (iR) s.indentRight = Math.min(1000, iR);
     const t = top(tabs, null);
     if (t) s.tabs = JSON.parse(t).filter((v) => v > 0 && v < 2000).map((at) => ({ at, align: 'left', leader: 'none' }));
   }
@@ -16623,6 +16698,15 @@ async function pubToProject(pub, onStep) {
     parts.forEach((p, k) => {
       const s = doc.styles[roles[k]];
       const own = p.align !== s.align ? p.align : null;              // a paragraph aligned unlike its role's style keeps its own
+      // ...and its own indents, where they differ from its role's style.
+      const ownInd = {};
+      if (Math.abs((p.indentLeft || 0) - (s.indentLeft || 0)) > 0.25) ownInd.li = Math.min(1000, p.indentLeft || 0);
+      if (Math.abs((p.indentFirst || 0) - (s.indentFirst || 0)) > 0.25) ownInd.fi = Math.max(-1000, Math.min(1000, p.indentFirst || 0));
+      if (Math.abs((p.indentRight || 0) - (s.indentRight || 0)) > 0.25) ownInd.ri = Math.min(1000, p.indentRight || 0);
+      // ...and its own tab stops (when it has some, unlike its style's).
+      const mine = (p.tabs || []).filter((v) => v > 0 && v <= 2000).slice(0, 8).map((v) => Math.round(v * 100) / 100);
+      const theirs = (s.tabs || []).map((t) => Math.round(t.at * 100) / 100);
+      if (mine.length && mine.join(',') !== theirs.join(',')) ownInd.tb = mine;
       for (let i = 0; i <= p.text.length; i++) {
         if (i === p.text.length && k === parts.length - 1) break;     // (the last paragraph has no mark after it)
         const lk = i < p.text.length ? p.looks[i] : p.markLook;
@@ -16637,6 +16721,7 @@ async function pubToProject(pub, onStep) {
           if ((lk.k || 0) !== s.tracking && i < p.text.length && i > 0) f.k = (lk.k || 0) - s.tracking;   // (closer or wider than its style)
         }
         if (own) f.al = own;
+        Object.assign(f, ownInd);
         // A letter its font doesn't have borrows it from a built-in family that does.
         const ch = p.text[i];
         if (ch && ch > '\u007e' && !/\s/.test(ch) && !hasGlyph(f.f || s.family, ch)) {
@@ -17871,13 +17956,18 @@ function cssFamily(key) {
   const generic = /mono/i.test(kind) ? 'monospace' : /sans/i.test(kind) ? 'sans-serif' : /serif|slab/i.test(kind) ? 'serif' : 'sans-serif';
   return (f ? JSON.stringify(f.name) + ', ' : '') + generic;
 }
+/** Indents as CSS (in rem, where 1rem is the Body size): padding left and right, and the first line's text-indent. */
+function htmlIndents(left, first, right) {
+  const k = 1 / (styleOf('body').size || 10.5), r = (v) => (v * k).toFixed(2) + 'rem';
+  return (left ? ' padding-left: ' + r(left) + ';' : '') + (first ? ' text-indent: ' + r(first) + ';' : '') + (right ? ' padding-right: ' + r(right) + ';' : '');
+}
 /** The page's style sheet: each role's look (sizes in em, from Body = 1em), and a few rules for tables and figures. */
 function htmlStyles() {
   const body = styleOf('body');
   const rule = (sel, st, extra) => sel + ' { font-family: ' + cssFamily(st.family) + '; font-size: ' + (st.size / body.size).toFixed(3) + 'em; font-weight: ' +
     (st.font === 'bold' ? 700 : 400) + '; line-height: ' + st.leading + '; color: ' + st.colour + '; text-align: ' + st.align + '; margin: ' +
     (st.spaceBefore / body.size).toFixed(2) + 'em 0 ' + (st.spaceAfter / body.size).toFixed(2) + 'em;' + (st.tracking ? ' letter-spacing: ' + (st.tracking / 1000) + 'em;' : '') +
-    (st.hyphenate ? ' hyphens: auto;' : '') + (extra || '') + ' }';
+    (st.hyphenate ? ' hyphens: auto;' : '') + htmlIndents(st.indentLeft, st.indentFirst, st.indentRight) + (extra || '') + ' }';
   return [
     'html { font-size: 112.5%; background: #ffffff; color: ' + body.colour + '; }',
     'body { margin: 0 auto; padding: 1.5rem 1rem 3rem; max-width: 42rem; font-family: ' + cssFamily(body.family) + '; }',
@@ -17908,6 +17998,11 @@ function htmlParagraphs(hd, story) {
       if (p === 0 && story.dropCap && /[\p{L}\p{N}]/u.test(para[0])) el.classList.add('dropcap');
       if (style.font === 'bold' && el.tagName === 'P') el.style.fontWeight = '700';   // (a bold header cell, say)
       if (fmts[start] && fmts[start].al && fmts[start].al !== style.align) el.style.textAlign = fmts[start].al;   // (its own alignment)
+      if (fmts[start] && (fmts[start].li != null || fmts[start].fi != null || fmts[start].ri != null)) {     // (its own indents)
+        const f0 = fmts[start], css = htmlIndents(f0.li != null ? f0.li : style.indentLeft, f0.fi != null ? f0.fi : style.indentFirst, f0.ri != null ? f0.ri : style.indentRight);
+        el.style.paddingLeft = el.style.textIndent = el.style.paddingRight = '';
+        for (const part of css.split(';')) { const [k2, v] = part.split(':').map((t) => t && t.trim()); if (k2 && v) el.style.setProperty(k2, v); }
+      }
       // Runs of letters that look the same go in one piece.
       let i = start;
       while (i < end) {
@@ -18124,6 +18219,11 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.34.0", date: "2026-10-09", title: "", notes: [
+    "Indents. A paragraph style can now push its lines in from the left and right edges, and its first line further in, or further out: a hanging indent (say Indent left 18, First line -18) for \"a)\" and \"1.\" questions, where the lines after the first line up under the words. A tab after \"a)\" goes to where those lines start, as in Publisher and Word. The three fields are in the Paragraph section, under the role's style. The PDF, the web page and the tab stops all follow them.",
+    "Publisher files keep their indents and tab stops. Worksheets that used hanging indents in Publisher now come in with them, and a paragraph whose indents or tab stops differ from its role's style keeps its own (as alignment already did). The Paragraph section says so, and \"Use the style's settings\" drops them. Publisher 2000 tab stops are now read too (they were missed before).",
+    "Project files are now version 19."
+  ] },
   { version: "0.33.1", date: "2026-10-09", title: "", notes: [
     "Export can save the project too. Its last choice, \"A DSKEDTR project (.dskedtr)\", does what Save project does, with the file name typed there, so the .dskedtr file is wherever you look for it."
   ] },
