@@ -1,5 +1,28 @@
 # DSKEDTR changelog
 
+## 0.36.0 - 2026-10-10
+
+- **A View menu.** The eye in the top bar now opens a menu: **One
+  page**, **Two pages side by side**, **All pages**, and **Preview** (W
+  still turns Preview on and off). Two pages shows pages 1 and 2, 3 and
+  4 and so on, with a small gap; a document with facing pages shows its
+  spreads, as before, and can now be seen one page at a time too. Click
+  the other page to work on it, drag things across, or link a text box
+  straight to a box on it.
+- **All pages** shows every page as a picture (facing pages in their
+  spreads, a red dot where text doesn't fit). Click a page, or move with
+  the arrow keys and press Enter, to work on it; Escape goes back. Zoom
+  in and out make the pictures bigger or smaller.
+- **Preview is plainly Preview.** Everything but the page (the top bar,
+  the tools, the pages strip and the Inspector) is shaded and can't be
+  used, so it is clear nothing can be changed. The banner over the page
+  has the page before and after (two at a time in Two pages), zoom out
+  and in, and Back to editing (or W, or Escape).
+- **Zoom keys work everywhere.** Ctrl (Cmd on a Mac) with + or =, - and
+  0 zoom the page even while typing in a text box, where the browser
+  used to zoom the whole window instead. The number pad's + and - work
+  too.
+
 ## 0.35.0 - 2026-10-10
 
 - **Missing fonts are named.** When a document uses a font DSKEDTR

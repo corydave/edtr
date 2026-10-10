@@ -1020,6 +1020,31 @@ Not yet, roughly in order of what teachers' files will need:
 - More sample files: newsletters, brochures, a file from Publisher 2016
   or 365 with linked boxes and WordArt.
 
+## Page views and Preview (0.36.0)
+
+- `pageView` (not saved in the document): `'one'`, `'two'` or `'grid'`.
+  A document with facing pages opens in `'two'`, any other in `'one'`;
+  turning facing pages on or off in Page setup switches with it.
+- **Two pages** reuses the facing-pages machinery: `spreadPartner` pairs
+  2-3, 4-5 for facing pages and 1-2, 3-4 otherwise; `partnerOffset`
+  adds `spreadGap()` (0 for a spread, else 4% of the width, at least
+  18 pt). Clicking the partner, dragging across, linking to a box on it
+  and fit-to-window all work the same for both. A bleed line is open at
+  the spine only for a real spread.
+- **All pages** (`renderPageGrid`): a list of page buttons (roving
+  tabindex; arrows, Home, End; Enter or click opens the page in the view
+  it came from, keeping its zoom; Escape goes back). Zoom changes the
+  picture width (80-480 px, 200 usual). A tool, building blocks or a
+  paste go back to the page first.
+- **Preview** shades and makes `inert` the top bar, tool rail, filmstrip
+  and side panel (`shadedParts`), and darkens the desk around the page;
+  the banner carries previous/next page (`pageStep`: a pair at a time in
+  Two pages), zoom out/in and Back to editing. Dialogs (Help) still open.
+- **Zoom keys** (Ctrl/Cmd with +, =, -, 0, by `e.code` too) are handled
+  before the typing check, so they never fall through to browser zoom.
+- Decided 2026-10-10 (Dave): the eye opens the View menu (his idea);
+  Preview is in it with W as its key.
+
 ## Missing fonts and Google Fonts (0.35.0)
 
 - **Missing fonts.** A font a document names but DSKEDTR doesn't have

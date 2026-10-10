@@ -147,6 +147,10 @@ body {
 .ruler-corner { background: var(--panel); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .desk-frame.no-rulers { grid-template-columns: 0 minmax(0, 1fr); grid-template-rows: 0 minmax(0, 1fr); }
 .desk-frame.no-rulers .ruler, .desk-frame.no-rulers .ruler-corner { visibility: hidden; }
+/* All pages (0.36.0): the page grid takes the desk's place, with no rulers. */
+.desk-frame.grid-view { grid-template-columns: 0 minmax(0, 1fr); grid-template-rows: 0 minmax(0, 1fr); }
+.desk-frame.grid-view .ruler, .desk-frame.grid-view .ruler-corner { visibility: hidden; }
+.desk-frame.grid-view .desk { display: none; }
 /* View toggles in the top bar: pressed ones are filled, not just coloured. */
 .tb-toggle[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-text); box-shadow: inset 0 0 0 1.5px currentColor; }
 .tb-more { width: 22px; }
@@ -228,7 +232,21 @@ body {
   border-style: solid; border-width: 0 0 5px 5px; border-color: transparent transparent currentColor transparent; opacity: .75; }
 
 /* The scrolling desk with the page on it. */
-.desk { overflow: auto; position: relative; outline: none; }
+.desk { overflow: auto; position: relative; outline: none; grid-column: 2; grid-row: 2; }
+/* All pages (0.36.0): every page, small, in rows; facing pages as spreads. */
+.page-grid { grid-column: 2; grid-row: 2; overflow: auto; padding: 20px 16px 28px; }
+.pg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 20px 24px; align-items: flex-end; justify-content: center; --pgw: 200px; }
+.pg-spread { display: flex; align-items: flex-end; }
+.pg-page { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--fg); font: inherit; font-size: 12px; cursor: pointer; }
+.pg-spread .pg-page { padding: 6px 0; }               /* the two pages of a spread meet at the spine */
+.pg-page svg { display: block; width: var(--pgw); height: auto; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.28); }
+.pg-page:hover { background: color-mix(in srgb, var(--fg) 7%, transparent); }
+.pg-page:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.pg-page[aria-current="page"] svg { outline: 3px solid var(--accent-text); outline-offset: 2px; }
+.pg-num { font-weight: 700; display: inline-flex; gap: 6px; align-items: center; }
+.pg-num .thumb-master { font-weight: 600; color: var(--muted); }
+.pg-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
 .desk:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }   /* drawn inside, so the frame doesn't clip it */
 /* Touch on the desk is DSKEDTR's own: one finger draws, moves and picks on
    the page (or slides the page from the grey around it), two fingers pinch
@@ -290,6 +308,27 @@ body {
 .desk-frame.proofing [data-layer=snap], .desk-frame.proofing [data-layer=overlay] { display: none; }
 .desk-frame.proofing [data-layer=content] { clip-path: url(#pageClip); }
 .desk-frame.proofing .ruler { cursor: default; }
+/* Preview (0.36.0): everything but the page is shaded (and can't be used:
+   it is made inert), so it is plain that this is only for looking. */
+.shaded { filter: brightness(.4) saturate(.5); transition: filter .15s; }
+.desk-frame.proofing .ruler, .desk-frame.proofing .ruler-corner { filter: brightness(.4) saturate(.5); }
+.desk-frame.proofing .desk { background: color-mix(in srgb, var(--bg) 38%, #000); }
+@media (prefers-reduced-motion: reduce) { .shaded { transition: none; } }
+/* The Preview banner's own buttons: page before and after, zoom out and in. */
+.proof-banner { flex-wrap: wrap; justify-content: center; }
+.preview-banner .pb-btn { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: inherit;
+  display: inline-grid; place-items: center; cursor: pointer; flex: none; }
+.preview-banner .pb-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.preview-banner .pb-btn:hover { background: color-mix(in srgb, var(--panel) 20%, transparent); }
+.preview-banner .pb-btn:disabled { opacity: .4; cursor: default; }
+.preview-banner button:focus-visible { outline: 2px solid var(--panel); outline-offset: 2px; }
+.preview-banner .pb-sep { width: 1px; align-self: stretch; margin: 2px 2px; background: color-mix(in srgb, var(--panel) 35%, transparent); }
+.preview-banner #proofPage { white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) { .preview-banner .pb-long, .preview-banner .pb-zoom { display: none; } }   /* (on a phone, pinch to zoom) */
+/* The View button opens a menu: a small corner triangle says so (as on the Shapes button). */
+#viewBtn { position: relative; }
+#viewBtn::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 0; height: 0;
+  border-style: solid; border-width: 0 0 5px 5px; border-color: transparent transparent currentColor transparent; opacity: .75; }
 /* Its banner sits at the top of the desk (the colour preview's is at the bottom, so both can show). */
 .preview-banner.proof-banner { top: 32px; bottom: auto; width: max-content; }   /* max-content: wrap only when the desk is narrower */
 .desk-frame.no-rulers .proof-banner { top: 12px; }
@@ -803,9 +842,10 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <!-- How you see the page, the same on every page: rulers, grid, guides and
        snapping. Each is a toggle (aria-pressed); the arrow opens the guides
        and grid panel (exact positions, column guides, grid spacing). -->
-  <div class="tb-group" role="group" aria-label="Preview, rulers, grid, guides and snapping">
-    <!-- Preview: the page as it will print (nothing outside the page, no guides). -->
-    <button class="icon-btn tb-toggle" id="view-preview" aria-pressed="false" aria-label="Preview" title="Preview: see the page as it will print (W)">
+  <div class="tb-group" role="group" aria-label="View, rulers, grid, guides and snapping">
+    <!-- View (0.36.0): a menu of how to see the pages - one page, two pages
+         side by side, all pages - and Preview (the page as it will print). -->
+    <button class="icon-btn" id="viewBtn" aria-haspopup="menu" aria-expanded="false" aria-label="View: one page" title="View: one page, two pages, all pages, or Preview (W)">
       <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
     <button class="icon-btn tb-toggle" id="view-rulers" aria-pressed="true" aria-label="Rulers" title="Rulers: drag out of one to make a guide (Alt+Shift+R)">
@@ -900,7 +940,19 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <canvas class="ruler" id="rulerTop" aria-hidden="true" title="Drag down onto the page to make an across guide"></canvas>
   <canvas class="ruler" id="rulerLeft" aria-hidden="true" title="Drag onto the page to make an up-and-down guide"></canvas>
   <div class="preview-banner proof-banner master-banner" id="masterBanner" role="status" hidden><span id="masterWords"></span><button class="btn" id="masterBack">Back to the pages</button></div>
-  <div class="preview-banner proof-banner" id="proofBanner" role="status" hidden><span>Preview: as it will print. W or Escape to go back.</span><button class="btn" id="proofStop">Back to editing</button></div>
+  <!-- Preview's banner (0.36.0): the rest of the window is shaded and can't be
+       used, so the page and zoom buttons are here, with the way back. -->
+  <div class="preview-banner proof-banner" id="proofBanner" role="group" aria-label="Preview" hidden>
+    <span><strong>Preview</strong><span class="pb-long">: as it will print</span></span>
+    <span class="pb-sep" aria-hidden="true"></span>
+    <button type="button" class="pb-btn" id="proofPrev" aria-label="Previous page" title="Previous page (Page Up)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+    <span id="proofPage">Page 1 of 1</span>
+    <button type="button" class="pb-btn" id="proofNext" aria-label="Next page" title="Next page (Page Down)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+    <span class="pb-sep pb-zoom" aria-hidden="true"></span>
+    <button type="button" class="pb-btn pb-zoom" id="proofZoomOut" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-5-5"/></svg></button>
+    <button type="button" class="pb-btn pb-zoom" id="proofZoomIn" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M21 21l-5-5"/></svg></button>
+    <button class="btn" id="proofStop" title="Back to editing (W or Escape)">Back to editing</button>
+  </div>
   <div class="preview-banner" id="previewBanner" role="status" hidden><span id="previewWords"></span><button class="btn" id="previewStop">Stop preview</button></div>
   <!-- Quick actions for what is picked (see wireQuickBar). One Tab stop;
        Left and Right move along it; Alt+F10 jumps here from the page. -->
@@ -967,6 +1019,11 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <!-- the invisible story text boxes are added here by the script -->
     </div>
   </main>
+  <!-- All pages (0.36.0): every page as a picture. Click one (or Enter) to
+       work on it; arrows move between them; Escape goes back. -->
+  <section class="page-grid" id="pageGrid" aria-label="All pages" hidden>
+    <ul class="pg-list" id="pageGridList"></ul>
+  </section>
   </div>
   <!-- The pages, along the bottom (the suite's filmstrip). -->
   <div class="filmstrip">
@@ -1478,6 +1535,14 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 
 <!-- ===================== NEW PAGE: WHICH MASTER (a menu from the filmstrip's +) ===================== -->
 <div class="quick-menu" id="addPageMenu" popover role="menu" aria-label="New page"></div>
+<!-- The View menu (0.36.0): its ticks are set each time it opens (see fillViewMenu). -->
+<div class="quick-menu" id="viewMenu" popover role="menu" aria-label="View">
+  <button type="button" role="menuitemradio" data-pages="one" aria-checked="true"><span class="qm-tick" aria-hidden="true"></span>One page</button>
+  <button type="button" role="menuitemradio" data-pages="two" aria-checked="false"><span class="qm-tick" aria-hidden="true"></span><span data-two-label>Two pages side by side</span></button>
+  <button type="button" role="menuitemradio" data-pages="grid" aria-checked="false"><span class="qm-tick" aria-hidden="true"></span>All pages</button>
+  <hr>
+  <button type="button" role="menuitemcheckbox" id="viewMenuPreview" aria-checked="false"><span class="qm-tick" aria-hidden="true"></span>Preview<span class="qm-key">W</span></button>
+</div>
 
 <!-- ===================== MASTER FOR THIS PAGE (a menu from the page pill) ===================== -->
 <div class="quick-menu" id="pageMasterMenu" popover role="menu" aria-labelledby="pageMasterBtn"></div>
@@ -1641,7 +1706,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <div role="tabpanel" id="paneStart" aria-labelledby="tabStart" tabindex="0" hidden>
       <p style="margin-top:0">DSKEDTR makes things to print or share as a PDF: newsletters, flyers, posters, programs, booklets. Here is a newsletter from start to finish.</p>
       <h3>1. Start</h3>
-      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card, a sign or a monthly calendar), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border, and a <strong>calendar</strong> for any month (a real table, with the days of the week as its header row). Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
+      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card, a sign or a monthly calendar), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border, and a <strong>calendar</strong> for any month (a real table, with the days of the week as its header row). Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. <strong>View</strong> (the eye in the top bar) shows one page, two pages side by side, or <strong>all pages</strong> at once (click one to work on it), and <strong>Preview</strong> (W): the page as it will print, with the rest of the window shaded. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
       <h3>Publisher files</h3>
       <p>Open (Ctrl+O, or drop it on the window) also opens Microsoft Publisher files (<strong>.pub</strong>, from Publisher 2000 to today). Pages, text boxes with their words and formatting, tables, pictures (clip art and equations too), shapes, lines, groups and master pages come across as things you can edit. A .pub doesn't carry its fonts. Times New Roman, Arial, Calibri, Cambria, Georgia and Courier New have built-in twins with the same letter widths; any other font is listed as <strong>missing</strong>, with a built-in one standing in. Add it in Document, Your fonts: its file, this computer's copy, or a match from <strong>Google Fonts</strong> (only when you ask: just the font's name is sent, and the font is then saved inside the project). A short report says what came across and what didn't. Save it as a DSKEDTR project to keep working on it; the .pub itself is never changed. Publisher 98 and older files can't be opened yet.</p>
       <h3>2. Text boxes, and text that flows</h3>
@@ -1989,7 +2054,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.35.0';
+const APP_VERSION = '0.36.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -2882,14 +2947,32 @@ function moveObj(o, dx, dy) {
 const isFacing = () => !!PAGE.facing;
 /** Is page pi a left-hand page of a spread (page 2, 4, 6...)? */
 const isLeftHand = (pi) => isFacing() && !isMasterIndex(pi) && pi % 2 === 1;
-/** The other page of page pi's spread, or null (page 1, the last page alone, masters, single pages). */
+/* ---------- Page views (0.36.0) ----------
+   pageView is how the pages are shown (it is not part of the document):
+     'one'  - one page at a time;
+     'two'  - two pages side by side: facing pages as their spreads (2 with
+              3, 4 with 5...), other documents in pairs (1 with 2, 3 with 4...),
+              with a little gap between them;
+     'grid' - All pages: every page, small (see renderPageGrid).
+   A document with facing pages opens in 'two', any other in 'one'. */
+let pageView = 'one';
+let lastPageView = 'one';                            // the page view All pages goes back to
+/** The gap between two pages side by side: none for a spread (they meet at the spine). */
+const spreadGap = () => (isFacing() ? 0 : Math.round(Math.max(18, PAGE.width * 0.04)));
+/** The other page beside page pi, or null (page 1 of facing pages, the last page alone, masters, one page at a time). */
 function spreadPartner(pi) {
-  if (!isFacing() || isMasterIndex(pi)) return null;
-  const q = pi % 2 === 1 ? pi + 1 : pi - 1;
+  if (pageView !== 'two' || isMasterIndex(pi)) return null;
+  // Facing pages pair 2 with 3 (page 1 is alone, on the right); others pair 1 with 2. (Indexes count from 0.)
+  const leftOfPair = isFacing() ? pi % 2 === 1 : pi % 2 === 0;
+  const q = leftOfPair ? pi + 1 : pi - 1;
   return q >= 0 && q < doc.pages.length ? q : null;
 }
 /** Where the partner page sits, in page points across from page pi (to its right or its left). */
-const partnerOffset = (pi) => (pi % 2 === 1 ? PAGE.width : -PAGE.width);
+function partnerOffset(pi) {
+  const step = PAGE.width + spreadGap();
+  const leftOfPair = isFacing() ? pi % 2 === 1 : pi % 2 === 0;
+  return leftOfPair ? step : -step;
+}
 /* Folds (doc.page.fold): where a printed sheet will be folded, as parts
    of the page's width (v) and height (h), so they stay right when the
    size changes. Shown as dash-dot lines (never printed), snapped to like
@@ -5677,7 +5760,7 @@ function setupSvg() {
    read by screen readers, and the Accessibility checker leaves them alone.
    The page itself still starts at (0, 0): staging positions are simply
    negative, or past the page's width or height. */
-function stage() { return { x: isFacing() ? PAGE.width + 72 : Math.max(144, PAGE.width * 0.5), y: Math.max(144, PAGE.height * 0.25) }; }
+function stage() { return { x: isFacing() || pageView === 'two' ? PAGE.width + spreadGap() + 72 : Math.max(144, PAGE.width * 0.5), y: Math.max(144, PAGE.height * 0.25) }; }
 /** Where the page's top-left corner is on screen, and screen pixels per point. */
 function pageOrigin() {
   const r = svg.getBoundingClientRect(), k = zoom * PX_PER_PT, s = stage();
@@ -5729,7 +5812,7 @@ function renderMargins() {
   const q = spreadPartner(pageIndex);
   // In a spread, the page you are working on gets a thin outline, so it is clear which of the two it is.
   if (q != null) layers.margins.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height, fill: 'none', stroke: '#065f46', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' }));
-  bleedLine(layers.margins, q == null ? null : partnerOffset(pageIndex) > 0 ? 'right' : 'left');
+  bleedLine(layers.margins, q == null || !isFacing() ? null : partnerOffset(pageIndex) > 0 ? 'right' : 'left');   // (two pages that aren't a spread are each trimmed all round)
   foldLinesEl(layers.margins);
   renderSpread();
 }
@@ -5780,7 +5863,7 @@ function renderSpread() {
   const guides = svgEl('g', { 'data-layer': 'margins' });
   const m = marginBox(q);
   guides.appendChild(svgEl('rect', { x: m.x, y: m.y, width: m.w, height: m.h, fill: 'none', stroke: '#93c5fd', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
-  bleedLine(guides, off > 0 ? 'left' : 'right');      // its spine is on the side facing this page
+  bleedLine(guides, !isFacing() ? null : off > 0 ? 'left' : 'right');   // its spine is on the side facing this page
   foldLinesEl(guides);
   g.appendChild(guides);
   layer.appendChild(g);
@@ -7348,6 +7431,8 @@ function goToPage(i, keepTyping) {
   showPage();
   showMasterBanner();
   orderInputsInDom();
+  if (printPreview) showProofPage();
+  if (pageView === 'grid') renderPageGrid();
   announce(isMasterIndex(i) ? pageNo(i).name + ', a master page. What you put here shows on every page that uses it.' : 'Page ' + (i + 1) + ' of ' + doc.pages.length + (masterFor(i) ? ', with ' + masterFor(i).name : ''));
 }
 let lastPageIndex = 0;                               // the page to go back to from the masters
@@ -7563,8 +7648,11 @@ function applyPageSetup(next, mode, anchor) {
       moveObj(o, (nw - ow) * anchor[0], (nh - oh) * anchor[1]);
     }
   }
+  const facingChanged = !!next.facing !== isFacing();
   doc.page = next;
   PAGE = doc.page;
+  if (facingChanged && pageView !== 'grid') pageView = isFacing() ? 'two' : 'one';   // facing pages show as spreads
+  showViewButton();
   applyPageSize();
   relayoutAndRender();
   renderFilmstrip();
@@ -8842,6 +8930,7 @@ function renderOverlay() {
 let tool = 'select';                 // select, text, rect, ellipse, line, order
 
 function setTool(t) {
+  if (pageView === 'grid') setPageView(lastPageView);  // a tool works on a page: show it
   if (tool === t) return;
   if (printPreview) setPrintPreview(false);           // picking a tool means you want to edit again
   tool = t;
@@ -11259,6 +11348,7 @@ function renderThumbnails() {
     const g = document.querySelector('[data-thumb="' + pg.id + '"]');
     if (g) renderContent(g, i);
   });
+  if (pageView === 'grid') renderPageGrid();
 }
 function focusThumb() { const el = $('thumb-' + curPage().id); if (el) el.focus(); }
 
@@ -11844,13 +11934,231 @@ function setPrintPreview(on) {
     cancelLinkPick();
     setTool('select');                                 // so picking any tool afterwards goes back to editing
   }
+  if (on && pageView === 'grid') setPageView(lastPageView);   // Preview is of a page (or two)
+  if (on) for (const pop of document.querySelectorAll(':popover-open')) pop.hidePopover();
   printPreview = on;
   $('deskFrame').classList.toggle('proofing', on);
   $('proofBanner').hidden = !on;
-  $('view-preview').setAttribute('aria-pressed', String(on));
+  // Everything but the page is shaded and made inert (no clicks, no Tab
+  // stops, skipped by screen readers), so nothing can be changed by mistake.
+  // The banner has the page and zoom buttons, and the way back.
+  for (const part of shadedParts()) { part.inert = on; part.classList.toggle('shaded', on); }
+  showViewButton();
+  if (on) { showProofPage(); $('desk').focus({ preventScroll: true }); }
   svg.style.cursor = on ? 'grab' : '';
-  announce(on ? 'Preview: the page as it will print. Guides, box edges and the staging area are hidden. W or Escape to go back to editing.' : 'Back to editing');
+  announce(on ? 'Preview: the page as it will print. Nothing can be changed. Page Up and Page Down change page; W or Escape go back to editing.' : 'Back to editing');
 }
+/** The parts of the window shaded during Preview: the top bar, the tools, the filmstrip and the side panel. */
+function shadedParts() {
+  return [document.querySelector('.topbar'), document.querySelector('.rail'), document.querySelector('.filmstrip'), $('sidePanel')].filter(Boolean);
+}
+/** The page one step before or after (dir -1 or 1). Two pages side by side step a whole pair at a time. */
+function pageStep(dir) {
+  let to = pageIndex + dir;
+  if (spreadPartner(pageIndex) === to) to += dir;     // (the page beside this one is already showing)
+  if (dir > 0 && spreadPartner(pageIndex) != null && to >= doc.pages.length) to = pageIndex;
+  const first = editingMaster() ? doc.pages.length : 0, last = editingMaster() ? pageCount() - 1 : doc.pages.length - 1;
+  return Math.max(first, Math.min(last, to));
+}
+/** The Preview banner's "Page 2 of 5" (or "Pages 2-3 of 5"), and its buttons. */
+function showProofPage() {
+  const q = spreadPartner(pageIndex), n = editingMaster() ? masterList().length : doc.pages.length;
+  const at = editingMaster() ? pageIndex - doc.pages.length : pageIndex;
+  const a = Math.min(at, q == null ? at : q) + 1, b = Math.max(at, q == null ? at : q) + 1;
+  setText('proofPage', (a === b ? 'Page ' + a : 'Pages ' + a + '-' + b) + ' of ' + n);
+  $('proofPrev').disabled = pageStep(-1) === pageIndex;
+  $('proofNext').disabled = pageStep(1) === pageIndex;
+}
+/* ---------- The View menu, and All pages (0.36.0) ---------- */
+const PAGE_VIEW_WORDS = { one: 'one page', two: 'two pages side by side', grid: 'all pages' };
+/** The View button's name says what is showing (and whether Preview is on). */
+function showViewButton() {
+  const b = $('viewBtn');
+  if (!b) return;
+  const words = 'View: ' + (pageView === 'two' && isFacing() ? 'two pages (spreads)' : PAGE_VIEW_WORDS[pageView]) + (printPreview ? ', Preview' : '');
+  b.setAttribute('aria-label', words);
+}
+/** Tick what is showing in the View menu, each time it opens. */
+function fillViewMenu() {
+  for (const item of $('viewMenu').querySelectorAll('[data-pages]')) {
+    const on = item.dataset.pages === pageView;
+    item.setAttribute('aria-checked', String(on));
+    item.querySelector('.qm-tick').textContent = on ? '\u2713' : '';
+  }
+  $('viewMenu').querySelector('[data-two-label]').textContent = isFacing() ? 'Two pages (spreads)' : 'Two pages side by side';
+  const pv = $('viewMenuPreview');
+  pv.setAttribute('aria-checked', String(printPreview));
+  pv.querySelector('.qm-tick').textContent = printPreview ? '\u2713' : '';
+}
+/**
+ * Show the pages one at a time ('one'), two side by side ('two'), or all of
+ * them small ('grid'). Going back from All pages to the view it came from
+ * keeps the zoom; any other change fits the page (or pair) to the window.
+ */
+function setPageView(v) {
+  if (!Object.hasOwn(PAGE_VIEW_WORDS, v) || v === pageView) return;
+  const was = pageView;
+  if (v === 'grid') {
+    if (printPreview) setPrintPreview(false);
+    // Finish whatever was half done on the page (as Preview does).
+    if (focusedStoryId) stopEditingToFrame(focusedStoryId);
+    if (cropId) endCrop();
+    cancelLinkPick();
+    selectObjects([]);
+    if (editingMaster()) toggleMasters();             // All pages shows the pages, not the masters
+    lastPageView = was;
+    pageView = 'grid';
+    $('deskFrame').classList.add('grid-view');
+    $('pageGrid').hidden = false;
+    setGridThumbWidth(gridThumbWidth);                 // (the zoom box shows the pictures' size)
+    renderPageGrid();
+    updateInspector();
+    focusGridPage();
+  } else {
+    pageView = lastPageView = v;
+    if (was === 'grid') leaveGridView();
+    applyPageSize();
+    relayoutAndRender();
+    if (was === 'grid' && v === lastPageView && gridKeptZoom === v) showPage(); else fitZoom();
+    if (was === 'grid') $('desk').focus({ preventScroll: true });
+  }
+  gridKeptZoom = was === 'grid' ? null : was;
+  showViewButton();
+  announce(v === 'grid' ? 'All pages. Arrow keys move between them; Enter works on one; Escape goes back.'
+    : v === 'two' ? (isFacing() ? 'Two pages: the spreads' : 'Two pages side by side') + '. Click the other page to work on it.' : 'One page');
+}
+let gridKeptZoom = null;                              // the view whose zoom is kept while All pages shows
+/** Put the page grid away (no redraw: the caller shows the page). */
+function leaveGridView() {
+  $('deskFrame').classList.remove('grid-view');
+  $('pageGrid').hidden = true;
+}
+/** Each page's picture in All pages is this many pixels wide (zoom in and out change it). */
+const GRID_THUMB_WIDTH = 200;                       // the usual size (Ctrl+0)
+let gridThumbWidth = GRID_THUMB_WIDTH;
+function setGridThumbWidth(w) {
+  gridThumbWidth = Math.round(Math.max(80, Math.min(480, w)));
+  $('pageGridList').style.setProperty('--pgw', gridThumbWidth + 'px');
+  $('zoomValue').textContent = Math.round(gridThumbWidth / GRID_THUMB_WIDTH * 100) + '%';
+}
+/**
+ * All pages: one button per page (a picture of it, its number, its master,
+ * and a red dot when it has text that doesn't fit). Facing pages come in
+ * their spreads. Only the page you were on is a Tab stop; arrows move.
+ */
+function renderPageGrid() {
+  const list = $('pageGridList');
+  if (!list || pageView !== 'grid') return;
+  const hadFocus = list.contains(document.activeElement);
+  clear(list);
+  list.style.setProperty('--pgw', gridThumbWidth + 'px');
+  const over = pagesWithOverflow(), n = doc.pages.length;
+  // Facing pages: [page 1], [2, 3], [4, 5]...; otherwise each page alone.
+  const groups = [];
+  for (let i = 0; i < n; i++) {
+    if (isFacing() && i % 2 === 1 && i + 1 < n) { groups.push([i, i + 1]); i++; } else groups.push([i]);
+  }
+  for (const group of groups) {
+    const li = document.createElement('li');
+    if (group.length > 1) li.className = 'pg-spread';
+    for (const i of group) {
+      const pg = doc.pages[i], pm = masterById(pg.master);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pg-page';
+      b.dataset.index = String(i);
+      b.tabIndex = i === pageIndex ? 0 : -1;
+      if (i === pageIndex) b.setAttribute('aria-current', 'page');
+      b.setAttribute('aria-label', 'Page ' + (i + 1) + ' of ' + n + (pm ? ', ' + pm.name : '') + (over.has(i) ? ', has text that doesn\u2019t fit' : ''));
+      const box = document.createElementNS(SVG_NS, 'svg');
+      box.setAttribute('viewBox', '0 0 ' + PAGE.width + ' ' + PAGE.height);
+      box.setAttribute('aria-hidden', 'true');
+      box.style.aspectRatio = PAGE.width + ' / ' + PAGE.height;
+      box.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height, fill: '#ffffff' }));
+      const g = svgEl('g', {});
+      box.appendChild(g);
+      const label = document.createElement('span');
+      label.className = 'pg-num';
+      label.setAttribute('aria-hidden', 'true');
+      label.textContent = String(i + 1);
+      if (pm) { const tag = document.createElement('span'); tag.className = 'thumb-master'; tag.textContent = pm.name.replace(/^Master /, ''); label.appendChild(tag); }
+      if (over.has(i)) { const dot = document.createElement('span'); dot.className = 'pg-dot'; label.appendChild(dot); }
+      b.append(box, label);
+      li.appendChild(b);
+      renderContent(g, i);
+    }
+    list.appendChild(li);
+  }
+  if (hadFocus) focusGridPage();
+}
+function focusGridPage() {
+  const b = $('pageGridList').querySelector('[aria-current="page"]');
+  if (b) { b.focus({ preventScroll: true }); b.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+}
+/** Arrow keys in All pages: Left and Right go one page, Up and Down a row (the nearest page above or below). */
+function gridNeighbour(from, key) {
+  const all = [...$('pageGridList').querySelectorAll('.pg-page')];
+  const i = all.indexOf(from);
+  if (key === 'ArrowLeft') return all[i - 1];
+  if (key === 'ArrowRight') return all[i + 1];
+  if (key === 'Home') return all[0];
+  if (key === 'End') return all[all.length - 1];
+  const r = from.getBoundingClientRect(), cx = r.left + r.width / 2, down = key === 'ArrowDown';
+  let best = null, bestScore = Infinity;
+  for (const b of all) {
+    const q = b.getBoundingClientRect();
+    const rowGap = down ? q.top - r.bottom : r.top - q.bottom;   // only pages in a row above (or below)
+    if (rowGap < -2) continue;
+    const score = rowGap * 1000 + Math.abs(q.left + q.width / 2 - cx);
+    if (score < bestScore) { best = b; bestScore = score; }
+  }
+  return best;
+}
+function wirePageViews() {
+  const b = $('viewBtn'), menu = $('viewMenu');
+  b.addEventListener('click', () => { fillViewMenu(); openMenuFrom(menu, b, 'below'); });
+  wireMenu(menu, b);
+  for (const item of menu.querySelectorAll('[data-pages]')) {
+    item.addEventListener('click', () => { menu.hidePopover(); setPageView(item.dataset.pages); });
+  }
+  $('viewMenuPreview').addEventListener('click', () => { menu.hidePopover(); setPrintPreview(!printPreview); });
+  // The Preview banner's buttons.
+  $('proofPrev').addEventListener('click', () => goToPage(pageStep(-1)));
+  $('proofNext').addEventListener('click', () => goToPage(pageStep(1)));
+  $('proofZoomOut').addEventListener('click', () => zoomBy(1 / 1.25));
+  $('proofZoomIn').addEventListener('click', () => zoomBy(1.25));
+  // All pages: click (or Enter, or Space) works on that page; arrows move; Escape goes back.
+  const list = $('pageGridList');
+  list.addEventListener('click', (e) => {
+    const page = e.target.closest('.pg-page');
+    if (!page) return;
+    goToPage(Number(page.dataset.index));
+    setPageView(lastPageView);
+  });
+  list.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); setPageView(lastPageView); return; }
+    const from = e.target.closest('.pg-page');
+    if (!from || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return;
+    e.preventDefault();
+    const to = gridNeighbour(from, e.key);
+    if (!to) return;
+    from.tabIndex = -1;
+    to.tabIndex = 0;
+    to.focus();
+    to.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  });
+}
+/** Zoom in or out by a factor: the page, or in All pages the size of the page pictures. */
+function zoomBy(k) {
+  if (pageView === 'grid') setGridThumbWidth(gridThumbWidth * k);
+  else setZoom(zoom * k);
+}
+/** Ctrl+0 and the fit button: fit the page, or in All pages the usual picture size. */
+function zoomToFit() {
+  if (pageView === 'grid') setGridThumbWidth(GRID_THUMB_WIDTH);
+  else fitZoom();
+}
+
 /** Switch units: every field, list and ruler shows the new ones (the document itself doesn't change). */
 function setUnits(u) {
   if (!Object.hasOwn(UNITS, u) || u === view.units) return;
@@ -12034,8 +12342,7 @@ function wireRulers() {
 function wireViewBar() {
   $('inspectorBtn').addEventListener('click', () => { setInspector(!view.inspector); announce(view.inspector ? 'Inspector shown' : 'Inspector hidden'); });
   if (!view.inspector) setInspector(false);
-  const eye = $('view-preview');
-  eye.addEventListener('click', () => setPrintPreview(!printPreview));
+  wirePageViews();
   $('proofStop').addEventListener('click', () => { setPrintPreview(false); $('desk').focus({ preventScroll: true }); });
   for (const key of ['rulers', 'guides', 'grid', 'snap']) {
     const b = $('view-' + key);
@@ -12189,8 +12496,8 @@ function cancelPointerWork() {
 }
 function fitZoom() {
   const desk = $('desk');
-  // Facing pages: fit the whole spread (two pages side by side), on every page, so the zoom doesn't jump.
-  const across = isFacing() && !editingMaster() ? 2 * PAGE.width : PAGE.width;
+  // Two pages side by side: fit both, on every page (even one alone), so the zoom doesn't jump.
+  const across = pageView === 'two' && !editingMaster() ? 2 * PAGE.width + spreadGap() : PAGE.width;
   const z = Math.min((desk.clientWidth - 64) / (across * PX_PER_PT), (desk.clientHeight - 64) / (PAGE.height * PX_PER_PT));
   setZoom(Math.max(0.25, Math.min(2, z)));
   showPage();
@@ -12234,9 +12541,9 @@ function wireChrome() {
   $('zoomIn').title = 'Zoom in (' + modName + '+=)';
   $('zoomOut').title = 'Zoom out (' + modName + '+-)';
   $('zoomFit').title = 'Fit page (' + modName + '+0)';
-  $('zoomIn').addEventListener('click', () => setZoom(zoom * 1.25));
-  $('zoomOut').addEventListener('click', () => setZoom(zoom / 1.25));
-  $('zoomFit').addEventListener('click', fitZoom);
+  $('zoomIn').addEventListener('click', () => zoomBy(1.25));
+  $('zoomOut').addEventListener('click', () => zoomBy(1 / 1.25));
+  $('zoomFit').addEventListener('click', zoomToFit);
   for (const b of document.querySelectorAll('[data-tool]')) b.addEventListener('click', () => setTool(b.dataset.tool));
 
   // Theme: remembered in this browser only (a convenience; failing is fine).
@@ -12319,11 +12626,12 @@ function wireChrome() {
     [mod + ' + Z, ' + mod + ' + Shift + Z', 'Undo, redo'],
     ['Tab', 'Next story, in reading order'],
     [alt + ' + Up / Down', 'In the reading order list: move the picked item'],
-    ['W, or the eye in the top bar', 'Preview: the page as it will print (no guides, nothing in the staging area); W or Escape to go back'],
+    ['W, or View (the eye) in the top bar', 'Preview: the page as it will print, the rest of the window shaded (nothing can be changed); Page Up / Down change page; W or Escape to go back'],
+    ['View (the eye) in the top bar', 'One page, two pages side by side, or all pages (arrows move between them, Enter works on one, Escape goes back)'],
     ['Space + drag', 'Slide the page around (also in the middle of moving something, to carry it further)'],
     [mod + ' + scroll wheel, or pinch on a trackpad', 'Zoom the page around the pointer (not the whole web page)'],
     ['Touch screen', 'Two fingers: pinch to zoom, slide to move around. One finger on the grey around the page slides it too'],
-    [mod + ' + =, ' + mod + ' + -, ' + mod + ' + 0', 'Zoom in, out, fit'],
+    [mod + ' + =, ' + mod + ' + -, ' + mod + ' + 0', 'Zoom in, out, fit (even while typing; in All pages, the size of the pages)'],
     ['?, F1', 'This help']
   ];
   for (const [k, v] of rows) {
@@ -12346,6 +12654,12 @@ function wireChrome() {
       if (key === 'o' && !e.shiftKey) { e.preventDefault(); chooseFileToOpen(); return; }
       if (key === 's' && e.shiftKey) { e.preventDefault(); saveProject(); return; }
       if (key === 's') { e.preventDefault(); openExport(); return; }
+      // Zoom: Ctrl (Cmd) with + or =, -, and 0. These work everywhere in the
+      // app, even while typing, so the browser never zooms the whole window
+      // instead. Read from the key's place too, for the number pad and any layout.
+      if (e.code === 'Equal' || e.code === 'NumpadAdd' || e.key === '+' || e.key === '=') { e.preventDefault(); zoomBy(1.25); return; }
+      if (e.code === 'Minus' || e.code === 'NumpadSubtract' || e.key === '-') { e.preventDefault(); zoomBy(1 / 1.25); return; }
+      if ((e.code === 'Digit0' || e.code === 'Numpad0') && !e.shiftKey) { e.preventDefault(); zoomToFit(); return; }
       // View: Ctrl+; guides, Ctrl+Shift+; snap, Ctrl+' grid (read from the key's place, so any keyboard layout works).
       if (e.code === 'Semicolon') { e.preventDefault(); setView(e.shiftKey ? 'snap' : 'guides', !view[e.shiftKey ? 'snap' : 'guides']); return; }
       if (e.code === 'Quote' && !e.shiftKey) { e.preventDefault(); setView('grid', !view.grid); return; }
@@ -12369,15 +12683,12 @@ function wireChrome() {
     // change page, and zoom, undo and help still do their jobs.
     if (printPreview) {
       if (e.key === 'Escape' || (k === 'w' && !mod2 && !e.altKey && !e.shiftKey)) { e.preventDefault(); setPrintPreview(false); return; }
-      if (onPage && !mod2 && (e.key === 'PageUp' || e.key === 'PageDown')) { e.preventDefault(); goToPage(pageIndex + (e.key === 'PageDown' ? 1 : -1)); return; }
-      const looking = (mod2 && ['z', 'y', '=', '+', '-', '0'].includes(k)) || e.key === '?';
+      if (onPage && !mod2 && (e.key === 'PageUp' || e.key === 'PageDown')) { e.preventDefault(); goToPage(pageStep(e.key === 'PageDown' ? 1 : -1)); return; }
+      const looking = (mod2 && ['z', 'y'].includes(k)) || e.key === '?';
       if (!looking) return;                          // editing keys stand down (arrows just scroll the desk)
     }
     if (mod2 && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod2 && k === 'y' && !isMac) { e.preventDefault(); redo(); return; }
-    if (mod2 && (e.key === '=' || e.key === '+')) { e.preventDefault(); setZoom(zoom * 1.25); return; }
-    if (mod2 && e.key === '-') { e.preventDefault(); setZoom(zoom / 1.25); return; }
-    if (mod2 && e.key === '0') { e.preventDefault(); fitZoom(); return; }
     if (mod2 && k === 'd') { e.preventDefault(); duplicateSelected(); return; }
     if (mod2 && k === 'a' && onPage) { e.preventDefault(); setTool('select'); selectObjects(pageObjs().filter((o) => !o.hidden && !o.locked).map((o) => o.id)); announceSelection(); return; }
     if (mod2 && k === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelected(); else groupSelected(); return; }
@@ -12507,6 +12818,7 @@ function wirePictureInput() {
     const t = e.target;
     if (t.closest && t.closest('textarea, input, select')) return;   // text fields keep their own pasting
     if (printPreview) { e.preventDefault(); announce('Go back to editing (W) to paste.'); return; }
+    if (pageView === 'grid') setPageView(lastPageView);   // pasting puts things on the page: show it
     const files = [...(e.clipboardData ? e.clipboardData.files : [])].filter((f) => f.type.startsWith('image/'));
     const token = e.clipboardData ? e.clipboardData.getData(CLIP_TYPE) : '';
     const text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
@@ -14214,6 +14526,7 @@ async function newFromTemplate(t) {
 
 /** The Building blocks gallery (drawn each time in this document's styles, for the page showing). */
 function openBlocks() {
+  if (pageView === 'grid') setPageView(lastPageView);  // blocks go on the page showing
   if (printPreview) setPrintPreview(false);
   if (focusedStoryId) stopEditingToFrame(focusedStoryId);
   const grid = $('blocksGrid');
@@ -14282,6 +14595,9 @@ function loadDocument(newDoc, picStore, fontStore) {
   Object.assign(doc, newDoc);
   PAGE = doc.page;
   pageIndex = 0;
+  if (pageView === 'grid') leaveGridView();
+  pageView = lastPageView = isFacing() ? 'two' : 'one';   // facing pages open as spreads
+  showViewButton();
   selectedIds = [];
   activeStoryId = null;
   focusedStoryId = null;
@@ -18538,6 +18854,12 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.36.0", date: "2026-10-10", title: "", notes: [
+    "A View menu. The eye in the top bar now opens a menu: One page, Two pages side by side, All pages, and Preview (W still turns Preview on and off). Two pages shows pages 1 and 2, 3 and 4 and so on, with a small gap; a document with facing pages shows its spreads, as before, and can now be seen one page at a time too. Click the other page to work on it, drag things across, or link a text box straight to a box on it.",
+    "All pages shows every page as a picture (facing pages in their spreads, a red dot where text doesn't fit). Click a page, or move with the arrow keys and press Enter, to work on it; Escape goes back. Zoom in and out make the pictures bigger or smaller.",
+    "Preview is plainly Preview. Everything but the page (the top bar, the tools, the pages strip and the Inspector) is shaded and can't be used, so it is clear nothing can be changed. The banner over the page has the page before and after (two at a time in Two pages), zoom out and in, and Back to editing (or W, or Escape).",
+    "Zoom keys work everywhere. Ctrl (Cmd on a Mac) with + or =, - and 0 zoom the page even while typing in a text box, where the browser used to zoom the whole window instead. The number pad's + and - work too."
+  ] },
   { version: "0.35.0", date: "2026-10-10", title: "", notes: [
     "Missing fonts are named. When a document uses a font DSKEDTR doesn't have (Stencil, Impact, Bell MT, from a Publisher file), it is listed as missing, by its own name, with a built-in font standing in until you add it. The stand-in is set to the missing font's letter widths, so lines break about where they did. Document, Your fonts shows each one with four choices: Add its file…, From this computer (Chrome and Edge, after the browser asks), Google Fonts…, or Keep the stand-in. The font lists say \"Stencil (missing: Archivo Black stands in)\".",
     "Fonts from Google Fonts, only when you ask. \"Google Fonts…\" (in Your fonts, or beside a missing font) gets a free font by its name, suggesting a close match for common Publisher fonts (Stardos Stencil for Stencil, Anton for Impact). It says first what it sends: only the font's name, to jsDelivr, which serves Google Fonts' files. The font is then saved inside the project, so it works offline from then on. DSKEDTR still goes online for nothing else.",
