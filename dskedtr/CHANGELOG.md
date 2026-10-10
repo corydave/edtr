@@ -1,5 +1,15 @@
 # DSKEDTR changelog
 
+## 0.36.1 - 2026-10-10
+
+- **Move pages in All pages.** Drag a page to a new place: a bar shows
+  where it will go, and a small copy of it follows the pointer (the pages
+  scroll when you reach the top or bottom). On a touch screen, hold a
+  page for a moment, then drag; a quick swipe still scrolls. From the
+  keyboard, Alt (Option on a Mac) with the arrow keys moves the page
+  that has focus. Escape cancels a drag, and one Undo puts a move back.
+  Facing pages re-pair into their spreads as pages move.
+
 ## 0.36.0 - 2026-10-10
 
 - **A View menu.** The eye in the top bar now opens a menu: **One

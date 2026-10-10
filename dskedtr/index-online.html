@@ -247,6 +247,19 @@ body {
 .pg-num { font-weight: 700; display: inline-flex; gap: 6px; align-items: center; }
 .pg-num .thumb-master { font-weight: 600; color: var(--muted); }
 .pg-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); }
+/* Moving pages in All pages (0.36.1): the page being moved fades, a bar
+   shows where it will go, and a small copy of it follows the pointer. */
+.pg-hint { margin: 0 auto 14px; max-width: 46rem; text-align: center; font-size: 12px; color: var(--muted); }
+.pg-page { position: relative; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+.pg-page.pg-moving { opacity: .35; }
+.pg-page.drop-before::before, .pg-page.drop-after::after { content: ""; position: absolute; top: 6px; bottom: 26px; width: 4px; border-radius: 2px; background: var(--accent-text); }
+.pg-page.drop-before::before { left: -14px; }
+.pg-page.drop-after::after { right: -14px; }
+.pg-spread .pg-page.drop-before::before { left: -4px; }
+.pg-spread .pg-page.drop-after::after { right: -4px; }
+.pg-list.pg-dragging, .pg-list.pg-dragging .pg-page { cursor: grabbing; }
+.pg-ghost { position: fixed; z-index: 60; pointer-events: none; opacity: .9; box-shadow: 0 8px 24px rgba(0,0,0,.35); transform: translate(-50%, -60%) rotate(-2deg); }
+.pg-ghost svg { display: block; width: 100%; height: auto; background: #fff; }
 .desk:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }   /* drawn inside, so the frame doesn't clip it */
 /* Touch on the desk is DSKEDTR's own: one finger draws, moves and picks on
    the page (or slides the page from the grey around it), two fingers pinch
@@ -1022,6 +1035,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <!-- All pages (0.36.0): every page as a picture. Click one (or Enter) to
        work on it; arrows move between them; Escape goes back. -->
   <section class="page-grid" id="pageGrid" aria-label="All pages" hidden>
+    <p class="pg-hint" id="pageGridHint">Click a page to work on it. Drag a page to move it (on a touch screen, hold it first); from the keyboard, Alt + arrow keys.</p>
     <ul class="pg-list" id="pageGridList"></ul>
   </section>
   </div>
@@ -1706,7 +1720,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <div role="tabpanel" id="paneStart" aria-labelledby="tabStart" tabindex="0" hidden>
       <p style="margin-top:0">DSKEDTR makes things to print or share as a PDF: newsletters, flyers, posters, programs, booklets. Here is a newsletter from start to finish.</p>
       <h3>1. Start</h3>
-      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card, a sign or a monthly calendar), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border, and a <strong>calendar</strong> for any month (a real table, with the days of the week as its header row). Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. <strong>View</strong> (the eye in the top bar) shows one page, two pages side by side, or <strong>all pages</strong> at once (click one to work on it), and <strong>Preview</strong> (W): the page as it will print, with the rest of the window shaded. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
+      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card, a sign or a monthly calendar), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border, and a <strong>calendar</strong> for any month (a real table, with the days of the week as its header row). Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. <strong>View</strong> (the eye in the top bar) shows one page, two pages side by side, or <strong>all pages</strong> at once (click one to work on it, or drag one to move it), and <strong>Preview</strong> (W): the page as it will print, with the rest of the window shaded. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
       <h3>Publisher files</h3>
       <p>Open (Ctrl+O, or drop it on the window) also opens Microsoft Publisher files (<strong>.pub</strong>, from Publisher 2000 to today). Pages, text boxes with their words and formatting, tables, pictures (clip art and equations too), shapes, lines, groups and master pages come across as things you can edit. A .pub doesn't carry its fonts. Times New Roman, Arial, Calibri, Cambria, Georgia and Courier New have built-in twins with the same letter widths; any other font is listed as <strong>missing</strong>, with a built-in one standing in. Add it in Document, Your fonts: its file, this computer's copy, or a match from <strong>Google Fonts</strong> (only when you ask: just the font's name is sent, and the font is then saved inside the project). A short report says what came across and what didn't. Save it as a DSKEDTR project to keep working on it; the .pub itself is never changed. Publisher 98 and older files can't be opened yet.</p>
       <h3>2. Text boxes, and text that flows</h3>
@@ -1929,7 +1943,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.36.0';
+const APP_VERSION = '0.36.1';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -7498,7 +7512,7 @@ function movePage(from, to) {
   reindex();
   relayoutAndRender();
   renderFilmstrip();
-  focusThumb();
+  if (pageView === 'grid') { renderPageGrid(); focusGridPage(); } else focusThumb();
   announce('Page moved to position ' + (to + 1) + ' of ' + doc.pages.length);
 }
 
@@ -11945,6 +11959,7 @@ function renderPageGrid() {
       b.tabIndex = i === pageIndex ? 0 : -1;
       if (i === pageIndex) b.setAttribute('aria-current', 'page');
       b.setAttribute('aria-label', 'Page ' + (i + 1) + ' of ' + n + (pm ? ', ' + pm.name : '') + (over.has(i) ? ', has text that doesn\u2019t fit' : ''));
+      b.setAttribute('aria-describedby', 'pageGridHint');
       const box = document.createElementNS(SVG_NS, 'svg');
       box.setAttribute('viewBox', '0 0 ' + PAGE.width + ' ' + PAGE.height);
       box.setAttribute('aria-hidden', 'true');
@@ -12007,12 +12022,21 @@ function wirePageViews() {
   list.addEventListener('click', (e) => {
     const page = e.target.closest('.pg-page');
     if (!page) return;
+    if (gridDragJustEnded) { gridDragJustEnded = false; return; }   // (the end of a drag is not a click)
     goToPage(Number(page.dataset.index));
     setPageView(lastPageView);
   });
+  wireGridDrag(list);
   list.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { e.preventDefault(); setPageView(lastPageView); return; }
+    if (e.key === 'Escape') { e.preventDefault(); if (gridDrag) endGridDrag(false); else setPageView(lastPageView); return; }
     const from = e.target.closest('.pg-page');
+    // Alt + arrows: move this page earlier (Left, Up) or later (Right, Down), as in the pages strip.
+    if (from && e.altKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+      e.preventDefault();
+      const i = Number(from.dataset.index), to = i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1);
+      if (to >= 0 && to < doc.pages.length) movePage(i, to);
+      return;
+    }
     if (!from || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return;
     e.preventDefault();
     const to = gridNeighbour(from, e.key);
@@ -12023,6 +12047,111 @@ function wirePageViews() {
     to.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   });
 }
+/*
+ * Moving pages by dragging them in All pages (0.36.1). Pointer events, so
+ * a mouse, a pen and a finger all work: a mouse or pen drag starts once it
+ * has moved a few pixels; a finger first holds still for a moment (a quick
+ * swipe still scrolls the pages). While dragging, a bar shows where the
+ * page will go and a small copy follows the pointer; near the top or
+ * bottom the pages scroll. Escape cancels. One undo step puts it back.
+ */
+let gridDrag = null;                                  // { from, page, ghost, x, y, active, touch, timer, target, raf }
+let gridDragJustEnded = false;
+function wireGridDrag(list) {
+  list.addEventListener('pointerdown', (e) => {
+    const page = e.target.closest('.pg-page');
+    gridDragJustEnded = false;
+    if (!page || e.button !== 0 || gridDrag) return;
+    gridDrag = { from: Number(page.dataset.index), page, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY,
+      active: false, touch: e.pointerType === 'touch', pointerId: e.pointerId, target: null };
+    // A finger holds still for 0.4 s before dragging starts (otherwise it is scrolling).
+    if (gridDrag.touch) gridDrag.timer = setTimeout(() => { if (gridDrag && !gridDrag.active) startGridDrag(); }, 400);
+  });
+  list.addEventListener('pointermove', (e) => {
+    const d = gridDrag;
+    if (!d || e.pointerId !== d.pointerId) return;
+    d.x = e.clientX; d.y = e.clientY;
+    if (!d.active) {
+      const moved = Math.hypot(d.x - d.sx, d.y - d.sy);
+      if (d.touch) { if (moved > 8) { clearTimeout(d.timer); gridDrag = null; } return; }   // a swipe: let it scroll
+      if (moved < 6) return;
+      startGridDrag();
+    }
+    trackGridDrag();
+  });
+  // While a finger is dragging a page, the pages must not scroll under it.
+  list.addEventListener('touchmove', (e) => { if (gridDrag && gridDrag.active) e.preventDefault(); }, { passive: false });
+  list.addEventListener('contextmenu', (e) => { if (gridDrag) e.preventDefault(); });   // (a long press would open the menu)
+  list.addEventListener('pointerup', (e) => { if (gridDrag && e.pointerId === gridDrag.pointerId) endGridDrag(true); });
+  list.addEventListener('pointercancel', () => { if (gridDrag) endGridDrag(false); });
+  list.addEventListener('lostpointercapture', () => { if (gridDrag && gridDrag.active) endGridDrag(true); });
+}
+function startGridDrag() {
+  const d = gridDrag;
+  d.active = true;
+  try { d.page.setPointerCapture(d.pointerId); } catch (err) { /* the pointer has already gone */ }
+  d.page.classList.add('pg-moving');
+  $('pageGridList').classList.add('pg-dragging');
+  // The small copy that follows the pointer (a picture only: hidden from screen readers).
+  const ghost = document.createElement('div');
+  ghost.className = 'pg-ghost';
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.style.width = Math.round(Math.min(140, gridThumbWidth * 0.7)) + 'px';
+  ghost.appendChild(d.page.querySelector('svg').cloneNode(true));
+  document.body.appendChild(ghost);
+  d.ghost = ghost;
+  if (navigator.vibrate && d.touch) { try { navigator.vibrate(15); } catch (err) { /* fine */ } }
+  announce('Moving page ' + (d.from + 1) + '. Let go where it should go; Escape to cancel.');
+  const scroll = () => {                              // near the top or bottom: scroll the pages
+    if (!gridDrag || !gridDrag.active) return;
+    const box = $('pageGrid').getBoundingClientRect(), edge = 48;
+    const dy = gridDrag.y < box.top + edge ? -14 : gridDrag.y > box.bottom - edge ? 14 : 0;
+    if (dy) { $('pageGrid').scrollTop += dy; trackGridDrag(); }
+    gridDrag.raf = requestAnimationFrame(scroll);
+  };
+  d.raf = requestAnimationFrame(scroll);
+  trackGridDrag();
+}
+/** Where the page would go now: before or after the page under the pointer (or the nearest one). */
+function trackGridDrag() {
+  const d = gridDrag;
+  if (!d || !d.active) return;
+  d.ghost.style.left = d.x + 'px';
+  d.ghost.style.top = d.y + 'px';
+  const pages = [...$('pageGridList').querySelectorAll('.pg-page')];
+  let best = null, bestDist = Infinity;
+  for (const b of pages) {
+    const r = b.getBoundingClientRect();
+    const dx = d.x < r.left ? r.left - d.x : d.x > r.right ? d.x - r.right : 0;
+    const dy = d.y < r.top ? r.top - d.y : d.y > r.bottom ? d.y - r.bottom : 0;
+    const dist = dx * dx + dy * dy * 4;                 // (rows count more than columns)
+    if (dist < bestDist) { best = b; bestDist = dist; }
+  }
+  for (const b of pages) b.classList.remove('drop-before', 'drop-after');
+  if (!best) { d.target = null; return; }
+  const r = best.getBoundingClientRect(), after = d.x > r.left + r.width / 2;
+  best.classList.add(after ? 'drop-after' : 'drop-before');
+  // Where it lands, counted after taking it out of its old place.
+  let to = Number(best.dataset.index) + (after ? 1 : 0);
+  if (to > d.from) to -= 1;
+  d.target = to;
+}
+/** Finish (drop: true) or cancel a page drag. */
+function endGridDrag(drop) {
+  const d = gridDrag;
+  gridDrag = null;
+  if (!d) return;
+  clearTimeout(d.timer);
+  if (!d.active) return;                              // it was only a click (or a scroll)
+  cancelAnimationFrame(d.raf);
+  if (d.ghost) d.ghost.remove();
+  $('pageGridList').classList.remove('pg-dragging');
+  for (const b of $('pageGridList').querySelectorAll('.pg-page')) b.classList.remove('drop-before', 'drop-after', 'pg-moving');
+  gridDragJustEnded = true;                           // (the click that follows a drag doesn't open the page; the next press clears it)
+  if (drop && d.target != null && d.target !== d.from) movePage(d.from, d.target);
+  else { announce(drop ? 'Page ' + (d.from + 1) + ' stays where it was.' : 'Moving cancelled.'); focusGridPage(); }
+}
+
 /** Zoom in or out by a factor: the page, or in All pages the size of the page pictures. */
 function zoomBy(k) {
   if (pageView === 'grid') setGridThumbWidth(gridThumbWidth * k);
@@ -12503,6 +12632,7 @@ function wireChrome() {
     [alt + ' + Up / Down', 'In the reading order list: move the picked item'],
     ['W, or View (the eye) in the top bar', 'Preview: the page as it will print, the rest of the window shaded (nothing can be changed); Page Up / Down change page; W or Escape to go back'],
     ['View (the eye) in the top bar', 'One page, two pages side by side, or all pages (arrows move between them, Enter works on one, Escape goes back)'],
+    ['All pages: drag a page, or ' + alt + ' + arrow keys', 'Move the page to a new place (on a touch screen, hold it first)'],
     ['Space + drag', 'Slide the page around (also in the middle of moving something, to carry it further)'],
     [mod + ' + scroll wheel, or pinch on a trackpad', 'Zoom the page around the pointer (not the whole web page)'],
     ['Touch screen', 'Two fingers: pinch to zoom, slide to move around. One finger on the grey around the page slides it too'],
@@ -12520,6 +12650,7 @@ function wireChrome() {
   const TOOL_KEYS = { v: 'select', t: 'text', r: 'rect', o: 'ellipse', l: 'line', f: 'picture', b: 'table', n: 'order' };
   document.addEventListener('keydown', (e) => {
     const t = e.target;
+    if (e.key === 'Escape' && gridDrag) { e.preventDefault(); endGridDrag(false); return; }   // cancel moving a page
     if (document.querySelector('dialog[open]')) return;   // shortcuts stand down while a dialog is open
     if (e.key === 'F1') { e.preventDefault(); openHelp('tabShortcuts'); return; }
     // File keys work everywhere, even while typing: Open, Save project, Export.
@@ -18729,6 +18860,9 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.36.1", date: "2026-10-10", title: "", notes: [
+    "Move pages in All pages. Drag a page to a new place: a bar shows where it will go, and a small copy of it follows the pointer (the pages scroll when you reach the top or bottom). On a touch screen, hold a page for a moment, then drag; a quick swipe still scrolls. From the keyboard, Alt (Option on a Mac) with the arrow keys moves the page that has focus. Escape cancels a drag, and one Undo puts a move back. Facing pages re-pair into their spreads as pages move."
+  ] },
   { version: "0.36.0", date: "2026-10-10", title: "", notes: [
     "A View menu. The eye in the top bar now opens a menu: One page, Two pages side by side, All pages, and Preview (W still turns Preview on and off). Two pages shows pages 1 and 2, 3 and 4 and so on, with a small gap; a document with facing pages shows its spreads, as before, and can now be seen one page at a time too. Click the other page to work on it, drag things across, or link a text box straight to a box on it.",
     "All pages shows every page as a picture (facing pages in their spreads, a red dot where text doesn't fit). Click a page, or move with the arrow keys and press Enter, to work on it; Escape goes back. Zoom in and out make the pictures bigger or smaller.",

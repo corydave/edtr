@@ -1036,6 +1036,14 @@ Not yet, roughly in order of what teachers' files will need:
   it came from, keeping its zoom; Escape goes back). Zoom changes the
   picture width (80-480 px, 200 usual). A tool, building blocks or a
   paste go back to the page first.
+- **Moving pages there (0.36.1):** pointer events (`wireGridDrag`): a
+  mouse or pen drag starts after 6 px; a finger must hold still 0.4 s
+  first (moving sooner is a scroll; a non-passive `touchmove` stops the
+  scroll once dragging). The nearest page under the pointer and its left
+  or right half set the drop place (a bar); a ghost copy follows; the
+  grid auto-scrolls near its edges; Escape cancels; the click that ends a
+  drag is ignored. Alt + arrows move the focused page. All through
+  `movePage` (one undo step).
 - **Preview** shades and makes `inert` the top bar, tool rail, filmstrip
   and side panel (`shadedParts`), and darkens the desk around the page;
   the banner carries previous/next page (`pageStep`: a pair at a time in
