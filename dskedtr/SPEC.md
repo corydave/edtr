@@ -1141,6 +1141,13 @@ Not yet, roughly in order of what teachers' files will need:
   Two pages), zoom out/in and Back to editing. Dialogs (Help) still open.
 - **Zoom keys** (Ctrl/Cmd with +, =, -, 0, by `e.code` too) are handled
   before the typing check, so they never fall through to browser zoom.
+  0.39.2 (Dave: clicking the other page made the pages "jump around"):
+  `stage()` now has a left (`x`) and right (`r`) side; in Two pages the
+  side the partner is on also gets the partner's room, so the drawing area
+  is the same size and the pair sits in the same place whichever page is
+  current. `relayoutAndRender` re-sizes the area when the stage changes
+  (`stageShown`), and `goToPage` doesn't re-centre (`showPage`) when
+  moving to the partner. The grey on each outer side keeps its full room.
   0.39.1: zoom runs 25% to 800% (`MIN_ZOOM`, `MAX_ZOOM`; was 400%), and
   `zoomBy` (keys, buttons) keeps the page point in the middle of the desk
   in the middle (`zoomKeeping`), as the wheel and pinch already kept the

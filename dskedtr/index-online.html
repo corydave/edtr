@@ -2048,7 +2048,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.39.1';
+const APP_VERSION = '0.39.2';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -6703,8 +6703,19 @@ function setupSvg() {
    above and below. Things out there are never printed or exported, never
    read by screen readers, and the Accessibility checker leaves them alone.
    The page itself still starts at (0, 0): staging positions are simply
-   negative, or past the page's width or height. */
-function stage() { return { x: isFacing() || pageView === 'two' ? PAGE.width + spreadGap() + 72 : Math.max(144, PAGE.width * 0.5), y: Math.max(144, PAGE.height * 0.25) }; }
+   negative, or past the page's width or height.
+
+   stage() gives the grey's size around the page: x on the left, r on the
+   right, y above and below. With two pages side by side (0.39.2) the side
+   the other page is on gets that page's room as well, so the drawing is
+   the same size and the pair sits in the same place whichever of the two
+   you work on: clicking the other page no longer makes them jump. */
+function stage() {
+  const side = isFacing() || pageView === 'two' ? PAGE.width + spreadGap() + 72 : Math.max(144, PAGE.width * 0.5);
+  const off = pageView === 'two' && spreadPartner(pageIndex) != null ? partnerOffset(pageIndex) : 0;   // (+ the other page is to the right, - to the left)
+  return { x: side + Math.max(0, -off), r: side + Math.max(0, off), y: Math.max(144, PAGE.height * 0.25) };
+}
+let stageShown = '';                                 // the stage the drawing area was last sized for
 /** Where the page's top-left corner is on screen, and screen pixels per point. */
 function pageOrigin() {
   const r = svg.getBoundingClientRect(), k = zoom * PX_PER_PT, s = stage();
@@ -6722,7 +6733,8 @@ const inPage = (p) => p.x >= 0 && p.y >= 0 && p.x <= PAGE.width && p.y <= PAGE.h
 function applyPageSize() {
   if (!layers.paper) return;
   const s = stage();
-  svg.setAttribute('viewBox', [-s.x, -s.y, PAGE.width + 2 * s.x, PAGE.height + 2 * s.y].join(' '));
+  stageShown = JSON.stringify(s);
+  svg.setAttribute('viewBox', [-s.x, -s.y, PAGE.width + s.x + s.r, PAGE.height + 2 * s.y].join(' '));
   clear(layers.paper);
   layers.paper.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height, fill: '#ffffff', filter: 'url(#paperShadow)' }));
   const clipRect = document.getElementById('pageClipRect');
@@ -6746,6 +6758,8 @@ function relayoutAndRender() {
   renderLayers();
   scheduleThumbnails();
   scheduleSpell();
+  // Now on the other side of a pair (another page, a page moved): size the drawing area for it (0.39.2).
+  if (JSON.stringify(stage()) !== stageShown) applyPageSize();
 }
 
 function renderMargins() {
@@ -8390,6 +8404,8 @@ function goToPage(i, keepTyping) {
   pickAnchor = null;
   if (i === pageIndex) return;
   if (!isMasterIndex(i)) lastPageIndex = i;           // where "Back to the pages" returns to
+  // The other page of the pair on screen: it is already showing, so nothing scrolls (0.39.2).
+  const sameSpread = spreadPartner(pageIndex) === i;
   pageIndex = i;
   selectedIds = [];
   cropId = null;
@@ -8402,7 +8418,7 @@ function goToPage(i, keepTyping) {
   renderOrderList(true);
   renderFilmstrip();
   updateInspector();
-  showPage();
+  if (!sameSpread) showPage();
   showMasterBanner();
   orderInputsInDom();
   if (printPreview) showProofPage();
@@ -14129,7 +14145,7 @@ function wireViewBar() {
    ====================================================================== */
 function applyZoom() {
   const s = stage();
-  svg.setAttribute('width', String((PAGE.width + 2 * s.x) * zoom * PX_PER_PT));
+  svg.setAttribute('width', String((PAGE.width + s.x + s.r) * zoom * PX_PER_PT));
   svg.setAttribute('height', String((PAGE.height + 2 * s.y) * zoom * PX_PER_PT));
   $('zoomValue').textContent = Math.round(zoom * 100) + '%';
   if (layers.frames && Object.keys(layouts).length) renderSelection();   // handles and ports keep their size on screen
@@ -20735,6 +20751,9 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.39.2", date: "2026-10-10", title: "", notes: [
+    "Two pages side by side stay still. Clicking the other page (or picking it in the filmstrip) makes it the page you work on without the pair jumping across the window, at any zoom."
+  ] },
   { version: "0.39.1", date: "2026-10-10", title: "", notes: [
     "Zoom goes up to 800% (it stopped at 400%).",
     "Zooming in and out keeps your place. Ctrl + and Ctrl - (and the zoom buttons) now keep whatever is in the middle of the window in the middle, instead of drifting off into the grey around the page."

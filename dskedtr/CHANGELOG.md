@@ -1,5 +1,11 @@
 # DSKEDTR changelog
 
+## 0.39.2 - 2026-10-10
+
+- **Two pages side by side stay still.** Clicking the other page (or
+  picking it in the filmstrip) makes it the page you work on without the
+  pair jumping across the window, at any zoom.
+
 ## 0.39.1 - 2026-10-10
 
 - **Zoom goes up to 800%** (it stopped at 400%).
