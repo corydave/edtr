@@ -1,5 +1,32 @@
 # DSKEDTR changelog
 
+## 0.35.0 - 2026-10-10
+
+- **Missing fonts are named.** When a document uses a font DSKEDTR
+  doesn't have (Stencil, Impact, Bell MT, from a Publisher file), it is
+  listed as missing, by its own name, with a built-in font standing in
+  until you add it. The stand-in is set to the missing font's letter
+  widths, so lines break about where they did. Document, Your fonts shows
+  each one with four choices: **Add its file…**, **From this computer**
+  (Chrome and Edge, after the browser asks), **Google Fonts…**, or **Keep
+  the stand-in**. The font lists say "Stencil (missing: Archivo Black
+  stands in)".
+- **Fonts from Google Fonts, only when you ask.** "Google Fonts…" (in
+  Your fonts, or beside a missing font) gets a free font by its name,
+  suggesting a close match for common Publisher fonts (Stardos Stencil
+  for Stencil, Anton for Impact). It says first what it sends: only the
+  font's name, to jsDelivr, which serves Google Fonts' files. The font is
+  then saved inside the project, so it works offline from then on.
+  DSKEDTR still goes online for nothing else.
+- **Six fonts with the same letter widths as Office's.** Tinos (Times
+  New Roman), Arimo (Arial), Carlito (Calibri), Caladea (Cambria),
+  Gelasio (Georgia) and Cousine (Courier New) are built in. Publisher
+  files set in those fonts now break their lines exactly where they did.
+- **Publisher drop caps** come across as the story's drop cap.
+- Project files are now version 20 (they can name missing fonts).
+- The one-file app is about 4.5 MB now (the six new fonts add about
+  half a megabyte).
+
 ## 0.34.0 - 2026-10-09
 
 - **Indents.** A paragraph style can now push its lines in from the

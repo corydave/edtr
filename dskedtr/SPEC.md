@@ -986,11 +986,16 @@ How it works, in order:
 5. **The project** (`pubToProject`): roles from size and weight against
    the document's usual text; role styles from the majority look;
    letters that differ keep their own format; paragraphs keep their own
-   alignment (format field `al`, version 18). Stand-in fonts are matched
-   in width to the originals (`widthMatch`: closer letters, then a little
-   smaller, line spacing from the original size), and any box that still
-   overflows is fitted (`shrinkToFit`). The result opens through
-   `openProjectData`, so it passes every project check.
+   alignment (format field `al`, version 18). Fonts (0.35.0): Times New
+   Roman, Arial, Calibri, Cambria, Georgia and Courier New use built-in
+   metric twins (Tinos, Arimo, Carlito, Caladea, Gelasio, Cousine: the
+   same advance widths, so lines break where they did). Any other font
+   becomes a **missing font** (see below), drawn by a stand-in set to the
+   original's widths. Any box that still overflows is fitted
+   (`shrinkToFit`). Publisher drop caps (paragraph property 0x08, lines)
+   become the story's drop cap when its first paragraph has one (2 to 5
+   lines). The result opens through `openProjectData`, so it passes
+   every project check.
 
 **Indents (0.34.0).** Styles have `indentLeft`, `indentFirst` (negative:
 hanging) and `indentRight`, in points; a paragraph can carry its own
@@ -1015,10 +1020,43 @@ Not yet, roughly in order of what teachers' files will need:
 - More sample files: newsletters, brochures, a file from Publisher 2016
   or 365 with linked boxes and WordArt.
 
+## Missing fonts and Google Fonts (0.35.0)
+
+- **Missing fonts.** A font a document names but DSKEDTR doesn't have
+  (Stencil, Impact, Bell MT from a `.pub`) is an entry in
+  `customFamilies` with `missing: true`, its `name`, a built-in `standIn`,
+  an optional `fit` (`[[size factor, closer], [same for bold]]`, from
+  `widthMatch`) and no files. Words keep the missing font's key and their
+  real size; `pickFontKey` draws them with the stand-in and `charLook`
+  applies the fit, so lines break about where the original's did. Saved
+  in projects as `{ name, missing, standIn, fit, files: {} }`
+  (`checkFonts`/`checkFit` keep every number in range).
+- **Filling one.** Document, Your fonts lists each with four buttons:
+  *Add its file…* (any font file fills it), *From this computer*
+  (Chrome/Edge's `queryLocalFonts`, after the browser asks; only the
+  family with that exact name is read), *Google Fonts…*, and *Keep the
+  stand-in* (the words move to the stand-in, with the fit baked in as
+  their own size and spacing, so nothing moves). Filling it drops the
+  fit; a lookalike (Stardos Stencil for Stencil) takes its own name.
+  Every file is checked like any added font.
+- **Google Fonts, only when asked.** The dialog (also from *Google
+  Fonts…* under Your fonts) suggests a close match
+  (`GOOGLE_LOOKALIKES`) and says, before anything is sent, that it asks
+  jsDelivr for that one font, sending only its name. It fetches
+  `@fontsource/<slug>@5/metadata.json`, then the latin WOFF files for
+  regular, bold, italic and bold italic (nearest weights it has), with
+  no cookies or referrer, each capped (200 KB details, 15 MB per file).
+  The details are data: only plain numbers and names are used. The font
+  is then saved inside the project, so it works offline from then on.
+- Decided 2026-10-10 (Dave): ask first, then fetch; never by itself.
+
 ## Security and privacy
 
-- No network calls at all once loaded: fonts, templates, building blocks
-  and libraries are inside the file.
+- No network calls unless you ask for a Google font (Document, Your
+  fonts): then only that font's name goes to jsDelivr, and only its
+  files come back. Fonts, templates, building blocks and libraries are
+  inside the file. The Content Security Policy allows `connect-src` to
+  `https://cdn.jsdelivr.net/npm/@fontsource/` and nowhere else.
 - Pictures, project files and exports never leave the browser.
 - Every file read (project, SVG, image) is treated as data: parsed, never
   run, never inserted with `innerHTML`; pictures are decoded through
