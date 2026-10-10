@@ -1,5 +1,28 @@
 # DSKEDTR changelog
 
+## 0.39.0 - 2026-10-10
+
+- **Pick several pages in the filmstrip.** Shift+click picks a run of
+  pages, Ctrl+click (Cmd+click on a Mac) adds or takes out one. From the
+  keyboard: Shift with the arrows stretches the pick, Ctrl with the arrows
+  moves without changing it, Space adds or takes out a page, Ctrl+A picks
+  them all, Escape goes back to one. Picked pages get a tick. Move left
+  and right (or Alt+arrows, or dragging), Master page, Duplicate (Ctrl+D)
+  and Delete then work on all of them, as one undo step.
+- **Copy, cut and paste pages.** Ctrl+C, Ctrl+X and Ctrl+V in the
+  filmstrip, or the new Copy, Cut and Paste buttons in the page's pill.
+  Pasted pages go after the picked page, in the same document, another
+  one, or another DSKEDTR tab. Their master pages, pictures and fonts come
+  along. Text boxes linked across the copied pages stay linked. Other apps
+  get the words. The copy never leaves your computer: it is forgotten when
+  the tab that copied it closes, or after two hours.
+- **Duplicate keeps linked boxes linked** when they are on the same page.
+- **Booklets are easier to set up.** Facing pages (page 1 on its own,
+  then 2 and 3, 4 and 5 side by side) is now also a box in Document, and
+  "Booklet: page 1 on its own" in the View menu, as well as in Page setup.
+- Fixed: Undo after deleting a page that held the end of a linked story
+  stopped with an error.
+
 ## 0.38.1 - 2026-10-10
 
 - **Preview no longer covers the page.** The Preview banner (and the

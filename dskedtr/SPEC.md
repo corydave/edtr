@@ -95,7 +95,8 @@ colour is never the only difference: the icon's drawing and the name carry it.
 - Sheets of repeats: 2-up, 4-up, business cards, name badges, common label
   sheets.
 - Page navigator (the filmstrip): add, duplicate, delete and reorder pages,
-  apply a master.
+  apply a master; pick several pages; copy, cut and paste pages, also
+  between documents and tabs (0.39.0).
 
 ### Text
 
@@ -1142,6 +1143,75 @@ Not yet, roughly in order of what teachers' files will need:
   before the typing check, so they never fall through to browser zoom.
 - Decided 2026-10-10 (Dave): the eye opens the View menu (his idea);
   Preview is in it with W as its key.
+- **Facing pages, easier to find (0.39.0, Dave: "when making a booklet,
+  you want the first page shown by itself").** It was always Page setup's
+  Facing pages; now also a box in Document (`#docFacing`) and "Booklet:
+  page 1 on its own" in the View menu (`#viewMenuFacing`). Both call
+  `setFacing`: `applyPageSetup` with the same size and a top-left anchor
+  (nothing moves; one undo step). It stays a document setting, not a view,
+  because it also makes the margins inside/outside and the bleed open at
+  the spine. Turning it off from Two pages keeps Two pages (1-2, 3-4).
+
+## Picking, copying and pasting pages (0.39.0)
+
+Dave: "allow multiple select copying and pasting of pages right from the
+bottom rail". Decided with him 2026-10-10: like files in a folder, and
+pasting works into other documents and other DSKEDTR tabs.
+
+- **Picking.** `pagePick` (a Set of page ids; empty = just the page on the
+  desk) and `pickAnchor`. Click: one page. Shift+click: a run from the
+  anchor. Ctrl/Cmd+click: add or take out one. Keys in the filmstrip:
+  Shift+arrows stretch, Ctrl+arrows move without changing the pick, Space
+  toggles, Ctrl+A all, Escape (once the pill is closed) back to one.
+  `goToPage` empties the pick, so anything else that changes page drops it;
+  the filmstrip sets it again after. Masters are always one at a time. The
+  listbox is `aria-multiselectable`; picked pages have `aria-selected` and,
+  when several are picked, a tick by the number (not colour alone); the
+  page on the desk has class `here` (dashed outline if not picked).
+  `setPagePick` speaks "Pages 1 to 3 picked" (`pageListWords`).
+- **On every picked page:** Alt+arrows / the pill's arrows
+  (`movePickedPages`: each picked page swaps with the unpicked page beside
+  it, so a block moves together), dragging one of them (`movePagesBefore`),
+  Master page (`setPagesMaster`, ticked only when all share it), Duplicate
+  / Ctrl+D (`duplicatePickedPages`: copies after the last), Delete
+  (`deletePickedPages`; a document keeps one page, so the bin greys when
+  all are picked), Copy, Cut, Paste. Each is one undo step. The pill's
+  buttons say how many ("Duplicate 3 pages").
+- **A set of pages** (`pageSetFrom` / `insertPageSet`): pages, the masters
+  they use (and their even-page masters), stories, groups. A story whose
+  boxes all come keeps its whole chain; otherwise each run of consecutive
+  boxes becomes a story holding the words they show (`framesText`).
+  Duplicating one page now goes this way too, so boxes linked to each
+  other on the page stay linked (before, every box was unlinked).
+  `insertPageSet` gives new ids to everything; from this document it
+  reuses its masters, from another it brings them as new masters (keeping
+  the name if free), remembered in `importedMasters` so pasting again
+  reuses them (pictures likewise, `importedImages`).
+- **Copy** (`makePageClip`): the set as a small project (the saved-file
+  format), with the pictures and the added fonts its words use (a missing
+  font as its name). Kept in `pageClip`, and the newest one in IndexedDB
+  (`dskedtr-page-clipboard`, key `latest`) for other tabs. The system
+  clipboard gets the words (for other apps) and a random marker
+  (`application/x-dskedtr-pages`). Ctrl+C / Ctrl+X when focus is in the
+  filmstrip (or its pill) copy pages; elsewhere they copy objects as before.
+- **Paste** (`pasteCopiedPages`, `pastePages`): by the clipboard marker
+  (this tab's copy, or the stored one with that marker), or the pill's
+  Paste (the newest). Always checked like a file: `checkPictures`,
+  `checkFonts`, `checkDocument`. Fonts: one with the same name here is
+  used, else added (`installCustomFamily`, now shared with opening).
+  Pictures added. The source's own spelling words are added. Styles are
+  this document's (as with copied text boxes). A different page size keeps
+  everything in place with a toast to check. Pages go after the last
+  picked page; the pasted pages are picked.
+- **Privacy:** pages never leave the computer. The stored copy is thrown
+  away after two hours, or when its tab closes: the copying tab keeps a
+  localStorage note (`dskedtr-page-clip-open-<tab>`, refreshed every 30 s,
+  removed on `pagehide`), and a stored copy whose tab has no fresh note
+  (five minutes) is deleted when next looked for. (An IndexedDB delete in
+  `pagehide` alone doesn't reliably finish.)
+- **Fixed on the way:** Undo after deleting a page that held the end of a
+  linked story crashed (the overflowing story's last box wasn't found):
+  `restore` now rebuilds the lookups (`reindex`) before redrawing.
 
 ## Missing fonts and Google Fonts (0.35.0)
 

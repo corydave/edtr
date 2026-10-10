@@ -459,6 +459,11 @@ input[type="text"], textarea.field-text {
 .thumb { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
 .thumb-master { display: inline-block; max-width: 4.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-left: 4px; padding: 0 4px; border-radius: 4px; font-size: 10px; font-weight: 700; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-text); }
 .thumb[aria-selected="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+/* Several pages picked (0.39.0): a tick by each picked page's number (not just a colour), and a
+   dashed outline on the page on the desk when it is not one of them. No text gets selected by Shift+click. */
+.thumb { user-select: none; -webkit-user-select: none; }
+.page-list.many .thumb[aria-selected="true"] .thumb-num::before { content: "\2713"; font-weight: 700; color: var(--accent-text); }
+.thumb.here:not([aria-selected="true"]) { border-color: var(--muted); border-style: dashed; }
 .thumb.drop-before { box-shadow: -4px 0 0 var(--accent); }
 .thumb-svg { height: 84px; width: auto; display: block; box-shadow: 0 1px 3px rgba(0,0,0,.25); background: #fff; }
 .thumb-num { font-size: 12px; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 4px; }
@@ -1110,6 +1115,13 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><rect x="8" y="6" width="8" height="3" rx=".5" fill="currentColor"/><path d="M8 13h8M8 16.5h5"/></svg></button>
       <button type="button" data-pact="duplicate" id="dupPageBtn" aria-label="Duplicate this page" title="Duplicate this page">
         <svg viewBox="0 0 24 24"><rect x="8" y="7" width="12" height="15" rx="2"/><path d="M5 17V4a2 2 0 0 1 2-2h9"/></svg></button>
+      <!-- Copy, Cut and Paste pages (0.39.0): to another place in this document, or another document. -->
+      <button type="button" data-pact="copy" id="copyPageBtn" aria-label="Copy this page" title="Copy this page (Ctrl+C)">
+        <svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></button>
+      <button type="button" data-pact="cut" id="cutPageBtn" aria-label="Cut this page" title="Cut this page (Ctrl+X)">
+        <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/></svg></button>
+      <button type="button" data-pact="paste" id="pastePageBtn" aria-label="Paste copied pages after this one" title="Paste copied pages after this one (Ctrl+V)">
+        <svg viewBox="0 0 24 24"><path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M16 4h2a2 2 0 0 1 2 2v2M11 14h10"/><path d="M17 10l4 4-4 4"/></svg></button>
       <button type="button" data-pact="delete" id="delPageBtn" class="danger" aria-label="Delete this page" title="Delete this page">
         <svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13M9 7V4h6v3"/></svg></button>
     </div>
@@ -1146,6 +1158,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <button class="btn scheme-btn" id="schemeBtn" aria-haspopup="dialog" style="margin-top:10px"></button>
       <p class="muted reserve2" id="pageInfo" style="font-size:12px;margin-top:8px"></p>
       <button class="btn" id="pageSetupBtn">Page setup…</button>
+      <!-- Facing pages (0.39.0): the same box as in Page setup, here too so it is easy to find. -->
+      <label class="check"><input type="checkbox" id="docFacing"> Facing pages: a booklet (page 1 on its own, then 2 and 3 side by side)</label>
       <div id="pageMasterRow">
         <label class="field" style="margin-top:12px"><span id="pageMasterLabel">Master page for this page</span><select id="pageMaster"></select></label>
         <div class="btn-row"><button class="btn" id="masterAllBtn">Use it for every page</button><button class="btn" id="masterEditBtn">Edit master pages</button></div>
@@ -1660,6 +1674,9 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <button type="button" role="menuitemradio" data-pages="two" aria-checked="false"><span class="qm-tick" aria-hidden="true"></span><span data-two-label>Two pages side by side</span></button>
   <button type="button" role="menuitemradio" data-pages="grid" aria-checked="false"><span class="qm-tick" aria-hidden="true"></span>All pages</button>
   <hr>
+  <!-- Facing pages (0.39.0): a booklet shows page 1 on its own, then 2 and 3 side by side. -->
+  <button type="button" role="menuitemcheckbox" id="viewMenuFacing" aria-checked="false"><span class="qm-tick" aria-hidden="true"></span>Booklet: page 1 on its own</button>
+  <hr>
   <button type="button" role="menuitemcheckbox" id="viewMenuPreview" aria-checked="false"><span class="qm-tick" aria-hidden="true"></span>Preview<span class="qm-key">W</span></button>
   <button type="button" role="menuitemcheckbox" id="viewMenuSpell" aria-checked="true"><span class="qm-tick" aria-hidden="true"></span>Spelling marks</button>
 </div>
@@ -1798,7 +1815,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <h3>Tables</h3>
       <p>The Table tool (B) draws a table: drag for one that size, or click for one that fits its words. Type in a cell; Tab goes to the next one, row by row. Each row grows to fit what is in it. The Inspector's Table section adds and deletes rows and columns (beside the cell you are typing in), turns the header row and banded rows on or off, and sets their colours; Look sets the lines. While you type in a cell, the floating pill above the table inserts a row above or below it, or a column left or right of it, or deletes its row or column. Drag the line between two columns, or the green tab above it, to change their widths; drag the line under a row to make it taller. While you type in a cell, the Table section can <strong>merge</strong> it with the cell to its right or below it (and split it again), colour the cell, its row or its column, set its row's height, and move that row and the ones below it to the next page (for a table too long for one page, with its header row repeated). "Words in the cells" puts them at the top, in the middle or at the bottom. Screen readers read a table's cells row by row, and the header row tells them what each column holds.</p>
       <h3>4. Pages</h3>
-      <p>The filmstrip along the bottom shows every page. + adds one after the page showing (with master pages, it asks which one the new page uses). Click or tap a page for its buttons: move it left or right, its master page, duplicate, delete. You can also drag pages into order, or use Alt with Left or Right.</p>
+      <p>The filmstrip along the bottom shows every page. + adds one after the page showing (with master pages, it asks which one the new page uses). Click or tap a page for its buttons: move it left or right, its master page, duplicate, copy, cut, paste, delete. You can also drag pages into order, or use Alt with Left or Right. Shift+click picks a run of pages and Ctrl+click (Cmd+click) one more, and the buttons then work on all of them. Copied pages paste after any page, in this document or another one (their master pages, pictures and fonts come too). For a booklet, tick <strong>Facing pages</strong> in Document (or Booklet in the View menu): page 1 sits on its own, then 2 and 3 side by side.</p>
       <h3>5. Reading order</h3>
       <p>Screen readers read each page in its reading order: the Reading order section of the Inspector, or the Reading order tool (N), where you click things in the order they should be read.</p>
       <h3>Check it</h3>
@@ -2031,7 +2048,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.38.1';
+const APP_VERSION = '0.39.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -2375,19 +2392,21 @@ function resetCustomFonts(store) {
     delete customFamilies[key];
     familyLoads.delete(key);
   }
-  for (const [key, fam] of Object.entries(store || {})) {
-    customFamilies[key] = fam.missing ? { name: fam.name, kind: 'Missing font', custom: true, missing: true, standIn: fam.standIn, fit: fam.fit, files: {} }
-      : { name: fam.name, kind: 'Your font', custom: true, files: {} };
-    for (const [v, f] of Object.entries(fam.files)) {
-      customFamilies[key].files[v] = { bytes: f.bytes, fileName: f.fileName, weight: f.weight, fsType: f.fsType };
-      FONTS[key + '/' + v] = f.font;
-      FONT_BYTES[key + '/' + v] = f.bytes;
-    }
-    familyLoads.set(key, Promise.resolve());
-    previewFaces.delete(key);
-    previewFace(key);
-  }
+  for (const [key, fam] of Object.entries(store || {})) installCustomFamily(key, fam);
   refreshFontLists();
+}
+/** Put one checked family in place under `key` (opening a document, or pasting pages that bring it, 0.39.0). */
+function installCustomFamily(key, fam) {
+  customFamilies[key] = fam.missing ? { name: fam.name, kind: 'Missing font', custom: true, missing: true, standIn: fam.standIn, fit: fam.fit, files: {} }
+    : { name: fam.name, kind: 'Your font', custom: true, files: {} };
+  for (const [v, f] of Object.entries(fam.files)) {
+    customFamilies[key].files[v] = { bytes: f.bytes, fileName: f.fileName, weight: f.weight, fsType: f.fsType };
+    FONTS[key + '/' + v] = f.font;
+    FONT_BYTES[key + '/' + v] = f.bytes;
+  }
+  familyLoads.set(key, Promise.resolve());
+  previewFaces.delete(key);
+  previewFace(key);
 }
 /** The added fonts, for a project file (data: URLs) or a crash backup (Blobs). */
 async function fontsForProject(asBlobs) {
@@ -5034,8 +5053,8 @@ function restore(snap) {
   Object.assign(doc, s);
   PAGE = doc.page;
   pageIndex = Math.min(snap.pageIndex || 0, pageCount() - 1);
+  reindex();                         // first: redrawing (in applyPageSize) looks up the restored boxes (0.39.0 fix)
   applyPageSize();
-  reindex();
   syncInputs();
   for (const id in doc.stories) if (inputs[id].value !== doc.stories[id].text) inputs[id].value = doc.stories[id].text;
   lastUndoKind = '';
@@ -7784,9 +7803,11 @@ function copyObject(o, dx, dy, groupMap) {
 const CLIP_TYPE = 'application/x-dskedtr-objects';
 let clip = null;                                     // { token, text, items, groups, images, pageId, pastes }
 /** The text a text box shows (its part of the story), those paragraphs' roles, and its formatting runs. */
-function frameText(o) {
-  const s = doc.stories[o.story];
-  const lines = layouts[o.story] ? layouts[o.story].lines.filter((ln) => ln.frame === o.id) : [];
+function frameText(o) { return framesText(doc.stories[o.story], [o.id]); }
+/** The same for some boxes of story s that follow each other in its chain (copying pages, 0.39.0). */
+function framesText(s, frameIds) {
+  const set = new Set(frameIds);
+  const lines = s && layouts[s.id] ? layouts[s.id].lines.filter((ln) => set.has(ln.frame)) : [];
   if (!lines.length) return { text: '', roles: ['body'], runs: [] };
   const a = lines[0].start, b = lines[lines.length - 1].end;
   const text = s.text.slice(a, b);
@@ -7918,6 +7939,15 @@ function wireClipboard() {
     if (t && t.closest && t.closest('textarea, input, select, [contenteditable="true"], dialog, [popover]')) return;   // fields copy their own text
     if (String(window.getSelection ? window.getSelection() : '')) return;   // text picked in a panel copies as text
     if (cut && printPreview) return;                  // Preview is for looking; copying is fine
+    // In the filmstrip (or its pill), Copy and Cut take the picked pages (0.39.0).
+    if (t && t.closest && t.closest('.filmstrip') && !editingMaster()) {
+      const idx = pickedPages(), pc = copyPickedPages();
+      e.preventDefault();
+      e.clipboardData.setData('text/plain', pc.text);
+      e.clipboardData.setData(PAGE_CLIP_TYPE, pc.token);
+      if (cut) cutPages(idx); else announceCopied(idx);
+      return;
+    }
     if (!copySelection()) return;
     e.preventDefault();
     e.clipboardData.setData('text/plain', clip.text);
@@ -8355,6 +8385,9 @@ function stopEditingToFrame(storyId) {
 /** Show page i on the desk. keepTyping: the cursor moved there while typing. */
 function goToPage(i, keepTyping) {
   i = Math.max(0, Math.min(pageCount() - 1, i));
+  // Going to a page picks just that page (the filmstrip picks more after, when it means to).
+  if (pagePick.size) { pagePick = new Set(); renderFilmstrip(); }
+  pickAnchor = null;
   if (i === pageIndex) return;
   if (!isMasterIndex(i)) lastPageIndex = i;           // where "Back to the pages" returns to
   pageIndex = i;
@@ -8442,6 +8475,18 @@ function setPageMaster(pi, masterId) {
   updateInspector();
   announce(masterId ? 'Page ' + (pi + 1) + ' uses ' + masterById(masterId).name : 'Page ' + (pi + 1) + ' has no master page');
 }
+/** One master for several pages at once (0.39.0): one undo step. */
+function setPagesMaster(idx, masterId) {
+  const list = idx.map((i) => doc.pages[i]).filter(Boolean);
+  if (!list.some((pg) => (pg.master || '') !== masterId)) return;
+  recordUndo('other');
+  for (const pg of list) { if (masterId) pg.master = masterId; else delete pg.master; }
+  relayoutAndRender();
+  renderFilmstrip();
+  scheduleThumbnails();
+  updateInspector();
+  announce(capFirst(pageListWords(idx)) + (masterId ? ' use ' + masterById(masterId).name : ' use no master page'));
+}
 function useMasterEverywhere(masterId) {
   recordUndo('other');
   for (const pg of doc.pages) { if (masterId) pg.master = masterId; else delete pg.master; }
@@ -8514,25 +8559,15 @@ function addPage(masterId) {
   announce('Added page ' + (pageIndex + 1) + ' of ' + doc.pages.length + (pg.master ? ', using ' + masterById(pg.master).name : ''));
 }
 
-/** A copy of the page showing, right after it. Text boxes keep the text they show, unlinked. */
+/**
+ * A copy of the page showing, right after it. Text boxes linked to each
+ * other on the page stay linked; one linked to another page keeps the text
+ * it shows, unlinked. (0.39.0: the same path as duplicating several pages.)
+ */
 function duplicatePage() {
   if (editingMaster()) { duplicateMaster(); return; }
-  recordUndo('other');
-  const src = curPage();
-  const pg = blankPage();
-  if (src.master) pg.master = src.master;
-  const groupMap = {};
-  for (const o of src.objects) {
-    const c = copyObject(o, 0, 0, groupMap);
-    if (o.fromMaster) c.fromMaster = o.fromMaster;   // the new page fills the same master placeholder
-    pg.objects.push(c);
-  }
-  doc.pages.splice(pageIndex + 1, 0, pg);
-  reindex();
-  syncInputs();
-  goToPage(pageIndex + 1);
-  renderFilmstrip();
-  announce('Page ' + pageIndex + ' copied as page ' + (pageIndex + 1));
+  pagePick = new Set();
+  duplicatePickedPages();
 }
 
 function deletePage() {
@@ -8568,6 +8603,542 @@ function movePage(from, to) {
   announce('Page moved to position ' + (to + 1) + ' of ' + doc.pages.length);
 }
 
+/* ---------- Picking several pages (0.39.0) ----------
+   In the filmstrip, more than one page can be picked, the way files are
+   picked in a folder:
+     - click: just that page;
+     - Ctrl+click (Cmd+click on a Mac): add a page to the pick, or take it out;
+     - Shift+click: every page from the last one clicked to this one;
+     - keyboard: Shift with the arrow keys stretches the pick, Ctrl with
+       them moves without changing it, Space adds or takes out the page you
+       are on, Ctrl+A picks every page, Escape goes back to just one.
+   pagePick holds the picked pages' ids. Empty means "just the page on the
+   desk" (the usual case), so going to another page simply empties it.
+   Master pages are always one at a time. Move left and right, Master
+   page, Duplicate, Copy, Cut and Delete work on every picked page. */
+let pagePick = new Set();                            // ids of the picked pages (empty: just the page on the desk)
+let pickAnchor = null;                               // id of the page Shift+click or Shift+arrow stretches from
+
+/** The picked pages' indexes, in page order (just the page on the desk unless more are picked). */
+function pickedPages() {
+  if (editingMaster() || !pagePick.size) return [pageIndex];
+  const out = [];
+  doc.pages.forEach((pg, i) => { if (pagePick.has(pg.id)) out.push(i); });
+  return out.length ? out : [pageIndex];
+}
+/** "page 3", "pages 2 to 5", "pages 2, 5 and 7" or "9 pages", for messages. */
+function pageListWords(idx) {
+  const nums = idx.map((i) => i + 1);
+  if (nums.length === 1) return 'page ' + nums[0];
+  if (nums.every((n, k) => !k || n === nums[k - 1] + 1)) return 'pages ' + nums[0] + ' to ' + nums[nums.length - 1];
+  if (nums.length <= 6) return 'pages ' + nums.slice(0, -1).join(', ') + ' and ' + nums[nums.length - 1];
+  return nums.length + ' pages';
+}
+/** The same text with a capital first letter (to start a sentence). */
+const capFirst = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+/** Where a Shift+click or Shift+arrow stretches from: the last page clicked, or the page on the desk. */
+function anchorIndex() {
+  const a = pickAnchor ? doc.pages.findIndex((pg) => pg.id === pickAnchor) : -1;
+  return a >= 0 ? a : pageIndex;
+}
+/** Every index from a to b (either way round). */
+function rangeOf(a, b) {
+  const out = [];
+  for (let i = Math.min(a, b); i <= Math.max(a, b); i++) out.push(i);
+  return out;
+}
+/**
+ * Pick these pages (indexes). anchorAt: the index Shift stretches from next
+ * (left out: it stays). quiet: no spoken message (the caller says something).
+ */
+function setPagePick(indexes, anchorAt, quiet) {
+  const idx = [...new Set(indexes)].filter((i) => Number.isInteger(i) && i >= 0 && i < doc.pages.length).sort((a, b) => a - b);
+  // Just the page on the desk is "nothing extra picked".
+  pagePick = idx.length && !(idx.length === 1 && idx[0] === pageIndex) ? new Set(idx.map((i) => doc.pages[i].id)) : new Set();
+  if (anchorAt != null && doc.pages[anchorAt]) pickAnchor = doc.pages[anchorAt].id;
+  renderFilmstrip();
+  updatePagePill();
+  if (!quiet) {
+    const now = pickedPages();
+    announce(now.length === doc.pages.length && now.length > 1 ? 'All ' + now.length + ' pages picked' : capFirst(pageListWords(now)) + ' picked');
+  }
+}
+/** Space (or Ctrl+Space) in the filmstrip: add page i to the pick, or take it out. */
+function togglePagePick(i) {
+  const keep = pickedPages();
+  if (keep.length === 1 && keep[0] === i) { announce('Page ' + (i + 1) + ' picked. Ctrl with the arrow keys moves on without changing the pick; Space then adds that page.'); return; }
+  const out = keep.includes(i);
+  setPagePick(out ? keep.filter((x) => x !== i) : keep.concat(i), i, true);
+  announce('Page ' + (i + 1) + (out ? ' taken out. ' : ' added. ') + capFirst(pageListWords(pickedPages())) + ' picked.');
+}
+
+/* ---------- Moving, duplicating and deleting the picked pages (0.39.0) ---------- */
+/** Put the pages in this order (the same pages, rearranged): one undo step. Returns false if nothing changed. */
+function reorderPages(order) {
+  if (order.every((pg, k) => pg === doc.pages[k])) return false;
+  recordUndo('other');
+  const cur = curPage();
+  doc.pages.splice(0, doc.pages.length, ...order);  // (the same array, in the new order)
+  pageIndex = doc.pages.indexOf(cur);
+  reindex();
+  relayoutAndRender();
+  renderFilmstrip();
+  if (pageView === 'grid') renderPageGrid();
+  announce('Moved. Now ' + pageListWords(pickedPages()) + ' of ' + doc.pages.length);
+  return true;
+}
+/**
+ * Alt+Left / Alt+Right, and the pill's arrows: each picked page swaps
+ * places with the page beside it that isn't picked. (Picked pages that
+ * are together move together; one page on its own moves as before.)
+ */
+function movePickedPages(dir) {
+  const idx = pickedPages();
+  if (editingMaster() || idx.length === 1) { movePage(idx[0], idx[0] + dir); return; }
+  const ids = new Set(idx.map((i) => doc.pages[i].id)), a = doc.pages.slice();
+  if (dir < 0) { for (let i = 1; i < a.length; i++) if (ids.has(a[i].id) && !ids.has(a[i - 1].id)) [a[i - 1], a[i]] = [a[i], a[i - 1]]; }
+  else { for (let i = a.length - 2; i >= 0; i--) if (ids.has(a[i].id) && !ids.has(a[i + 1].id)) [a[i], a[i + 1]] = [a[i + 1], a[i]]; }
+  if (!reorderPages(a)) announce('Those pages are already at the ' + (dir < 0 ? 'start.' : 'end.'));
+}
+/** Dragging several picked pages: they go, together and in order, just before page `target`. */
+function movePagesBefore(idx, target) {
+  const moving = idx.map((i) => doc.pages[i]), set = new Set(moving);
+  const rest = doc.pages.filter((pg) => !set.has(pg));
+  const pos = doc.pages.slice(0, target).filter((pg) => !set.has(pg)).length;
+  reorderPages(rest.slice(0, pos).concat(moving, rest.slice(pos)));
+}
+/** Copies of the picked pages, right after the last of them (Duplicate, Ctrl+D in the filmstrip). */
+function duplicatePickedPages() {
+  if (editingMaster()) { duplicateMaster(); return; }
+  const idx = pickedPages();
+  recordUndo('other');
+  const made = insertPageSet(pageSetFrom(idx), idx[idx.length - 1] + 1, { sameDoc: true });
+  announce(idx.length === 1 ? 'Page ' + (idx[0] + 1) + ' copied as page ' + (made[0] + 1) : capFirst(pageListWords(idx)) + ' copied as ' + pageListWords(made));
+}
+/** Delete the picked pages (Delete in the filmstrip, or the pill's bin). A document keeps at least one page. */
+function deletePickedPages() {
+  if (editingMaster()) { deleteMaster(); return; }
+  const idx = pickedPages();
+  if (idx.length === 1 && idx[0] === pageIndex) { deletePage(); return; }
+  if (idx.length >= doc.pages.length) { announce('A document needs at least one page. Take one out of the pick first.'); return; }
+  removePages(idx);
+  announce('Deleted ' + pageListWords(idx) + '. Now on page ' + (pageIndex + 1) + ' of ' + doc.pages.length);
+}
+/** Take pages out of the document (one undo step). Text in a box on them flows on into the rest of its chain, as with one page. */
+function removePages(idx) {
+  recordUndo('other');
+  removeObjects(idx.flatMap((i) => doc.pages[i].objects.slice()));
+  for (const i of idx.slice().sort((a, b) => b - a)) doc.pages.splice(i, 1);   // (from the end, so the others keep their places)
+  pageIndex = Math.min(idx[0], doc.pages.length - 1);  // the page after them
+  pagePick = new Set();
+  pickAnchor = null;
+  selectedIds = [];
+  if (activeStoryId && !doc.stories[activeStoryId]) activeStoryId = null;
+  reindex();
+  syncInputs();
+  relayoutAndRender();
+  renderOrderList(true);
+  renderFilmstrip();
+  updateInspector();
+  if (pageView === 'grid') renderPageGrid();
+}
+
+/* ---------- A set of pages, taken out and put back (0.39.0) ----------
+   pageSetFrom copies some pages as plain data: { pages, masters (the ones
+   they use), stories, groups }. insertPageSet puts such a set into the
+   document with new ids for everything. Duplicate uses both directly;
+   Copy and Paste carry the set in between (checked like a project file).
+
+   Linked text boxes: a story whose boxes all come along keeps its whole
+   chain. If only some of its boxes come, each run of them that follow on
+   from each other becomes a story of its own, holding the words those
+   boxes show (as Publisher does). */
+function pageSetFrom(idx) {
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+  const pages = idx.map((i) => clone(doc.pages[i]));
+  // The masters these pages use (and the ones those hand even pages to).
+  const want = new Set();
+  for (const pg of pages) {
+    const m = pg.master ? masterById(pg.master) : null;
+    if (!m) continue;
+    want.add(m.id);
+    if (m.even && masterById(m.even)) want.add(m.even);
+  }
+  const masters = masterList().filter((m) => want.has(m.id)).map(clone);
+  // Every text box coming along (table cells too), by id: the copies, so their story can be changed.
+  const frames = new Map();
+  for (const pg of pages.concat(masters)) for (const o of pg.objects) {
+    if (o.type === 'text') frames.set(o.id, o);
+    if (o.type === 'table') for (const c of tableCells(o)) frames.set(c.id, c);
+  }
+  const stories = {}, done = new Set();
+  let n = 0;
+  for (const f of frames.values()) {
+    if (done.has(f.id)) continue;
+    const s = doc.stories[f.story];
+    if (!s) continue;
+    if (s.frames.every((x) => frames.has(x))) {       // the whole chain comes: the story as it is
+      stories[s.id] = clone(s);
+      for (const x of s.frames) done.add(x);
+      continue;
+    }
+    // Part of a chain: each run of boxes next to each other gets the words it shows.
+    let run = [];
+    const flush = () => {
+      if (!run.length) return;
+      const ft = framesText(s, run);
+      let id;
+      do { id = 'cs' + (++n); } while (doc.stories[id] || stories[id]);
+      const ns = { id, frames: run.slice(), text: ft.text, roles: ft.roles.length ? ft.roles : ['body'] };
+      if (ft.runs.length) ns.runs = ft.runs;
+      if (s.dropCap && s.frames[0] === run[0]) ns.dropCap = clone(s.dropCap);   // (only the story's first box has it)
+      for (const x of run) frames.get(x).story = id;
+      stories[id] = ns;
+      run = [];
+    };
+    for (const x of s.frames) { if (frames.has(x)) { run.push(x); done.add(x); } else flush(); }
+    flush();
+  }
+  const groups = {};
+  for (const pg of pages.concat(masters)) for (const o of pg.objects) {
+    if (o.group && doc.groups[o.group]) groups[o.group] = { id: o.group, name: doc.groups[o.group].name };
+  }
+  return { pages, masters, stories, groups };
+}
+/** Masters and pictures already brought in from another document: "its token|its id" -> ours, so pasting again reuses them. */
+const importedMasters = new Map(), importedImages = new Map();
+/**
+ * Put a set of pages into the document before page `at`, with new ids for
+ * every page, object, story and group. opts:
+ *   sameDoc  - the set came from this document: its masters are used as they are;
+ *   imageMap - picture ids in the set -> ours (left out: the same ids);
+ *   fontMap  - added-font names in the set -> ours;
+ *   source   - the token of the document it came from (to reuse masters brought in before).
+ * Masters from another document come along as new masters (keeping their
+ * names when free). Goes to the first new page and picks them all; returns
+ * their indexes. (No undo step: callers record it first.)
+ */
+function insertPageSet(set, at, opts) {
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+  const oMap = {}, sMap = {}, gMap = {}, masterObj = {};   // old id -> new id: objects, stories, groups, master objects
+  const storyFor = (old) => sMap[old] || (sMap[old] = newId('s'));
+  const groupFor = (old) => {
+    if (!gMap[old]) { const g = newId('g'); doc.groups[g] = { id: g, name: (set.groups && set.groups[old] && set.groups[old].name) || 'Group' }; gMap[old] = g; }
+    return gMap[old];
+  };
+  // A copy of one object with new ids, pointing at the new stories, groups, pictures and master objects.
+  const remap = (src) => {
+    const o = clone(src);
+    o.id = oMap[src.id] = newId('o');
+    if (o.group) o.group = groupFor(o.group);
+    if (o.type === 'text') o.story = storyFor(o.story);
+    if (o.type === 'table') for (const c of tableCells(o)) { const old = c.id; c.id = oMap[old] = newId('o'); c.cellOf = o.id; c.story = storyFor(c.story); }
+    if (o.type === 'picture' && o.image && opts.imageMap) o.image = opts.imageMap[o.image] || null;
+    if (o.fromMaster) { if (masterObj[o.fromMaster]) o.fromMaster = masterObj[o.fromMaster]; else delete o.fromMaster; }
+    return o;
+  };
+  // Masters: this document's own, ones brought in before, or new ones.
+  if (!doc.masters) doc.masters = [];
+  const masterMap = {}, brought = [];
+  for (const m of set.masters || []) {
+    if (opts.sameDoc && masterById(m.id)) { masterMap[m.id] = m.id; for (const o of m.objects) masterObj[o.id] = o.id; continue; }
+    const was = opts.source ? importedMasters.get(opts.source + '|' + m.id) : null;
+    if (was && masterById(was.id)) { masterMap[m.id] = was.id; Object.assign(masterObj, was.objs); continue; }
+    const taken = new Set(masterList().map((x) => x.name));
+    const nm = { id: newId('m'), name: taken.has(m.name) ? nextMasterName() : m.name, objects: [], readingOrder: [], readingOrderAuto: true };
+    doc.masters.push(nm);                            // (now, so the next one's name skips it)
+    masterMap[m.id] = nm.id;
+    brought.push([m, nm]);
+  }
+  for (const [m, nm] of brought) {
+    const objs = {};
+    nm.objects = m.objects.map((src) => { const o = remap(src); objs[src.id] = o.id; return o; });
+    Object.assign(masterObj, objs);
+    if (m.even && masterMap[m.even] && masterMap[m.even] !== nm.id) nm.even = masterMap[m.even];
+    if (opts.source) importedMasters.set(opts.source + '|' + m.id, { id: nm.id, objs });
+  }
+  // The pages.
+  const made = (set.pages || []).map((pg) => {
+    const np = { id: newId('p'), objects: pg.objects.map(remap), readingOrder: [], readingOrderAuto: pg.readingOrderAuto !== false };
+    np.readingOrder = (pg.readingOrder || []).map((x) => oMap[x]).filter(Boolean);
+    if (pg.master && masterMap[pg.master]) np.master = masterMap[pg.master];
+    return np;
+  });
+  // The stories, each with its chain of (new) boxes.
+  for (const [old, sid] of Object.entries(sMap)) {
+    const s = set.stories[old];
+    const ns = { id: sid, frames: s ? s.frames.map((f) => oMap[f]).filter(Boolean) : [], text: s ? s.text : '', roles: s ? s.roles.slice() : ['body'] };
+    if (s && s.runs && s.runs.length) {
+      ns.runs = clone(s.runs);
+      if (opts.fontMap) for (const r of ns.runs) if (r.f && Object.hasOwn(opts.fontMap, r.f)) r.f = opts.fontMap[r.f];
+    }
+    if (s && s.dropCap) ns.dropCap = clone(s.dropCap);
+    doc.stories[sid] = ns;
+  }
+  // In they go. (Pages before the one on the desk push it along.)
+  doc.pages.splice(at, 0, ...made);
+  if (at <= pageIndex) pageIndex += made.length;
+  reindex();
+  syncInputs();
+  // A box whose story lost its list of boxes (a damaged set) still shows its text.
+  for (const pg of made.concat(brought.map(([, nm]) => nm))) for (const o of pg.objects) {
+    if (o.type === 'text' && !doc.stories[o.story].frames.includes(o.id)) doc.stories[o.story].frames.push(o.id);
+  }
+  relayoutAndRender();
+  const idx = made.map((pg) => doc.pages.indexOf(pg));
+  goToPage(idx[0]);
+  setPagePick(idx, idx[0], true);
+  scheduleThumbnails();
+  updateInspector();
+  return idx;
+}
+
+/* ---------- Copying and pasting pages (0.39.0) ----------
+   Ctrl+C (or Ctrl+X) with the keyboard in the filmstrip, or the pill's
+   Copy and Cut, copy the picked pages: their objects, text, pictures and
+   added fonts, and the master pages they use. Ctrl+V (or the pill's
+   Paste) puts them after the picked page(s), in this document or another
+   one, in this tab or another DSKEDTR tab.
+
+   What is copied is a small project (the same format as a saved file), so
+   pasting checks it exactly as opening a file would: nothing in it is
+   trusted. Pasting into another document brings the master pages along
+   as new ones, and the pictures and fonts it needs. Styles are the
+   document's own: pasted text takes on this document's Body, Heading...
+   (as copied text boxes always have). A different page size keeps
+   everything where it was, with a note to check.
+
+   Privacy: the pages stay on this computer. This tab keeps them in
+   memory. For other tabs, the newest copy is also kept in this browser's
+   own storage (IndexedDB), and thrown away when the tab that copied it
+   closes, or after two hours. (Closing a tab can't be relied on to finish
+   a storage job, so the copying tab also keeps a small "still open" note
+   in localStorage, which it removes as it closes; a copy whose tab has no
+   note is thrown away when it is next looked for.) The system clipboard
+   gets only the words (for pasting into other apps) and a random marker. */
+const PAGE_CLIP_TYPE = 'application/x-dskedtr-pages';
+const PAGE_CLIP_DB = 'dskedtr-page-clipboard';
+const PAGE_CLIP_MAX_AGE = 2 * 60 * 60 * 1000;       // two hours
+/** A random marker, as hex (copies, documents and tabs each get one). */
+function randomToken() {
+  const a = new Uint8Array(12);
+  crypto.getRandomValues(a);
+  return [...a].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+const TAB_TOKEN = randomToken();                     // this tab
+let docToken = randomToken();                        // the document open (a new one each time one opens)
+let pageClip = null;                                 // the pages copied in this tab: { token, created, source, count, text, project }
+let storedClipSeen = false;                          // another tab's copy is waiting in storage (wakes the pill's Paste)
+
+/** The picked pages as a copy: a small project, the words on them, and markers. */
+function makePageClip(idx) {
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+  const set = pageSetFrom(idx);
+  const all = set.pages.concat(set.masters);
+  // The pictures they show.
+  const pics = {};
+  for (const pg of all) for (const o of pg.objects) {
+    if (o.type === 'picture' && o.image && images[o.image] && imageFiles[o.image]) {
+      pics[o.image] = { name: images[o.image].name, w: images[o.image].w, h: images[o.image].h, blob: imageFiles[o.image].blob };
+    }
+  }
+  // The added fonts their words use (a missing font comes as just its name).
+  const fonts = {};
+  for (const st of Object.values(set.stories)) for (const r of st.runs || []) {
+    const fam = r.f && Object.hasOwn(customFamilies, r.f) ? customFamilies[r.f] : null;
+    if (!fam || fonts[r.f]) continue;
+    const files = {};
+    for (const [v, f] of Object.entries(fam.files)) files[v] = { file: f.fileName, blob: new Blob([f.bytes], { type: 'application/octet-stream' }) };
+    fonts[r.f] = fam.missing ? { name: fam.name, missing: true, standIn: fam.standIn, fit: fam.fit, files } : { name: fam.name, files };
+  }
+  // The words on the pages, for pasting into other apps.
+  const seen = new Set(), words = [];
+  for (const pg of set.pages) for (const o of pg.objects) {
+    if (o.type !== 'text' || seen.has(o.story) || !set.stories[o.story]) continue;
+    seen.add(o.story);
+    const t = set.stories[o.story].text.trim();
+    if (t) words.push(t);
+  }
+  const d = {
+    title: '', lang: doc.lang, page: clone(doc.page), styles: clone(doc.styles), stories: set.stories, groups: set.groups,
+    pages: set.pages, masters: set.masters, guides: { v: [], h: [] }, scheme: clone(schemeOf()), nextId: 1, words: (doc.words || []).slice()
+  };
+  return {
+    token: randomToken(), created: Date.now(), source: docToken, count: idx.length, text: words.join('\n\n'),
+    project: { format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION, doc: d, images: pics, fonts }
+  };
+}
+/* The "still open" note: this tab's key, holding the time, written now and
+   every 30 seconds while it has copied pages (background tabs may only get
+   to it once a minute), and removed as the tab closes. */
+const CLIP_BEAT_KEY = 'dskedtr-page-clip-open-';
+const CLIP_BEAT_STALE = 5 * 60 * 1000;               // no note for five minutes: that tab has gone
+let clipBeat = null;
+function beatClip() { try { localStorage.setItem(CLIP_BEAT_KEY + TAB_TOKEN, String(Date.now())); } catch (err) { /* storage off: the two-hour limit still applies */ } }
+/** Is the tab that wrote a stored copy still open? (Unsure, as when storage is off: yes.) */
+function clipTabOpen(tab) {
+  if (tab === TAB_TOKEN) return true;
+  try {
+    const at = Number(localStorage.getItem(CLIP_BEAT_KEY + tab) || 0);
+    if (Date.now() - at < CLIP_BEAT_STALE) return true;
+    localStorage.removeItem(CLIP_BEAT_KEY + tab);
+    return false;
+  } catch (err) { return true; }
+}
+/** Copy the picked pages (kept in this tab, and in storage for other tabs). */
+function copyPickedPages() {
+  pageClip = makePageClip(pickedPages());
+  beatClip();
+  if (!clipBeat) clipBeat = setInterval(beatClip, 30000);
+  storePageClip(pageClip);
+  updatePagePill();
+  return pageClip;
+}
+function announceCopied(idx) {
+  announce('Copied ' + pageListWords(idx) + '. Paste with Ctrl+V after any page, in this document or another.');
+}
+/** Cut: the pages were just copied; now they go (unless that would leave no page). */
+function cutPages(idx) {
+  if (idx.length >= doc.pages.length) { announce('Copied ' + pageListWords(idx) + '. A document needs at least one page, so they stay here too.'); return; }
+  removePages(idx);
+  announce('Cut ' + pageListWords(idx) + '. Paste with Ctrl+V after any page, in this document or another.');
+}
+
+/** Open the page-copy storage and run `work(store, give)` in one transaction; resolves with what `give` was handed (or null). Never throws. */
+function pageClipStore(mode, work) {
+  return new Promise((resolve) => {
+    let req;
+    try { req = indexedDB.open(PAGE_CLIP_DB, 1); } catch (err) { resolve(null); return; }   // storage switched off
+    req.onupgradeneeded = () => req.result.createObjectStore('clip');
+    req.onerror = () => resolve(null);
+    req.onblocked = () => resolve(null);
+    req.onsuccess = () => {
+      const db = req.result;
+      try {
+        const tx = db.transaction('clip', mode), store = tx.objectStore('clip');
+        let out = null;
+        work(store, (v) => { out = v; });
+        tx.oncomplete = () => { db.close(); resolve(out); };
+        tx.onerror = tx.onabort = () => { db.close(); resolve(null); };
+      } catch (err) { db.close(); resolve(null); }
+    };
+  });
+}
+/** Keep this copy for other tabs (just the newest one; best effort: this tab's copy works either way). */
+function storePageClip(pc) {
+  return pageClipStore('readwrite', (store) => store.put(Object.assign({}, pc, { tab: TAB_TOKEN }), 'latest'));
+}
+/** The copy waiting in storage, if it is under two hours old (an older one is thrown away). */
+function readStoredPageClip() {
+  return pageClipStore('readwrite', (store, give) => {
+    const get = store.get('latest');
+    get.onsuccess = () => {
+      const v = get.result, now = Date.now();
+      const fresh = v && typeof v === 'object' && typeof v.token === 'string' && Number.isFinite(v.created) && now - v.created < PAGE_CLIP_MAX_AGE && v.created < now + 60000 && clipTabOpen(v.tab);
+      if (fresh) give(v); else if (v) store.delete('latest');
+    };
+  });
+}
+/** Is another tab's copy waiting? (Wakes the pill's Paste; at most every two seconds.) */
+let lastPeek = 0;
+async function peekStoredPageClip() {
+  if (Date.now() - lastPeek < 2000) return;
+  lastPeek = Date.now();
+  const seen = !!(await readStoredPageClip());
+  if (seen !== storedClipSeen) { storedClipSeen = seen; updatePagePill(); }
+}
+window.addEventListener('focus', () => { lastPeek = 0; if (pagePillOpen) peekStoredPageClip(); });   // (back from another tab)
+// Closing the tab that copied: its copy leaves storage too.
+window.addEventListener('pagehide', () => {
+  if (!pageClip) return;
+  try { localStorage.removeItem(CLIP_BEAT_KEY + TAB_TOKEN); } catch (err) { /* fine */ }   // (this always finishes)
+  pageClipStore('readwrite', (store) => {
+    const get = store.get('latest');
+    get.onsuccess = () => { if (get.result && get.result.tab === TAB_TOKEN) store.delete('latest'); };
+  });
+});
+
+/** Ctrl+V (token: the marker on the clipboard) or the pill's Paste (null: the newest copy). */
+async function pasteCopiedPages(token) {
+  if (editingMaster()) { announce('Pages paste among the pages, not the master pages. Go back to the pages first.'); return; }
+  let pc = null;
+  if (token && pageClip && pageClip.token === token) pc = pageClip;
+  else {
+    const stored = await readStoredPageClip();
+    if (token) pc = stored && stored.token === token ? stored : null;
+    else pc = stored && (!pageClip || stored.created > pageClip.created) ? stored : pageClip;
+  }
+  if (!pc) {
+    toast(token ? 'Those pages were copied in a DSKEDTR tab that has closed (or over two hours ago), so they can’t be pasted. Copy them again.'
+      : 'Nothing to paste yet. Pick pages in the filmstrip and copy them first.', 6000);
+    return;
+  }
+  await pastePages(pc);
+}
+let pastingPages = false;
+/** Check a copy of pages like a project file, then put the pages after the picked one(s). */
+async function pastePages(pc) {
+  if (pastingPages) return;                         // (one paste at a time)
+  pastingPages = true;
+  try {
+    const pj = pc.project;
+    if (!pj || typeof pj !== 'object' || pj.format !== PROJECT_FORMAT || !Number.isInteger(pj.version)) bad('The copied pages could not be read.');
+    if (pj.version > PROJECT_VERSION) bad('Those pages were copied from a newer DSKEDTR. Update this one to paste them.');
+    const { pics } = await checkPictures(pj.images);
+    const { store } = await checkFonts(pj.fonts);
+    const clean = checkDocument(pj.doc, new Set(Object.keys(pics)), new Set(Object.keys(store)));
+    try { await loadFamilies(familiesIn(clean).filter((f) => Object.hasOwn(FAMILIES, f))); } catch (err) { /* a stand-in font until it loads */ }
+    if (editingMaster() || printPreview) { announce('Go back to the pages (and out of Preview) to paste them.'); return; }
+    const sameDoc = pc.source === docToken;
+    // Fonts: one this document has (by name) is used; otherwise it is added.
+    const fontMap = {}, fontsAdded = [];
+    for (const [key, fam] of Object.entries(store)) {
+      const same = Object.keys(customFamilies).find((k) => customFamilies[k].name.toLowerCase() === fam.name.toLowerCase());
+      if (same) { fontMap[key] = same; continue; }
+      const count = Object.values(customFamilies).reduce((n, f) => n + Object.keys(f.files).length, 0);
+      if (count + Object.keys(fam.files).length > MAX_CUSTOM_FONTS) { fontMap[key] = fam.missing ? fam.standIn : DEFAULT_FAMILY; continue; }
+      let n = 1;
+      while (customFamilies['uf' + n]) n++;
+      installCustomFamily('uf' + n, fam);
+      fontMap[key] = 'uf' + n;
+      fontsAdded.push(fam.name);
+    }
+    if (fontsAdded.length) refreshFontLists();
+    // Pictures: this document's own (same document), ones brought in before, or added.
+    const imageMap = {};
+    for (const [id, p] of Object.entries(pics)) {
+      if (sameDoc && images[id]) { imageMap[id] = id; continue; }
+      const key = pc.source + '|' + id, was = importedImages.get(key);
+      if (was && images[was]) { imageMap[id] = was; continue; }
+      const nid = newId('i');
+      images[nid] = { id: nid, w: p.w, h: p.h, name: p.name };
+      imageFiles[nid] = { blob: p.blob, url: URL.createObjectURL(p.blob) };
+      importedImages.set(key, nid);
+      imageMap[id] = nid;
+    }
+    recordUndo('other');
+    const at = Math.max(...pickedPages()) + 1;
+    const mastersBefore = new Set(masterList().map((m) => m.id));
+    const idx = insertPageSet(clean, at, { sameDoc, imageMap, fontMap, source: pc.source });
+    if (!sameDoc && clean.words.length) doc.words = [...new Set((doc.words || []).concat(clean.words))].slice(0, 5000);   // its own spelling words come too
+    const newMasters = masterList().filter((m) => !mastersBefore.has(m.id)).map((m) => m.name);
+    announce('Pasted ' + (idx.length === 1 ? 'a page as page ' + (idx[0] + 1) : idx.length + ' pages as ' + pageListWords(idx)) + '.' +
+      (newMasters.length ? ' ' + (newMasters.length === 1 ? 'Its master page came too, as ' : 'Their master pages came too, as ') + newMasters.join(' and ') + '.' : '') +
+      (fontsAdded.length ? ' Added the font' + (fontsAdded.length === 1 ? ' ' : 's ') + fontsAdded.join(', ') + '.' : ''));
+    // A different page size: everything kept its place, so say so.
+    if (Math.abs(clean.page.width - PAGE.width) > 0.5 || Math.abs(clean.page.height - PAGE.height) > 0.5) {
+      const us = ' ' + unit().short;
+      toast('Those pages were made for ' + toU(clean.page.width) + ' × ' + toU(clean.page.height) + us + ' pages, and this document’s are ' +
+        toU(PAGE.width) + ' × ' + toU(PAGE.height) + us + '. Everything kept its place, so check nothing hangs off the page.', 9000);
+    }
+  } catch (err) {
+    const ours = err instanceof BadProject && /^(Those|The copied)/.test(err.message);
+    toast(ours ? err.message : 'The copied pages could not be pasted: they look damaged.', 6000);
+  } finally {
+    pastingPages = false;
+  }
+}
+
 /* ---------- Page setup ---------- */
 
 /**
@@ -8601,6 +9172,29 @@ function applyPageSetup(next, mode, anchor) {
   fitZoom();
   const off = allObjects().filter((o) => { const b = bounds(o); return b.x < -0.5 || b.y < -0.5 || b.x + b.w > nw + 0.5 || b.y + b.h > nh + 0.5; }).length;
   announce('Page setup changed.' + (off ? ' ' + off + ' object' + (off === 1 ? ' is' : 's are') + ' now partly off the page.' : ''));
+}
+
+/**
+ * Facing pages on or off (0.39.0), from the Inspector's box or the View
+ * menu: the same as the box in Page setup. Nothing on the pages moves; one
+ * undo step. Turning it on shows the spreads; turning it off from two pages
+ * keeps two pages (now 1 and 2, 3 and 4).
+ */
+function setFacing(on) {
+  if (on === isFacing()) return;
+  const was = pageView;
+  const next = JSON.parse(JSON.stringify(PAGE));
+  if (on) next.facing = true; else delete next.facing;
+  applyPageSetup(next, 'keep', [0, 0]);               // (anchored top-left with the same size: nothing moves)
+  if (!on && was === 'two') {                         // Page setup's change goes to one page: stay with two
+    pageView = lastPageView = 'two';
+    showViewButton();
+    applyPageSize();
+    relayoutAndRender();
+    fitZoom();
+  }
+  announce(on ? 'Facing pages on: page 1 on its own, then 2 and 3, 4 and 5 side by side. The left and right margins are now inside and outside.'
+    : 'Facing pages off.' + (pageView === 'two' ? ' Two pages shows 1 and 2, 3 and 4.' : ''));
 }
 
 /* ======================================================================
@@ -10541,9 +11135,16 @@ function fillPageMasterMenu() {
     b.addEventListener('click', () => { menu.hidePopover(); run(); });
     menu.appendChild(b);
   };
-  const say = (id) => announce('Page ' + (pageIndex + 1) + (id ? ' uses ' + masterById(id).name : ' uses no master page'));
-  item('None', () => { setPageMaster(pageIndex, ''); say(''); }, { radio: true, on: !pg.master });
-  for (const m of masters) item(m.name, () => { setPageMaster(pageIndex, m.id); say(m.id); }, { radio: true, on: pg.master === m.id });
+  // Several pages picked (0.39.0): the master goes to all of them, and is ticked when they all use it.
+  const idx = pickedPages();
+  const uses = (id) => idx.every((i) => (doc.pages[i].master || '') === id);
+  const choose = (id) => {
+    if (idx.length > 1) { setPagesMaster(idx, id); return; }
+    setPageMaster(idx[0], id);
+    announce('Page ' + (idx[0] + 1) + (id ? ' uses ' + masterById(id).name : ' uses no master page'));
+  };
+  item('None', () => choose(''), { radio: true, on: uses('') });
+  for (const m of masters) item(m.name, () => choose(m.id), { radio: true, on: uses(m.id) });
   menu.appendChild(document.createElement('hr'));
   if (masters.length) {
     item('Use it for every page', () => { useMasterEverywhere(pg.master || ''); announce(pg.master ? 'Every page uses ' + masterById(pg.master).name : 'No page uses a master page now'); }, { disabled: !pg.master && !doc.pages.some((x) => x.master) });
@@ -11024,6 +11625,7 @@ function updateInspector() {
     setField($('docTitle'), doc.title);
     setField($('docLang'), doc.lang);
     setText('pageInfo', pageDescription() + '. ' + doc.pages.length + (doc.pages.length === 1 ? ' page.' : ' pages.'));
+    $('docFacing').checked = isFacing();
   }
   if (geomObj) fillGeometry(geomObj);
   if (geomObj && geomObj.type === 'text') fillFlow(geomObj);
@@ -11839,6 +12441,7 @@ function wireInspector() {
   $('lockBtn').addEventListener('click', () => toggleFlag(selectedIds.map(obj).filter(Boolean), 'locked'));
   $('unlockAllBtn').addEventListener('click', () => { const list = pageObjs().filter((o) => o.locked); if (list.length) toggleFlag(list, 'locked'); });
   $('pageSetupBtn').addEventListener('click', openPageSetup);
+  $('docFacing').addEventListener('change', (e) => setFacing(e.target.checked));
 
   $('kbdMod').textContent = isMac ? 'Cmd+Option' : 'Ctrl+Alt';
 }
@@ -12101,12 +12704,15 @@ function renderFilmstrip() {
   const over = pagesWithOverflow();
   const masters = editingMaster();
   const shown = masters ? masterList().map((m, i) => [m, doc.pages.length + i]) : doc.pages.map((pg, i) => [pg, i]);
-  const sig = JSON.stringify([doc.pages.map((p) => [p.id, p.master]), masterList().map((m) => [m.id, m.name]), pageIndex, [...over], PAGE.width, PAGE.height, isFacing()]);
+  const picked = new Set(masters ? [pageIndex] : pickedPages());   // (0.39.0: several pages can be picked)
+  const sig = JSON.stringify([doc.pages.map((p) => [p.id, p.master]), masterList().map((m) => [m.id, m.name]), pageIndex, [...over], PAGE.width, PAGE.height, isFacing(), [...picked]]);
   if (sig === filmSig) return;
   filmSig = sig;
   const hadFocus = list.contains(document.activeElement);
   list.setAttribute('aria-label', masters ? 'Master pages' : 'Pages');
   list.classList.toggle('facing', !masters && isFacing());
+  list.setAttribute('aria-multiselectable', String(!masters));
+  list.classList.toggle('many', picked.size > 1);       // (a tick marks each picked page)
   clear(list);
   shown.forEach(([pg, i]) => {
     const li = document.createElement('li');
@@ -12115,7 +12721,8 @@ function renderFilmstrip() {
     li.dataset.index = String(i);
     li.draggable = true;
     li.className = 'thumb';
-    li.setAttribute('aria-selected', String(i === pageIndex));
+    li.setAttribute('aria-selected', String(picked.has(i)));
+    li.classList.toggle('here', i === pageIndex);      // the page on the desk (the pill sits above it)
     li.tabIndex = i === pageIndex ? 0 : -1;
     const pm = masters ? null : masterById(pg.master);
     li.draggable = !masters;
@@ -12178,13 +12785,26 @@ function updatePagePill() {
   }
   const masters = editingMaster();
   const last = masters ? pageCount() - 1 : doc.pages.length - 1, first = masters ? doc.pages.length : 0;
-  const shown = { left: !masters, right: !masters, master: !masters, duplicate: true, delete: true };
+  const shown = { left: !masters, right: !masters, master: !masters, duplicate: true, copy: !masters, cut: !masters, paste: !masters, delete: true };
   for (const b of pill.querySelectorAll('button')) b.hidden = !shown[b.dataset.pact];
   pill.querySelector('.qb-sep').hidden = masters;
-  // Greyed, not removed, so the buttons don't jump about: the ends can't move further, the only page can't go.
-  const off = { left: pageIndex <= first, right: pageIndex >= last, delete: !masters && doc.pages.length < 2 };
+  // The picked pages (0.39.0): the buttons act on all of them.
+  const idx = pickedPages(), n = idx.length;
+  // Greyed, not removed, so the buttons don't jump about: pages already at that end can't move further,
+  // the last page can't go, and Paste waits for something to paste.
+  const atStart = idx.every((i, k) => i === first + k), atEnd = idx.every((i, k) => i === last - (n - 1) + k);
+  const off = masters ? { left: true, right: true, delete: false }
+    : { left: atStart, right: atEnd, delete: n >= doc.pages.length, paste: !pageClip && !storedClipSeen };
   for (const [act, isOff] of Object.entries(off)) pill.querySelector('[data-pact=' + act + ']').setAttribute('aria-disabled', String(isOff));
-  pill.setAttribute('aria-label', masters ? curPage().name : 'Page ' + (pageIndex + 1) + ' of ' + doc.pages.length);
+  pill.setAttribute('aria-label', masters ? curPage().name : n > 1 ? capFirst(pageListWords(idx)) + ' picked' : 'Page ' + (idx[0] + 1) + ' of ' + doc.pages.length);
+  if (!masters) {
+    // Say how many: "Duplicate 3 pages" (the masters keep the words renderFilmstrip gave them).
+    const what = n > 1 ? n + ' pages' : 'this page';
+    const words = { left: 'Move ' + (n > 1 ? 'pages' : 'page') + ' left', right: 'Move ' + (n > 1 ? 'pages' : 'page') + ' right', duplicate: 'Duplicate ' + what, copy: 'Copy ' + what, cut: 'Cut ' + what, delete: 'Delete ' + what };
+    const keys = { left: ' (Alt+Left)', right: ' (Alt+Right)', copy: ' (Ctrl+C)', cut: ' (Ctrl+X)', delete: ' (Delete)' };
+    for (const [act, w] of Object.entries(words)) { const b = pill.querySelector('[data-pact=' + act + ']'); b.setAttribute('aria-label', w); b.title = w + (keys[act] || ''); }
+    if (!storedClipSeen && !pageClip) peekStoredPageClip();   // (another tab may have copied some: Paste then wakes up)
+  }
   pill.hidden = false;
   const btns = [...pill.querySelectorAll('button')].filter((b) => !b.hidden);
   if (!btns.some((b) => b.tabIndex === 0)) btns.forEach((b, i) => { b.tabIndex = i ? -1 : 0; });
@@ -12206,11 +12826,26 @@ function wirePagePill() {
     const b = e.target.closest('button');
     if (!b || b.hidden || b.getAttribute('aria-disabled') === 'true') return;
     switch (b.dataset.pact) {
-      case 'left': movePage(pageIndex, pageIndex - 1); b.focus({ preventScroll: true }); break;
-      case 'right': movePage(pageIndex, pageIndex + 1); b.focus({ preventScroll: true }); break;
+      case 'left': movePickedPages(-1); b.focus({ preventScroll: true }); break;
+      case 'right': movePickedPages(1); b.focus({ preventScroll: true }); break;
       case 'master': fillPageMasterMenu(); openMenuFrom($('pageMasterMenu'), b, 'above'); break;
-      case 'duplicate': duplicatePage(); b.focus({ preventScroll: true }); break;
-      case 'delete': deletePage(); b.focus({ preventScroll: true }); break;
+      case 'duplicate': duplicatePickedPages(); b.focus({ preventScroll: true }); break;
+      case 'copy': case 'cut': {
+        // DSKEDTR's own copy first, then the browser's as well (so Ctrl+V in
+        // another DSKEDTR tab finds the pages). The copy handler says "Copied".
+        const cut = b.dataset.pact === 'cut', idx = pickedPages();
+        let viaBrowser = false;
+        const mark = () => { viaBrowser = true; };
+        document.addEventListener('copy', mark, { capture: true, once: true });
+        try { document.execCommand('copy'); } catch (err) { /* not allowed here: our own copy is enough */ }
+        document.removeEventListener('copy', mark, { capture: true });
+        if (!viaBrowser) copyPickedPages();
+        if (cut) cutPages(idx); else announceCopied(idx);
+        if (pill.hidden || b.getAttribute('aria-disabled') === 'true' || b.hidden) focusThumbQuietly(); else b.focus({ preventScroll: true });
+        break;
+      }
+      case 'paste': pasteCopiedPages(null).then(() => focusThumbQuietly()); break;
+      case 'delete': deletePickedPages(); if (!pill.hidden) b.focus({ preventScroll: true }); break;
     }
   });
   // Left and Right along the pill (one Tab stop); Escape closes it and goes back to the page.
@@ -12298,29 +12933,71 @@ function focusThumb() { const el = $('thumb-' + curPage().id); if (el) el.focus(
 function wireFilmstrip() {
   const list = $('pageList');
   list.addEventListener('keydown', (e) => {
-    const k = e.key;
+    const k = e.key, mod = isMac ? e.metaKey : e.ctrlKey, masters = editingMaster();
     const back = k === 'ArrowLeft' || k === 'ArrowUp', fwd = k === 'ArrowRight' || k === 'ArrowDown';
-    if (e.altKey && (back || fwd)) { e.preventDefault(); movePage(pageIndex, pageIndex + (fwd ? 1 : -1)); return; }
+    if (e.altKey && (back || fwd)) { e.preventDefault(); movePickedPages(fwd ? 1 : -1); return; }
+    // The picked pages (0.39.0): Ctrl+A all of them, Ctrl+D duplicate, Delete delete,
+    // Space (or Ctrl+Space) adds or takes out the page you are on, Escape back to just it.
+    if (mod && !e.shiftKey && !e.altKey && k.toLowerCase() === 'a' && !masters) {
+      e.preventDefault();
+      setPagePick(doc.pages.map((pg, i) => i));
+      return;
+    }
+    if (mod && !e.shiftKey && !e.altKey && k.toLowerCase() === 'd') { e.preventDefault(); e.stopPropagation(); duplicatePickedPages(); return; }
+    if ((k === 'Delete' || k === 'Backspace') && !mod && !e.altKey) { e.preventDefault(); deletePickedPages(); return; }
+    if (k === ' ' && !e.altKey && !e.shiftKey && !masters) { e.preventDefault(); togglePagePick(pageIndex); return; }
+    if (k === 'Escape' && !pagePillOpen && pagePick.size) { e.preventDefault(); e.stopPropagation(); setPagePick([pageIndex]); return; }
     let j = null;
-    const first = editingMaster() ? doc.pages.length : 0, last = editingMaster() ? pageCount() - 1 : doc.pages.length - 1;
+    const first = masters ? doc.pages.length : 0, last = masters ? pageCount() - 1 : doc.pages.length - 1;
     if (back) j = Math.max(first, pageIndex - 1); else if (fwd) j = Math.min(last, pageIndex + 1);
     else if (k === 'Home') j = first; else if (k === 'End') j = last;
     if (j == null) return;
     e.preventDefault();
-    goToPage(j);
+    if (!masters && e.shiftKey) {
+      // Shift: stretch the pick from where it started to here.
+      const a = anchorIndex();
+      goToPage(j);
+      setPagePick(rangeOf(a, j), a);
+    } else if (!masters && mod) {
+      // Ctrl (Cmd): move without changing the pick (Space then adds this page).
+      const keep = pickedPages(), a = anchorIndex();
+      goToPage(j);
+      setPagePick(keep, a, true);
+      announce('Page ' + (j + 1) + (keep.includes(j) ? ', picked' : ', not picked') + '. ' + capFirst(pageListWords(keep)) + ' picked.');
+    } else {
+      goToPage(j);
+      pickAnchor = curPage().id;
+    }
     focusThumb();
   });
   list.addEventListener('click', (e) => {
     const li = e.target.closest('li[data-index]');
     if (!li) return;
-    goToPage(Number(li.dataset.index));
+    const i = Number(li.dataset.index), mod = isMac ? e.metaKey : e.ctrlKey;
+    if (!editingMaster() && e.shiftKey) {
+      // Shift+click: every page from the last one clicked to this one.
+      const a = anchorIndex();
+      goToPage(i);
+      setPagePick(rangeOf(a, i), a);
+    } else if (!editingMaster() && mod) {
+      // Ctrl+click (Cmd+click): add this page to the pick, or take it out.
+      const keep = pickedPages();
+      goToPage(i);
+      setPagePick(keep.includes(i) ? keep.filter((x) => x !== i) : keep.concat(i), i);
+    } else {
+      goToPage(i);
+      pickAnchor = curPage().id;
+    }
     focusThumb();
   });
-  let dragFrom = null;
+  let dragFrom = null, dragSet = null;
   const clearMarks = () => { for (const x of list.children) x.classList.remove('drop-before'); };
   list.addEventListener('dragstart', (e) => {
     const li = e.target.closest('li[data-index]'); if (!li) return;
     dragFrom = Number(li.dataset.index);
+    // Dragging one of several picked pages takes them all (0.39.0).
+    const idx = pickedPages();
+    dragSet = idx.length > 1 && idx.includes(dragFrom) ? idx : null;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', '');
   });
@@ -12333,12 +13010,13 @@ function wireFilmstrip() {
     e.preventDefault(); clearMarks();
     const li = e.target.closest('li[data-index]');
     if (dragFrom == null || !li) { dragFrom = null; return; }
+    if (dragSet) { movePagesBefore(dragSet, Number(li.dataset.index)); dragFrom = dragSet = null; return; }
     let to = Number(li.dataset.index);
     if (to > dragFrom) to -= 1;                    // dropping before a later page
     movePage(dragFrom, Math.max(0, to));
     dragFrom = null;
   });
-  list.addEventListener('dragend', () => { dragFrom = null; clearMarks(); });
+  list.addEventListener('dragend', () => { dragFrom = dragSet = null; clearMarks(); });
   $('masterMode').addEventListener('click', toggleMasters);
   $('masterBack').addEventListener('click', () => { toggleMasters(); $('desk').focus({ preventScroll: true }); });
   wirePagePill();
@@ -12933,6 +13611,9 @@ function fillViewMenu() {
   const pv = $('viewMenuPreview');
   pv.setAttribute('aria-checked', String(printPreview));
   pv.querySelector('.qm-tick').textContent = printPreview ? '\u2713' : '';
+  const fc = $('viewMenuFacing');
+  fc.setAttribute('aria-checked', String(isFacing()));
+  fc.querySelector('.qm-tick').textContent = isFacing() ? '\u2713' : '';
   const sp = $('viewMenuSpell');
   sp.setAttribute('aria-checked', String(view.spell));
   sp.querySelector('.qm-tick').textContent = view.spell ? '\u2713' : '';
@@ -13070,6 +13751,7 @@ function wirePageViews() {
     item.addEventListener('click', () => { menu.hidePopover(); setPageView(item.dataset.pages); });
   }
   $('viewMenuPreview').addEventListener('click', () => { menu.hidePopover(); setPrintPreview(!printPreview); });
+  $('viewMenuFacing').addEventListener('click', () => { menu.hidePopover(); setFacing(!isFacing()); });
   $('viewMenuSpell').addEventListener('click', () => {
     menu.hidePopover();
     view.spell = !view.spell; saveView(); renderSpell();
@@ -13644,7 +14326,9 @@ function wireChrome() {
     [mod + ' + click', 'Pick one object inside a group'],
     ['Rotate handle (circle above)', 'Turn the picked object (Shift: 15\u00b0 steps)'],
     ['Page Up / Page Down', 'Previous or next page (when the page has focus)'],
-    ['Filmstrip: Left / Right', 'Go to the page before or after; ' + alt + ' + Left / Right moves the page'],
+    ['Filmstrip: Left / Right', 'Go to the page before or after; ' + alt + ' + Left / Right moves the page (or the picked pages)'],
+    ['Filmstrip: Shift + click, ' + mod + ' + click', 'Pick several pages: a run of them, or one at a time. From the keyboard: Shift + Left / Right stretches the pick, ' + mod + ' + Left / Right moves without changing it, Space adds or takes out a page, ' + mod + ' + A picks them all, Escape goes back to one'],
+    ['Filmstrip: ' + mod + ' + C, X, V, D, Delete', 'Copy, cut, paste, duplicate or delete the picked pages. Paste puts them after the picked page, in this document, another one, or another DSKEDTR tab'],
     ['Guides', 'Drag out of a ruler, or add them in the Inspector\'s Guides and grid section, with nothing picked (one at a time, quick sets such as Middle, Thirds or Tri-fold, or columns); they snap to the middle of the page; drag one off the page to remove it'],
     ['Inspector headings', 'Click or Enter to open or fold a section; Up / Down between headings; ' + (isMac ? 'Option' : 'Alt') + ' + Page Up / Page Down from anywhere in the Inspector'],
     ['Layers list', 'Up / Down pick, Right / Left open or close a group, F2 rename, H hide, L lock, ' + alt + ' + Up / Down forward or backward'],
@@ -13675,7 +14359,7 @@ function wireChrome() {
     ['Tab', 'Next story, in reading order'],
     [alt + ' + Up / Down', 'In the reading order list: move the picked item'],
     ['W, or View (the eye) in the top bar', 'Preview: the page as it will print, the rest of the window shaded (nothing can be changed); Page Up / Down change page; W or Escape to go back'],
-    ['View (the eye) in the top bar', 'One page, two pages side by side, or all pages (arrows move between them, Enter works on one, Escape goes back)'],
+    ['View (the eye) in the top bar', 'One page, two pages side by side, or all pages (arrows move between them, Enter works on one, Escape goes back); Booklet: page 1 on its own, then 2 and 3 side by side (facing pages)'],
     ['All pages: drag a page, or ' + alt + ' + arrow keys', 'Move the page to a new place (on a touch screen, hold it first)'],
     ['Space + drag', 'Slide the page around (also in the middle of moving something, to carry it further)'],
     [mod + ' + scroll wheel, or pinch on a trackpad', 'Zoom the page around the pointer (not the whole web page)'],
@@ -13873,6 +14557,14 @@ function wirePictureInput() {
     const t = e.target;
     if (t.closest && t.closest('textarea, input, select')) return;   // text fields keep their own pasting
     if (printPreview) { e.preventDefault(); announce('Go back to editing (W) to paste.'); return; }
+    // Copied pages (0.39.0): their marker, or (if a browser dropped it) the same words, in the filmstrip.
+    const pagesToken = e.clipboardData ? e.clipboardData.getData(PAGE_CLIP_TYPE) : '';
+    const inStrip = t.closest && t.closest('.filmstrip');
+    if (pagesToken || (inStrip && pageClip && pageClip.text && !editingMaster() && e.clipboardData && e.clipboardData.getData('text/plain') === pageClip.text && !e.clipboardData.getData(CLIP_TYPE))) {
+      e.preventDefault();
+      pasteCopiedPages(pagesToken || pageClip.token);
+      return;
+    }
     if (pageView === 'grid') setPageView(lastPageView);   // pasting puts things on the page: show it
     const files = [...(e.clipboardData ? e.clipboardData.files : [])].filter((f) => f.type.startsWith('image/'));
     const token = e.clipboardData ? e.clipboardData.getData(CLIP_TYPE) : '';
@@ -15648,6 +16340,8 @@ function loadDocument(newDoc, picStore, fontStore) {
   // The new document.
   for (const key of Object.keys(doc)) delete doc[key];
   Object.assign(doc, newDoc);
+  docToken = randomToken();                          // (copied pages can tell this document from the one before)
+  pagePick = new Set();
   PAGE = doc.page;
   pageIndex = 0;
   if (pageView === 'grid') leaveGridView();
@@ -20037,6 +20731,13 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.39.0", date: "2026-10-10", title: "", notes: [
+    "Pick several pages in the filmstrip. Shift+click picks a run of pages, Ctrl+click (Cmd+click on a Mac) adds or takes out one. From the keyboard: Shift with the arrows stretches the pick, Ctrl with the arrows moves without changing it, Space adds or takes out a page, Ctrl+A picks them all, Escape goes back to one. Picked pages get a tick. Move left and right (or Alt+arrows, or dragging), Master page, Duplicate (Ctrl+D) and Delete then work on all of them, as one undo step.",
+    "Copy, cut and paste pages. Ctrl+C, Ctrl+X and Ctrl+V in the filmstrip, or the new Copy, Cut and Paste buttons in the page's pill. Pasted pages go after the picked page, in the same document, another one, or another DSKEDTR tab. Their master pages, pictures and fonts come along. Text boxes linked across the copied pages stay linked. Other apps get the words. The copy never leaves your computer: it is forgotten when the tab that copied it closes, or after two hours.",
+    "Duplicate keeps linked boxes linked when they are on the same page.",
+    "Booklets are easier to set up. Facing pages (page 1 on its own, then 2 and 3, 4 and 5 side by side) is now also a box in Document, and \"Booklet: page 1 on its own\" in the View menu, as well as in Page setup.",
+    "Fixed: Undo after deleting a page that held the end of a linked story stopped with an error."
+  ] },
   { version: "0.38.1", date: "2026-10-10", title: "", notes: [
     "Preview no longer covers the page. The Preview banner (and the master-page banner) now sit in their own strip above the rulers, so text right at the top of the page stays visible.",
     "Guides live in the Inspector. With nothing picked, a new Guides and grid section sits right under Document: Show guides, Show grid, Show rulers and Snap boxes, units, grid spacing, adding and listing guides, quick guide sets and column guides. The Guides button in the top bar just turns guides on and off (Ctrl+;); its little arrow and pop-up panel are gone."
