@@ -1,5 +1,38 @@
 # DSKEDTR changelog
 
+## 0.38.0 - 2026-10-10
+
+- **Spell checking.** Words the dictionary doesn't know get a red wavy
+  line on the page (never in the PDF, the PNG or Preview). Right-click
+  one (or press the menu key) for suggestions, Ignore all, or Add to
+  dictionary. **F7** (or Check spelling in Find and replace) goes through
+  the whole document one word at a time, from the cursor: Change, Change
+  all, Ignore, Ignore all, Add to dictionary. Words you add (names,
+  terms) are saved inside the document. The word list (about 124,000
+  English words, from SCOWL) is inside DSKEDTR, so it works offline and
+  nothing is sent anywhere. Words in capitals (FLCC), with digits (18th)
+  and in other alphabets are left alone; documents in other languages
+  aren't checked. View, Spelling marks turns the lines off. (It found
+  three typos in the Multiple Locus worksheet.)
+- **Find and replace.** Ctrl+F (Cmd+F), or the new button beside Undo
+  and Redo. It looks through every page, in reading order, then the
+  master pages: Enter for the next, Shift+Enter for the one before,
+  Match case, Whole words only, Replace, and Replace all (one undo puts
+  them all back). It stays open beside the page while you work, and
+  Escape puts the cursor on what it found.
+- **Small caps.** Ctrl+Shift+K (Cmd+Shift+K), or the new button in
+  Characters. The text stays as typed (so it is read, searched and copied
+  that way, in the PDF too); the lower-case letters are drawn as smaller
+  capitals. Publisher files keep theirs (they came in as capitals before).
+- **Screen readers hear list items.** Moving into a list item (with
+  the arrows, a click, or Enter making a new one) says "Item 3", or
+  "Bulleted item, level 2"; reading a line with the arrows starts with
+  its number.
+- Project files are now version 22 (small caps, and the document's own
+  words).
+- The one-file app is about 4.8 MB now (the word list is about a
+  quarter of a megabyte of it).
+
 ## 0.37.0 - 2026-10-10
 
 - **Bulleted and numbered lists.** The Paragraph section has a List

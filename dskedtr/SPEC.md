@@ -1020,6 +1020,43 @@ Not yet, roughly in order of what teachers' files will need:
 - More sample files: newsletters, brochures, a file from Publisher 2016
   or 365 with linked boxes and WordArt.
 
+## Spelling, find and replace, small caps (0.38.0)
+
+- **Word list:** hunspell en_US (SCOWL size 60, from npm dictionary-en
+  4.0.0, "(MIT AND BSD)" with SCOWL/Ispell/WordNet notices), affixes
+  expanded at build time to 123,618 words, front-coded (a base-36 digit
+  for the shared prefix, then the rest), zlib, base64, in
+  `<script type="text/plain" id="wordsEnUs">` with the licence in an HTML
+  comment beside it (about 230 KB). `loadWords` unpacks it once
+  (DecompressionStream via `inflateBytes`) when the browser is idle.
+- **Checking:** `wordOK` (straight or curly apostrophes; capitals,
+  digits, other alphabets skipped; Capitalised words also as lower case;
+  possessive 's checks the base); `misspellings(story)` memoised by text
+  and dictionary version; English documents only. The document's own
+  words: `doc.words` (version 22, validated letters/apostrophes, 5000 at
+  most), in the undo snapshot; Ignore all is for the session.
+- **Marks:** layer `spell` (hidden in Preview, never exported), wavy
+  path per box, skipping the word at the cursor while it is typed.
+- **Suggestions:** one edit, then two (words up to 10 letters), then two
+  words; ranked by edits, a short COMMON_WORDS list, swapped letters,
+  first and last letters, length, keyboard neighbours.
+- **UI:** right-click menu (`#spellMenu`, manual popover, arrow keys);
+  Spelling dialog (F7) from the cursor through `storiesInOrder`, with
+  Change, Change all (whole word, same case), Ignore, Ignore all, Add.
+- **Find and replace:** non-modal panel (`#findPanel`) in the desk frame;
+  literal text, Match case, Whole words (Unicode lookarounds); matches
+  never cross a paragraph end; reading order (`storiesInOrder`: each
+  page's reading order, tables cell by cell, then masters); the match
+  showing is `findHit`, drawn yellow, the keyboard staying in the panel;
+  `replaceRange` keeps the first replaced letter's format; Replace all is
+  one undo; Escape puts the cursor on the match. Ctrl/Cmd+F, Ctrl+H, F3.
+- **Small caps:** format `sc`; `measureParagraph` draws a lower-case
+  letter as its capital at 75% (`m.alt[k]` holds the code drawn); the PDF
+  uses it and wraps the stretch in a Span with ActualText (the typed
+  letters). Publisher's small caps flag now maps to `sc`.
+- **List items said:** `sayListItem` on moving into an item or Enter;
+  `moveVertical` prefixes a list item's first line with its number.
+
 ## Lists, superscript and subscript (0.37.0)
 
 - **Lists live in the role string:** `'body'`, `'body|•|0'`,
