@@ -1141,6 +1141,10 @@ Not yet, roughly in order of what teachers' files will need:
   Two pages), zoom out/in and Back to editing. Dialogs (Help) still open.
 - **Zoom keys** (Ctrl/Cmd with +, =, -, 0, by `e.code` too) are handled
   before the typing check, so they never fall through to browser zoom.
+  0.39.1: zoom runs 25% to 800% (`MIN_ZOOM`, `MAX_ZOOM`; was 400%), and
+  `zoomBy` (keys, buttons) keeps the page point in the middle of the desk
+  in the middle (`zoomKeeping`), as the wheel and pinch already kept the
+  point under the pointer. All pages' picture sizes are unchanged.
 - Decided 2026-10-10 (Dave): the eye opens the View menu (his idea);
   Preview is in it with W as its key.
 - **Facing pages, easier to find (0.39.0, Dave: "when making a booklet,

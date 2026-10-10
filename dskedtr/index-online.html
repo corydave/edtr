@@ -2048,7 +2048,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.39.0';
+const APP_VERSION = '0.39.1';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -13899,8 +13899,11 @@ function endGridDrag(drop) {
 
 /** Zoom in or out by a factor: the page, or in All pages the size of the page pictures. */
 function zoomBy(k) {
-  if (pageView === 'grid') setGridThumbWidth(gridThumbWidth * k);
-  else setZoom(zoom * k);
+  if (pageView === 'grid') { setGridThumbWidth(gridThumbWidth * k); return; }
+  // Keep what is in the middle of the window in the middle (0.39.1), so
+  // zooming in close (up to 800%) doesn't leave you in the grey off the page.
+  const r = $('desk').getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  zoomKeeping(zoom * k, pageAt(cx, cy), cx, cy);
 }
 /** Ctrl+0 and the fit button: fit the page, or in All pages the usual picture size. */
 function zoomToFit() {
@@ -14132,7 +14135,8 @@ function applyZoom() {
   if (layers.frames && Object.keys(layouts).length) renderSelection();   // handles and ports keep their size on screen
   scheduleRulers();
 }
-function setZoom(z) { zoom = Math.max(0.25, Math.min(4, z)); applyZoom(); }
+const MIN_ZOOM = 0.25, MAX_ZOOM = 8;                 // 25% to 800% (0.39.1: up from 400%, Dave: for fine work)
+function setZoom(z) { zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z)); applyZoom(); }
 /** Zoom so that page point `pagePt` ends up under screen point (clientX, clientY): zooming "into" where you point. */
 function zoomKeeping(z, pagePt, clientX, clientY) {
   setZoom(z);
@@ -20731,6 +20735,10 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.39.1", date: "2026-10-10", title: "", notes: [
+    "Zoom goes up to 800% (it stopped at 400%).",
+    "Zooming in and out keeps your place. Ctrl + and Ctrl - (and the zoom buttons) now keep whatever is in the middle of the window in the middle, instead of drifting off into the grey around the page."
+  ] },
   { version: "0.39.0", date: "2026-10-10", title: "", notes: [
     "Pick several pages in the filmstrip. Shift+click picks a run of pages, Ctrl+click (Cmd+click on a Mac) adds or takes out one. From the keyboard: Shift with the arrows stretches the pick, Ctrl with the arrows moves without changing it, Space adds or takes out a page, Ctrl+A picks them all, Escape goes back to one. Picked pages get a tick. Move left and right (or Alt+arrows, or dragging), Master page, Duplicate (Ctrl+D) and Delete then work on all of them, as one undo step.",
     "Copy, cut and paste pages. Ctrl+C, Ctrl+X and Ctrl+V in the filmstrip, or the new Copy, Cut and Paste buttons in the page's pill. Pasted pages go after the picked page, in the same document, another one, or another DSKEDTR tab. Their master pages, pictures and fonts come along. Text boxes linked across the copied pages stay linked. Other apps get the words. The copy never leaves your computer: it is forgotten when the tab that copied it closes, or after two hours.",

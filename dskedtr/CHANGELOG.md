@@ -1,5 +1,12 @@
 # DSKEDTR changelog
 
+## 0.39.1 - 2026-10-10
+
+- **Zoom goes up to 800%** (it stopped at 400%).
+- **Zooming in and out keeps your place.** Ctrl + and Ctrl - (and the
+  zoom buttons) now keep whatever is in the middle of the window in the
+  middle, instead of drifting off into the grey around the page.
+
 ## 0.39.0 - 2026-10-10
 
 - **Pick several pages in the filmstrip.** Shift+click picks a run of
