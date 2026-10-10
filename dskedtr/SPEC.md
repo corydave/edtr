@@ -164,6 +164,11 @@ colour is never the only difference: the icon's drawing and the name carry it.
   English, cm elsewhere by default. 0.6.1: guides catch the page's middle
   from further away and every snap line is labelled (middle, margins, page
   edge); quick guide sets (Middle, Thirds, Quarters, Tri-fold, Half-fold);
+  0.38.1 (Dave: "the Inspector should be the home for the guides"): the
+  panel and its arrow are gone; everything in it is the Inspector's
+  **Guides and grid** section, right under Document when nothing is
+  picked, with Show guides / grid / rulers and Snap boxes that stay in
+  step with the top-bar buttons (which are now plain on/off switches);
   Ctrl/Cmd + wheel and pinch zoom the page around the pointer, two-finger
   pan on touch, and the desk owns touch (touch-action: none). Later:
   a ruler origin you can move, and the baseline grid.
@@ -426,7 +431,10 @@ Phase 1 is built in milestones, each stopping for Dave's review:
      the content layer to the page (`#pageClip`), so only what prints
      shows. Look, don't touch: drags pan, editing keys stand down; W,
      Escape, the banner button, a tool or typing go back. Not saved in the
-     view settings: the app always opens ready to edit.
+     view settings: the app always opens ready to edit. 0.38.1: the
+     Preview banner (and the master-page banner) sit in a bar of their own
+     above the rulers (`#deskBar`, grid row 1 of the desk frame), so they
+     never cover the top of the page; the bar takes no room when empty.
 6. **Formatting inside a paragraph** (done, 0.8.0): bold, italic,
    underline, colour and size for a word or phrase, links, and kerning by
    hand. A story is now text, roles, frames and `runs`: a sorted,
@@ -897,6 +905,21 @@ building blocks, the starter template gallery (all done by 0.21.0, below).
 leaders (done, 0.25.0), hyphenation (done, 0.26.0), text on a path (done, 0.27.0: arch, dip, circle), picture resolution warnings,
 calendars (done, 0.28.0), accessible HTML export (done, 0.29.0), tagged PDF (done, 0.22.0), and
 `.pub` import (done, 0.32.0; below).
+
+**Someday (decided 2026-10-10, not planned yet).**
+- *Open a shared .dskedtr from Google Drive, in Preview.* A plain Drive
+  share link can't be read by another web page (Google doesn't allow it),
+  so it would go through the Drive API: `files/{id}?alt=media` with an API
+  key locked to DSKEDTR's web address, for files shared "Anyone with the
+  link" (hosted edition only; not the one-file edition). Opens in Preview
+  with "Shared from Google Drive" and Edit a copy; same checks as opening a
+  file. Files shared only inside FLCC would need Google sign-in (OAuth,
+  Google's app review, maybe Workspace admin approval): a bigger job.
+- *Open from any address that allows it* (`?open=https://...`), e.g.
+  GitHub's raw files, which send the header that allows it.
+- Not doing: a whole project inside the link itself. Text-only documents
+  fit (about 1,100 to 4,400 characters), but one photo is about 134,000,
+  and most documents will have pictures.
 
 **Down the road - the DSKEDTR reader.** A reading view for published
 documents, built on the same reading order and roles: a screen reader gets

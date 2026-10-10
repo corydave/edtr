@@ -136,7 +136,7 @@ body {
    filmstrip. Now nothing inside can make the frame bigger, and anything
    that ever did would be clipped ("overflow: clip" also cannot be scrolled,
    unlike "hidden"). */
-.desk-frame { flex: 1; min-height: 0; display: grid; grid-template-columns: 20px minmax(0, 1fr); grid-template-rows: 20px minmax(0, 1fr);
+.desk-frame { flex: 1; min-height: 0; display: grid; grid-template-columns: 20px minmax(0, 1fr); grid-template-rows: auto 20px minmax(0, 1fr);
   overflow: hidden; overflow: clip; }
 .desk-frame > * { min-height: 0; min-width: 0; }
 /* "contain: strict" tells the browser to size a ruler only by its CSS (the
@@ -145,17 +145,26 @@ body {
 #rulerTop { cursor: row-resize; }
 #rulerLeft { cursor: col-resize; }
 .ruler-corner { background: var(--panel); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.desk-frame.no-rulers { grid-template-columns: 0 minmax(0, 1fr); grid-template-rows: 0 minmax(0, 1fr); }
+.desk-frame.no-rulers { grid-template-columns: 0 minmax(0, 1fr); grid-template-rows: auto 0 minmax(0, 1fr); }
+/* Where things sit in the frame (0.38.1): a bar for banners across the top
+   (empty, and so no height, unless one shows), then the rulers, then the
+   page. A banner there never covers the top of the page. */
+.desk-bar { grid-column: 1 / -1; grid-row: 1; display: flex; justify-content: center; }
+.ruler-corner { grid-column: 1; grid-row: 2; }
+#rulerTop { grid-column: 2; grid-row: 2; }
+#rulerLeft { grid-column: 1; grid-row: 3; }
+.desk-bar .preview-banner.proof-banner { position: static; transform: none; top: auto; margin: 6px 8px; }
+.desk-frame.proofing .desk-bar { background: color-mix(in srgb, var(--bg) 38%, #000); }   /* (dark, like the desk around the page in Preview) */
 .desk-frame.no-rulers .ruler, .desk-frame.no-rulers .ruler-corner { visibility: hidden; }
 /* All pages (0.36.0): the page grid takes the desk's place, with no rulers. */
-.desk-frame.grid-view { grid-template-columns: 0 minmax(0, 1fr); grid-template-rows: 0 minmax(0, 1fr); }
+.desk-frame.grid-view { grid-template-columns: 0 minmax(0, 1fr); grid-template-rows: auto 0 minmax(0, 1fr); }
 .desk-frame.grid-view .ruler, .desk-frame.grid-view .ruler-corner { visibility: hidden; }
 .desk-frame.grid-view .desk { display: none; }
 /* View toggles in the top bar: pressed ones are filled, not just coloured. */
 .tb-toggle[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-text); box-shadow: inset 0 0 0 1.5px currentColor; }
 .tb-more { width: 22px; }
 .tb-more svg { width: 14px; height: 14px; }
-/* The guides and grid panel: a popover under its button. */
+/* Popover panels (the Shapes gallery). */
 .pop[popover] { position: fixed; inset: auto; margin: 0; width: min(292px, calc(100vw - 16px)); max-height: min(70vh, 560px); overflow: auto;
   padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--fg); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
 .shape-pop[popover] { width: min(372px, calc(100vw - 16px)); max-height: min(86vh, 720px); }
@@ -232,9 +241,9 @@ body {
   border-style: solid; border-width: 0 0 5px 5px; border-color: transparent transparent currentColor transparent; opacity: .75; }
 
 /* The scrolling desk with the page on it. */
-.desk { overflow: auto; position: relative; outline: none; grid-column: 2; grid-row: 2; }
+.desk { overflow: auto; position: relative; outline: none; grid-column: 2; grid-row: 3; }
 /* All pages (0.36.0): every page, small, in rows; facing pages as spreads. */
-.page-grid { grid-column: 2; grid-row: 2; overflow: auto; padding: 20px 16px 28px; }
+.page-grid { grid-column: 2; grid-row: 3; overflow: auto; padding: 20px 16px 28px; }
 .pg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 20px 24px; align-items: flex-end; justify-content: center; --pgw: 200px; }
 .pg-spread { display: flex; align-items: flex-end; }
 .pg-page { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px; border: 0; border-radius: 10px;
@@ -320,9 +329,8 @@ body {
 .desk-frame.proofing [data-layer=caret], .desk-frame.proofing [data-layer=handles],
 .desk-frame.proofing [data-layer=snap], .desk-frame.proofing [data-layer=overlay], .desk-frame.proofing [data-layer=spell] { display: none; }
 /* Find and replace (0.38.0): a panel over the top right of the page (not in the way of the words it finds). */
-.find-panel { position: absolute; top: 28px; right: 14px; z-index: 6; width: min(360px, calc(100% - 28px)); background: var(--panel); color: var(--fg);
+.find-panel { position: absolute; grid-column: 2; grid-row: 3; top: 8px; right: 14px; z-index: 6; width: min(360px, calc(100% - 28px)); background: var(--panel); color: var(--fg);
   border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 8px 12px 12px; }
-.desk-frame.no-rulers .find-panel { top: 8px; }
 .find-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .find-head h2 { font-size: 14px; margin: 0; }
 .find-opts { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
@@ -474,6 +482,7 @@ input[type="text"], textarea.field-text {
 .icon-row { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 .icon-gap { width: 8px; }
 .icon-cols { display: flex; gap: 16px; flex-wrap: wrap; }
+.check-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; }
 .rule { border: 0; border-top: 1px solid var(--line); margin: 10px 0; }
 .icon-sm { width: 38px; height: 38px; }   /* six fit in one row of the Inspector */
 .icon-sm .cover { fill: var(--field); }
@@ -883,11 +892,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <button class="icon-btn tb-toggle" id="view-grid" aria-pressed="false" aria-label="Grid" title="Grid (Ctrl+')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
     </button>
-    <button class="icon-btn tb-toggle" id="view-guides" aria-pressed="true" aria-label="Guides" title="Guides (Ctrl+;)">
+    <button class="icon-btn tb-toggle" id="view-guides" aria-pressed="true" aria-label="Guides" title="Guides (Ctrl+;). Adding and placing them: the Inspector's Guides and grid, with nothing picked">
       <svg viewBox="0 0 24 24"><path d="M9 2v20M2 15h20" stroke-dasharray="3 2.5"/></svg>
-    </button>
-    <button class="icon-btn tb-more" id="guidesMore" popovertarget="guidesPop" aria-expanded="false" aria-label="Units, grid and guides settings" title="Units, grid and guides settings">
-      <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
     </button>
     <button class="icon-btn tb-toggle" id="view-snap" aria-pressed="true" aria-label="Snap" title="Snap to edges, margins, objects, guides and grid; Alt while dragging for one free drag (Ctrl+Shift+;)">
       <svg viewBox="0 0 24 24"><path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15"/><path d="m5 8 4 4M12 15l4 4"/></svg>
@@ -964,24 +970,28 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
   <!-- ===================== THE DESK, PAGE AND FILMSTRIP ===================== -->
   <div class="centre">
   <div class="desk-frame" id="deskFrame">
+  <!-- The banner bar (0.38.1): Preview's controls and the master pages'
+       note sit here, above the rulers, so they never cover the page. -->
+  <div class="desk-bar" id="deskBar">
+    <div class="preview-banner proof-banner master-banner" id="masterBanner" role="status" hidden><span id="masterWords"></span><button class="btn" id="masterBack">Back to the pages</button></div>
+    <!-- Preview's banner (0.36.0): the rest of the window is shaded and can't be
+         used, so the page and zoom buttons are here, with the way back. -->
+    <div class="preview-banner proof-banner" id="proofBanner" role="group" aria-label="Preview" hidden>
+      <span><strong>Preview</strong><span class="pb-long">: as it will print</span></span>
+      <span class="pb-sep" aria-hidden="true"></span>
+      <button type="button" class="pb-btn" id="proofPrev" aria-label="Previous page" title="Previous page (Page Up)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+      <span id="proofPage">Page 1 of 1</span>
+      <button type="button" class="pb-btn" id="proofNext" aria-label="Next page" title="Next page (Page Down)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+      <span class="pb-sep pb-zoom" aria-hidden="true"></span>
+      <button type="button" class="pb-btn pb-zoom" id="proofZoomOut" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-5-5"/></svg></button>
+      <button type="button" class="pb-btn pb-zoom" id="proofZoomIn" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M21 21l-5-5"/></svg></button>
+      <button class="btn" id="proofStop" title="Back to editing (W or Escape)">Back to editing</button>
+    </div>
+  </div>
   <!-- The rulers (pictures for the eyes; the Inspector has the same numbers). -->
   <div class="ruler-corner" aria-hidden="true"></div>
   <canvas class="ruler" id="rulerTop" aria-hidden="true" title="Drag down onto the page to make an across guide"></canvas>
   <canvas class="ruler" id="rulerLeft" aria-hidden="true" title="Drag onto the page to make an up-and-down guide"></canvas>
-  <div class="preview-banner proof-banner master-banner" id="masterBanner" role="status" hidden><span id="masterWords"></span><button class="btn" id="masterBack">Back to the pages</button></div>
-  <!-- Preview's banner (0.36.0): the rest of the window is shaded and can't be
-       used, so the page and zoom buttons are here, with the way back. -->
-  <div class="preview-banner proof-banner" id="proofBanner" role="group" aria-label="Preview" hidden>
-    <span><strong>Preview</strong><span class="pb-long">: as it will print</span></span>
-    <span class="pb-sep" aria-hidden="true"></span>
-    <button type="button" class="pb-btn" id="proofPrev" aria-label="Previous page" title="Previous page (Page Up)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
-    <span id="proofPage">Page 1 of 1</span>
-    <button type="button" class="pb-btn" id="proofNext" aria-label="Next page" title="Next page (Page Down)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
-    <span class="pb-sep pb-zoom" aria-hidden="true"></span>
-    <button type="button" class="pb-btn pb-zoom" id="proofZoomOut" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-5-5"/></svg></button>
-    <button type="button" class="pb-btn pb-zoom" id="proofZoomIn" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M11 8v6M21 21l-5-5"/></svg></button>
-    <button class="btn" id="proofStop" title="Back to editing (W or Escape)">Back to editing</button>
-  </div>
   <div class="preview-banner" id="previewBanner" role="status" hidden><span id="previewWords"></span><button class="btn" id="previewStop">Stop preview</button></div>
   <!-- Quick actions for what is picked (see wireQuickBar). One Tab stop;
        Left and Right move along it; Alt+F10 jumps here from the page. -->
@@ -1149,6 +1159,52 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <ul class="font-list" id="fontList"></ul>
       <p class="muted" id="fontListNote" style="font-size:12px">None yet. Add .ttf, .otf or .woff files (a school's brand font, say): they are saved inside this project. Use fonts you have the right to use.</p>
       <div class="btn-row" style="margin-top:0"><button class="btn" id="addFontBtn">Add font files…</button><button class="btn" id="googleFontBtn">Google Fonts…</button></div>
+      </div>
+    </section>
+
+    <!-- Guides and grid (0.38.1): everything about them in one place, with
+         nothing picked. The top bar's buttons still turn them on and off. -->
+    <section id="secGuides">
+      <h2><button class="fold" data-fold="guidesBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Guides and grid</span></button></h2>
+      <div class="fold-body" id="guidesBody" hidden>
+      <div class="check-cols" role="group" aria-label="Show">
+        <label class="check"><input type="checkbox" id="gShowGuides"> Guides</label>
+        <label class="check"><input type="checkbox" id="gShowGrid"> Grid</label>
+        <label class="check"><input type="checkbox" id="gShowRulers"> Rulers</label>
+        <label class="check"><input type="checkbox" id="gSnap"> Snap</label>
+      </div>
+      <div class="grid4" style="margin-top:8px">
+        <label class="field">Measure in<select id="viewUnits"></select></label>
+        <label class="field">Grid lines every<select id="gridSize"></select></label>
+      </div>
+      <span class="tool-caption" style="margin-top:12px">Guides</span>
+      <p class="muted" style="font-size:12px;margin-top:0">The same on every page; never printed. Drag out of a ruler onto the page to make one; drag one off the page to remove it.</p>
+      <div class="icon-cols" style="margin-top:4px">
+        <div role="group" aria-labelledby="capAddGuide">
+          <span class="tool-caption" id="capAddGuide">Add a guide</span>
+          <div class="icon-row"><button class="icon-sm" id="addGuideV" aria-label="Add an up-and-down guide" title="Add an up-and-down guide"><svg viewBox="0 0 24 24"><path d="M12 2v20" stroke-dasharray="3 2"/><rect x="3" y="6" width="5" height="12" rx="1"/><path d="M16 12h5M18.5 9.5v5"/></svg></button><button class="icon-sm" id="addGuideH" aria-label="Add an across guide" title="Add an across guide"><svg viewBox="0 0 24 24"><path d="M2 12h20" stroke-dasharray="3 2"/><rect x="6" y="3" width="12" height="5" rx="1"/><path d="M12 16v5M9.5 18.5h5"/></svg></button></div>
+        </div>
+      </div>
+      <ul class="guide-list" id="guideList" aria-label="Guides"></ul>
+      <hr class="rule">
+      <span class="tool-caption" id="capGuideSets">Quick guides (added to the ones you have)</span>
+      <div class="row" role="group" aria-labelledby="capGuideSets" style="margin-top:0;flex-wrap:wrap">
+        <button class="btn" data-guide-set="middle" title="One up-and-down and one across guide through the middle of the page">Middle</button>
+        <button class="btn" data-guide-set="thirds" title="The page split in three, both ways">Thirds</button>
+        <button class="btn" data-guide-set="quarters" title="The page split in four, both ways">Quarters</button>
+        <button class="btn" data-guide-set="trifold" title="Fold lines for a tri-fold brochure: the page's width in three equal panels">Tri-fold</button>
+        <button class="btn" data-guide-set="halffold" title="Fold line for a folded card or booklet: the middle of the page's width">Half-fold</button>
+      </div>
+      <hr class="rule">
+      <span class="tool-caption">Column guides inside the margins</span>
+      <div class="grid4">
+        <label class="field">Columns<input type="number" id="colCount" min="2" max="12" step="1" value="3"></label>
+        <label class="field"><span>Gap (<span class="u-short">in</span>)</span><input type="number" id="colGap" class="u-input" min="0" value="0.25" data-pt="18"></label>
+      </div>
+      <div class="row">
+        <button class="btn" id="colGuidesBtn">Add column guides</button>
+        <button class="btn" id="clearGuidesBtn">Remove all</button>
+      </div>
       </div>
     </section>
 
@@ -1612,44 +1668,6 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 <div class="quick-menu" id="pageMasterMenu" popover role="menu" aria-labelledby="pageMasterBtn"></div>
 
 <!-- ===================== GUIDES AND GRID (a popover from the top bar) ===================== -->
-<div class="pop" id="guidesPop" popover="manual" role="dialog" aria-labelledby="guidesPopTitle">
-  <div class="dlg-head"><h2 id="guidesPopTitle">Units</h2>
-    <button class="icon-btn" id="guidesClose" aria-label="Close the guides and grid panel" title="Close (Escape)">
-      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
-    </button></div>
-  <label class="field">Measure in<select id="viewUnits"></select></label>
-  <h2 style="margin-top:14px">Grid</h2>
-  <label class="field">Grid lines every<select id="gridSize"></select></label>
-  <h2 style="margin-top:14px">Guides</h2>
-  <p class="muted" style="font-size:12px;margin-top:0">The same on every page; never printed. Tip: drag out of a ruler onto the page to make one.</p>
-  <div class="icon-cols" style="margin-top:8px">
-        <div role="group" aria-labelledby="capAddGuide">
-          <span class="tool-caption" id="capAddGuide">Add a guide</span>
-          <div class="icon-row"><button class="icon-sm" id="addGuideV" aria-label="Add an up-and-down guide" title="Add an up-and-down guide"><svg viewBox="0 0 24 24"><path d="M12 2v20" stroke-dasharray="3 2"/><rect x="3" y="6" width="5" height="12" rx="1"/><path d="M16 12h5M18.5 9.5v5"/></svg></button><button class="icon-sm" id="addGuideH" aria-label="Add an across guide" title="Add an across guide"><svg viewBox="0 0 24 24"><path d="M2 12h20" stroke-dasharray="3 2"/><rect x="6" y="3" width="12" height="5" rx="1"/><path d="M12 16v5M9.5 18.5h5"/></svg></button></div>
-        </div>
-      </div>
-      <ul class="guide-list" id="guideList" aria-label="Guides"></ul>
-      <hr class="rule">
-      <span class="tool-caption" id="capGuideSets">Quick guides (added to the ones you have)</span>
-      <div class="row" role="group" aria-labelledby="capGuideSets" style="margin-top:0">
-        <button class="btn" data-guide-set="middle" title="One up-and-down and one across guide through the middle of the page">Middle</button>
-        <button class="btn" data-guide-set="thirds" title="The page split in three, both ways">Thirds</button>
-        <button class="btn" data-guide-set="quarters" title="The page split in four, both ways">Quarters</button>
-        <button class="btn" data-guide-set="trifold" title="Fold lines for a tri-fold brochure: the page's width in three equal panels">Tri-fold</button>
-        <button class="btn" data-guide-set="halffold" title="Fold line for a folded card or booklet: the middle of the page's width">Half-fold</button>
-      </div>
-      <hr class="rule">
-      <span class="tool-caption">Column guides inside the margins</span>
-      <div class="grid4">
-        <label class="field">Columns<input type="number" id="colCount" min="2" max="12" step="1" value="3"></label>
-        <label class="field"><span>Gap (<span class="u-short">in</span>)</span><input type="number" id="colGap" class="u-input" min="0" value="0.25" data-pt="18"></label>
-      </div>
-      <div class="row">
-        <button class="btn" id="colGuidesBtn">Add column guides</button>
-        <button class="btn" id="clearGuidesBtn">Remove all</button>
-      </div>
-      <p class="muted" style="font-size:12px">On the page, drag a guide to move it, or off the page to remove it.</p>
-</div>
 
 <!-- Spoken updates for screen readers (role changes, reading order moves, overflow). -->
 <div id="announcer" class="sr-only" aria-live="polite"></div>
@@ -1770,7 +1788,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <div role="tabpanel" id="paneStart" aria-labelledby="tabStart" tabindex="0" hidden>
       <p style="margin-top:0">DSKEDTR makes things to print or share as a PDF: newsletters, flyers, posters, programs, booklets. Here is a newsletter from start to finish.</p>
       <h3>1. Start</h3>
-      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card, a sign or a monthly calendar), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border, and a <strong>calendar</strong> for any month (a real table, with the days of the week as its header row). <strong>Lists</strong>: the Paragraph section's List buttons (or Ctrl+Shift+8 and 7) make bullets or numbers, which renumber themselves; Tab at the start of an item moves it in a level. <strong>Superscript and subscript</strong> (x², H₂O) are in Characters (Ctrl+. and Ctrl+,). <strong>Find and replace</strong> (Ctrl+F, or the button beside Undo and Redo) searches every page. Words the dictionary doesn't know get a red wavy line (never printed); right-click one for suggestions, or press <strong>F7</strong> to check the whole document. Names and terms you add are saved inside the document. Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. <strong>View</strong> (the eye in the top bar) shows one page, two pages side by side, or <strong>all pages</strong> at once (click one to work on it, or drag one to move it), and <strong>Preview</strong> (W): the page as it will print, with the rest of the window shaded. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
+      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card, a sign or a monthly calendar), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border, and a <strong>calendar</strong> for any month (a real table, with the days of the week as its header row). <strong>Lists</strong>: the Paragraph section's List buttons (or Ctrl+Shift+8 and 7) make bullets or numbers, which renumber themselves; Tab at the start of an item moves it in a level. <strong>Superscript and subscript</strong> (x², H₂O) are in Characters (Ctrl+. and Ctrl+,). <strong>Find and replace</strong> (Ctrl+F, or the button beside Undo and Redo) searches every page. Words the dictionary doesn't know get a red wavy line (never printed); right-click one for suggestions, or press <strong>F7</strong> to check the whole document. Names and terms you add are saved inside the document. Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. <strong>View</strong> (the eye in the top bar) shows one page, two pages side by side, or <strong>all pages</strong> at once (click one to work on it, or drag one to move it), and <strong>Preview</strong> (W): the page as it will print, with the rest of the window shaded. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping turn on and off in the top bar; with nothing picked, the Inspector's <strong>Guides and grid</strong> section has them all, with the guides' exact places, quick sets and column guides. Drag out of a ruler onto the page to make a guide.</p>
       <h3>Publisher files</h3>
       <p>Open (Ctrl+O, or drop it on the window) also opens Microsoft Publisher files (<strong>.pub</strong>, from Publisher 2000 to today). Pages, text boxes with their words and formatting, tables, pictures (clip art and equations too), shapes, lines, groups and master pages come across as things you can edit. A .pub doesn't carry its fonts. Times New Roman, Arial, Calibri, Cambria, Georgia and Courier New have built-in twins with the same letter widths; any other font is listed as <strong>missing</strong>, with a built-in one standing in. Add it in Document, Your fonts: its file, this computer's copy, or a match from <strong>Google Fonts</strong> (only when you ask: just the font's name is sent, and the font is then saved inside the project). A short report says what came across and what didn't. Save it as a DSKEDTR project to keep working on it; the .pub itself is never changed. Publisher 98 and older files can't be opened yet.</p>
       <h3>2. Text boxes, and text that flows</h3>
@@ -2138,7 +2156,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.38.0';
+const APP_VERSION = '0.38.1';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -11104,6 +11122,7 @@ function updateInspector() {
   const geomObj = typing ? (typedTable || typedBox) : one;
 
   show('secDoc', !typing && !picked.length && !editingMaster());
+  show('secGuides', !typing && !picked.length);                 // (on master pages too: guides are the same on every page)
   show('secMaster', !typing && !picked.length && editingMaster());
   if (!typing && !picked.length && editingMaster()) fillMaster();
   $('orderHeading').parentElement.hidden = editingMaster();      // masters aren't read in order: their things repeat on every page
@@ -12613,8 +12632,8 @@ function wireSectionToggles() {
    13f. GUIDES
    Lines to line things up against, the same on every page, never printed.
    Objects snap to them (when Guides and Snap are on, in the top bar). Add
-   them by dragging out of a ruler, or in the guides and grid panel (the
-   arrow beside Guides: one at a time, or as column guides inside the
+   them by dragging out of a ruler, or in the Inspector's Guides and grid
+   section (nothing picked: one at a time, or as column guides inside the
    margins), type exact positions there, or drag them on the page with the
    Select tool. Dragging a guide off the page removes it.
    ====================================================================== */
@@ -12804,7 +12823,8 @@ function wireGuides() {
        out of a ruler to make a guide.
      - Grid: evenly spaced lines on the page (never printed).
      - Guides: show or hide them. Their exact positions, column guides and
-       the grid's spacing are in the panel the small arrow beside them opens.
+       the grid's spacing are in the Inspector's Guides and grid section
+       (with nothing picked), which can turn all four on and off too.
      - Snap: when on, things snap to the page's edges and middle, the
        margins, other objects, and the guides and grid when they show.
        Hold Alt (Option) while dragging for one free drag.
@@ -13355,6 +13375,7 @@ function applyUnitsUI() {
 
 function showViewButtons() {
   for (const key of ['rulers', 'guides', 'grid', 'snap']) $('view-' + key).setAttribute('aria-pressed', String(view[key]));
+  for (const [id, key] of [['gShowGuides', 'guides'], ['gShowGrid', 'grid'], ['gShowRulers', 'rulers'], ['gSnap', 'snap']]) $(id).checked = view[key];
   $('gridSize').value = String(view.gridSize);
 }
 
@@ -13510,7 +13531,7 @@ function wireRulers() {
   desk.addEventListener('pointerleave', () => { rulerPointer = null; scheduleRulers(); });
 }
 
-/* ---------- The guides and grid panel (the arrow beside Guides) ---------- */
+/* ---------- Guides and grid (the Inspector's section, with nothing picked; 0.38.1) ---------- */
 function wireViewBar() {
   $('inspectorBtn').addEventListener('click', () => { setInspector(!view.inspector); announce(view.inspector ? 'Inspector shown' : 'Inspector hidden'); });
   if (!view.inspector) setInspector(false);
@@ -13535,36 +13556,10 @@ function wireViewBar() {
     if (!view.grid) setView('grid', true); else renderGrid();
     announce('Grid every ' + sel.options[sel.selectedIndex].textContent);
   });
-  // The panel stays open while you drag guides on the page (it is a
-  // "manual" popover: the arrow, its X or Escape closes it). It hangs from
-  // the arrow that opened it, like any menu: its left edge under the
-  // arrow's, kept inside the window. It follows the arrow if the window
-  // changes size or the top bar scrolls sideways (on a phone).
-  const pop = $('guidesPop');
-  const placeGuidesPop = () => {
-    if (!pop.matches(':popover-open')) return;
-    const b = $('guidesMore').getBoundingClientRect();
-    const w = pop.offsetWidth;
-    pop.style.left = Math.max(8, Math.min(b.left - 4, window.innerWidth - w - 8)) + 'px';
-    pop.style.top = (b.bottom + 6) + 'px';
-  };
-  pop.addEventListener('toggle', (e) => {
-    $('guidesMore').setAttribute('aria-expanded', String(e.newState === 'open'));
-    if (e.newState !== 'open') return;
-    renderGuideList();
-    placeGuidesPop();
-  });
-  window.addEventListener('resize', placeGuidesPop);
-  $('guidesMore').closest('.topbar').addEventListener('scroll', placeGuidesPop);
-  $('guidesClose').addEventListener('click', () => { pop.hidePopover(); $('guidesMore').focus(); });
-  // Escape closes it first (before Escape's other jobs, like dropping the selection).
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || !pop.matches(':popover-open') || document.querySelector('dialog[open]')) return;
-    e.preventDefault(); e.stopImmediatePropagation();
-    const wasInside = pop.contains(document.activeElement);
-    pop.hidePopover();
-    if (wasInside) $('guidesMore').focus();
-  }, true);
+  // The Inspector's Show boxes (0.38.1): the same as the top bar's buttons.
+  for (const [id, key] of [['gShowGuides', 'guides'], ['gShowGrid', 'grid'], ['gShowRulers', 'rulers'], ['gSnap', 'snap']]) {
+    $(id).addEventListener('change', () => setView(key, $(id).checked));
+  }
   $('deskFrame').classList.toggle('no-rulers', !view.rulers);
   showViewButtons();
 }
@@ -13775,7 +13770,7 @@ function wireChrome() {
     ['Rotate handle (circle above)', 'Turn the picked object (Shift: 15\u00b0 steps)'],
     ['Page Up / Page Down', 'Previous or next page (when the page has focus)'],
     ['Filmstrip: Left / Right', 'Go to the page before or after; ' + alt + ' + Left / Right moves the page'],
-    ['Guides', 'Drag out of a ruler, or add them in the guides and grid panel (the arrow beside Guides in the top bar: one at a time, quick sets such as Middle, Thirds or Tri-fold, or columns); they snap to the middle of the page; drag one off the page to remove it'],
+    ['Guides', 'Drag out of a ruler, or add them in the Inspector\'s Guides and grid section, with nothing picked (one at a time, quick sets such as Middle, Thirds or Tri-fold, or columns); they snap to the middle of the page; drag one off the page to remove it'],
     ['Inspector headings', 'Click or Enter to open or fold a section; Up / Down between headings; ' + (isMac ? 'Option' : 'Alt') + ' + Page Up / Page Down from anywhere in the Inspector'],
     ['Layers list', 'Up / Down pick, Right / Left open or close a group, F2 rename, H hide, L lock, ' + alt + ' + Up / Down forward or backward'],
     ['Enter', 'Type in the picked text box (or a picked table\'s first cell); with a drawing tool, add one in the middle'],
@@ -20167,6 +20162,10 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.38.1", date: "2026-10-10", title: "", notes: [
+    "Preview no longer covers the page. The Preview banner (and the master-page banner) now sit in their own strip above the rulers, so text right at the top of the page stays visible.",
+    "Guides live in the Inspector. With nothing picked, a new Guides and grid section sits right under Document: Show guides, Show grid, Show rulers and Snap boxes, units, grid spacing, adding and listing guides, quick guide sets and column guides. The Guides button in the top bar just turns guides on and off (Ctrl+;); its little arrow and pop-up panel are gone."
+  ] },
   { version: "0.38.0", date: "2026-10-10", title: "", notes: [
     "Spell checking. Words the dictionary doesn't know get a red wavy line on the page (never in the PDF, the PNG or Preview). Right-click one (or press the menu key) for suggestions, Ignore all, or Add to dictionary. F7 (or Check spelling in Find and replace) goes through the whole document one word at a time, from the cursor: Change, Change all, Ignore, Ignore all, Add to dictionary. Words you add (names, terms) are saved inside the document. The word list (about 124,000 English words, from SCOWL) is inside DSKEDTR, so it works offline and nothing is sent anywhere. Words in capitals (FLCC), with digits (18th) and in other alphabets are left alone; documents in other languages aren't checked. View, Spelling marks turns the lines off. (It found three typos in the Multiple Locus worksheet.)",
     "Find and replace. Ctrl+F (Cmd+F), or the new button beside Undo and Redo. It looks through every page, in reading order, then the master pages: Enter for the next, Shift+Enter for the one before, Match case, Whole words only, Replace, and Replace all (one undo puts them all back). It stays open beside the page while you work, and Escape puts the cursor on what it found.",

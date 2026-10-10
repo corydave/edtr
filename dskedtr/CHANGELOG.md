@@ -1,5 +1,17 @@
 # DSKEDTR changelog
 
+## 0.38.1 - 2026-10-10
+
+- **Preview no longer covers the page.** The Preview banner (and the
+  master-page banner) now sit in their own strip above the rulers, so
+  text right at the top of the page stays visible.
+- **Guides live in the Inspector.** With nothing picked, a new **Guides
+  and grid** section sits right under Document: Show guides, Show grid,
+  Show rulers and Snap boxes, units, grid spacing, adding and listing
+  guides, quick guide sets and column guides. The Guides button in the
+  top bar just turns guides on and off (Ctrl+;); its little arrow and
+  pop-up panel are gone.
+
 ## 0.38.0 - 2026-10-10
 
 - **Spell checking.** Words the dictionary doesn't know get a red wavy
