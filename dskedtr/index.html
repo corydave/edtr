@@ -1398,6 +1398,9 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
         <button class="icon-sm" id="chBold" aria-pressed="false" aria-label="Bold" title="Bold (Ctrl+B)"><svg viewBox="0 0 24 24"><path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/></svg></button>
         <button class="icon-sm" id="chItalic" aria-pressed="false" aria-label="Italic" title="Italic (Ctrl+I)"><svg viewBox="0 0 24 24"><path d="M19 4h-9M14 20H5M15 4 9 20"/></svg></button>
         <button class="icon-sm" id="chUnderline" aria-pressed="false" aria-label="Underline" title="Underline (Ctrl+U)"><svg viewBox="0 0 24 24"><path d="M6 4v6a6 6 0 0 0 12 0V4M4 20h16"/></svg></button>
+        <!-- Superscript and subscript (0.37.0): x² and H₂O. -->
+        <button class="icon-sm" id="chSup" aria-pressed="false" aria-label="Superscript" title="Superscript, like the 2 in x² (Ctrl+.)"><svg viewBox="0 0 24 24"><path d="m4 19 8-8M12 19l-8-8M20 12h-4c0-1.5.44-2 1.5-2.5S20 8.33 20 7.3c0-1.2-.9-1.8-2-1.8-.8 0-1.6.4-2 1"/></svg></button>
+        <button class="icon-sm" id="chSub" aria-pressed="false" aria-label="Subscript" title="Subscript, like the 2 in H₂O (Ctrl+,)"><svg viewBox="0 0 24 24"><path d="m4 5 8 8M12 5l-8 8M20 19h-4c0-1.5.44-2 1.5-2.5S20 15.33 20 14.3c0-1.2-.9-1.8-2-1.8-.8 0-1.6.4-2 1"/></svg></button>
         <button class="icon-sm" id="chClear" aria-label="Clear formatting" title="Clear formatting: back to the paragraph's style; links stay (Ctrl+\)"><svg viewBox="0 0 24 24"><path d="M4 7V4h16v3M5 20h6M13 4 8 20M15 15l5 5M20 15l-5 5"/></svg></button>
       </div>
       <p class="muted" id="chFontNote" style="font-size:12px"></p>
@@ -1431,6 +1434,19 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       </label>
       <p id="ownAlign" class="muted" style="font-size:12px" hidden><span id="ownAlignText"></span> <button class="btn" type="button" id="ownAlignClear">Use the style's settings</button></p>
       <p class="muted" style="font-size:12px">Shortcuts: <kbd id="kbdMod">Ctrl+Alt</kbd>+<kbd>1</kbd>/<kbd>2</kbd> headings, <kbd>0</kbd> body, <kbd>9</kbd> caption.</p>
+      <!-- Lists (0.37.0): bullets or numbers for the paragraphs picked, their level, their numbering. -->
+      <span class="tool-caption" id="capList" style="margin-top:8px">List</span>
+      <div class="icon-row" role="group" aria-labelledby="capList">
+        <button class="icon-sm" id="listBullets" aria-pressed="false" aria-label="Bulleted list" title="Bulleted list (Ctrl+Shift+8)"><svg viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.3" fill="currentColor"/><circle cx="4.5" cy="12" r="1.3" fill="currentColor"/><circle cx="4.5" cy="18" r="1.3" fill="currentColor"/></svg></button>
+        <button class="icon-sm" id="listNumbers" aria-pressed="false" aria-label="Numbered list" title="Numbered list (Ctrl+Shift+7)"><svg viewBox="0 0 24 24"><path d="M10 6h11M10 12h11M10 18h11M4 4.5h1.5V9M3.5 9h3.5M3.5 14.5a1.6 1.6 0 0 1 3 .8L3.5 19.5H7"/></svg></button>
+        <button class="icon-sm" id="listOut" aria-label="List level out" title="Out a level (Shift+Tab at the start of an item, or Ctrl+[)"><svg viewBox="0 0 24 24"><path d="M21 6H11M21 12H11M21 18H11M7 9l-3 3 3 3"/></svg></button>
+        <button class="icon-sm" id="listIn" aria-label="List level in" title="In a level (Tab at the start of an item, or Ctrl+])"><svg viewBox="0 0 24 24"><path d="M21 6H11M21 12H11M21 18H11M4 9l3 3-3 3"/></svg></button>
+      </div>
+      <div class="row two" id="listMore" hidden style="margin-top:6px">
+        <label class="field">Style<select id="listKind"></select></label>
+        <label class="field" id="listStartRow">Number from<input type="number" id="listStart" min="1" max="9999" step="1" inputmode="numeric" placeholder="Carry on" aria-describedby="listNote"></label>
+      </div>
+      <p class="muted reserve2" id="listNote" style="font-size:12px;margin-top:2px"></p>
       <!-- The look of this paragraph's role: changing it changes every
            paragraph with that role in the document (what it MEANS stays). -->
       <fieldset id="styleBox" hidden>
@@ -1720,7 +1736,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <div role="tabpanel" id="paneStart" aria-labelledby="tabStart" tabindex="0" hidden>
       <p style="margin-top:0">DSKEDTR makes things to print or share as a PDF: newsletters, flyers, posters, programs, booklets. Here is a newsletter from start to finish.</p>
       <h3>1. Start</h3>
-      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card, a sign or a monthly calendar), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border, and a <strong>calendar</strong> for any month (a real table, with the days of the week as its header row). Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. <strong>View</strong> (the eye in the top bar) shows one page, two pages side by side, or <strong>all pages</strong> at once (click one to work on it, or drag one to move it), and <strong>Preview</strong> (W): the page as it will print, with the rest of the window shaded. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
+      <p>Pick <strong>New document</strong> (a Letter page) or <strong>Start from a template</strong> when DSKEDTR opens, or explore the sample. The New button in the top bar offers the same: a blank page, a blank page of any size, or a template (a flyer, a newsletter, a tri-fold brochure, a certificate, a greeting card, a sign or a monthly calendar), each an original design with sample words to replace. <strong>Building blocks</strong> on the rail (K) add ready-made pieces to any page: a pull quote, a sidebar, a coupon, event details, a masthead, a contact strip, a page border, and a <strong>calendar</strong> for any month (a real table, with the days of the week as its header row). <strong>Lists</strong>: the Paragraph section's List buttons (or Ctrl+Shift+8 and 7) make bullets or numbers, which renumber themselves; Tab at the start of an item moves it in a level. <strong>Superscript and subscript</strong> (x², H₂O) are in Characters (Ctrl+. and Ctrl+,). Size, orientation and margins can change any time: <strong>Page setup</strong>, in the Document section of the Inspector. The <strong>Colour scheme</strong> button there swaps the document's six colours in one step (a template comes in its own scheme), and every colour field in the Inspector offers the scheme's six as swatches. Changing the size never squashes what is on the page. For a booklet or magazine, tick <strong>Facing pages</strong> there: pages 2 and 3, 4 and 5 and so on show side by side as spreads, with inside and outside margins. <strong>View</strong> (the eye in the top bar) shows one page, two pages side by side, or <strong>all pages</strong> at once (click one to work on it, or drag one to move it), and <strong>Preview</strong> (W): the page as it will print, with the rest of the window shaded. Click the other page of a spread to work on it, or drag something across to move it there. <strong>Bleed</strong> lets colour and pictures run past the edge for trimming; the Export dialog adds the bleed and crop marks to the PDF. <strong>Folds</strong>, also in Page setup, mark where a brochure or card will be folded (half, tri-fold, Z, gate, quarter or tent). The Export dialog can also arrange the pages as a <strong>booklet</strong> (two pages on each side of a sheet, in folding order: print on both sides, fold and staple) or as two or four <strong>copies</strong> on a sheet with cut marks. Rulers, the grid, guides and snapping are in the top bar; drag out of a ruler onto the page to make a guide.</p>
       <h3>Publisher files</h3>
       <p>Open (Ctrl+O, or drop it on the window) also opens Microsoft Publisher files (<strong>.pub</strong>, from Publisher 2000 to today). Pages, text boxes with their words and formatting, tables, pictures (clip art and equations too), shapes, lines, groups and master pages come across as things you can edit. A .pub doesn't carry its fonts. Times New Roman, Arial, Calibri, Cambria, Georgia and Courier New have built-in twins with the same letter widths; any other font is listed as <strong>missing</strong>, with a built-in one standing in. Add it in Document, Your fonts: its file, this computer's copy, or a match from <strong>Google Fonts</strong> (only when you ask: just the font's name is sent, and the font is then saved inside the project). A short report says what came across and what didn't. Save it as a DSKEDTR project to keep working on it; the .pub itself is never changed. Publisher 98 and older files can't be opened yet.</p>
       <h3>2. Text boxes, and text that flows</h3>
@@ -2068,7 +2084,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.36.1';
+const APP_VERSION = '0.37.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -2668,10 +2684,132 @@ function defaultStyles() {
   return out;
 }
 const DEFAULT_STYLES = defaultStyles();
-/** How a paragraph with this role looks in this document. */
+/** How a paragraph with this role looks in this document. (A list item looks like its role: see baseRole.) */
 function styleOf(role) {
-  const key = Object.hasOwn(ROLES, role) ? role : 'body';
+  const key = baseRole(role);
   return (doc.styles && doc.styles[key]) || DEFAULT_STYLES[key];
+}
+
+/* ---------- Lists (0.37.0) ----------
+   A paragraph can be a list item: bulleted or numbered. Its role says so,
+   after a "|":
+     'body'          an ordinary Body paragraph
+     'body|•|0'      a bulleted Body paragraph, at level 0 (the outermost)
+     'body|1.|1'     a numbered one, one level in
+     'body|1.|0|5'   a numbered one whose numbering starts again at 5
+   Keeping the list inside the role (instead of in a list of its own) means
+   every place that copies, splits, joins or saves paragraphs carries the
+   list along with no extra work. The marker ("•", "3.", "b)") is never
+   part of the text: it is worked out when the story is laid out (so the
+   numbers are always right) and drawn in front of the paragraph's first
+   line, which hangs out to the left of the words. */
+const LIST_KINDS = {
+  '•':  { label: 'Bullets (•, ◦, ▪ by level)', bullet: true, pdf: 'Disc' },
+  '–':  { label: 'Dashes (–)', bullet: true, pdf: 'None' },
+  '1.': { label: '1. 2. 3.', pdf: 'Decimal' },
+  '1)': { label: '1) 2) 3)', pdf: 'Decimal' },
+  'a.': { label: 'a. b. c.', pdf: 'LowerAlpha' },
+  'a)': { label: 'a) b) c)', pdf: 'LowerAlpha' },
+  'A.': { label: 'A. B. C.', pdf: 'UpperAlpha' },
+  'i.': { label: 'i. ii. iii.', pdf: 'LowerRoman' },
+  'I.': { label: 'I. II. III.', pdf: 'UpperRoman' }
+};
+const MAX_LIST_LEVEL = 4;                            // levels 0 to 4 (five in all)
+/** The numbering a numbered list gets at each level when it is made or moved in a level: 1. then a. then i. */
+const LEVEL_NUMBERS = ['1.', 'a.', 'i.', '1)', 'a)'];
+/** The role itself, without any list: 'h1|1.|0' -> 'h1' (anything unknown is 'body'). */
+function baseRole(role) {
+  const key = String(role || '').split('|')[0];
+  return Object.hasOwn(ROLES, key) ? key : 'body';
+}
+/** The list a role carries: { kind, level, start } (start: null to carry on counting), or null. */
+function paraList(role) {
+  const parts = String(role || '').split('|');
+  if (parts.length < 3 || !Object.hasOwn(LIST_KINDS, parts[1])) return null;
+  const level = Math.max(0, Math.min(MAX_LIST_LEVEL, parseInt(parts[2], 10) || 0));
+  const n = parseInt(parts[3], 10);
+  return { kind: parts[1], level, start: Number.isFinite(n) && n >= 1 && n <= 9999 ? n : null };
+}
+/** A role with a list (or none: list null). */
+function withList(role, list) {
+  const base = baseRole(role);
+  if (!list || !Object.hasOwn(LIST_KINDS, list.kind)) return base;
+  const level = Math.max(0, Math.min(MAX_LIST_LEVEL, list.level | 0));
+  return base + '|' + list.kind + '|' + level + (list.start != null ? '|' + list.start : '');
+}
+/** A number written the way a list kind writes it: 3 -> "3.", "c)", "iii." ... */
+function listNumberText(n, kind) {
+  const alpha = (k) => { let out = ''; while (k > 0) { k--; out = String.fromCharCode(97 + (k % 26)) + out; k = Math.floor(k / 26); } return out; };
+  const roman = (k) => {
+    if (k >= 4000) return String(k);
+    let out = '';
+    for (const [v, r] of [[1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'], [100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']]) while (k >= v) { out += r; k -= v; }
+    return out;
+  };
+  const end = kind.slice(-1);                         // '.' or ')'
+  switch (kind[0]) {
+    case 'a': return alpha(n) + end;
+    case 'A': return alpha(n).toUpperCase() + end;
+    case 'i': return roman(n) + end;
+    case 'I': return roman(n).toUpperCase() + end;
+    default: return n + end;
+  }
+}
+/**
+ * Every paragraph's list marker in a story, worked out in order:
+ * [{ text } for a numbered item, { bullet: 'disc' | 'circle' | 'square' }
+ * or { text: '–' } for a bulleted one, or null]. Numbering carries on
+ * through the whole story (paragraphs between items don't stop it), a
+ * deeper level starts again under each new item above it, and an item
+ * with a start number starts again there.
+ */
+function listMarkers(story) {
+  const counters = [];
+  return story.roles.map((role) => {
+    const l = paraList(role);
+    if (!l) return null;
+    counters.length = Math.min(counters.length, l.level + 1);   // the levels below this one start again
+    if (LIST_KINDS[l.kind].bullet) {
+      if (l.kind === '–') return { text: '\u2013', level: l.level };
+      return { bullet: ['disc', 'circle', 'square'][l.level % 3], level: l.level };
+    }
+    counters[l.level] = l.start != null ? l.start : (counters[l.level] || 0) + 1;
+    return { text: listNumberText(counters[l.level], l.kind), number: counters[l.level], level: l.level };
+  });
+}
+/** How far each list level steps in, and so how wide the marker's column is (points). */
+const listStep = (style) => Math.max(18, Math.round(style.size * 1.8));
+/**
+ * A marker's look and width: in the look of its paragraph's first letter
+ * (or, in an empty paragraph, the look new letters would get), never
+ * raised, lowered or underlined. Numbers and dashes are letters of that
+ * font; bullets are drawn shapes (so every font has them).
+ * Returns { text?, glyphs?, bullet?, fontKey, size, colour, w, gap }.
+ */
+function measureMarker(mk, m, role, f0) {
+  const plain = f0 ? patchFormat(f0, { va: null, u: null, href: null, k: null }) : null;
+  const look = charLook(role, plain);                 // (an empty paragraph's first "letter" is its end mark: the look typing would get)
+  const size = look.size, gap = Math.max(3, size * 0.35);
+  if (mk.bullet) return { bullet: mk.bullet, fontKey: look.fontKey, size, colour: look.colour, w: size * 0.4, gap };
+  let fontKey = look.fontKey;
+  const cps = [...mk.text].map((ch) => ch.codePointAt(0));
+  if (!FONTS[fontKey] || cps.some((cp) => glyphFor(fontKey, cp).index === 0)) fontKey = DEFAULT_FAMILY + '/' + (look.bold ? 'bold' : 'regular');
+  const glyphs = [];
+  let units = 0;
+  for (const cp of cps) { const g = glyphFor(fontKey, cp); glyphs.push({ g, dx: units, cp }); units += g.advanceWidth; }
+  return { text: mk.text, glyphs, fontKey, size, colour: look.colour, w: units * size / FONTS[fontKey].unitsPerEm, gap };
+}
+/**
+ * A bullet's outline as SVG path text, around the middle of the letters'
+ * height: a disc (level 1), a ring (level 2) or a square (level 3). The
+ * ring is two circles drawn opposite ways round, so its middle is a hole.
+ */
+function bulletPath(mk, baseline) {
+  const s = mk.size, cx = mk.x + s * 0.18, cy = baseline - s * 0.33, r = s * 0.17;
+  const circle = (rr, sweep) => 'M' + r2(cx - rr) + ' ' + r2(cy) + 'a' + r2(rr) + ' ' + r2(rr) + ' 0 1 ' + sweep + ' ' + r2(2 * rr) + ' 0a' + r2(rr) + ' ' + r2(rr) + ' 0 1 ' + sweep + ' ' + r2(-2 * rr) + ' 0Z';
+  if (mk.bullet === 'square') { const h = s * 0.15; return 'M' + r2(cx - h) + ' ' + r2(cy - h) + 'H' + r2(cx + h) + 'V' + r2(cy + h) + 'H' + r2(cx - h) + 'Z'; }
+  if (mk.bullet === 'circle') return circle(r, 1) + circle(r * 0.55, 0);
+  return circle(r, 1);
 }
 /**
  * How paragraph p of a story looks: its role's style, made bold in a
@@ -3168,12 +3306,18 @@ const isCoveredCell = (cell) => { const t = cellTable(cell); return !!t && table
      href   'https://...'   a link (also underlined, so it never relies on colour alone)
      k      thousandths of the letter's size: extra space BEFORE this letter
      f      a family (section 2): 'literata', or someone's own 'uf1'
+     va     'sup' or 'sub': superscript or subscript (0.37.0)
    To change formatting, the runs are spread out to one entry per letter
    (charFormats), those entries change, and they are packed back into runs
    (packRuns). Stories are small, so this simple way is plenty fast and
    hard to get wrong. Formats are never changed in place, only replaced.
    ====================================================================== */
-const FORMAT_FIELDS = ['b', 'i', 'u', 'c', 'sz', 'href', 'k', 'f', 'al', 'li', 'fi', 'ri', 'tb'];   // al, li, fi, ri, tb: a paragraph's own alignment, indents and tab stops (on its letters; see layoutStory)
+const FORMAT_FIELDS = ['b', 'i', 'u', 'c', 'sz', 'href', 'k', 'f', 'va', 'al', 'li', 'fi', 'ri', 'tb'];   // va: 'sup' or 'sub' (0.37.0); al, li, fi, ri, tb: a paragraph's own alignment, indents and tab stops (on its letters; see layoutStory)
+/* Superscript and subscript (va, 0.37.0): the letters are drawn smaller
+   (65% of their size) and raised a third of the size (superscript, x²) or
+   lowered a seventh (subscript, H₂O). Their size stays what it says, so
+   turning it off puts them back exactly. */
+const VA_SCALE = 0.65, VA_RAISE = { sup: 0.33, sub: -0.14 };
 
 /** A text "fingerprint" of a format, so two formats can be compared ('' = plain). */
 function formatKey(f) {
@@ -3228,6 +3372,7 @@ function charLook(style, f) {
   const italic = !!(f && f.i);
   const family = f && f.f && familyInfo(f.f) ? f.f : (familyInfo(style.family) ? style.family : DEFAULT_FAMILY);
   let size = (f && f.sz) || style.size, k = (f && f.k) || 0;
+  const ownSize = size;                               // the size the words say (the Inspector shows this one)
   // A missing font (0.35.0) can carry a "fit": how to set its stand-in so
   // its lines are as long as the real font's (a little smaller, letters a
   // little closer). It only applies while the font is missing: the words
@@ -3238,10 +3383,14 @@ function charLook(style, f) {
     size = Math.round(size * s * 10) / 10;
     k += closer;
   }
+  // Superscript and subscript: smaller, and raised or lowered (shift: points up from the baseline).
+  const va = f && (f.va === 'sup' || f.va === 'sub') ? f.va : null;
+  const shift = va ? Math.round(VA_RAISE[va] * size * 100) / 100 : 0;
+  if (va) size = Math.round(size * VA_SCALE * 10) / 10;
   return {
     family,
     bold, italic, u: !!(f && f.u), underline: !!(f && (f.u || f.href)),
-    colour: (f && f.c) || style.colour, size,
+    colour: (f && f.c) || style.colour, size, ownSize, va, shift,
     href: (f && f.href) || null, k,
     fontKey: pickFontKey(family, bold, italic)
   };
@@ -3299,6 +3448,7 @@ function measureParagraph(text, start, end, style, fmts, ctx) {
   const adv = new Float64Array(n);                   // width of each character
   const kernBefore = new Float64Array(n);            // space added before it (font kerning + kerning by hand)
   const sizes = new Float64Array(n);                 // its size in points
+  const shift = new Float64Array(n);                 // how far it is raised (superscript) or lowered (subscript, negative)
   const glyphs = new Array(n), fontKeys = new Array(n), looks = new Array(n);
   // Letters with the same format share one look object.
   const lookCache = new Map();
@@ -3313,7 +3463,7 @@ function measureParagraph(text, start, end, style, fmts, ctx) {
     const k = i - start;
     const look = lookOf(fmts[i]);
     let fontKey = look.fontKey;
-    looks[k] = look; sizes[k] = look.size; fontKeys[k] = fontKey;
+    looks[k] = look; sizes[k] = look.size; fontKeys[k] = fontKey; shift[k] = look.shift || 0;
     const code = text.codePointAt(i);
     if (code === 9) {                                // a tab: four spaces wide for now
       adv[k] = glyphFor(fontKey, 32).advanceWidth * look.size / FONTS[fontKey].unitsPerEm * 4;
@@ -3351,13 +3501,13 @@ function measureParagraph(text, start, end, style, fmts, ctx) {
     kernBefore[k] += look.k * look.size / 1000;      // kerning by hand
     prev = g; prevFont = fontKey; prevSize = look.size;
     if (code > 0xffff) {                             // emoji etc.: two code units, one letter
-      i++; adv[k + 1] = 0; glyphs[k + 1] = null; looks[k + 1] = look; sizes[k + 1] = look.size; fontKeys[k + 1] = fontKey;
+      i++; adv[k + 1] = 0; glyphs[k + 1] = null; looks[k + 1] = look; sizes[k + 1] = look.size; fontKeys[k + 1] = fontKey; shift[k + 1] = shift[k];
     }
   }
   // The paragraph's end: the look new text would get there.
   const endLook = lookOf(end < text.length ? fmts[end] : (end > start ? fmts[end - 1] : (start > 0 ? fmts[start - 1] : null)));
   looks[n - 1] = endLook; sizes[n - 1] = endLook.size; fontKeys[n - 1] = endLook.fontKey;
-  return { adv, kernBefore, glyphs, fontKeys, sizes, looks };
+  return { adv, kernBefore, glyphs, fontKeys, sizes, looks, shift };
 }
 
 /**
@@ -3369,10 +3519,10 @@ function lineMetrics(m, from, to, style) {
   let size = 0, asc = 0, desc = 0;
   const take = (k) => {
     if (m.drop && k === 0 && to > 1) return;         // a drop cap doesn't make its line taller (it hangs down beside the lines)
-    const font = FONTS[m.fontKeys[k]], s = m.sizes[k];
+    const font = FONTS[m.fontKeys[k]], s = m.sizes[k], up = m.shift ? m.shift[k] : 0;
     size = Math.max(size, s);
-    asc = Math.max(asc, font.ascender * s / font.unitsPerEm);
-    desc = Math.max(desc, -font.descender * s / font.unitsPerEm);
+    asc = Math.max(asc, font.ascender * s / font.unitsPerEm + up);          // (a superscript reaches higher)
+    desc = Math.max(desc, -font.descender * s / font.unitsPerEm - up);      // (a subscript reaches lower)
   };
   for (let k = from; k < to; k++) take(k);
   if (!size) take(m.looks.length - 1);
@@ -3521,7 +3671,7 @@ function applyDropCap(m, text, paraEnd, role, dc) {
   return m.drop;
 }
 /** The baseline letter i of line ln sits on (a drop cap sits lower than its line). */
-const baselineAt = (ln, i) => (ln.drop && i === ln.paraStart ? ln.drop.baseline : ln.baseline);
+const baselineAt = (ln, i) => (ln.drop && i === ln.paraStart ? ln.drop.baseline : ln.baseline) - (ln.m.shift ? ln.m.shift[i - ln.paraStart] || 0 : 0);   // (superscript up, subscript down)
 
 /* ---------- Hyphenation (0.26.0) ----------
    A role's style can hyphenate long words at the ends of lines
@@ -3748,6 +3898,7 @@ function layoutStory(story, ctx) {
   const paras = text.split('\n');
   const fmts = charFormats(story);                   // each letter's own formatting (section 4b)
   const wrapCache = new Map();                       // each box's wrap obstacles, worked out once
+  const markers = listMarkers(story);                // list items' bullets and numbers (0.37.0)
 
   paraLoop:
   for (let p = 0; p < paras.length; p++) {
@@ -3755,7 +3906,7 @@ function layoutStory(story, ctx) {
     // The paragraph's role's style; a paragraph with its own alignment or indents (kept from a
     // Publisher file, 0.32.0 and 0.34.0) carries them on its first letter (or its empty line's mark).
     const f0 = fmts[paraStart];
-    const role = f0 && (f0.al || f0.li != null || f0.fi != null || f0.ri != null || f0.tb)
+    let role = f0 && (f0.al || f0.li != null || f0.fi != null || f0.ri != null || f0.tb)
       ? Object.assign({}, roleStyle(story, p), f0.al ? { align: f0.al } : {}, f0.li != null ? { indentLeft: f0.li } : {},
         f0.fi != null ? { indentFirst: f0.fi } : {}, f0.ri != null ? { indentRight: f0.ri } : {},
         f0.tb ? { tabs: f0.tb.map((at) => ({ at, align: 'left', leader: 'none' })) } : {})
@@ -3765,6 +3916,18 @@ function layoutStory(story, ctx) {
     let firstLineOfPara = true;
     // The story's first letter as a drop cap (story.dropCap), when it has one and the letter can be one.
     const drop = p === 0 && story.dropCap ? applyDropCap(m, text, paraEnd, role, story.dropCap) : null;
+    // A list item (0.37.0): its words start one step in per level, and its
+    // marker hangs in the step before them, on the first line.
+    let marker = null, markerX = 0;
+    if (markers[p] && !drop) {
+      const step = listStep(role), base = role.indentLeft || 0;
+      markerX = base + markers[p].level * step;
+      marker = measureMarker(markers[p], m, role, fmts[paraStart]);
+      const textLeft = markerX + step;
+      // A marker wider than its column ("viii." in big letters) pushes the first line's words along.
+      const extra = Math.max(0, markerX + marker.w + marker.gap - textLeft);
+      role = Object.assign({}, role, { indentLeft: textLeft, indentFirst: extra });
+    }
     let lineNo = 0, dropLine = null;
     do {
       // Find room for this line: in this box, or the next box in the chain.
@@ -3856,6 +4019,9 @@ function layoutStory(story, ctx) {
       };
       if (leaders.length) line.leaders = leaders;
       if (hyphen) line.hyphen = true;
+      // A list item's marker, on its first line: where it goes, in the box's upright coordinates.
+      // (It moves with the line when the paragraph is centred or right-aligned.)
+      if (marker && firstLineOfPara) line.marker = Object.assign({}, marker, { x: x0 - (origin - markerX) });
       hyphenRun = hyphen ? hyphenRun + 1 : 0;
       // The drop cap sits on the baseline of the last line beside it (in the same column).
       if (drop) {
@@ -4502,6 +4668,7 @@ let textClip = null;                 // { text, fmts }: words last copied from a
 
 function wireInput(ta, id) {
   ta.addEventListener('focus', () => {
+    arrivedByTab = lastKeyWasTab ? id : null;        // (see listKey: Tab right after arriving moves on)
     if (printPreview) setPrintPreview(false);        // typing means editing again
     focusedStoryId = id; activeStoryId = id;
     selectedIds = [];                // typing and picked objects never mix
@@ -4607,7 +4774,10 @@ function onTextInput(id, e) {
   const role = roles[paraIdx] || 'body';
   roles.splice(paraIdx + 1, removedNL);
   const atParaStart = p === 0 || oldText[p - 1] === '\n';
-  const newRole = (atParaStart && removed.length === 0) ? role : (ROLES[role] ? ROLES[role].next : 'body');
+  // (A list item's new paragraphs are items of the same list, counting on: no "start again" number.)
+  const inList = paraList(role);
+  const newRole = inList ? withList(role, Object.assign({}, inList, { start: null }))
+    : (atParaStart && removed.length === 0) ? role : (ROLES[baseRole(role)] ? ROLES[baseRole(role)].next : 'body');
   const added = new Array(insertedNL).fill(newRole);
   roles.splice(paraIdx + 1, 0, ...added);
 
@@ -4625,9 +4795,12 @@ function onTextInput(id, e) {
   packRuns(story, fmts.slice(0, p).concat(newFmts, fmts.slice(p + removed.length)));
   goalX = null;
   const hadOverflow = layouts[id] && layouts[id].overflowAt != null;
+  // Where the cursor is NOW (after this letter), before drawing: the drawing
+  // reads it, and reading it afterwards drew the cursor one letter behind
+  // (fixed in 0.36.2; the later "selection changed" check then saw no change).
+  lastSel[id] = getSel(id);
   relayoutAndRender();
   noteOverflowChange(id, hadOverflow);
-  lastSel[id] = getSel(id);
   updateInspector();
   scrollCaretIntoView();
 }
@@ -4672,6 +4845,17 @@ function onStoryKeyDown(e, id) {
   if (mod && e.altKey && e.shiftKey && e.code === 'KeyT') { e.preventDefault(); insertIntoStory('\t'); announce('Tab inserted'); return; }
   // Page number: Ctrl+Alt+Shift+N (Cmd+Option+Shift+N), as in InDesign.
   if (mod && e.altKey && e.shiftKey && e.code === 'KeyN') { e.preventDefault(); insertIntoStory(FIELD_CHARS.page); announce('Page number inserted'); return; }
+  // Lists (0.37.0), as in Google Docs: Ctrl+Shift+8 bullets, Ctrl+Shift+7 numbers;
+  // Ctrl+] and Ctrl+[ a level in and out (e.code: any keyboard layout).
+  if (mod && e.shiftKey && !e.altKey && (e.code === 'Digit8' || e.code === 'Digit7')) { e.preventDefault(); toggleList(e.code === 'Digit8' ? 'bullets' : 'numbers'); return; }
+  if (mod && !e.shiftKey && !e.altKey && (e.code === 'BracketRight' || e.code === 'BracketLeft')) {
+    e.preventDefault();                               // (on a Mac, Cmd+[ would otherwise go Back a web page)
+    if (!changeListLevel(e.code === 'BracketRight' ? 1 : -1)) announce('Not in a list');
+    return;
+  }
+  // Superscript Ctrl+. and subscript Ctrl+, (Cmd on a Mac), as in Google Docs.
+  if (mod && !e.shiftKey && !e.altKey && (e.code === 'Period' || e.code === 'Comma')) { e.preventDefault(); toggleVa(e.code === 'Period' ? 'sup' : 'sub'); return; }
+  if (!mod && !e.altKey && listKey(e, id)) return;
   // Characters: Ctrl+B bold, Ctrl+I italic, Ctrl+U underline, Ctrl+K link,
   // Ctrl+\ clear formatting (Cmd on a Mac). e.code for the backslash, so any layout works.
   if (mod && !e.altKey && !e.shiftKey) {
@@ -4704,6 +4888,54 @@ function onStoryKeyDown(e, id) {
   // Ctrl+Home/End, copy, paste, Select All) is the textarea's own.
   goalX = null;
   requestAnimationFrame(() => afterSelectionChange(id));
+}
+
+/*
+ * Keys that act differently in a list item (0.37.0), as in word processors:
+ *   Enter in an empty item      ends the list there (or, one level in, moves out a level)
+ *   Backspace at an item's start   takes the bullet or number away (the words stay)
+ *   Tab / Shift+Tab at an item's start   moves it in or out a level
+ * Tab only does that once you are working in the story: arriving by Tab and
+ * pressing it again still moves on to the next story, so the keyboard is
+ * never caught. Returns true when it handled the key.
+ */
+let lastKeyWasTab = false;                           // was the key that brought focus here a Tab?
+document.addEventListener('keydown', (e) => { lastKeyWasTab = e.key === 'Tab'; }, true);
+document.addEventListener('pointerdown', () => { lastKeyWasTab = false; arrivedByTab = null; }, true);
+let arrivedByTab = null;                             // the story the keyboard Tabbed into (until it does anything else)
+function listKey(e, id) {
+  if (e.key !== 'Tab' && e.key !== 'Shift' && arrivedByTab === id) arrivedByTab = null;
+  if (!['Enter', 'Backspace', 'Tab'].includes(e.key)) return false;
+  const story = doc.stories[id], sel = getSel(id);
+  const p = countNewlines(story.text, 0, sel.start), list = paraList(story.roles[p]);
+  const paraStart = story.text.lastIndexOf('\n', sel.start - 1) + 1;
+  const atStart = sel.start === sel.end && sel.start === paraStart;
+  if (e.key === 'Tab') {
+    if (arrivedByTab === id) return false;            // just arrived: Tab goes on, as everywhere
+    const several = sel.start !== sel.end && countNewlines(story.text, sel.start, sel.end) > 0;
+    if (!(list && atStart) && !several) return false;
+    // At the outermost (or innermost) level there is nowhere to go: Tab does its usual job (to the next story).
+    const dir = e.shiftKey ? -1 : 1, to = countNewlines(story.text, 0, sel.end);
+    let canMove = false;
+    for (let q = p; q <= to; q++) { const l = paraList(story.roles[q]); if (l && l.level + dir >= 0 && l.level + dir <= MAX_LIST_LEVEL) canMove = true; }
+    if (!canMove) return false;
+    e.preventDefault();
+    changeListLevel(dir);
+    return true;
+  }
+  if (!list || e.shiftKey || !atStart) return false;
+  if (e.key === 'Enter') {
+    const end = story.text.indexOf('\n', paraStart);
+    if ((end < 0 ? story.text.length : end) !== paraStart) return false;   // (only an empty item)
+    e.preventDefault();
+    if (list.level > 0) changeListLevel(-1);
+    else { changeLists(listTarget(), () => null, 'List ended'); }
+    return true;
+  }
+  // Backspace at the start of an item: the marker goes first.
+  e.preventDefault();
+  changeLists(listTarget(), () => null, 'Bullet or number removed');
+  return true;
 }
 
 /** Up/Down: go to the line above/below on the page, keeping the column. */
@@ -4861,13 +5093,114 @@ function applyRole(role) {
   const from = countNewlines(story.text, 0, sel.start);
   const to = countNewlines(story.text, 0, sel.end);
   recordUndo('other', id);
-  for (let p = from; p <= to; p++) story.roles[p] = role;
+  for (let p = from; p <= to; p++) story.roles[p] = withList(role, paraList(story.roles[p]));   // (a list item stays one)
   const hadOverflow = layouts[id].overflowAt != null;
   relayoutAndRender();
   noteOverflowChange(id, hadOverflow);
   updateInspector();
   const count = to - from + 1;
   announce((count > 1 ? count + ' paragraphs are now ' : 'Paragraph is now ') + ROLES[role].label);
+}
+
+/* ---------- Lists (0.37.0): making, changing and ending them ---------- */
+/** The paragraphs the list commands work on: the one the cursor is in, or every one the highlight touches. */
+function listTarget() {
+  const id = activeStoryId;
+  if (!id || !doc.stories[id] || !inputs[id]) return null;
+  const story = doc.stories[id], sel = lastSel[id] || getSel(id);
+  return { id, story, from: countNewlines(story.text, 0, sel.start), to: countNewlines(story.text, 0, sel.end) };
+}
+/** Change the lists of paragraphs from..to: make(list now, p) gives the new list (or null), as one undo step. */
+function changeLists(t, make, message) {
+  recordUndo('other', t.id);
+  for (let p = t.from; p <= t.to; p++) t.story.roles[p] = withList(t.story.roles[p], make(paraList(t.story.roles[p]), p));
+  const hadOverflow = layouts[t.id].overflowAt != null;
+  relayoutAndRender();
+  noteOverflowChange(t.id, hadOverflow);
+  updateInspector();
+  if (message) announce(message);
+}
+/**
+ * The Bullets and Numbers buttons (Ctrl+Shift+8 and 7): make the paragraphs
+ * picked a list of that sort, or, when they all are one already, plain
+ * paragraphs again. Switching between bullets and numbers keeps the levels.
+ */
+function toggleList(sort) {
+  const t = listTarget();
+  if (!t) return;
+  const bullet = sort === 'bullets';
+  let all = true;
+  for (let p = t.from; p <= t.to; p++) { const l = paraList(t.story.roles[p]); if (!l || !!LIST_KINDS[l.kind].bullet !== bullet) all = false; }
+  const n = t.to - t.from + 1, what = n > 1 ? n + ' paragraphs' : 'Paragraph';
+  if (all) { changeLists(t, () => null, what + (n > 1 ? ' are' : ' is') + ' no longer in a list'); return; }
+  changeLists(t, (l) => {
+    const level = l ? l.level : 0;
+    if (l && !!LIST_KINDS[l.kind].bullet === bullet) return l;   // (already this sort: keep its own style)
+    return { kind: bullet ? '\u2022' : LEVEL_NUMBERS[level], level, start: null };
+  }, what + ' now ' + (n > 1 ? 'a ' : 'in a ') + (bullet ? 'bulleted' : 'numbered') + ' list');
+}
+/**
+ * In or out a level (Tab and Shift+Tab at the start of an item, Ctrl+] and
+ * Ctrl+[, or the buttons). A numbered item on its level's usual numbering
+ * takes the next level's (1. then a. then i.). Returns false when no
+ * paragraph picked is a list item (so the key can do its usual job).
+ */
+function changeListLevel(dir) {
+  const t = listTarget();
+  if (!t) return false;
+  let any = false, level = 0;
+  for (let p = t.from; p <= t.to; p++) if (paraList(t.story.roles[p])) any = true;
+  if (!any) return false;
+  changeLists(t, (l) => {
+    if (!l) return null;
+    const to = Math.max(0, Math.min(MAX_LIST_LEVEL, l.level + dir));
+    level = to;
+    const usual = LEVEL_NUMBERS[l.level] === l.kind;
+    return { kind: usual ? LEVEL_NUMBERS[to] : l.kind, level: to, start: l.start };
+  }, null);
+  announce('List level ' + (level + 1));
+  return true;
+}
+/** The list style picked from the Style list, for the list items picked (their levels stay). */
+function setListKind(kind) {
+  const t = listTarget();
+  if (!t || !Object.hasOwn(LIST_KINDS, kind)) return;
+  changeLists(t, (l) => (l ? Object.assign({}, l, { kind }) : null), 'List style: ' + LIST_KINDS[kind].label);
+}
+/** "Number from": the first numbered item picked starts again at n (blank: it carries on from the item before). */
+function setListStart(n) {
+  const t = listTarget();
+  if (!t) return;
+  let first = -1;
+  for (let p = t.from; p <= t.to && first < 0; p++) { const l = paraList(t.story.roles[p]); if (l && !LIST_KINDS[l.kind].bullet) first = p; }
+  if (first < 0) return;
+  recordUndo('field:liststart', t.id);
+  const l = paraList(t.story.roles[first]);
+  t.story.roles[first] = withList(t.story.roles[first], Object.assign({}, l, { start: n }));
+  relayoutAndRender();
+  fillList(t.story, t.from, t.to);
+}
+/** Show the List controls for paragraphs from..to of a story. */
+function fillList(story, from, to) {
+  const lists = story.roles.slice(from, to + 1).map(paraList);
+  const isB = (l) => l && LIST_KINDS[l.kind].bullet, isN = (l) => l && !LIST_KINDS[l.kind].bullet;
+  $('listBullets').setAttribute('aria-pressed', String(lists.every(isB)));
+  $('listNumbers').setAttribute('aria-pressed', String(lists.every(isN)));
+  const any = lists.some(Boolean);
+  $('listIn').disabled = $('listOut').disabled = !any;
+  $('listMore').hidden = !any;
+  if (!any) { setText('listNote', ''); return; }
+  const kinds = new Set(lists.filter(Boolean).map((l) => l.kind));
+  const sel = $('listKind');
+  if (!sel.options.length) for (const [k, v] of Object.entries(LIST_KINDS)) { const o = document.createElement('option'); o.value = k; o.textContent = v.label; sel.appendChild(o); }
+  sel.value = kinds.size === 1 ? [...kinds][0] : '';
+  // Number from: for the first numbered item picked.
+  const first = lists.find(isN);
+  $('listStartRow').hidden = !first;
+  if (first) setField($('listStart'), first.start != null ? first.start : '');
+  const levels = new Set(lists.filter(Boolean).map((l) => l.level));
+  setText('listNote', (levels.size === 1 ? 'Level ' + ([...levels][0] + 1) + ' of ' + (MAX_LIST_LEVEL + 1) + '. ' : '') +
+    (first ? 'Numbering carries on through the text box (and its linked boxes); Number from starts it again.' : 'Enter on an empty item ends the list.'));
 }
 
 /* ======================================================================
@@ -4948,12 +5281,13 @@ function selectionLook(t) {
   const story = t.story, text = story.text, fmts = charFormats(story);
   if (t.a === t.b) {
     const look = charLook(paraStyleAt(story, t.a), typingFormat(story, fmts, t.a, false));
+    look.size = look.ownSize;                          // (the size the words say, not the smaller one superscript draws)
     const ext = linkExtent(fmts, t.a);
     look.href = ext ? ext.href : null;
     look.kAt = betweenLetters(text, t.a) ? ((fmts[t.a] && fmts[t.a].k) || 0) : undefined;
     return look;
   }
-  const out = { bold: true, italic: true, u: true, colour: undefined, size: undefined, href: undefined, kAt: undefined, anyLink: false };
+  const out = { bold: true, italic: true, u: true, colour: undefined, size: undefined, href: undefined, kAt: undefined, anyLink: false, va: undefined };
   const same = (key, v) => { out[key] = out[key] === undefined || out[key] === v ? v : null; };
   let p = countNewlines(text, 0, t.a), letters = 0;
   for (let i = t.a; i < t.b; i++) {
@@ -4963,7 +5297,7 @@ function selectionLook(t) {
     if (!look.bold) out.bold = false;
     if (!look.italic) out.italic = false;
     if (!look.u) out.u = false;
-    same('colour', look.colour); same('size', look.size); same('href', look.href); same('family', look.family);
+    same('colour', look.colour); same('size', look.ownSize); same('href', look.href); same('family', look.family); same('va', look.va);
     if (look.href) out.anyLink = true;
     if (i > t.a && betweenLetters(text, i)) same('kAt', look.k);
   }
@@ -4982,6 +5316,13 @@ function toggleFormat(key) {
     const base = key === 'b' ? style.font === 'bold' : false;      // what the paragraph style already does
     return patchFormat(f, { [key]: on === base ? null : on });
   }, 'other', FORMAT_NAMES[key] + (on ? ' on' : ' off'));
+}
+/** Ctrl+. superscript, Ctrl+, subscript: on for the highlighted words (or what is typed next), or off when they have it already. */
+function toggleVa(kind) {
+  const t = formatTarget();
+  if (!t) return;
+  const on = selectionLook(t).va !== kind;
+  changeFormat((f) => patchFormat(f, { va: on ? kind : null }), 'other', (kind === 'sup' ? 'Superscript' : 'Subscript') + (on ? ' on' : ' off'));
 }
 /** A colour for the highlighted words (null: the paragraph style's colour again). */
 function setCharColour(hex) {
@@ -5653,7 +5994,7 @@ function fillChars() {
   setText('charsWhat', t.a === t.b
     ? 'Nothing highlighted: these set how the next letters you type here look.'
     : 'For the highlighted text. Anything left blank differs across it.');
-  for (const [id, on] of [['chBold', look.bold], ['chItalic', look.italic], ['chUnderline', look.u]]) $(id).setAttribute('aria-pressed', String(!!on));
+  for (const [id, on] of [['chBold', look.bold], ['chItalic', look.italic], ['chUnderline', look.u], ['chSup', look.va === 'sup'], ['chSub', look.va === 'sub']]) $(id).setAttribute('aria-pressed', String(!!on));
   // The font: the words' own one, "" for the paragraph style's, or blank when they differ.
   const fmts = charFormats(t.story);
   const own = (i) => (fmts[i] && fmts[i].f && familyInfo(fmts[i].f) ? fmts[i].f : '');
@@ -5698,7 +6039,9 @@ function wireChars() {
     setCharFamily(v);
   });
   // Buttons keep the cursor (and highlight) in the story being typed in.
-  for (const id of ['chBold', 'chItalic', 'chUnderline', 'chClear']) $(id).addEventListener('mousedown', (e) => e.preventDefault());
+  for (const id of ['chBold', 'chItalic', 'chUnderline', 'chSup', 'chSub', 'chClear']) $(id).addEventListener('mousedown', (e) => e.preventDefault());
+  $('chSup').addEventListener('click', () => toggleVa('sup'));
+  $('chSub').addEventListener('click', () => toggleVa('sub'));
   $('chBold').addEventListener('click', () => toggleFormat('b'));
   $('chItalic').addEventListener('click', () => toggleFormat('i'));
   $('chUnderline').addEventListener('click', () => toggleFormat('u'));
@@ -5988,6 +6331,12 @@ function pageTextPaths(pi, flatStory) {
           partsFor(u.colour).push('M' + pts.map((q) => r2(q.x) + ' ' + r2(q.y)).join('L') + 'Z');
         }
         continue;
+      }
+      // A list item's marker (0.37.0): a bullet shape, or a number in the paragraph's font.
+      if (ln.marker) {
+        const mk = ln.marker;
+        if (mk.bullet) partsFor(mk.colour).push(bulletPath(mk, ln.baseline));
+        else for (const pt of mk.glyphs) pushGlyph(partsFor(mk.colour), mk.fontKey, pt.g, mk.size, mk.x + pt.dx * mk.size / FONTS[mk.fontKey].unitsPerEm, ln.baseline);
       }
       // Tab leaders: dots (the font's own full stop) or a rule, in the colour of the words after the tab.
       for (const mk of leaderMarks(ln)) {
@@ -10313,8 +10662,9 @@ function fillParagraph() {
   const sel = lastSel[activeStoryId] || getSel(activeStoryId);
   const from = countNewlines(story.text, 0, sel.start);
   const to = countNewlines(story.text, 0, sel.end);
-  const roles = new Set(story.roles.slice(from, to + 1));
+  const roles = new Set(story.roles.slice(from, to + 1).map(baseRole));
   $('roleSelect').value = roles.size === 1 ? [...roles][0] : '';
+  fillList(story, from, to);
   fillStyle(roles.size === 1 ? [...roles][0] : null);
   // Paragraphs here with an alignment or indents of their own (from a Publisher file).
   const fmts = charFormats(story), own = new Set();
@@ -12746,6 +13096,9 @@ function wireChrome() {
     ['Up / Down, Home / End', 'While typing: move by the lines on the page, across linked boxes'],
     [mod + ' + ' + alt + ' + 1 / 2 / 0 / 9', 'While typing: Heading 1, Heading 2, Body, Caption'],
     [mod + ' + B, ' + mod + ' + I, ' + mod + ' + U', 'While typing: bold, italic, underline for the highlighted words (or what you type next)'],
+    [mod + ' + .  and  ' + mod + ' + ,', 'While typing: superscript (x²) and subscript (H₂O)'],
+    [mod + ' + Shift + 8, ' + mod + ' + Shift + 7', 'While typing: a bulleted or numbered list (again: no list)'],
+    ['Tab, Shift + Tab (at the start of a list item), or ' + mod + ' + ], ' + mod + ' + [', 'A list item in or out a level. (Just arrived by Tab? Tab moves on, as usual.) Enter on an empty item ends the list; Backspace at an item\'s start takes its bullet or number away'],
     [mod + ' + K', 'While typing: link the highlighted words (Enter links, Escape goes back)'],
     ['Master pages (the button under the page buttons)', 'Things that show on many pages: a masthead, a footer, page numbers. Pick a page’s master in Document (nothing picked)'],
     [mod + ' + ' + alt + ' + Shift + N', 'While typing: insert a page number (# on a master page; each page shows its own)'],
@@ -13953,7 +14306,7 @@ function suiteBackupDialog(opts) {
    A crash backup is opened through exactly the same checks.
    ====================================================================== */
 const PROJECT_FORMAT = 'dskedtr-project';
-const PROJECT_VERSION = 20;                        // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames; 8: columns in a text box; 9: facing pages, bleed; 10: tables; 11: folds; 12: master picture placeholders; 13: colour schemes; 14: drop caps, tab stops; 15: hyphenation; 16: text on a curve; 17: merged cells, cell colours, vertical alignment; 18: a paragraph's own alignment; 19: indents; 20: missing fonts)
+const PROJECT_VERSION = 21;                        // bump when the file layout changes (2: formatting inside paragraphs; 3: fonts; 4: text wrap; 5: arrowheads; 6: master pages; 7: opacity, shadows, shaped frames; 8: columns in a text box; 9: facing pages, bleed; 10: tables; 11: folds; 12: master picture placeholders; 13: colour schemes; 14: drop caps, tab stops; 15: hyphenation; 16: text on a curve; 17: merged cells, cell colours, vertical alignment; 18: a paragraph's own alignment; 19: indents; 20: missing fonts; 21: lists, superscript and subscript)
 const MAX_PROJECT_BYTES = 300 * 1024 * 1024;       // 300 MB: pictures make projects big
 
 /** The name files are saved under: the opened file's name, else the document title. */
@@ -15047,6 +15400,7 @@ function cleanFormat(r, fontOK) {
   if (typeof r.href === 'string') { const h = cleanLink(r.href); if (h) f.href = h; }
   if (typeof r.k === 'number' && Number.isFinite(r.k) && Math.round(r.k)) f.k = Math.max(-500, Math.min(1000, Math.round(r.k)));
   if (ALIGNS.includes(r.al)) f.al = r.al;                       // (version 18)
+  if (r.va === 'sup' || r.va === 'sub') f.va = r.va;            // superscript, subscript (version 21)
   // A paragraph's own indents, in points (version 19): left and right 0 to 1000, the first line -1000 to 1000.
   for (const [key, min] of [['li', 0], ['fi', -1000], ['ri', 0]]) if (typeof r[key] === 'number' && Number.isFinite(r[key])) f[key] = Math.max(min, Math.min(1000, r[key]));
   // Its own tab stops (version 19): up to 8 positions in points, left-aligned, in order.
@@ -15212,7 +15566,8 @@ function checkDocument(raw, known, knownFonts) {
     const paras = text.split('\n').length;
     const rawRoles = Array.isArray(rs.roles) ? rs.roles : [];
     const roles = [];
-    for (let i = 0; i < paras; i++) roles.push(typeof rawRoles[i] === 'string' && Object.hasOwn(ROLES, rawRoles[i]) ? rawRoles[i] : 'body');
+    // Each role must be a known one, with or without a list (rebuilt from its parts, so nothing else gets in).
+    for (let i = 0; i < paras; i++) roles.push(typeof rawRoles[i] === 'string' && rawRoles[i].length < 40 ? withList(rawRoles[i], paraList(rawRoles[i])) : 'body');
     // The chain: boxes that really are this story's, each once, in the order given...
     const listed = Array.isArray(rs.frames) ? rs.frames : [];
     const frames = [], inChain = new Set();
@@ -15921,7 +16276,9 @@ function pubCharStyle(r, p) {
           }
         }
         break;
-      case 0x0f: if (b.data === 1) s.sup = true; else if (b.data === 2) s.sub = true; break;
+      case 0x0f:                                               // superscript (1) or subscript (2), in the low byte
+        if ((b.data & 255) === 1) s.sup = true; else if ((b.data & 255) === 2) s.sub = true;   // (the rest says how far: 0.37.0 uses its own)
+        break;
       case 0x13: s.smallCaps = true; break;
       case 0x14: s.caps = true; break;
       default: break;
@@ -17371,7 +17728,7 @@ async function pubToProject(pub, onStep) {
     const pubSize = Math.max(4, Math.min(200, cs.size || 10)), bold = !!cs.b || heavy;
     // (Twins need no adjusting; a missing font's words keep their own size, ready for the real font: its fit sets the stand-in, see charLook.)
     const fit = { s: 1, k: 0 };
-    return { family, line: pubLineHeight(at.fontName), pubSize, size: Math.max(4, Math.round(pubSize * fit.s * 10) / 10), k: fit.k, b: bold, i: !!cs.i, u: !!cs.u, colour: textColour(cs.colour) };
+    return { family, line: pubLineHeight(at.fontName), pubSize, size: Math.max(4, Math.round(pubSize * fit.s * 10) / 10), k: fit.k, b: bold, i: !!cs.i, u: !!cs.u, colour: textColour(cs.colour), va: cs.sup ? 'sup' : cs.sub ? 'sub' : null };
   }
 
   // Letters beyond plain English ones may need another family's (see ourStory): have them all ready.
@@ -17481,6 +17838,7 @@ async function pubToProject(pub, onStep) {
           if (lk.colour && lk.colour !== s.colour) f.c = lk.colour;
           if (Math.abs(lk.size - s.size) > 0.05) f.sz = lk.size;
           if ((lk.k || 0) !== s.tracking && i < p.text.length && i > 0) f.k = (lk.k || 0) - s.tracking;   // (closer or wider than its style)
+          if (lk.va) f.va = lk.va;                                    // superscript or subscript (0.37.0)
         }
         if (own) f.al = own;
         Object.assign(f, ownInd);
@@ -17905,10 +18263,31 @@ function pdfTagTree(pdf, L) {
   const sheets = [];
   let sheet = null, nextKey = 0;                     // nextKey: the ParentTree's numbers (pages and links share them)
   const ROLE_TAGS = { h1: 'H1', h2: 'H2' };          // Body and Caption are paragraphs (P)
+  const labels = new Map();                          // "story id|paragraph" -> a list item's Lbl (its number)
 
-  /** A story's paragraphs, as elements under `parent`, in order. */
+  /**
+   * A story's paragraphs, as elements under `parent`, in order. List items
+   * (0.37.0) go in lists: L, holding an LI for each item, holding the
+   * item's label (Lbl, its number) and its words (LBody). A deeper level
+   * is a list inside the item above it.
+   */
   const addStory = (parent, story) => {
-    story.roles.forEach((role, i) => paras.set(story.id + '|' + i, make(ROLE_TAGS[role] || 'P', parent)));
+    const open = [];                                 // the lists still open: [{ level, list, item }]
+    story.roles.forEach((role, i) => {
+      const key = story.id + '|' + i, l = paraList(role);
+      if (!l) { open.length = 0; paras.set(key, make(ROLE_TAGS[baseRole(role)] || 'P', parent)); return; }
+      while (open.length && open[open.length - 1].level > l.level) open.pop();
+      let top = open[open.length - 1];
+      if (!top || top.level < l.level) {
+        const host = top ? top.item : parent;
+        const numbering = l.kind === '\u2022' ? ['Disc', 'Circle', 'Square'][l.level % 3] : LIST_KINDS[l.kind].pdf;   // (bullets change shape by level)
+        top = { level: l.level, list: make('L', host, { attrs: { O: 'List', ListNumbering: numbering } }) };
+        open.push(top);
+      }
+      top.item = make('LI', top.list);
+      labels.set(key, make('Lbl', top.item));        // (a bullet's label stays empty, and is left out)
+      paras.set(key, make('LBody', top.item));
+    });
   };
   /** A table: rows, then header cells (TH, read as each column's heading) or data cells (TD), each holding its paragraphs. */
   const addTable = (t) => {
@@ -17946,9 +18325,11 @@ function pdfTagTree(pdf, L) {
     /** A paragraph's element (one made here, at the end, if it was not in any reading order). */
     para(story, p) {
       const k = story.id + '|' + p;
-      if (!paras.has(k)) paras.set(k, make(ROLE_TAGS[story.roles[p]] || 'P', root));
+      if (!paras.has(k)) paras.set(k, make(ROLE_TAGS[baseRole(story.roles[p])] || 'P', root));
       return paras.get(k);
     },
+    /** A list item's label element (its number), or null. */
+    label(story, p) { return labels.get(story.id + '|' + p) || null; },
     /** A link's element, inside its paragraph (made the first time; sortKey places it among the paragraph's words). */
     link(story, start, paraElem, sortKey) {
       const k = story.id + '|' + start;
@@ -18033,7 +18414,12 @@ async function exportPDF(name, opts = {}) {
   // in the file), and only the fonts used (no italics in the file without italic text).
   const usedFonts = new Set();
   for (let pi = 0; pi < doc.pages.length; pi++) {
-    for (const list of Object.values(linesByFrame(pi))) for (const { ln } of list) for (let i = ln.start; i < ln.end; i++) if (ln.m.glyphs[i - ln.paraStart]) usedFonts.add(ln.m.fontKeys[i - ln.paraStart]);
+    for (const list of Object.values(linesByFrame(pi))) {
+      for (const { ln } of list) {
+        for (let i = ln.start; i < ln.end; i++) if (ln.m.glyphs[i - ln.paraStart]) usedFonts.add(ln.m.fontKeys[i - ln.paraStart]);
+        if (ln.marker && ln.marker.text) usedFonts.add(ln.marker.fontKey);   // a list's numbers (0.37.0)
+      }
+    }
   }
   // A font whose licence doesn't allow it inside documents isn't embedded:
   // pdfText draws its letters as shapes instead (embedRule, section 2b).
@@ -18369,6 +18755,18 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op, tag) {
       if (items.length) ops.push(op(L.PDFOperatorNames.ShowTextAdjusted, [pdf.context.obj(items)]));
       items = [];
     };
+    // A list item's number (0.37.0), before its words: real text, so it is read ("3.") and can be
+    // copied; tagged as the list item's label (Lbl). Bullets are shapes, drawn with the underlines.
+    const mk = ln.marker;
+    if (mk && mk.text && fonts[mk.fontKey] && !curves.get(ln.frame)) {
+      const lbl = tag ? tag.label(story, ln.para) : null;
+      if (tag) ops.push(lbl ? pdfBDC(L, pdf, 'Lbl', { MCID: tag.mcr(lbl, 0) }) : pdfArtifact(L));
+      if (mk.colour !== lastColour) { ops.push(L.setFillingRgbColor(...rgb01(mk.colour))); lastColour = mk.colour; }
+      if (mk.fontKey !== lastFont || mk.size !== lastSize) { page.setFont(fonts[mk.fontKey]); ops.push(L.setFontAndSize(page.fontKey, mk.size)); lastFont = mk.fontKey; lastSize = mk.size; }
+      ops.push(L.setTextMatrix(1, 0, 0, -1, r2(mk.x), r2(ln.baseline)));
+      ops.push(op(L.PDFOperatorNames.ShowText, [L.PDFHexString.of(mk.glyphs.map((pt) => hexFor(mk.fontKey, pt.cp)).join(''))]));
+      if (tag) ops.push(pdfEMC(L));
+    }
     for (let i = ln.start; i < ln.end; i++) {
       const k = i - ln.paraStart, g = ln.m.glyphs[k];
       if (!g) continue;                              // a tab (just space) or the second half of an emoji
@@ -18396,7 +18794,8 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op, tag) {
       // (The letter after a drop cap starts afresh too: the drop cap sits on another baseline.
       // On a curve, every letter does: each is placed and turned on its own.)
       const curve = curves.get(ln.frame);
-      const wordStart = !!curve || i === ln.start || /\s/.test(story.text[i - 1]) || (!!ln.drop && i === ln.paraStart + 1);
+      const raised = (j) => (ln.m.shift ? ln.m.shift[j - ln.paraStart] || 0 : 0);
+      const wordStart = !!curve || i === ln.start || /\s/.test(story.text[i - 1]) || (!!ln.drop && i === ln.paraStart + 1) || raised(i) !== raised(i - 1);   // (superscript and subscript sit on their own baselines)
       const newColour = look.colour !== lastColour, newFont = fontKey !== lastFont || size !== lastSize;
       if (wordStart || newColour || newFont) flush();    // finish the letters shown so far before changing anything
       if (newColour) { ops.push(L.setFillingRgbColor(...rgb01(look.colour))); lastColour = look.colour; }
@@ -18475,6 +18874,17 @@ function pdfText(ops, lines, fonts, hexFor, page, pdf, L, op, tag) {
     for (const u of lineUnderlines(ln, story.text)) {
       ops.push(L.setFillingRgbColor(...rgb01(u.colour)), L.rectangle(r2(u.x1), r2(u.y), r2(u.x2 - u.x1), r2(u.h)), op(L.PDFOperatorNames.FillNonZero));
     }
+    // A list's bullet (0.37.0): a disc, ring or square (the same path as on the page; a ring is filled even-odd).
+    const mk = ln.marker;
+    if (mk && mk.bullet) {
+      ops.push(L.setFillingRgbColor(...rgb01(mk.colour)));
+      pdfSvgPath(ops, bulletPath(mk, ln.baseline), L);
+      ops.push(op(mk.bullet === 'circle' ? L.PDFOperatorNames.FillEvenOdd : L.PDFOperatorNames.FillNonZero));
+    } else if (mk && mk.text && !fonts[mk.fontKey]) {
+      ops.push(L.setFillingRgbColor(...rgb01(mk.colour)));
+      for (const pt of mk.glyphs) pdfGlyphShape(ops, outline(mk.fontKey, pt.g, mk.size), mk.x + pt.dx * mk.size / FONTS[mk.fontKey].unitsPerEm, ln.baseline, L);
+      ops.push(op(L.PDFOperatorNames.FillNonZero));
+    }
     // Tab leaders: dots and rules, as shapes.
     for (const mk of leaderMarks(ln)) {
       ops.push(L.setFillingRgbColor(...rgb01(mk.colour)));
@@ -18525,6 +18935,32 @@ async function pdfShadow(ops, o, pdf, page, L, bitmaps, texts = {}) {
 }
 
 /** One letter's outline as PDF path operators, moved to (dx, dy). (PDF has no quadratic curves, so those become cubic ones.) */
+/**
+ * A simple SVG path (the M, H, V, a and Z that bulletPath writes) as PDF
+ * drawing: arcs become curves. (Only for our own bullet paths.)
+ */
+function pdfSvgPath(ops, d, L) {
+  const tokens = d.match(/[MHVaZ]|-?\d*\.?\d+/g) || [];
+  let i = 0, x = 0, y = 0, cmd = '';
+  const num = () => parseFloat(tokens[i++]);
+  while (i < tokens.length) {
+    if (/[MHVaZ]/.test(tokens[i])) cmd = tokens[i++];
+    if (cmd === 'M') { x = num(); y = num(); ops.push(L.moveTo(r2(x), r2(y))); }
+    else if (cmd === 'H') { x = num(); ops.push(L.lineTo(r2(x), r2(y))); }
+    else if (cmd === 'V') { y = num(); ops.push(L.lineTo(r2(x), r2(y))); }
+    else if (cmd === 'Z') { ops.push(L.closePath()); }
+    else if (cmd === 'a') {
+      // Half a circle (radius rx) to the point (dx, dy) away: two quarter-circle curves.
+      const rx = num(); num(); num(); num(); const sweep = num(), dx = num(), dy = num();
+      const cx = x + dx / 2, cy = y + dy / 2, k = 0.5523 * rx, dir = sweep ? 1 : -1;
+      const sx = Math.sign(dx);                            // (our bullets' halves always run across)
+      const mx = cx, my = cy - dir * sx * rx;              // the top (or bottom) of the half circle
+      ops.push(L.appendBezierCurve(r2(x), r2(y - dir * sx * k), r2(mx - sx * k), r2(my), r2(mx), r2(my)));
+      ops.push(L.appendBezierCurve(r2(mx + sx * k), r2(my), r2(x + dx), r2(y + dy - dir * sx * k), r2(x + dx), r2(y + dy)));
+      x += dx; y += dy;
+    } else i++;
+  }
+}
 function pdfGlyphShape(ops, cmds, dx, dy, L, T) {
   if (T) {
     // Through T (a letter on a curve): the same curves, each point moved and turned.
@@ -18755,11 +19191,34 @@ function htmlStyles() {
  */
 function htmlParagraphs(hd, story) {
   const out = [], text = story.text, fmts = charFormats(story), ctx = storyContext(story);
+  const markers = listMarkers(story);
+  const open = [];                                   // lists still open (0.37.0): [{ level, el, item }]
   let start = 0;
   text.split('\n').forEach((para, p) => {
-    const end = start + para.length, role = story.roles[p] || 'body', style = roleStyle(story, p);
+    const end = start + para.length, role = baseRole(story.roles[p]), style = roleStyle(story, p), list = paraList(story.roles[p]);
+    if (!list) open.length = 0;                       // (anything that isn't an item ends the lists)
     if (para.trim()) {
-      const el = hd.createElement(role === 'h1' ? 'h1' : role === 'h2' ? 'h2' : 'p');
+      // A list item is an li, in a ul (bullets) or an ol (numbers) of its level; a deeper level goes inside the item above.
+      let el;
+      if (list) {
+        const kind = LIST_KINDS[list.kind];
+        while (open.length && open[open.length - 1].level > list.level) open.pop();
+        let top = open[open.length - 1];
+        if (top && top.level === list.level && top.kind !== list.kind) { open.pop(); top = open[open.length - 1]; }
+        if (!top || top.level < list.level) {
+          const L = hd.createElement(kind.bullet ? 'ul' : 'ol');
+          if (!kind.bullet && list.kind[0] !== '1') L.type = list.kind[0];          // a, A, i or I
+          if (list.kind === '\u2013') L.style.listStyleType = '"\u2013  "';
+          if (top && top.item) top.item.append(L); else out.push(L);
+          top = { level: list.level, el: L, kind: list.kind };
+          open.push(top);
+        }
+        el = hd.createElement('li');
+        if (markers[p] && markers[p].number != null) el.value = markers[p].number;   // (exactly the number the page shows)
+        if (role === 'h1' || role === 'h2') el.style.fontWeight = '700';
+        top.el.append(el);
+        top.item = el;
+      } else el = hd.createElement(role === 'h1' ? 'h1' : role === 'h2' ? 'h2' : 'p');
       if (role === 'caption') el.className = 'caption';
       if (p === 0 && story.dropCap && /[\p{L}\p{N}]/u.test(para[0])) el.classList.add('dropcap');
       if (style.font === 'bold' && el.tagName === 'P') el.style.fontWeight = '700';   // (a bold header cell, say)
@@ -18776,7 +19235,7 @@ function htmlParagraphs(hd, story) {
         let j = i + 1;
         while (j < end) {
           const l2 = charLook(style, fmts[j]);
-          if (l2.bold !== look.bold || l2.italic !== look.italic || l2.u !== look.u || l2.colour !== look.colour || l2.href !== look.href) break;
+          if (l2.bold !== look.bold || l2.italic !== look.italic || l2.u !== look.u || l2.colour !== look.colour || l2.href !== look.href || l2.va !== look.va) break;
           j++;
         }
         // The words, with tabs and page numbers made readable.
@@ -18789,12 +19248,13 @@ function htmlParagraphs(hd, story) {
         if (look.bold && style.font !== 'bold') wrap('strong');
         if (look.italic) wrap('em');
         if (look.u && !look.href) wrap('u');
+        if (look.va) wrap(look.va);                                  // sup or sub (0.37.0)
         if (look.colour !== style.colour) { wrap('span'); node.style.color = look.colour; }
         if (look.href) { wrap('a'); node.href = look.href; }   // (only addresses cleanLink allowed ever get here)
         el.append(node);
         i = j;
       }
-      out.push(el);
+      if (!list) out.push(el);
     }
     start = end + 1;
   });
@@ -18985,6 +19445,16 @@ function wireExport() {
 
 /* What changed in each version (the same words as CHANGELOG.md, without its formatting). */
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.37.0", date: "2026-10-10", title: "", notes: [
+    "Bulleted and numbered lists. The Paragraph section has a List row: Bullets, Numbers, and a level out or in. Or press Ctrl+Shift+8 for bullets and Ctrl+Shift+7 for numbers (Cmd on a Mac), as in Google Docs. The bullets and numbers are drawn, not typed, so they renumber themselves as you add, delete or move items, and each item's words hang neatly after its marker, however many lines it takes. - Enter in an item makes the next item; Enter on an empty item ends the list. Backspace at the start of an item takes its bullet or number away. - Tab at the start of an item moves it in a level (Shift+Tab, out), up to five levels: bullets go •, ◦, ▪, and numbers 1., a., i. Ctrl+] and Ctrl+[ do the same anywhere in the item. (If you have just arrived in a text box by pressing Tab, Tab still moves on, so the keyboard is never caught.) - Style: 1. 1) a. a) A. i. I., bullets or dashes. Numbering carries on through the whole text box (and its linked boxes), even past paragraphs that aren't in the list; \"Number from\" starts it again. - The PDF tags them as real lists (L, LI, Lbl, LBody), so screen readers say \"list, 3 items\"; the web page export uses ul, ol and li.",
+    "Superscript and subscript. x² and H₂O: Ctrl+. and Ctrl+, (Cmd on a Mac), or the two new buttons in Characters. The letters are drawn smaller and raised or lowered; their size stays what it was, so turning it off puts them back exactly. In the PDF, the web page (sup and sub) and the PNG.",
+    "Publisher files keep their superscripts and subscripts. The Weekly Review worksheet's x² and the degree signs in (3x + 10)° now come across as they were.",
+    "The Inspector's Size field shows the size the words say (it showed a smaller one for a missing font's stand-in).",
+    "Project files are now version 21 (they can have lists, superscript and subscript)."
+  ] },
+  { version: "0.36.2", date: "2026-10-10", title: "", notes: [
+    "Fixed: while typing, the cursor was drawn one step behind: after typing a letter it showed before that letter (Backspace still deleted the right one, since only the drawing was late). It is now drawn where the next letter goes after typing, deleting, Enter and pasting."
+  ] },
   { version: "0.36.1", date: "2026-10-10", title: "", notes: [
     "Move pages in All pages. Drag a page to a new place: a bar shows where it will go, and a small copy of it follows the pointer (the pages scroll when you reach the top or bottom). On a touch screen, hold a page for a moment, then drag; a quick swipe still scrolls. From the keyboard, Alt (Option on a Mac) with the arrow keys moves the page that has focus. Escape cancels a drag, and one Undo puts a move back. Facing pages re-pair into their spreads as pages move."
   ] },
@@ -19377,6 +19847,17 @@ function wireShell() {
   $('fileInput').addEventListener('change', () => { const f = $('fileInput').files; if (f && f.length) openFiles(f); });
   $('pubClose').addEventListener('click', () => $('pubDialog').close());
   $('ownAlignClear').addEventListener('click', clearOwnAlign);
+  // Lists (0.37.0). (Pressing these must not take the cursor out of the story being typed in.)
+  for (const id of ['listBullets', 'listNumbers', 'listIn', 'listOut']) $(id).addEventListener('mousedown', (e) => e.preventDefault());
+  $('listBullets').addEventListener('click', () => toggleList('bullets'));
+  $('listNumbers').addEventListener('click', () => toggleList('numbers'));
+  $('listIn').addEventListener('click', () => changeListLevel(1));
+  $('listOut').addEventListener('click', () => changeListLevel(-1));
+  $('listKind').addEventListener('change', () => setListKind($('listKind').value));
+  $('listStart').addEventListener('change', () => {
+    const v = parseInt($('listStart').value, 10);
+    setListStart(Number.isFinite(v) && v >= 1 && v <= 9999 ? v : null);
+  });
   wireGoogleFonts();
   // Confirm dialog: Cancel and Escape both mean no.
   $('confirmCancel').addEventListener('click', () => { $('confirmDialog').returnValue = 'cancel'; $('confirmDialog').close(); });
@@ -19572,7 +20053,7 @@ async function a11yIssues() {
     add('error', 'Text doesn’t fit: ' + storyName(doc.stories[id]) + '. The part that doesn’t fit is left out of the PDF.', pageOf(last), last, 'story');
   }
   // Styles: tiny text, justified text.
-  const used = new Set(Object.values(doc.stories).flatMap((s) => s.roles));
+  const used = new Set(Object.values(doc.stories).flatMap((s) => s.roles.map(baseRole)));
   for (const role of used) {
     const s = styleOf(role);
     if (s.size < 9) add('warning', ROLES[role].label + ' text is ' + s.size + ' pt: small text is hard to read, especially printed. 9 pt or more is kinder.', null, null, null);
@@ -19588,7 +20069,7 @@ async function a11yIssues() {
   }
   for (const role of ['body', 'caption']) {
     const fam = familyInfo(styleOf(role).family);
-    if (fam && fam.display && Object.values(doc.stories).some((s) => s.roles.includes(role))) add('tip', ROLES[role].label + ' text is in ' + fam.name + ', a headline font. Long passages in it are hard to read; it shines in headings.', null, null, null);
+    if (fam && fam.display && Object.values(doc.stories).some((s) => s.roles.some((r) => baseRole(r) === role))) add('tip', ROLES[role].label + ' text is in ' + fam.name + ', a headline font. Long passages in it are hard to read; it shines in headings.', null, null, null);
   }
   // Formatting inside paragraphs: tiny words, and links that don't say where they go.
   const VAGUE_LINK = /^(click here|click|here|read more|more|learn more|link|this|this link|go|details|info)[.!:]?$/i;

@@ -1020,6 +1020,36 @@ Not yet, roughly in order of what teachers' files will need:
 - More sample files: newsletters, brochures, a file from Publisher 2016
   or 365 with linked boxes and WordArt.
 
+## Lists, superscript and subscript (0.37.0)
+
+- **Lists live in the role string:** `'body'`, `'body|•|0'`,
+  `'body|1.|1'`, `'body|1.|0|5'` (role | kind | level 0-4 | start
+  again at). `baseRole`, `paraList`, `withList`; `styleOf` reads the base
+  role, so every copy, split, join, undo and save carries the list with
+  no extra bookkeeping. Kinds: `LIST_KINDS` (• – 1. 1) a. a) A. i. I.).
+- **Markers are drawn, not typed** (`listMarkers` per story: counters
+  per level, deeper levels reset under each new item, a start number
+  restarts; paragraphs outside the list don't stop the count). Layout:
+  marker column `listStep` (1.8 × size, at least 18 pt) per level; words
+  at `indentLeft + (level + 1) × step`; a too-wide marker pushes the first
+  line's words. Bullets are shapes (`bulletPath`: disc, ring, square by
+  level), numbers are glyphs of the first letter's font (`measureMarker`).
+- **Keys:** Ctrl/Cmd+Shift+8 / 7; Tab / Shift+Tab at an item's start
+  (not right after arriving by Tab: `arrivedByTab`), Ctrl+] / [; Enter on
+  an empty item ends it (or outdents); Backspace at an item's start
+  removes the marker.
+- **Output:** tagged PDF `L > LI > Lbl + LBody` (ListNumbering
+  attribute; nested lists inside the LI above); numbers as real text in
+  Lbl, bullets as artifact shapes. HTML: `ul` / `ol` (type, li value),
+  nested.
+- **Superscript / subscript:** format field `va` ('sup' / 'sub');
+  `charLook` draws it at 65% (`VA_SCALE`), raised 0.33 or lowered 0.14
+  of the size (`shift`, per letter in `m.shift`, used by `baselineAt`
+  and `lineMetrics`); `ownSize` keeps the real size for the Inspector.
+  PDF starts a new text position where the shift changes. Publisher:
+  char property 0x0F, low byte 1 or 2.
+- Project version 21.
+
 ## Page views and Preview (0.36.0)
 
 - `pageView` (not saved in the document): `'one'`, `'two'` or `'grid'`.

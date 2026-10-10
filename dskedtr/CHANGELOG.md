@@ -1,5 +1,47 @@
 # DSKEDTR changelog
 
+## 0.37.0 - 2026-10-10
+
+- **Bulleted and numbered lists.** The Paragraph section has a List
+  row: Bullets, Numbers, and a level out or in. Or press Ctrl+Shift+8
+  for bullets and Ctrl+Shift+7 for numbers (Cmd on a Mac), as in Google
+  Docs. The bullets and numbers are drawn, not typed, so they renumber
+  themselves as you add, delete or move items, and each item's words
+  hang neatly after its marker, however many lines it takes.
+  - Enter in an item makes the next item; Enter on an empty item ends
+    the list. Backspace at the start of an item takes its bullet or
+    number away.
+  - Tab at the start of an item moves it in a level (Shift+Tab, out),
+    up to five levels: bullets go •, ◦, ▪, and numbers 1., a., i.
+    Ctrl+] and Ctrl+[ do the same anywhere in the item. (If you have
+    just arrived in a text box by pressing Tab, Tab still moves on, so
+    the keyboard is never caught.)
+  - Style: 1. 1) a. a) A. i. I., bullets or dashes. Numbering carries
+    on through the whole text box (and its linked boxes), even past
+    paragraphs that aren't in the list; "Number from" starts it again.
+  - The PDF tags them as real lists (L, LI, Lbl, LBody), so screen
+    readers say "list, 3 items"; the web page export uses ul, ol and
+    li.
+- **Superscript and subscript.** x² and H₂O: Ctrl+. and Ctrl+, (Cmd on
+  a Mac), or the two new buttons in Characters. The letters are drawn
+  smaller and raised or lowered; their size stays what it was, so
+  turning it off puts them back exactly. In the PDF, the web page (sup
+  and sub) and the PNG.
+- **Publisher files keep their superscripts and subscripts.** The
+  Weekly Review worksheet's x² and the degree signs in (3x + 10)° now
+  come across as they were.
+- The Inspector's Size field shows the size the words say (it showed a
+  smaller one for a missing font's stand-in).
+- Project files are now version 21 (they can have lists, superscript
+  and subscript).
+
+## 0.36.2 - 2026-10-10
+
+- Fixed: while typing, the cursor was drawn one step behind: after
+  typing a letter it showed before that letter (Backspace still deleted
+  the right one, since only the drawing was late). It is now drawn where
+  the next letter goes after typing, deleting, Enter and pasting.
+
 ## 0.36.1 - 2026-10-10
 
 - **Move pages in All pages.** Drag a page to a new place: a bar shows
