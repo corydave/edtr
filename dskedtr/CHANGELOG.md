@@ -1,5 +1,12 @@
 # DSKEDTR changelog
 
+## 0.40.0 - 2026-10-10
+
+- **Features, a new first tab in Help:** an animated tour of five of DSKEDTR's favorite features - Lay out a newsletter, Text that flows between boxes, Master pages and page numbers, Opens Publisher files and Made for every reader - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion.
+- **? or F1 and the Help button now open Help on Features.** Keyboard shortcuts is one tab over.
+- **The splash has a "See what DSKEDTR can do" card** that opens the same tour over the splash.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `renderSuiteFeatures`, `suiteFeaturesOpen`, `suiteFeaturesCard` and their styles). The drawings are inline SVG with SVG's own animation tags, so they work offline and straight off a disk.
+
 ## 0.39.2 - 2026-10-10
 
 - **Two pages side by side stay still.** Clicking the other page (or
