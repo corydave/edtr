@@ -41,6 +41,48 @@
 <title>EDTR Apps</title>
 <meta name="description" content="Free editors for text, PDFs, images, sound, video, vector art, 3D models and page layout, plus a screen recorder. They run in your browser and your files stay on your device.">
 
+<!--
+  ================================================================
+  SHARING PREVIEW (Open Graph and Twitter/X cards)
+  ================================================================
+  When someone pastes this page's link into Facebook, LinkedIn,
+  Slack, Teams, Discord, iMessage, X and so on, those sites read the
+  tags below to draw a preview card: a big picture, a title and a
+  short description.
+
+  - og:* tags      The Open Graph standard most sites use.
+  - twitter:* tags X (Twitter) reads these; most of it falls back to
+                   og:* anyway, but "summary_large_image" asks for the
+                   big picture instead of a small square one.
+
+  The picture (og-image.jpg, 1200 x 630 pixels, the size every site
+  expects) sits beside this file. Its address MUST be the full
+  https:// address - sharing sites ignore short relative paths. If
+  the page ever moves, update the four addresses below.
+
+  These tags only describe the page; they don't load anything, so
+  the security rules above don't need to change.
+  ================================================================
+-->
+<link rel="canonical" href="https://edtrapps.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EDTR Apps">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://edtrapps.com/">
+<meta property="og:title" content="EDTR Apps: free, private editors that run in your browser">
+<meta property="og:description" content="Nine free editors for text, PDFs, images, sound, video, screen recording, vector art, 3D models and page layout. Open source, no sign-in, works offline, and your files never leave your device.">
+<meta property="og:image" content="https://edtrapps.com/og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<!-- The picture described in words, for people using screen readers. -->
+<meta property="og:image:alt" content="EDTR Apps: nine free editors that run in your browser. Open source, on your computer, never takes your data, no sign-in, works offline. A row of the nine app icons sits along the bottom.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="EDTR Apps: free, private editors that run in your browser">
+<meta name="twitter:description" content="Nine free editors that run in your browser. Open source, no sign-in, works offline, and your files never leave your device.">
+<meta name="twitter:image" content="https://edtrapps.com/og-image.jpg">
+<meta name="twitter:image:alt" content="EDTR Apps: nine free editors that run in your browser, with a row of the nine app icons.">
+
 <!-- Fonts: Atkinson Hyperlegible for reading, Comfortaa for headings. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -420,8 +462,7 @@ dialog.show::backdrop { background: var(--backdrop); }
 <footer class="site-foot">
   <div class="wrap">
     <p>Made by <a href="https://daveghidiu.com" rel="noopener noreferrer">Dave Ghidiu</a> with Claude.
-      Free and open source: <a href="https://github.com/corydave/edtr" rel="noopener noreferrer">the code is on GitHub</a> under the MIT license.
-      All the apps live at <a href="https://edtrapps.com" rel="noopener noreferrer">edtrapps.com</a>.</p>
+      Free and open source: <a href="https://github.com/corydave/edtr" rel="noopener noreferrer">the code is on GitHub</a> under the MIT license.</p>
   </div>
 </footer>
 
