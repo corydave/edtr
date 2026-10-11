@@ -38,7 +38,7 @@
 <!-- Don't tell other sites which page a visitor came from. -->
 <meta name="referrer" content="no-referrer">
 
-<title>FLX AI Hub Apps</title>
+<title>EDTR Apps</title>
 <meta name="description" content="Free editors for text, PDFs, images, sound, video, vector art, 3D models and page layout, plus a screen recorder. They run in your browser and your files stay on your device.">
 
 <!-- Fonts: Atkinson Hyperlegible for reading, Comfortaa for headings. -->
@@ -128,6 +128,12 @@ a { color: inherit; }
 .site-head .intro { flex: 1; }
 .site-head h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin: 0 0 8px; }
 .site-head p { margin: 0; max-width: 62ch; color: var(--muted); }
+/* The five promises, as a tidy grid of short cards under the intro. */
+.why { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(185px, 100%), 1fr)); }
+.why li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  color: var(--muted); font-size: .95rem; line-height: 1.45; }
+.why strong { display: block; color: var(--fg); margin-bottom: 2px; }
 
 /* Small round icon buttons (theme toggle, close, arrows). */
 .icon-btn {
@@ -313,8 +319,16 @@ dialog.show::backdrop { background: var(--backdrop); }
 <header class="site-head">
   <div class="wrap">
     <div class="intro">
-      <h1>FLX AI Hub Apps</h1>
+      <h1>EDTR Apps</h1>
       <p>Free editors for text, PDFs, images, sound, video, vector art, 3D models and page layout, plus a screen recorder. They run right in your browser, install like regular apps, and keep your files on your own device.</p>
+      <!-- Why these apps exist: the promises every one of them keeps. -->
+      <ul class="why" aria-label="Why these apps">
+        <li><strong>Open source.</strong> Every line is <a href="https://github.com/corydave/edtr" rel="noopener noreferrer">on GitHub</a> (MIT license): read it, use it, change it, share it.</li>
+        <li><strong>Runs on your computer.</strong> Each app works right in your browser. Your files are opened and saved on your own device.</li>
+        <li><strong>Never takes your data.</strong> Nothing is uploaded, collected or tracked. There's no server to send it to.</li>
+        <li><strong>No sign-in.</strong> No account, no password, no email address. Just open it and start.</li>
+        <li><strong>Works offline.</strong> After the first visit, every app keeps working with no internet at all.</li>
+      </ul>
     </div>
     <!-- Night mode toggle. Its icon shows where it will take you: a moon in light mode, a sun in dark. -->
     <button class="icon-btn" id="theme-btn" type="button"></button>
@@ -330,7 +344,9 @@ dialog.show::backdrop { background: var(--backdrop); }
 
 <footer class="site-foot">
   <div class="wrap">
-    <p>Made by <a href="https://daveghidiu.com" rel="noopener noreferrer">Dave Ghidiu</a> with Claude. Provided by the <a href="https://flcc.ai" rel="noopener noreferrer">FLX AI Hub</a> and <a href="https://www.flcc.edu" rel="noopener noreferrer">Finger Lakes Community College</a>.</p>
+    <p>Made by <a href="https://daveghidiu.com" rel="noopener noreferrer">Dave Ghidiu</a> with Claude.
+      Free and open source: <a href="https://github.com/corydave/edtr" rel="noopener noreferrer">the code is on GitHub</a> under the MIT license.
+      All the apps live at <a href="https://edtrapps.com" rel="noopener noreferrer">edtrapps.com</a>.</p>
   </div>
 </footer>
 
