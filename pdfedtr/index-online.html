@@ -628,6 +628,19 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 .suite-links { display: inline-block; margin-top: 4px; }
 .suite-links a { color: inherit; font-weight: 600; }
 
+.suite-source { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 18px; padding: 14px 16px;
+  border-radius: 12px; border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent); }
+.suite-source-words { flex: 1 1 260px; margin: 0; font-size: 13.5px; line-height: 1.5; }
+/* The button: the text colour as its fill, so it is the strongest thing in the tab in light and dark mode. */
+.suite-source-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 10px;
+  background: var(--suite-fg, CanvasText); color: var(--suite-bg, Canvas); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.suite-source-btn:hover { filter: brightness(1.15); }
+.suite-source-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-source-btn:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { .suite-source-btn:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-source-btn:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-source-btn:focus-visible { outline-color: #0046ad; }
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 
     /* Smooth color transitions on mode switch */
@@ -2261,7 +2274,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
         <tr><td><kbd>T</kbd></td><td>Add text</td></tr>
         <tr><td><kbd>S</kbd></td><td>Add a sticky note</td></tr>
         <tr><td><kbd>D</kbd></td><td>Add today's date</td></tr>
-        <tr><td><kbd>N</kbd></td><td>Step number (they count up by themselves)</td></tr>
+        <tr><td><kbd>N</kbd></td><td>Step number (they count up by themselves; the tool stays on until <kbd>Esc</kbd>)</td></tr>
         <tr><td><kbd>C</kbd></td><td>Cursor stamp</td></tr>
         <tr><td><kbd>M</kbd></td><td>Magnifier</td></tr>
         <tr><td>Scroll over the page thumbnails</td><td>Next / previous page (scrolling past the bottom of a page does too - see Settings)</td></tr>
@@ -2363,7 +2376,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
         <label for="set-keep">Keep tool after placing</label>
         <input type="checkbox" id="set-keep" aria-describedby="set-keep-hint">
       </div>
-      <p class="hint" id="set-keep-hint">On: after you place a red X, a checkmark, a highlight, a shape or a form field, the same tool stays ready for the next one - handy for marking a whole page. Off: PDFEDTR goes back to Select, so you can adjust what you just placed.</p>
+      <p class="hint" id="set-keep-hint">On: after you place a red X, a checkmark, a highlight, a shape or a form field, the same tool stays ready for the next one - handy for marking a whole page. Off: PDFEDTR goes back to Select, so you can adjust what you just placed. Step numbers always stay ready, since they usually come several in a row.</p>
     </div>
     <div class="dlg-foot"><button class="btn btn-primary" value="ok">Done</button></div>
   </form>
@@ -6257,10 +6270,12 @@ function beginPlacement(type, extra = {}) {
     ? SHAPE_BY_KEY[extra.shapeType].label.replace(/ \(.*\)$/, '').toLowerCase() : null;
   const label = shapeName || PLACEMENT_LABELS[labelKey] || 'element';
   // Built from fixed words only (label comes from this file, never from a PDF).
-  dom.placementHint.innerHTML =
-    `Click the page to place the ${label}, or drag to size it` +
-    (type === 'shape' && shapeName ? ' (<kbd>Shift</kbd> keeps its shape)' : '') + '. ' +
-    `<kbd>Enter</kbd> centres it · <kbd>Esc</kbd> cancels`;
+  dom.placementHint.innerHTML = type === 'step'
+    // Step numbers stay armed (1.20): say how to stop.
+    ? 'Click the page for each step number, in order: 1, 2, 3... <kbd>Esc</kbd> (or another tool) when you are done'
+    : `Click the page to place the ${label}, or drag to size it` +
+      (type === 'shape' && shapeName ? ' (<kbd>Shift</kbd> keeps its shape)' : '') + '. ' +
+      `<kbd>Enter</kbd> centres it · <kbd>Esc</kbd> cancels`;
   dom.placementHint.hidden = false;
 }
 
@@ -6390,10 +6405,11 @@ function handlePlacementPointerDown(e) {
 
     // Settings > Keep tool after placing (1.13): marks, shapes, highlights
     // and form fields can stay armed, so a whole page can be marked quickly.
+    // Step numbers ALWAYS stay armed (1.20, Dave: most people click several
+    // in a row), whatever the setting: Esc, Select or another tool ends it.
     // Text, notes, dates and pictures always go back to Select, because the
     // next thing you want to do is type in them or adjust them.
-    const again = settings.keepTool && ['shape', 'highlight', 'field', 'step', 'cursor', 'redact'].includes(type)
-      ? { type, extra, tool: state.activeTool } : null;
+    const again = keepsTool(type) ? { type, extra, tool: state.activeTool } : null;
     cancelPlacement();
     createOverlay(type, extra, rect);
     if (again) { setActiveTool(again.tool); beginPlacement(again.type, again.extra); }
@@ -6403,12 +6419,18 @@ function handlePlacementPointerDown(e) {
   document.addEventListener('pointerup', onUp);
 }
 
-/** Keyboard route: place the armed element in the middle of the page. */
+/** Does this kind of element leave its tool armed after it is placed? (Step numbers always; the rest when Settings says so.) */
+function keepsTool(type) {
+  return type === 'step' || (settings.keepTool && ['shape', 'highlight', 'field', 'cursor', 'redact'].includes(type));
+}
+
+/** Keyboard route: place the armed element in the middle of the page (a step number's tool stays armed, as with a click). */
 function placePendingAtCenter() {
   if (!state.pendingPlacement) return;
-  const { type, extra } = state.pendingPlacement;
+  const { type, extra } = state.pendingPlacement, tool = state.activeTool;
   cancelPlacement();
   addOverlayAtCenter(type, extra);
+  if (keepsTool(type)) { setActiveTool(tool); beginPlacement(type, extra); }
 }
 
 /* ══════════════════════════════════════════
@@ -9094,6 +9116,36 @@ function renderSuiteCredits(container) {
   const links = suiteEl('p', 'suite-credits-links');
   links.append(suiteLinksLine());
   container.append(made, by, row, links);
+
+  // The source code, front and centre: a box with a clear GitHub button at
+  // the TOP of the About tab (the credits themselves sit lower down), so
+  // nobody has to hunt for it. Falls back to the top of the credits when
+  // the credits are not inside a tab panel.
+  const source = suiteSourceBox();
+  const pane = container.closest('[role="tabpanel"]');
+  const old = pane && pane.querySelector(':scope > .suite-source');
+  if (old) old.remove();                                  // drawn before: replace it
+  if (pane) pane.prepend(source); else container.prepend(source);
+}
+
+/* "Free and open source" with a big "View the source on GitHub" button. */
+function suiteSourceBox() {
+  const box = suiteEl('section', 'suite-source');
+  box.setAttribute('aria-label', 'Source code');
+  const words = suiteEl('p', 'suite-source-words');
+  words.append(suiteEl('strong', '', 'Free and open source. '),
+    'Every line of this app is on GitHub under the ' + SUITE_LINKS.license + ' license: read how it works, use it, change it, share it. ' +
+    'It runs in your browser, keeps your files on your device, needs no sign-in and works offline.');
+  const btn = suiteLink(SUITE_LINKS.source.url, '', 'suite-source-btn');
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  // The GitHub mark (Lucide's line version) - a fixed drawing, not data.
+  icon.innerHTML = '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>';
+  btn.append(icon, document.createTextNode('View the source on GitHub'), suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  box.append(btn, words);
+  return box;
 }
 
 /* The one-line version, for the foot of the splash screen. */
@@ -10034,7 +10086,7 @@ function suiteFeaturesCard(features, appId) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.19';
+const APP_VERSION = '1.21';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -10105,6 +10157,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.21', date: '2026-10-11', notes: [
+    'About now starts with a "View the source on GitHub" button: every app is free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in and works offline.'
+  ] },
+  { version: '1.20', date: '2026-10-11', notes: [
+    'The Step number tool stays on after each click, so you can click 1, 2, 3 and on in a row. Press Esc, or pick Select or another tool, when you are done. (The other tools still follow Settings, Keep tool after placing.)',
+  ] },
   { version: '1.19', date: '2026-10-11', notes: [
     'A refreshed Features tour (Help, and "See what PDFEDTR can do" on the splash): seven favorite features, with new animations for marking up, spotlight and step numbers, redaction, and project files.',
     'A new splash picture showing PDFEDTR as it looks now.',

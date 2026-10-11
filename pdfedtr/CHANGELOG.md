@@ -17,6 +17,16 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.21 - 2026-10-11 - The source, front and center
+
+- **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `suiteSourceBox()`, drawn by `renderSuiteCredits()`).
+
+## 1.20 - 2026-10-11 - The Step number tool stays on
+
+- **Step numbers, one click after another.** The Step number tool (N) now stays on after each click, so you can click 1, 2, 3 and on in a row, whatever Settings says. Press Esc, or pick Select or another tool, when you are done; the hint under the toolbar says so. Enter (a step in the middle of the page) keeps it on too.
+- The other tools still follow Settings, Keep tool after placing, whose note now mentions that step numbers always stay ready.
+
 ## 1.19 - 2026-10-11 - A fresh tour and splash picture, spotlight fixes
 
 - **Features tour refreshed** (Help > Features, and the splash's "See what
