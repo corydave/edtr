@@ -17,6 +17,41 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.18 - 2026-10-11 - Project files, radio buttons, a better spotlight
+
+- **Project files (.pdfedtr).** Save project (a new top-bar button beside Open,
+  in the More menu on phones, or Ctrl+Shift+S) downloads a `.pdfedtr` file:
+  plain JSON holding the PDF (as base64) plus everything placed on it, the page
+  order and each page's turn - the same idea as IMGEDTR's `.imgedtr`. Open it
+  with Open (or drop it on the drop zone, or the splash's Open card) and
+  everything is editable again. Opening a project is treated like opening a
+  file from a stranger: only known kinds of object and known settings are kept
+  (anything else is dropped), numbers must be numbers, colours must be `#rrggbb`,
+  pictures must be plain PNG / JPEG / WebP data, page numbers must exist, and
+  the PDF must really be a PDF. A bad file is refused before anything on screen
+  changes. Saving warns when there are redactions: a project keeps the original
+  PDF, so share downloads, not projects. The crash backup now saves the same
+  session and is restored through the same checks.
+- **Radio buttons.** Radio groups in a PDF are brought in as radio-button
+  objects (one per button, sharing the group name), so they can be picked on
+  the page (arrow keys work too), moved and resized, and they are written back
+  on redacted pages instead of being lost. The form-field menu has a new Radio
+  button; the Inspector shows the group name (renaming it renames the whole
+  group), "This choice" (the value saved in the PDF), Add another choice, and
+  Clear the pick. Duplicating or pasting a radio button adds another choice to
+  its group; duplicated pages get a group of their own. The Fill Existing
+  Fields tool and panel are gone - radio buttons were the last thing in it.
+- **Spotlight at parity with IMGEDTR.** Several spots per page now share one dim
+  layer, so they no longer dim each other (each spot is still its own object).
+  New Blur and Soft edge settings. Dim, dim colour, blur and soft edge are shared
+  by every spot on the page; shape, corners and ring belong to each spot. In the
+  PDF a crisp spotlight is still vector shapes; a blurred or soft one (or one
+  whose spots overlap) becomes a 150 dpi picture made by the same routine as the
+  screen, with any redaction boxes painted in first so a blur can never show
+  what a redaction hides. The Inspector says plainly that blur is not redaction.
+- **"Are you sure?" dialog** matching IMGEDTR's, used before New PDF and before
+  opening a project over unsaved work (replaces the browser's `confirm()`).
+
 ## 1.17 - 2026-10-11 - New PDF, right-click menus, the Inspector at parity
 
 The last of five releases bringing PDFEDTR up to IMGEDTR, plus Dave's

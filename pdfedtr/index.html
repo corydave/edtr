@@ -672,7 +672,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 
     /* Smooth color transitions on mode switch */
     body, header, #sidebar, #tools-panel, #context-bar,
-    #fields-panel, .floating-menu, .page-thumb, .ov-item {
+    .floating-menu, .page-thumb, .ov-item {
       transition: background 0.2s, border-color 0.2s, color 0.15s;
     }
 
@@ -949,31 +949,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     .am-tog:focus-visible { outline: 2px solid var(--amber); }
     .am-divider { height: 1px; background: var(--border-soft); margin: 2px 0 4px; }
 
-    /* ═══════════════════════════════════════════════════
-       FILL FIELDS FLOATING PANEL
-    ═══════════════════════════════════════════════════ */
-    #fields-panel {
-      position: fixed; z-index: 65;
-      right: 16px; top: 56px;
-      width: 250px;
-      max-height: calc(100dvh - 72px);
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      display: flex; flex-direction: column;
-      overflow: hidden;
-      animation: bar-pop 0.14s ease;
-    }
-    #fields-panel[hidden] { display: none; }
-    .fp-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--border);
-      font-size: 10px; font-family: var(--font-mono);
-      color: var(--text-mid); letter-spacing: 0.06em; text-transform: uppercase;
-      flex-shrink: 0;
-    }
+    /* The small × close button (the signature panel uses it). */
     .fp-close {
       width: 20px; height: 20px;
       display: flex; align-items: center; justify-content: center;
@@ -981,25 +957,6 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       color: var(--text-dim); cursor: pointer; font-size: 14px; border-radius: 3px;
     }
     .fp-close:hover { background: var(--surface); color: var(--text); }
-    .fp-body { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 7px; }
-    .fp-hint { font-size: 11px; color: var(--text-dim); line-height: 1.55; }
-    .fp-field {
-      background: var(--surface); border: 1px solid var(--border-soft);
-      border-radius: var(--r); padding: 7px;
-    }
-    .fp-fname {
-      font-family: var(--font-mono); font-size: 9px;
-      color: var(--amber-dim); letter-spacing: 0.04em; margin-bottom: 5px;
-    }
-    .fp-field input[type="text"], .fp-field select {
-      width: 100%; background: var(--bg);
-      border: 1px solid var(--border); border-radius: var(--r);
-      color: var(--text); padding: 4px 6px;
-      font-family: var(--font-ui); font-size: 11px;
-    }
-    .fp-field input[type="text"]:focus, .fp-field select:focus { outline: none; border-color: var(--amber); }
-    .fp-check { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-mid); cursor: pointer; }
-    .fp-field input[type="checkbox"] { accent-color: var(--amber); }
 
     /* ═══════════════════════════════════════════════════
        APP BODY LAYOUT
@@ -1288,7 +1245,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     .ov-item.editing .sticky-textarea { pointer-events: auto; }
 
     .ov-item .ov-field,
-    .ov-item .ov-cb { pointer-events: auto; }
+    .ov-item .ov-cb,
+    .ov-item .ov-rb { pointer-events: auto; }
 
     /* A dotted inner rule while editing, so it is obvious the text is live */
     .ov-item.editing { outline-color: var(--amber); outline-style: solid; }
@@ -1434,6 +1392,19 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       background-repeat: no-repeat;
     }
     .ov-cb:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+
+    /* Radio button (1.18): a round box with a dot, the same as the one
+       pdf-lib writes into the file. Only one in a group can be picked. */
+    .ov-rb {
+      -webkit-appearance: none; appearance: none; margin: 0;
+      width: 100%; height: 100%; display: block; box-sizing: border-box;
+      background: #e5f2ff;
+      border: 1px solid #3380e6;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .ov-rb:checked { background: radial-gradient(circle, #000 0 34%, #e5f2ff 36%); }
+    .ov-rb:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
 
     /* ═══════════════════════════════════════════════════
        SIGNATURE MODAL
@@ -1635,11 +1606,6 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     #inspector .ctx-sep { flex-basis: 100%; width: auto; height: 0; margin: 2px 0; background: none; }   /* a row break, not a line */
     #inspector .ctx-grip { display: none; }            /* moving is done on the page (or with the arrow keys) */
     #inspector .ctx-type { flex-basis: 100%; font-weight: 600; font-size: 13px; }
-    #inspector #fields-panel {
-      position: static; width: auto; max-height: none; background: none;
-      border: 0; border-radius: 0; box-shadow: none; animation: none;
-    }
-    #inspector #fields-panel[hidden] { display: none; }
 
     /* (Phones and narrow windows: see PHONE LAYOUT (1.15) at the end of the styles.) */
     /* A dot on the Inspector button when something is selected but the
@@ -1823,6 +1789,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     .ov-mag-grip:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
     .ov-redact { width: 100%; height: 100%; }
     .insp-note { font-size: 13px; color: var(--text); font-family: var(--font-ui); }
+    /* A full-width button in the Inspector ("Add another choice", 1.18). */
+    #inspector #context-bar .insp-wide-btn { flex-basis: 100%; justify-content: center; height: 34px; font-size: 13px; }
     #inspector #context-bar .insp-help { flex-basis: 100%; margin: 4px 0 0; font-size: 12.5px; line-height: 1.45;
       color: var(--text-mid); font-family: var(--font-ui); }
 
@@ -1911,6 +1879,12 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       .ov-del { width: 26px; height: 26px; top: -30px; right: -30px; font-size: 15px; }
       .ov-rotate { width: 22px; height: 22px; margin-left: -11px; top: -38px; }
       .ov-rotate::before { height: 16px; }
+      /* Checkboxes and radio buttons sit close together in lists, and a big
+         × beside one would cover the next one (a tap meant for "No" would
+         delete "Yes"). On touch screens they are deleted from the Inspector
+         or the press-and-hold menu instead, and resized from the Inspector. (1.18) */
+      .ov-item.ov-type-checkbox .ov-del, .ov-item.ov-type-radio .ov-del,
+      .ov-item.ov-type-checkbox .ov-resize, .ov-item.ov-type-radio .ov-resize { display: none; }
     }
 
     @media (max-width: 820px) {
@@ -1937,7 +1911,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       .wordmark { margin: 0 4px 0 2px; font-size: 0; gap: 0; }          /* the logo alone */
       .wordmark .version-badge { display: none; }
       .topbar-scroll { overflow: visible; }
-      #btn-zoom-out, #btn-zoom-100, #btn-zoom-in, #theme-toggle, #btn-help, #btn-settings, #btn-install { display: none; }
+      #btn-zoom-out, #btn-zoom-100, #btn-zoom-in, #theme-toggle, #btn-help, #btn-settings, #btn-install,
+      #btn-save-project { display: none; }   /* Save project: in the More menu (1.18) */
       #btn-more { display: inline-flex; }
       .h-sep { margin: 0 2px; }
       #btn-download { padding: 0 10px; font-size: 0; gap: 0; }         /* the icon alone */
@@ -2000,6 +1975,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
      Each item presses the matching top-bar button (which is hidden on a
      phone), so the two can never do different things. -->
 <div class="floating-menu more-menu" id="more-menu" role="menu" aria-label="More">
+  <button class="fm-item" role="menuitem" data-for="btn-save-project"><span data-icon="save"></span> Save project</button>
+  <div class="am-divider" role="separator"></div>
   <button class="fm-item" role="menuitem" data-for="btn-zoom-in"><span data-icon="zoomIn"></span> Zoom in</button>
   <button class="fm-item" role="menuitem" data-for="btn-zoom-out"><span data-icon="zoomOut"></span> Zoom out</button>
   <button class="fm-item" role="menuitem" data-for="btn-zoom-100"><span data-icon="fit"></span> Zoom to 100%</button>
@@ -2045,6 +2022,10 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="11" height="7" rx="1"/><polyline points="4,6 6.5,9 9,6" stroke-width="1.2"/></svg>
     Dropdown
   </button>
+  <button class="fm-item" role="menuitem" data-field="radio">
+    <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="5.5"/><circle cx="6.5" cy="6.5" r="2.2" fill="currentColor" stroke="none"/></svg>
+    Radio button
+  </button>
 </div>
 
 
@@ -2078,7 +2059,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   <div class="topbar-scroll">
     <div class="h-group" role="group" aria-label="File">
       <button class="icon-btn" id="btn-new" data-tip="New PDF: start from blank pages" aria-label="New PDF" aria-haspopup="dialog"><span data-icon="newDoc"></span></button>
-      <button class="icon-btn" id="btn-open" data-tip="Open a PDF" data-keys="Ctrl+O" aria-label="Open a PDF"><span data-icon="folder"></span></button>
+      <button class="icon-btn" id="btn-open" data-tip="Open a PDF or a .pdfedtr project" data-keys="Ctrl+O" aria-label="Open a PDF or project"><span data-icon="folder"></span></button>
+      <button class="icon-btn" id="btn-save-project" disabled data-tip="Save project: keeps everything editable" data-keys="Ctrl+Shift+S" aria-label="Save project" aria-keyshortcuts="Control+Shift+S"><span data-icon="save"></span></button>
     </div>
     <div class="h-sep" aria-hidden="true"></div>
     <div class="h-group" role="group" aria-label="Undo and redo">
@@ -2104,7 +2086,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
          browser allows installing (SuiteInstall in the shared block decides). -->
     <div class="h-group">
       <button class="icon-btn" id="btn-install" hidden data-tip="Install PDFEDTR as an app: its own window, and it works offline" aria-label="Install PDFEDTR as an app"><span data-icon="install"></span></button>
-      <button class="icon-btn" id="btn-inspector" data-tip="Inspector: the selected element and form fields" aria-label="Inspector" aria-pressed="true" aria-controls="inspector"><span data-icon="inspector"></span></button>
+      <button class="icon-btn" id="btn-inspector" data-tip="Inspector: settings for the selected element" aria-label="Inspector" aria-pressed="true" aria-controls="inspector"><span data-icon="inspector"></span></button>
       <!-- The theme button shows where it will TAKE you: a moon in light mode, a sun in dark. -->
       <button class="icon-btn" id="theme-toggle" data-tip="Switch to dark mode" aria-label="Switch to dark mode">
         <span id="theme-icon-moon" data-icon="moon"></span><span id="theme-icon-sun" data-icon="sun" style="display:none"></span>
@@ -2183,7 +2165,6 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       <svg class="icon" id="field-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
       <svg class="tb-chevron" viewBox="0 0 8 5" width="7" height="7" fill="currentColor" aria-hidden="true"><path d="M0 0l4 5 4-5z"/></svg>
     </button>
-    <button class="tb-btn" id="tool-fillfields" data-tip="Fill in the PDF's own form fields" aria-pressed="false" aria-label="Fill existing form fields"><span data-icon="formFill"></span></button>
 
   </div><!-- /toolbar -->
 
@@ -2250,7 +2231,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   </div><!-- /canvas-col -->
 
   <!-- Right: the INSPECTOR. The settings for whatever is selected on the page
-       (these used to float next to it), and the radio-button fields. -->
+       (these used to float next to it). -->
   <aside id="inspector" aria-label="Inspector">
     <!-- Phones (1.15): the Inspector is a sheet along the bottom, the same as
          IMGEDTR's. Drag this handle up or down (or use the arrow keys on it)
@@ -2264,16 +2245,6 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       <div id="context-bar" hidden role="toolbar" aria-label="Element properties"></div>
       <p class="insp-empty">Select something on the page to change it here, or pick a tool to add something.</p>
     </section>
-    <!-- Radio-button fields already in the PDF (the Fill Fields tool shows or hides this). -->
-    <section id="fields-panel" class="insp-section" hidden aria-label="Fill existing form fields">
-  <div class="fp-head">
-    <span>Fill Fields</span>
-    <button class="fp-close" id="fp-close" aria-label="Close panel">×</button>
-  </div>
-  <div class="fp-body" id="fp-body">
-    <p class="fp-hint" id="fp-hint">Load a PDF with fillable form fields to see them here.</p>
-  </div>
-</section>
   </aside>
 
 </div><!-- /app-body -->
@@ -2378,7 +2349,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
         <tr><td>Right-click, or <kbd>Shift</kbd>+<kbd>F10</kbd></td><td>A menu of actions for the selected element, or for the spot on the page you clicked (press and hold on a touch screen)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Redo (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>)</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Open a PDF</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Open a PDF (or a .pdfedtr project)</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></td><td>Save project, so everything stays editable</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>=</kbd> / <kbd>Ctrl</kbd>+<kbd>-</kbd></td><td>Zoom in / out (or <kbd>Ctrl</kbd> + scroll, or pinch on a trackpad)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>0</kbd></td><td>Fit the page width</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>1</kbd></td><td>Zoom to 100%</td></tr>
@@ -2403,6 +2375,9 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       into the one file, so it needs no network once it has loaded, and it works when
       saved to a computer and opened from there. The page's security rules stop it from
       sending anything anywhere.</p>
+    <p><strong>Projects.</strong> Save project keeps everything editable in a <em>.pdfedtr</em> file:
+      open it later to move, change or remove what you added. A project keeps the original PDF,
+      including anything under a Redact box, so share downloaded PDFs, not project files.</p>
     <p>Part of a family of browser tools that all work this way - see <strong>More apps</strong>.</p>
     <div id="suite-credits"></div>
   </div>
@@ -2462,6 +2437,17 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   </form>
 </dialog>
 
+<!-- ══════════ ARE YOU SURE? (1.18) ══════════
+     The same as IMGEDTR's. The words are set with textContent, so a
+     message can never turn into HTML. -->
+<dialog id="confirm-dlg" class="app-dlg" aria-labelledby="confirm-title" aria-describedby="confirm-msg">
+  <form method="dialog">
+    <div class="dlg-head"><h2 id="confirm-title">Are you sure?</h2></div>
+    <div class="dlg-body"><p id="confirm-msg" class="hint"></p></div>
+    <div class="dlg-foot"><button class="btn btn-ghost" value="cancel">Cancel</button><button class="btn btn-primary" value="ok" id="confirm-ok">OK</button></div>
+  </form>
+</dialog>
+
 <!-- ══════════ NEW PDF (1.17) ══════════
      Start a PDF from blank pages: a quick handout, a sign-up sheet, or a
      form to fill in. Pages can be added, moved and turned afterwards. -->
@@ -2504,7 +2490,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 <div class="tip" id="tip" hidden aria-hidden="true"></div>
 
 <!-- Hidden file inputs triggered programmatically -->
-<input type="file" id="file-input"    accept="application/pdf"   style="display:none" />
+<input type="file" id="file-input"    accept="application/pdf,.pdf,.pdfedtr"   style="display:none" />
 <input type="file" id="import-input"  accept="application/pdf"   style="display:none" />
 <input type="file" id="image-input"   accept="image/png,image/jpeg" style="display:none" />
 
@@ -2558,7 +2544,6 @@ const ICONS = {
   check:       '<path d="M20 6 9 17l-5-5"/>',
   calendar:    '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/>',
   signature:   '<path d="m21 17-2.16-1.87a.5.5 0 0 0-.84.37v.5a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1c0-2.55-4-3.97-8.5-4a2.5 2.5 0 0 0 0 5c4.15 0 4.75-11.3 5.7-13.5a2.5 2.5 0 1 1 3.31 3.28"/><path d="M3 21h18"/>',
-  formFill:    '<path d="M12 20h9"/><path d="M16.38 3.62a1 1 0 0 1 3 3L7.37 18.64a2 2 0 0 1-.86.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.86z"/>',
   folder:      '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
   filePlus:    '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/>',
   undo:        '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
@@ -2566,6 +2551,7 @@ const ICONS = {
   zoomIn:      '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>',
   zoomOut:     '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>',
   fit:         '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+  save:        '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
   download:    '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
   // The family's standard top-bar icons (the same drawings in every app).
   install:     '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 7v7M9 11.5l3 3 3-3"/>',
@@ -2783,9 +2769,6 @@ const dom = {
   btnDownload:  document.getElementById('btn-download'),
   importInput:  document.getElementById('import-input'),
   contextBar:   document.getElementById('context-bar'),
-  fieldsPanel:  document.getElementById('fields-panel'),
-  fpBody:       document.getElementById('fp-body'),
-  fpHint:       document.getElementById('fp-hint'),
   loadingEl:    document.getElementById('loading-overlay'),
   loadingMsg:   document.getElementById('loading-msg'),
   toast:        document.getElementById('toast'),
@@ -2804,7 +2787,6 @@ const dom = {
   toolShape:    document.getElementById('tool-shape'),
   toolImage:    document.getElementById('tool-image'),
   toolField:    document.getElementById('tool-field'),
-  toolFill:     document.getElementById('tool-fillfields'),
   toolHighlight: document.getElementById('tool-highlight'),
   highlightMenu:  document.getElementById('highlight-menu'),
   toolXmark:    document.getElementById('tool-xmark'),
@@ -2993,6 +2975,71 @@ function uid() { return 'o' + Math.random().toString(36).slice(2, 8); }
  *
  * @returns {'textfield'|'checkbox'|'dropdown'|'radio'|null}
  */
+/** The overlay types that are real form fields in the saved PDF (radio: 1.18). */
+const FIELD_TYPES = ['textfield', 'checkbox', 'dropdown', 'radio'];
+
+/* ── Radio buttons (1.18) ──
+   Each radio button is its own overlay (so it moves, resizes and copies
+   like anything else). Buttons with the same fieldName are one GROUP:
+   only one in a group can be picked. ov.option is that button's value -
+   what the PDF records when it is the one picked.                       */
+
+/** Every radio button in a group, in page order. */
+function radioGroupOf(name) {
+  return state.overlays.filter(o => o.type === 'radio' && o.fieldName === name)
+    .sort((a, b) => a.pageDisplayIndex - b.pageDisplayIndex || a.fracTop - b.fracTop || a.fracLeft - b.fracLeft);
+}
+/**
+ * A group name no other field is using. `extra` is a list of overlays not
+ * added yet (copied pages): their other fields count as taken, but their
+ * radio buttons do not, as those are the ones being given new names.
+ */
+function uniqueRadioGroupName(base, extra = []) {
+  const taken = new Set();
+  for (const o of state.overlays) if (o.fieldName) taken.add(o.fieldName);
+  for (const o of extra) if (o.fieldName && o.type !== 'radio') taken.add(o.fieldName);
+  if (!taken.has(base)) return base;
+  for (let n = 2; n < 10000; n++) if (!taken.has(base + '_' + n)) return base + '_' + n;
+  return base + '_' + uid();
+}
+/** What a screen reader says for a radio button: "Choice 2 (group choices_3)". */
+function radioLabel(ov) {
+  return (ov.option || 'Choice') + ' (group ' + (ov.fieldName || '') + ')';
+}
+/** Pick one radio button: the others in its group (on any page) are un-picked. */
+function pickRadio(ov) {
+  snapshotOnce();
+  const group = radioGroupOf(ov.fieldName);
+  group.forEach(o => { o.defaultChecked = (o === ov); });
+  // If a button of this group is selected, its Inspector shows "Clear the pick".
+  const sel = group.find(o => o.id === state.selectedId);
+  if (sel) buildContextBar(sel);
+}
+/** Turn a copy of a radio button into a new, un-picked choice in the same group. */
+function asNewChoice(copy) {
+  const used = new Set(radioGroupOf(copy.fieldName).map(o => o.option));
+  let n = used.size + 1;
+  while (used.has('Choice ' + n)) n++;
+  copy.option = 'Choice ' + n;
+  copy.defaultChecked = false;
+}
+/** The Inspector's "Add another choice": a new button just below this one. */
+function addRadioChoice(ov) {
+  snapshot();
+  const copy = JSON.parse(JSON.stringify(ov));
+  copy.id = uid();
+  asNewChoice(copy);
+  // Below the lowest button in the group on this page, one and a half heights down.
+  const here = radioGroupOf(ov.fieldName).filter(o => o.pageDisplayIndex === ov.pageDisplayIndex);
+  const lowest = here.reduce((m, o) => (o.fracTop > m.fracTop ? o : m), ov);
+  copy.fracLeft = lowest.fracLeft;
+  copy.fracTop  = Math.min(1 - copy.fracH, lowest.fracTop + lowest.fracH * 1.6);
+  state.overlays.push(copy);
+  refreshOverlays();
+  selectOverlay(copy.id);
+  toast('Added ' + copy.option + ' to the group.');   // the toast is read out by screen readers too
+}
+
 function pdfFieldKind(field) {
   if (field instanceof PDFLib.PDFTextField)  return 'textfield';
   if (field instanceof PDFLib.PDFCheckBox)   return 'checkbox';
@@ -3177,9 +3224,9 @@ function updateUndoRedoBtns() {
  * looks. Converting it into an overlay makes it work exactly like a field
  * you just placed fresh.
  *
- * Radio groups aren't converted: a single radio field can have several
- * widgets scattered at unrelated positions, which doesn't map onto one
- * overlay cleanly. Those still show up in the Fill Existing Fields panel.
+ * Radio groups (1.18): every button (widget) of a group becomes its own
+ * radio-button overlay, all sharing the group's name, so each one can be
+ * moved on its own and they still work together.
  */
 function importExistingFormFields() {
   console.group('[pdf-editor] importExistingFormFields()');
@@ -3234,8 +3281,8 @@ function importExistingFormFields() {
     let fname = '(name threw)'; try { fname = field.getName(); } catch {}
     console.group(`Field "${fname}" (kind: ${kind}, ctor.name: ${field.constructor.name})`);
 
-    if (!['textfield', 'checkbox', 'dropdown'].includes(kind)) {
-      console.log('SKIPPED — not a supported type (only text field / checkbox / dropdown are imported; radio groups etc. stay in the Fill Existing Fields panel).');
+    if (!FIELD_TYPES.includes(kind)) {
+      console.log('SKIPPED — not a supported type (only text field / checkbox / dropdown / radio group are imported).');
       console.groupEnd();
       return;
     }
@@ -3244,6 +3291,22 @@ function importExistingFormFields() {
     try { widgets = field.acroField.getWidgets(); }
     catch (e) { console.log('SKIPPED — field.acroField.getWidgets() threw:', e); console.groupEnd(); return; }
     console.log(`${widgets.length} widget(s) on this field.`);
+
+    // Radio groups: each button's value, in widget order, and which one is picked.
+    // Two buttons with the same value would be picked together, so repeats get a number.
+    let radioValues = [], radioPicked = null;
+    if (kind === 'radio') {
+      try { radioValues = field.getOptions(); } catch { radioValues = []; }
+      try { radioPicked = field.getSelected() || null; } catch { radioPicked = null; }
+      const seen = new Set();
+      radioValues = widgets.map((w, i) => {
+        let v = String(radioValues[i] ?? ('Choice ' + (i + 1))).slice(0, 200) || ('Choice ' + (i + 1));
+        let tidy = v, n = 2;
+        while (seen.has(tidy)) tidy = v + ' ' + n++;
+        seen.add(tidy);
+        return { value: tidy, picked: v === radioPicked && tidy === v };
+      });
+    }
 
     widgets.forEach((widget, wi) => {
       try {
@@ -3284,6 +3347,10 @@ function importExistingFormFields() {
           ov.defaultChecked = (() => { try { return field.isChecked(); } catch { return false; } })();
           ov.options       = [];
           ov.fontSize      = state.lastFieldFontSize; // unused for checkboxes
+        } else if (kind === 'radio') {
+          ov.type           = 'radio';
+          ov.option         = radioValues[wi].value;
+          ov.defaultChecked = radioValues[wi].picked;
         } else { // dropdown
           ov.type          = 'dropdown';
           ov.options       = (() => { try { return field.getOptions(); } catch { return []; } })();
@@ -3339,10 +3406,10 @@ async function loadPdf(file) {
     await renderCurrentPage();
     updateZoomUI();
     dom.canvasArea.scrollTo(0, 0);
-    buildFieldsPanel();
     hideContextBar();
 
     dom.btnDownload.disabled     = false;
+    document.getElementById('btn-save-project').disabled = false;
     dom.btnAddBlank.disabled     = false;
     dom.btnInsertPdf.disabled    = false;
     toast(`Loaded: ${file.name} (${n} page${n !== 1 ? 's' : ''})`);
@@ -3738,23 +3805,32 @@ function applyPageLayout(layout) {
       if (!copying) firstSeen[i] = newIdx;
       for (const ov of state.overlays) {
         if (ov.pageDisplayIndex !== i) continue;
-        newOverlays.push(copying ? { ...JSON.parse(JSON.stringify(ov)), id: uid(), name: undefined, pageDisplayIndex: newIdx }
+        newOverlays.push(copying ? { ...JSON.parse(JSON.stringify(ov)), id: uid(), name: undefined, pageDisplayIndex: newIdx, _copy: true }
                                  : { ...ov, pageDisplayIndex: newIdx });
       }
     } else {
       newOrder.push(entry.src);
       newRots.push(normRot(entry.rot || 0));
       for (const ov of entry.overlays || []) {
-        newOverlays.push({ ...JSON.parse(JSON.stringify(ov)), id: uid(), pageDisplayIndex: newIdx });
+        newOverlays.push({ ...JSON.parse(JSON.stringify(ov)), id: uid(), pageDisplayIndex: newIdx, _copy: true });
       }
     }
   });
   // A copied form field needs its own name in the PDF, so drop the old one
   // (a fresh unique name is made on download); copied names get renumbered.
   const seenNames = new Set();
+  const newGroups = new Map();                       // radio group on the old page -> its group on the copy (1.18)
   for (const ov of newOverlays) {
+    const copied = !!ov._copy;                       // on a duplicated or pasted page
+    delete ov._copy;
+    if (ov.type === 'radio') {
+      if (!copied) continue;                         // moved or turned pages keep their groups
+      if (!newGroups.has(ov.fieldName)) newGroups.set(ov.fieldName, uniqueRadioGroupName(ov.fieldName + '_copy', newOverlays));
+      ov.fieldName = newGroups.get(ov.fieldName);
+      continue;
+    }
     if (ov.fieldName) { if (seenNames.has(ov.fieldName)) delete ov.fieldName; else seenNames.add(ov.fieldName); }
-    if (!ov.name && !['textfield', 'checkbox', 'dropdown'].includes(ov.type)) {
+    if (!ov.name && !FIELD_TYPES.includes(ov.type)) {
       state.nameCounter++;
       ov.name = `${TYPE_LABELS[ov.type] || 'Object'} ${state.nameCounter}`;
     }
@@ -3965,7 +4041,7 @@ function buildOverlayEl(ov, cw, ch) {
   } else if (ov.type === 'cursor') {
     el.appendChild(buildCursorSvg(ov, ov.fracW * cw, ov.fracH * ch));
   } else if (ov.type === 'spotlight') {
-    el.appendChild(buildSpotlightSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale, cw, ch));
+    el.append(...buildSpotlightEls(ov, ov.fracW * cw, ov.fracH * ch, state.scale, cw, ch));
   } else if (ov.type === 'magnifier') {
     buildMagnifierEl(el, ov, cw, ch);
   } else if (ov.type === 'redact') {
@@ -4084,6 +4160,24 @@ function buildOverlayEl(ov, cw, ch) {
       sel.addEventListener('change',    () => { snapshotOnce(); ov.defaultValue = sel.value; });
       sel.addEventListener('pointerdown', e  => { selectOverlay(ov.id); e.stopPropagation(); });
       el.appendChild(sel);
+
+    } else if (ov.type === 'radio') {
+      /*
+       * A radio button (1.18). Buttons with the same group name (fieldName)
+       * work together: picking one un-picks the others, on every page.
+       * The browser's own name= grouping gives the arrow keys for free
+       * on the page showing; pickRadio() keeps the other pages in step.
+       */
+      const rb = document.createElement('input');
+      rb.type      = 'radio';
+      rb.className = 'ov-rb';
+      rb.name      = 'pdfedtr-radio-' + ov.fieldName;   // setAttribute-style: never parsed as HTML
+      rb.checked   = !!ov.defaultChecked;
+      rb.setAttribute('aria-label', radioLabel(ov));
+      rb.title = radioLabel(ov);
+      rb.addEventListener('change',    () => { if (rb.checked) pickRadio(ov); });
+      rb.addEventListener('pointerdown', e  => { selectOverlay(ov.id); e.stopPropagation(); });
+      el.appendChild(rb);
     }
   }
 
@@ -4914,22 +5008,98 @@ function reversePath(d) {
   return out.join('') + 'Z';
 }
 
+/* ── The spotlight (1.18: several spots per page, blur and a soft edge) ──
+   Each spotlight object is ONE spot (it moves and resizes like anything
+   else). All the spots on a page make one spotlight: one dimmed (and,
+   if asked, blurred) layer over the page with every spot cut out of it,
+   so two spots never dim each other. That layer is drawn by the FIRST
+   spot on the page (its "leader"); the others draw just their rings.
+   The look - dim, dim colour, blur, soft edge - is shared by every spot
+   on the page: changing it on one changes it on all of them.            */
+const SPOT_SHARED = ['dim', 'dimColor', 'blur', 'feather'];
+const HEX6 = /^#[0-9a-f]{6}$/i;                    // a colour like #1a2b3c (and nothing else)
+
+/** Every spot on page slot `slot`, in the order they were placed. */
+function spotsOn(slot) {
+  return state.overlays.filter(o => o.type === 'spotlight' && o.pageDisplayIndex === slot);
+}
+
 /**
- * The spotlight: a dim layer over the WHOLE page with the overlay's box
- * cut out of it. The overlay element is just the spot (so it moves and
- * resizes like anything else); the dim layer is drawn round it, reaching
- * out to the page's edges, and lets clicks pass through to the page.
+ * Paint a page's spotlight onto a canvas of w x h pixels, k pixels per
+ * point. `source` is a picture of the page at the same size, only needed
+ * when the spotlight blurs (null otherwise). The same routine draws the
+ * screen and the PDF, so the two always match.
+ *   1. blur: the page, blurred (drawn sharp underneath first, so the
+ *      blur's edges never turn see-through)
+ *   2. dim: the dim colour over everything, at the dim strength
+ *   3. the spots: cut out, with a soft edge if asked for
  */
-function buildSpotlightSvg(ov, W, H, u, cw, ch) {
-  const ox = ov.fracLeft * cw, oy = ov.fracTop * ch;
-  const svg = svgEl('svg', { class: 'ov-spot-dim', viewBox: `0 0 ${cw} ${ch}`, 'aria-hidden': 'true' });
-  svg.style.left = (-ox) + 'px'; svg.style.top = (-oy) + 'px';
-  svg.style.width = cw + 'px'; svg.style.height = ch + 'px';
-  const d = `M0 0H${cw}V${ch}H0Z` + spotHoleD(ov, ox, oy, W, H, u, true);
-  svg.appendChild(svgEl('path', { d, fill: ov.dimColor || '#000000', 'fill-opacity': ov.dim ?? 0.5 }));
-  // A thin ring round the spot, if asked for.
-  if (ov.ring) svg.appendChild(svgEl('path', { d: spotHoleD(ov, ox, oy, W, H, u), fill: 'none', stroke: ov.ringColor || '#facc15', 'stroke-width': 2 * u }));
+function paintSpotDim(g, slot, w, h, k, source) {
+  const spots = spotsOn(slot), lead = spots[0];
+  if (!lead) return;
+  g.save();
+  if ((lead.blur || 0) > 0 && source) {
+    g.drawImage(source, 0, 0, w, h);
+    g.filter = `blur(${lead.blur * k}px)`;
+    g.drawImage(source, 0, 0, w, h);
+    g.filter = 'none';
+  }
+  g.globalAlpha = lead.dim ?? 0.5;
+  g.fillStyle = HEX6.test(lead.dimColor || '') ? lead.dimColor : '#000000';
+  g.fillRect(0, 0, w, h);
+  g.globalAlpha = 1;
+  g.globalCompositeOperation = 'destination-out';      // "rub out" each spot
+  if ((lead.feather || 0) > 0) g.filter = `blur(${lead.feather * k / 2}px)`;
+  for (const o of spots) g.fill(new Path2D(spotHoleD(o, o.fracLeft * w, o.fracTop * h, o.fracW * w, o.fracH * h, k)));
+  g.restore();
+}
+
+/** One spot's ring (if it has one), drawn inside its own box. */
+function buildSpotRing(ov, W, H, u) {
+  const svg = svgEl('svg', { class: 'ov-teach-svg', viewBox: `0 0 ${W} ${H}`, 'aria-hidden': 'true' });
+  if (ov.ring) svg.appendChild(svgEl('path', { d: spotHoleD(ov, 0, 0, W, H, u), fill: 'none', stroke: ov.ringColor || '#facc15', 'stroke-width': 2 * u }));
   return svg;
+}
+
+/**
+ * The page-sized dim layer, as a canvas inside the leader's element
+ * (shifted back to the page's top-left corner). Made once and repainted
+ * in place while spots are dragged.
+ */
+function paintSpotCanvas(cv, ov, cw, ch) {
+  const r = Math.min(window.devicePixelRatio || 1, 2);   // sharp enough, without huge canvases
+  const w = Math.max(1, Math.round(cw * r)), h = Math.max(1, Math.round(ch * r));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } else cv.getContext('2d').clearRect(0, 0, w, h);
+  cv.style.left = (-ov.fracLeft * cw) + 'px'; cv.style.top = (-ov.fracTop * ch) + 'px';
+  cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
+  const blurs = (ov.blur || 0) > 0;
+  paintSpotDim(cv.getContext('2d'), ov.pageDisplayIndex, w, h, state.scale * r, blurs ? dom.pageCanvas : null);
+}
+function buildSpotlightEls(ov, W, H, u, cw, ch) {
+  const out = [buildSpotRing(ov, W, H, u)];
+  if (spotsOn(ov.pageDisplayIndex)[0] === ov) {        // the leader draws the dim layer for every spot
+    const cv = document.createElement('canvas');
+    cv.className = 'ov-spot-dim';
+    cv.setAttribute('aria-hidden', 'true');
+    paintSpotCanvas(cv, ov, cw, ch);
+    out.unshift(cv);
+  }
+  return out;
+}
+/**
+ * Repaint a page's spotlight after a spot moved, resized, changed or was
+ * deleted. If the leader changed (the first spot was deleted), the new
+ * leader is rebuilt so it picks up the dim layer.
+ */
+function redrawSpotlights(slot) {
+  const cw = pageW(), ch = pageH();
+  const lead = spotsOn(slot)[0];
+  dom.overlayEl.querySelectorAll('.ov-type-spotlight').forEach((el) => {
+    const ov = state.overlays.find(o => o.id === el.dataset.id);
+    const cv = el.querySelector('.ov-spot-dim');
+    if (ov === lead && cv) paintSpotCanvas(cv, ov, cw, ch);
+    else if ((ov === lead) !== !!cv) { if (ov) refreshOneOverlay(ov); else el.remove(); }
+  });
 }
 
 /**
@@ -5083,11 +5253,16 @@ function redrawTeach(el, ov) {
   if (!TEACH_TYPES.includes(ov.type)) return;
   const cw = pageW(), ch = pageH();
   if (ov.type === 'redact' && ov.style !== 'pixelate') return;   // a solid box just stretches
+  if (ov.type === 'spotlight') {                     // its ring here, and the page's dim layer (1.18)
+    el.querySelectorAll('.ov-teach-svg').forEach((n) => n.remove());
+    el.appendChild(buildSpotRing(ov, ov.fracW * cw, ov.fracH * ch, state.scale));
+    redrawSpotlights(ov.pageDisplayIndex);
+    return;
+  }
   el.querySelectorAll('.ov-teach-svg, .ov-spot-dim, .ov-mag-canvas, .ov-mag-lines, .ov-mag-frame, .ov-mag-grip, .ov-redact').forEach((n) => n.remove());
   const holder = document.createDocumentFragment();
   if (ov.type === 'step') holder.appendChild(buildStepSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale));
   else if (ov.type === 'cursor') holder.appendChild(buildCursorSvg(ov, ov.fracW * cw, ov.fracH * ch));
-  else if (ov.type === 'spotlight') holder.appendChild(buildSpotlightSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale, cw, ch));
   else if (ov.type === 'magnifier') { const tmp = document.createElement('div'); buildMagnifierEl(tmp, ov, cw, ch); holder.append(...tmp.childNodes); }
   else if (ov.type === 'redact') holder.appendChild(buildRedactPreview(ov, cw, ch));
   el.insertBefore(holder, el.firstChild);
@@ -5150,11 +5325,53 @@ function drawCursorToPdf(page, ov, pgW, pgH) {
   page.pushOperators(PDFLib.popGraphicsState());
 }
 
-function drawSpotlightToPdf(page, ov, pgW, pgH) {
-  const W = ov.fracW * pgW, H = ov.fracH * pgH, ox = ov.fracLeft * pgW, oy = ov.fracTop * pgH;
-  const d = `M0 0H${pgW}V${pgH}H0Z` + spotHoleD(ov, ox, oy, W, H, 1, true);
-  page.drawSvgPath(d, { x: 0, y: pgH, color: PDFLib.rgb(...parseHex(ov.dimColor || '#000000')), opacity: ov.dim ?? 0.5 });
-  if (ov.ring) page.drawSvgPath(spotHoleD(ov, ox, oy, W, H, 1), { x: 0, y: pgH, borderColor: PDFLib.rgb(...parseHex(ov.ringColor || '#facc15')), borderWidth: 2 });
+/**
+ * The spotlight in the PDF (1.18). The first spot on a page draws the
+ * whole page's spotlight; the other spots add only their rings.
+ *  - Crisp, no blur, spots apart: real vector shapes (small and sharp).
+ *  - With a blur or a soft edge, or spots that overlap: a picture made by
+ *    paintSpotDim(), the same routine as the screen. For a blur, the page
+ *    is drawn afresh by pdf.js with any redaction boxes painted over it
+ *    first, so a blur can never bring back what a redaction hides.
+ */
+async function drawSpotlightToPdf(outDoc, page, ov, pgW, pgH) {
+  const slot = ov.pageDisplayIndex;
+  const spots = spotsOn(slot);
+  if (spots[0] === ov) {
+    const blur = ov.blur || 0, feather = ov.feather || 0;
+    const box = (o) => ({ x: o.fracLeft * pgW, y: o.fracTop * pgH, w: o.fracW * pgW, h: o.fracH * pgH });
+    const boxes = spots.map(box);
+    const overlap = boxes.some((a, i) => boxes.some((b, j) => j > i && a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h));
+    if (!blur && !feather && !overlap) {
+      // The page with every spot cut out, as one shape (each hole drawn the other way round).
+      const d = `M0 0H${pgW}V${pgH}H0Z` + spots.map((o, i) => spotHoleD(o, boxes[i].x, boxes[i].y, boxes[i].w, boxes[i].h, 1, true)).join('');
+      page.drawSvgPath(d, { x: 0, y: pgH, color: PDFLib.rgb(...parseHex(ov.dimColor || '#000000')), opacity: ov.dim ?? 0.5 });
+    } else {
+      const PX = 150 / 72;                            // picture pixels per point (150 dpi)
+      let source = null, w = Math.max(1, Math.round(pgW * PX)), h = Math.max(1, Math.round(pgH * PX));
+      if (blur) {
+        const jsPage = await state.pdfJsDoc.getPage(state.pageOrder[slot] + 1);
+        const vp = slotViewport(jsPage, slot, PX);
+        source = document.createElement('canvas');
+        source.width = w; source.height = h;
+        const sg = source.getContext('2d');
+        sg.fillStyle = '#ffffff'; sg.fillRect(0, 0, w, h);
+        await jsPage.render({ canvasContext: sg, viewport: vp }).promise;
+        paintRedactions(sg, slot, (fx) => fx * w, (fy) => fy * h, w, h, PX);
+      }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      paintSpotDim(cv.getContext('2d'), slot, w, h, PX, source);
+      const png = await new Promise((res) => cv.toBlob(res, 'image/png'));
+      const img = await outDoc.embedPng(new Uint8Array(await png.arrayBuffer()));
+      page.drawImage(img, { x: 0, y: 0, width: pgW, height: pgH });
+    }
+  }
+  // This spot's own ring.
+  if (ov.ring) {
+    const b = { x: ov.fracLeft * pgW, y: ov.fracTop * pgH, w: ov.fracW * pgW, h: ov.fracH * pgH };
+    page.drawSvgPath(spotHoleD(ov, b.x, b.y, b.w, b.h, 1), { x: 0, y: pgH, borderColor: PDFLib.rgb(...parseHex(ov.ringColor || '#facc15')), borderWidth: 2 });
+  }
 }
 
 /**
@@ -5229,10 +5446,10 @@ const REDACT_DPI = 200;
 
 /**
  * What on page slot `slot` stops working when the page is flattened (1.17):
- * links, radio buttons and other kinds of form field PDFEDTR does not bring
- * in as its own (signature fields, buttons, list boxes), and comments. Text
- * boxes, checkboxes and dropdowns are fine: PDFEDTR writes them back on top.
- * Returns a list of plain phrases, e.g. ['2 links', 'radio buttons'].
+ * links, kinds of form field PDFEDTR does not bring in as its own (signature
+ * fields, buttons, list boxes), and comments. Text boxes, checkboxes,
+ * dropdowns and radio buttons are fine: PDFEDTR writes them back on top.
+ * Returns a list of plain phrases, e.g. ['2 links', 'other form fields'].
  */
 function redactLosses(slot) {
   const out = [];
@@ -5250,14 +5467,14 @@ function redactLosses(slot) {
       }
     }
     if (links) out.push(links === 1 ? 'a link' : links + ' links');
-    const kept = new Set(['textfield', 'checkbox', 'dropdown']);
+    const kept = new Set(FIELD_TYPES);              // written back on top (radio buttons too, 1.18)
     const kinds = new Set();
     for (const f of doc.getForm().getFields()) {
       const kind = pdfFieldKind(f);
       if (kept.has(kind)) continue;
       let here = false;
       try { here = f.acroField.getWidgets().some((w) => widgetOnPage(doc, page, w)); } catch { here = false; }
-      if (here) kinds.add(kind === 'radio' ? 'radio buttons' : 'other form fields');
+      if (here) kinds.add('other form fields');
     }
     out.push(...kinds);
     if (notes) out.push(notes === 1 ? 'a comment' : notes + ' comments');
@@ -5600,7 +5817,7 @@ function wireMove(el, ov, rzHandle) {
           ov.fracH = newFracH;
           ov.fracW = Math.max(0.04, (newFracH * ch * aspect) / cw);
         }
-      } else if (ov.type === 'checkbox' || ov.type === 'step' || ov.type === 'cursor' || (ov.type === 'magnifier' && ov.magShape !== 'rect')) {
+      } else if (ov.type === 'checkbox' || ov.type === 'radio' || ov.type === 'step' || ov.type === 'cursor' || (ov.type === 'magnifier' && ov.magShape !== 'rect')) {
         /*
          * Checkbox widgets are square in a PDF, so keep the overlay square
          * too — otherwise the box you drew and the box you get would differ.
@@ -5650,6 +5867,8 @@ function removeOverlay(id) {
   if (el) el.remove();
   // Deleting a step renumbers the ones after it (1.16).
   if (el && el.classList.contains('ov-type-step')) refreshOverlays();
+  // Deleting a spot redraws its page's spotlight (1.18).
+  if (el && el.classList.contains('ov-type-spotlight')) redrawSpotlights(state.currentPage);
 }
 
 /* ══════════════════════════════════════════
@@ -5683,8 +5902,8 @@ function duplicateOverlay(ov) {
   const copy = JSON.parse(JSON.stringify(ov));
   copy.id = uid();
   copy.seq = ++state.seqCounter;                   // a copied step is a new step
-  if (copy.fieldName) delete copy.fieldName;       // a field needs its own name in the PDF
-  if (['textfield', 'checkbox', 'dropdown'].includes(copy.type)) { state.fieldCounter++; copy.fieldName = `field_${state.fieldCounter}`; }
+  if (copy.type === 'radio') asNewChoice(copy);    // another choice in the same group (1.18)
+  else if (FIELD_TYPES.includes(copy.type)) { state.fieldCounter++; copy.fieldName = `field_${state.fieldCounter}`; }   // a field needs its own name in the PDF
   else setOverlayName(copy, uniqueOverlayName(overlayName(copy), copy.id));
   const dx = 10 / (state.pageWpt || 612), dy = 10 / (state.pageHpt || 792);   // 10 points over and down
   copy.fracLeft = Math.min(1 - copy.fracW, copy.fracLeft + dx);
@@ -5746,7 +5965,9 @@ function pasteOverlay() {
 
   // Give the copy its own name (e.g. "Header" -> "Header_01") so pasted
   // objects never silently share a name with the one they were copied from.
-  setOverlayName(copy, uniqueOverlayName(overlayName(copy), copy.id));
+  // A radio button keeps its group and becomes another choice in it (1.18).
+  if (copy.type === 'radio') asNewChoice(copy);
+  else setOverlayName(copy, uniqueOverlayName(overlayName(copy), copy.id));
 
   // Offset slightly so it doesn't land exactly on top of the source
   const OFFSET = 0.025;
@@ -5775,6 +5996,7 @@ const DEFAULT_SIZES = {
   image:     { w: 0.30, h: 0.30 },
   textfield: { w: 0.35, h: 0.035 },
   checkbox:  { w: 0.03, h: 0.03 }, // squared up properly below
+  radio:     { w: 0.03, h: 0.03 }, // squared up properly below
   dropdown:  { w: 0.30, h: 0.035 },
   sticky:    { w: 0.25, h: 0.22 },
   xmark:     { w: 0.045, h: 0.045 }, // squared up properly below
@@ -5940,8 +6162,13 @@ function createOverlay(type, extra = {}, rect) {
     ov.radius    = 12;
     ov.dim       = 0.5;
     ov.dimColor  = '#000000';
+    ov.blur      = 0;          // points; 0 = no blur (1.18)
+    ov.feather   = 0;          // soft edge in points; 0 = a crisp edge (1.18)
     ov.ring      = false;
     ov.ringColor = '#facc15';
+    // A second spot on a page joins the spotlight already there, so it takes its look.
+    const lead = spotsOn(ov.pageDisplayIndex)[0];
+    if (lead) for (const k of SPOT_SHARED) ov[k] = lead[k];
   } else if (type === 'magnifier') {
     ov.zoom        = 2;
     ov.magShape    = 'circle';
@@ -5956,6 +6183,14 @@ function createOverlay(type, extra = {}, rect) {
     ov.fillColor = '#000000';
     ov.style     = state.lastRedactStyle || 'solid';   // 'solid' or 'pixelate' (1.17)
     ov.block     = 10;                                  // pixelate block size, in points
+
+  } else if (ov.type === 'radio') {
+    // A radio button (1.18) starts a group of its own. "Add another choice"
+    // in the Inspector (or Duplicate) adds more buttons to the same group.
+    state.fieldCounter++;
+    ov.fieldName      = uniqueRadioGroupName(`choices_${state.fieldCounter}`);
+    ov.option         = 'Choice 1';
+    ov.defaultChecked = false;
 
   } else {
     // field types
@@ -5972,7 +6207,7 @@ function createOverlay(type, extra = {}, rect) {
    * and the document stays navigable. Form fields already named themselves
    * above, since their name is a real part of the saved PDF.
    */
-  if (!ov.name && !['textfield', 'checkbox', 'dropdown'].includes(ov.type)) {
+  if (!ov.name && !FIELD_TYPES.includes(ov.type)) {
     state.nameCounter++;
     ov.name = `${TYPE_LABELS[ov.type] || 'Object'} ${state.nameCounter}`;
   }
@@ -5982,7 +6217,7 @@ function createOverlay(type, extra = {}, rect) {
   // A PDF checkbox widget is always square, so the overlay is too.
   // Grading-mark stamps (X / checkmark) look wrong if stretched, so they
   // get the same treatment.
-  if (ov.type === 'checkbox' || (ov.type === 'shape' && ['xmark', 'check'].includes(ov.shapeType)) ||
+  if (ov.type === 'checkbox' || ov.type === 'radio' || (ov.type === 'shape' && ['xmark', 'check'].includes(ov.shapeType)) ||
       ov.type === 'step' || ov.type === 'cursor' || (ov.type === 'magnifier' && ov.magShape === 'circle')) {
     squareUpOverlay(ov, cw, ch);                   // steps, cursors and round magnifiers are square too (1.16)
   }
@@ -6040,6 +6275,7 @@ const PLACEMENT_LABELS = {
   textfield: 'text field',
   checkbox:  'checkbox',
   dropdown:  'dropdown',
+  radio:     'radio button',
   image:     'signature',
   step:      'step number',
   cursor:    'cursor',
@@ -6228,26 +6464,26 @@ function placePendingAtCenter() {
 /** Select an overlay — highlights it and shows the context bar */
 /** Types whose contents can be typed into once selected. */
 function isEditable(ov) {
-  return ['text', 'sticky', 'textfield', 'checkbox', 'dropdown'].includes(ov.type);
+  return ['text', 'sticky', ...FIELD_TYPES].includes(ov.type);
 }
 
 /** Human-readable type name, used in the object bar and default names. */
 const TYPE_LABELS = {
   text: 'Text', sticky: 'Note', image: 'Image', shape: 'Shape',
   highlight: 'Highlight', textfield: 'Text field', checkbox: 'Checkbox',
-  dropdown: 'Dropdown',
+  dropdown: 'Dropdown', radio: 'Radio button',
   step: 'Step', cursor: 'Cursor', spotlight: 'Spotlight', magnifier: 'Magnifier', redact: 'Redaction',
 };
 
 /** The name shown in the object bar. Form fields use their real PDF name. */
 function overlayName(ov) {
-  if (['textfield', 'checkbox', 'dropdown'].includes(ov.type)) return ov.fieldName || '';
+  if (FIELD_TYPES.includes(ov.type)) return ov.fieldName || '';
   return ov.name || '';
 }
 
 /** Write a new name back to whichever property actually holds it. */
 function setOverlayName(ov, value) {
-  if (['textfield', 'checkbox', 'dropdown'].includes(ov.type)) {
+  if (FIELD_TYPES.includes(ov.type)) {
     ov.fieldName = value;
     updateFieldPreviewInDom(ov);
   } else {
@@ -6440,7 +6676,7 @@ function buildObjectBar(ov) {
   nameInp.className = 'ctx-name';
   nameInp.value = overlayName(ov);
   nameInp.placeholder = 'Untitled';
-  nameInp.title = ['textfield','checkbox','dropdown'].includes(ov.type)
+  nameInp.title = FIELD_TYPES.includes(ov.type)
     ? 'Field name - this is the name saved into the PDF'
     : 'Name this object';
   nameInp.setAttribute('aria-label', nameInp.title);
@@ -6666,7 +6902,7 @@ function buildContextBar(ov) {
   bar.appendChild(acts);
 
   /* ── Name (not for form fields: their name is in their own section) ── */
-  if (!['textfield', 'checkbox', 'dropdown'].includes(ov.type)) {
+  if (!FIELD_TYPES.includes(ov.type)) {
     const nameInp = inp('text', ov.name || '', null, v => setOverlayName(ov, v));
     nameInp.placeholder = 'Untitled';
     nameInp.setAttribute('aria-label', 'Name');
@@ -6831,12 +7067,39 @@ function buildContextBar(ov) {
     bar.appendChild(row('Outline', swatches(ov.outlineColor || '#ffffff', (v) => { ov.outlineColor = v; refreshOneOverlay(ov); })));
 
   } else if (ov.type === 'spotlight') {
-    const shape = sel([['ellipse', 'Oval'], ['rect', 'Rounded rectangle']], ov.holeShape || 'ellipse', (v) => { ov.holeShape = v; refreshOneOverlay(ov); buildContextBar(ov); });
+    /* 1.18: the shape, corners and ring belong to this spot; the dim,
+       blur and soft edge belong to the whole page's spotlight (so they
+       are written to every spot on the page). */
+    const spots = spotsOn(ov.pageDisplayIndex);
+    const lead = spots[0] || ov;
+    const shared = (k, v) => { for (const o of spotsOn(ov.pageDisplayIndex)) o[k] = v; redrawSpotlights(ov.pageDisplayIndex); };
+    const count = document.createElement('p');
+    count.className = 'insp-help';
+    count.textContent = spots.length > 1
+      ? `Spot ${spots.indexOf(ov) + 1} of ${spots.length} on this page. The dim, blur and soft edge are shared by all of them.`
+      : 'Draw more spots with the Spotlight tool (or Add a spot) to light up several things at once.';
+    bar.appendChild(count);
+    const shape = sel([['ellipse', 'Oval'], ['rect', 'Rounded rectangle']], ov.holeShape || 'ellipse', (v) => { ov.holeShape = v; refreshOneOverlay(ov); redrawSpotlights(ov.pageDisplayIndex); buildContextBar(ov); });
     shape.setAttribute('aria-label', 'Spot shape');
     bar.appendChild(row('Spot', shape));
-    if (ov.holeShape === 'rect') bar.appendChild(row('Corners', range(0, 48, 1, ov.radius ?? 12, ' pt', (v) => { ov.radius = v; refreshOneOverlay(ov); })));
-    bar.appendChild(row('Dim', range(10, 90, 1, Math.round((ov.dim ?? 0.5) * 100), '%', (v) => { ov.dim = v / 100; refreshOneOverlay(ov); })));
-    bar.appendChild(row('Dim colour', swatches(ov.dimColor || '#000000', (v) => { ov.dimColor = v; refreshOneOverlay(ov); })));
+    if (ov.holeShape === 'rect') bar.appendChild(row('Corners', range(0, 48, 1, ov.radius ?? 12, ' pt', (v) => { ov.radius = v; refreshOneOverlay(ov); redrawSpotlights(ov.pageDisplayIndex); })));
+    bar.appendChild(row('Dim', range(0, 90, 1, Math.round((lead.dim ?? 0.5) * 100), '%', (v) => shared('dim', v / 100))));
+    bar.appendChild(row('Dim colour', swatches(lead.dimColor || '#000000', (v) => shared('dimColor', v))));
+    bar.appendChild(row('Blur', range(0, 12, 0.5, lead.blur || 0, ' pt', (v) => { const was = (lead.blur || 0) > 0; shared('blur', v); if (was !== v > 0) buildContextBar(ov); })));
+    bar.appendChild(row('Soft edge', range(0, 36, 1, lead.feather || 0, ' pt', (v) => shared('feather', v))));
+    if ((lead.blur || 0) > 0) {
+      // Honest about what blur does: it is for focus, not for hiding things.
+      const warn = document.createElement('p');
+      warn.className = 'insp-help';
+      warn.textContent = "Blur is for focus, not for hiding: the page's own text is still in the PDF underneath. To hide something, use Redact.";
+      bar.appendChild(warn);
+    }
+    const addSpot = document.createElement('button');
+    addSpot.type = 'button';
+    addSpot.className = 'btn btn-ghost insp-wide-btn';
+    addSpot.textContent = 'Add a spot';
+    addSpot.addEventListener('click', () => duplicateOverlay(ov));
+    bar.appendChild(addSpot);
     const ring = document.createElement('input');
     ring.type = 'checkbox'; ring.checked = !!ov.ring; ring.setAttribute('aria-label', 'Ring round the spot');
     ring.addEventListener('change', () => { snapshotOnce(); ov.ring = ring.checked; refreshOneOverlay(ov); buildContextBar(ov); });
@@ -6939,6 +7202,50 @@ function buildContextBar(ov) {
     altInp.addEventListener('input', () => { snapshotOnce(); ov.alt = altInp.value; updateImageInDom(ov); });
     bar.appendChild(row('Alt text', altInp));
 
+  /* ═══════ RADIO BUTTONS (1.18) ═══════
+     The group name is shared by every button in the group (changing it
+     here renames the whole group); "This choice" is what the PDF records
+     when this button is the one picked. */
+  } else if (ov.type === 'radio') {
+    const members = radioGroupOf(ov.fieldName);
+    const groupInp = inp('text', ov.fieldName || '', null, v => {
+      const name = v.trim();
+      if (!name) return;                            // a group needs a name: keep the old one
+      radioGroupOf(ov.fieldName).forEach(o => { o.fieldName = name; refreshOneOverlay(o); });
+    });
+    groupInp.placeholder = 'group_name';
+    groupInp.setAttribute('aria-label', 'Group name (saved in the PDF, shared by every choice in the group)');
+    bar.appendChild(row('Group', groupInp));
+    const optInp = inp('text', ov.option || '', null, v => {
+      // Each choice in a group needs its own value, or the PDF could not tell them apart.
+      const want = v.trim() || 'Choice';
+      ov.option = radioGroupOf(ov.fieldName).some(o => o !== ov && o.option === want) ? want + ' ' + ov.id.slice(-3) : want;
+      refreshOneOverlay(ov);
+    });
+    optInp.placeholder = 'Yes';
+    optInp.setAttribute('aria-label', 'This choice (what the PDF records when this button is picked)');
+    bar.appendChild(row('This choice', optInp));
+    const note = document.createElement('p');
+    note.className = 'insp-help';
+    note.textContent = members.length === 1
+      ? 'The only choice in this group so far. Add another, then pick one on the page to make it the default.'
+      : `Choice ${members.indexOf(ov) + 1} of ${members.length} in this group. Pick one on the page to make it the default.`;
+    bar.appendChild(note);
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn btn-ghost insp-wide-btn';
+    addBtn.textContent = 'Add another choice';
+    addBtn.addEventListener('click', () => addRadioChoice(ov));
+    bar.appendChild(addBtn);
+    if (ov.defaultChecked) {
+      const clr = document.createElement('button');
+      clr.type = 'button';
+      clr.className = 'btn btn-ghost insp-wide-btn';
+      clr.textContent = 'Clear the pick';
+      clr.addEventListener('click', () => { snapshot(); radioGroupOf(ov.fieldName).forEach(o => { o.defaultChecked = false; refreshOneOverlay(o); }); buildContextBar(ov); });
+      bar.appendChild(clr);
+    }
+
   /* ═══════ FIELD overlays (textfield / checkbox / dropdown) ═══════ (1.17: rows) */
   } else {
     const nameInp = inp('text', ov.fieldName || '', null, v => { ov.fieldName = v; updateFieldPreviewInDom(ov); });
@@ -7037,54 +7344,6 @@ function positionContextBar(el) {
 
     bar.style.left = left + 'px';
     bar.style.top  = top  + 'px';
-  });
-}
-
-/* ══════════════════════════════════════════
-   FILL FIELDS PANEL
-══════════════════════════════════════════ */
-function buildFieldsPanel() {
-  dom.fpBody.innerHTML = '';
-  let form, fields;
-  try { form = state.pdfLibDoc.getForm(); fields = form.getFields(); } catch { fields = []; }
-
-  /*
-   * Text fields, checkboxes and dropdowns are imported as ordinary overlays
-   * when the PDF loads (see importExistingFormFields) — they're edited
-   * directly on the page now, the same as anything added fresh. Radio
-   * groups are the one type that isn't converted (see that function's
-   * comment for why), so this panel is only for those now.
-   */
-  fields = fields.filter(f => pdfFieldKind(f) === 'radio');
-
-  if (!fields.length) {
-    const p = document.createElement('p');
-    p.className = 'fp-hint';
-    p.textContent = 'No radio-button fields in this PDF. Text fields, checkboxes and dropdowns can be edited directly on the page.';
-    dom.fpBody.appendChild(p); return;
-  }
-
-  const h = document.createElement('p');
-  h.className = 'fp-hint'; h.textContent = `${fields.length} radio field${fields.length !== 1 ? 's' : ''} found:`;
-  dom.fpBody.appendChild(h);
-
-  fields.forEach(field => {
-    const name = field.getName();
-    const card = document.createElement('div'); card.className = 'fp-field';
-    const nm   = document.createElement('div'); nm.className = 'fp-fname';
-    nm.textContent = `${name} · Radio group`;
-    card.appendChild(nm);
-
-    try {
-      field.getOptions().forEach(opt => {
-        const lbl = document.createElement('label'); lbl.className = 'fp-check';
-        const rb  = document.createElement('input'); rb.type = 'radio'; rb.name = `rg_${name}`; rb.value = opt;
-        rb.addEventListener('change', () => { state.fieldValues[name] = { type: 'radio', value: opt }; });
-        lbl.appendChild(rb); lbl.appendChild(document.createTextNode(' ' + opt));
-        card.appendChild(lbl);
-      });
-    } catch {}
-    dom.fpBody.appendChild(card);
   });
 }
 
@@ -7314,6 +7573,7 @@ async function downloadPdf(opts = {}) {
     if (redactedOut.length) setLoading(true, 'BUILDING PDF…');
 
     let fieldEmbedErrors = 0; // counts any field registration or placement failures
+    const radioGroups = new Map();   // group name on screen -> { group, picked } in this file (1.18)
     let altTextCount     = 0; // how many images carried an accessible description
 
     /* Spotlights go first, so their dimming sits UNDER everything else you
@@ -7477,7 +7737,7 @@ async function downloadPdf(opts = {}) {
       } else if (ov.type === 'cursor') {
         drawCursorToPdf(page, ov, pgW, pgH);
       } else if (ov.type === 'spotlight') {
-        drawSpotlightToPdf(page, ov, pgW, pgH);
+        await drawSpotlightToPdf(outDoc, page, ov, pgW, pgH);
       } else if (ov.type === 'magnifier') {
         await drawMagnifierToPdf(outDoc, page, ov, pgW, pgH);
 
@@ -7550,6 +7810,39 @@ async function downloadPdf(opts = {}) {
        * so we know exactly which step fails. Any failures are counted and
        * reported to the user as a warning toast after the download.
        */
+      } else if (ov.type === 'radio') {
+        /*
+         * Radio buttons (1.18). The first button of a group met in this
+         * file makes the group (after taking out the PDF's own copy of it,
+         * if it came from the PDF); every button then adds itself as one
+         * choice. The picked one is applied after the loop, once every
+         * choice exists.
+         */
+        try {
+          let entry = radioGroups.get(ov.fieldName);
+          if (!entry) {
+            const stale = outForm.getFields().find(f => { try { return f.getName() === ov.fieldName; } catch { return false; } });
+            if (stale) { outForm.removeField(stale); usedFieldNames.delete(ov.fieldName); }
+            const name = uniqueFieldName(outForm, usedFieldNames, ov.fieldName || ('radio_' + ov.id));
+            entry = { group: outForm.createRadioGroup(name), picked: null };
+            radioGroups.set(ov.fieldName, entry);
+          }
+          const side = Math.max(Math.min(pdfW, pdfH), 4);       // radio buttons are round, so square
+          const spot = widgetSpot(view, pdfX, pdfYBot, side, side);
+          const value = toWinAnsi(ov.option || 'Choice');
+          entry.group.addOptionToPage(value, page, {
+            x: spot.x, y: spot.y, width: side, height: side,
+            rotate: PDFLib.degrees(view.rotation),
+            backgroundColor: PDFLib.rgb(0.898, 0.949, 1.0),     // #e5f2ff, the same as on screen
+            borderColor:     PDFLib.rgb(0.200, 0.502, 0.902),   // #3380e6
+            borderWidth:     1,
+          });
+          if (ov.defaultChecked) entry.picked = value;
+        } catch (e) {
+          console.error('Radio button failed:', e);
+          fieldEmbedErrors++;
+        }
+
       } else if (ov.type === 'textfield' || ov.type === 'checkbox' || ov.type === 'dropdown') {
         let fieldObj = null;
         // Step 1 — register the field in the AcroForm (name-conflict risk)
@@ -7662,6 +7955,11 @@ async function downloadPdf(opts = {}) {
         }
       }
       page.pushOperators(PDFLib.popGraphicsState());   // end of this overlay's "as it looks" drawing
+    }
+
+    // Now every choice exists, pick the picked radio buttons (1.18).
+    for (const { group, picked } of radioGroups.values()) {
+      if (picked) { try { group.select(picked); } catch (e) { console.warn('Could not pick a radio button', e); } }
     }
 
     /* ── Regenerate field appearances ──
@@ -7930,6 +8228,7 @@ function updateFieldBtn() {
     textfield: '<rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 10v4"/>',
     checkbox:  '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="m8 12 3 3 5-6"/>',
     dropdown:  '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="m14 11 2 2 2-2"/>',
+    radio:     '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>',
   };
   dom.fieldIcon.innerHTML = iMap[state.currentFieldType] || iMap.textfield;
 }
@@ -7990,13 +8289,13 @@ dom.fileInput.addEventListener('change', async e => {
   state.afterOpen = null;
   dom.fileInput.value = '';
   if (!file) return;
-  await loadPdf(file);
+  await openAnyFile(file);
   // Opened from "Sign a PDF": the signature panel comes up straight away.
   if (then === 'sign' && state.pdfJsDoc && state.fileName === file.name) dom.toolSignature.click();
 });
 dom.dropZone.addEventListener('dragover', e => { e.preventDefault(); dom.dropZone.classList.add('dragover'); });
 dom.dropZone.addEventListener('dragleave', () => dom.dropZone.classList.remove('dragover'));
-dom.dropZone.addEventListener('drop', e => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) loadPdf(e.dataTransfer.files[0]); });
+dom.dropZone.addEventListener('drop', e => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) openAnyFile(e.dataTransfer.files[0]); });
 
 /* ── New PDF (1.17) ──
    Builds a PDF of blank pages with pdf-lib, then opens it the normal way,
@@ -8006,10 +8305,10 @@ const PAGE_SIZES = {
   letter: [612, 792], legal: [612, 1008], tabloid: [792, 1224],
   a4: [595.28, 841.89], a5: [419.53, 595.28],
 };
-function openNewPdfDialog() {
+async function openNewPdfDialog() {
   // Starting over loses anything not downloaded yet, so say so first.
   if (state.pdfLibDoc && (state.overlays.length || history.past.length) &&
-      !confirm('Start a new PDF? Anything you have not downloaded from this one will be lost.')) return;
+      !(await confirmDialog('Start a new PDF?', 'Anything you have not downloaded or saved from this one will be lost.', 'Start a new PDF'))) return;
   const dlg = document.getElementById('new-dlg');
   document.getElementById('new-size').value = settings.newSize;
   dlg.querySelector(`input[name="new-orient"][value="${settings.newOrient}"]`).checked = true;
@@ -8057,6 +8356,7 @@ dom.importInput.addEventListener('change', e => {
 
 /* ── Download ── */
 dom.btnDownload.addEventListener('click', () => downloadPdf());
+document.getElementById('btn-save-project').addEventListener('click', () => saveProject());   // 1.18
 
 /* ── Select tool ── */
 dom.toolSelect.addEventListener('click', () => {
@@ -8286,21 +8586,6 @@ dom.toolSticky.addEventListener('click', () => {
   closeAllMenus();
   setActiveTool('tool-sticky');
   beginPlacement('sticky');
-});
-
-/* ── Fill Fields panel ── */
-dom.toolFill.addEventListener('click', () => {
-  if (!state.pdfJsDoc) { toast('Load a PDF first.', 'err'); return; }
-  cancelPlacement();
-  const hidden = dom.fieldsPanel.hidden;
-  dom.fieldsPanel.hidden = !hidden;
-  dom.toolFill.classList.toggle('active', !hidden === false ? false : true);
-  dom.toolFill.setAttribute('aria-pressed', String(!hidden));
-});
-document.getElementById('fp-close').addEventListener('click', () => {
-  dom.fieldsPanel.hidden = true;
-  dom.toolFill.classList.remove('active');
-  dom.toolFill.setAttribute('aria-pressed', 'false');
 });
 
 /* ── Zoom (1.13) ──
@@ -9781,7 +10066,7 @@ function suiteFeaturesCard(features, appId) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.17';
+const APP_VERSION = '1.18';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -9838,6 +10123,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.18', date: '2026-10-11', notes: [
+    'Save project (the new button beside Open, or Ctrl+Shift+S): a .pdfedtr file that keeps everything editable. Open it later (Open, or drop it on the page) to move, change or remove what you added. Opening one checks every part of it first. Saving warns when the project has redactions, because a project keeps the original PDF.',
+    'Radio buttons: the ones already in a PDF are now on the page, where they can be picked, moved and resized, and they survive redaction. Make your own from the form-field menu (Radio button), then "Add another choice" in the Inspector. The old Fill Existing Fields panel is gone, since everything it did is on the page now.',
+    'Spotlight, the same as IMGEDTR\'s: light up several spots on one page without them dimming each other, and add a blur and a soft edge. The dim, blur and soft edge are shared by every spot on the page. Blur is for focus, not hiding: use Redact to hide something.',
+    'An "Are you sure?" box that matches the app, instead of the browser\'s own, before starting a new PDF or opening a project over unsaved work.'
+  ] },
   { version: '1.17', date: '2026-10-11', notes: [
     'New PDF: start from blank pages (Letter, Legal, Tabloid, A4 or A5, portrait or landscape) - from the splash, the new button in the top bar, or the + under the pages before any PDF is open.',
     'Right-click menus: on anything you placed (duplicate, copy, cut, paste, bring to front, send to back, delete) and on an empty spot of the page (paste, or drop a text box, note, date, step, X or checkmark right there). Press and hold on a touch screen, or Shift+F10 from the keyboard.',
@@ -9953,6 +10244,272 @@ function renderChangelog() {
 }
 
 /* ══════════════════════════════════════════
+   "ARE YOU SURE?" (1.18)
+══════════════════════════════════════════ */
+/** Ask a question and wait for the answer: true for OK, false for Cancel or Escape. */
+function confirmDialog(title, message, okText = 'OK') {
+  const dlg = document.getElementById('confirm-dlg');
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = message;   // textContent: never HTML
+  document.getElementById('confirm-ok').textContent = okText;
+  dlg.returnValue = 'cancel';
+  dlg.showModal();
+  return new Promise((resolve) => dlg.addEventListener('close', () => resolve(dlg.returnValue === 'ok'), { once: true }));
+}
+
+/* ══════════════════════════════════════════
+   PROJECT FILES (.pdfedtr) (1.18)
+   ─────────────────────────────────────────
+   A download is finished work: what you added is part of the PDF and
+   cannot be picked up and changed again. A PROJECT keeps it all editable.
+   A .pdfedtr file is plain JSON (text), the same idea as IMGEDTR's
+   .imgedtr: the PDF itself (as base64 text) plus everything placed on
+   it, the page order and each page's turn.
+
+   Opening one is treated like opening a file from a stranger, because it
+   may be one: every part is checked before it is used. Only known kinds
+   of object and known settings are kept; numbers must be numbers,
+   colours must be colours like #1a2b3c, pictures must be plain PNG,
+   JPEG or WebP pictures, and text is only ever shown as text. Anything
+   else, and the file is not opened.
+
+   The crash backup (further down) is restored through the same checks.
+══════════════════════════════════════════ */
+const PROJECT_FORMAT    = 'pdfedtr-project';
+const PROJECT_VERSION   = 1;
+const PROJECT_MAX_BYTES = 400 * 1024 * 1024;      // 400 MB, the same limit as IMGEDTR
+const isProjectFile = (f) => /\.pdfedtr$/i.test((f && f.name) || '');
+
+/** Open whatever was picked or dropped: a project, or a PDF. */
+async function openAnyFile(file) {
+  if (isProjectFile(file)) {
+    try { await openProject(file); }
+    catch (e) { console.warn(e); toast(e.message || 'That project could not be opened.', 'err'); }
+    finally { setLoading(false); }
+    return;
+  }
+  await loadPdf(file);
+}
+
+/** Everything that makes up the editing session, apart from the PDF itself. */
+function sessionSnapshot() {
+  return {
+    overlays:     JSON.parse(JSON.stringify(state.overlays)),
+    pageOrder:    [...state.pageOrder],
+    pageRots:     [...state.pageRots],
+    fieldCounter: state.fieldCounter,
+    nameCounter:  state.nameCounter,
+    seqCounter:   state.seqCounter,
+    currentPage:  state.currentPage,
+  };
+}
+
+/** Bytes -> base64 text (FileReader does it quickly, even for a big PDF). */
+function bytesToBase64(bytes) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1] || '');
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(new Blob([bytes]));
+  });
+}
+/** Base64 text -> bytes. Throws if the text is not base64. */
+function base64ToBytes(b64) {
+  if (typeof b64 !== 'string' || !/^[A-Za-z0-9+/]*={0,2}$/.test(b64)) throw new Error('bad base64');
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/** A file name made from the PDF's own name: "Syllabus.pdf" -> "Syllabus". */
+function projectBaseName() {
+  return String(state.fileName || 'document.pdf').replace(/\.pdf$/i, '')
+    .replace(/[^\w\- .()]+/g, '-').trim().slice(0, 100) || 'document';
+}
+
+async function saveProject() {
+  if (!state.pdfLibDoc) { toast('Open or create a PDF first.', 'err'); return; }
+  if (state.overlays.some(o => o.type === 'redact')) {
+    const ok = await confirmDialog('This project contains redactions',
+      'A project file keeps the ORIGINAL PDF, with everything under each Redact box still in it, so you can change the redactions later. ' +
+      'Keep the project file private. To share, use Download: the downloaded PDF has the redacted parts removed for good.',
+      'Save anyway');
+    if (!ok) return;
+  }
+  setLoading(true, 'SAVING PROJECT…');
+  try {
+    const bytes = await state.pdfLibDoc.save();
+    const data = {
+      format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION, saved: new Date().toISOString(),
+      name: state.fileName || 'document.pdf',
+      pdf: await bytesToBase64(bytes),
+      ...sessionSnapshot(),
+    };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: projectBaseName() + '.pdfedtr' });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    backup.markSafe();                                     // it is saved: no crash backup needed
+    const size = blob.size > 1048576 ? (blob.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(blob.size / 1024)) + ' KB';
+    toast(`Project saved as ${a.download} (${size}). Open it any time to keep editing.`);
+  } catch (e) {
+    console.error(e);
+    toast('The project could not be saved. It may be too large for this browser.', 'err');
+  } finally { setLoading(false); }
+}
+
+/* ── Checking a saved session (from a project file or a crash backup) ── */
+const OVERLAY_TYPES = new Set(['text', 'sticky', 'image', 'shape', 'highlight',
+  'step', 'cursor', 'spotlight', 'magnifier', 'redact', ...FIELD_TYPES]);
+// Every setting an object can have, by what kind of value it must be.
+// Anything not listed here is dropped.
+const OV_NUMBERS = ['fracLeft', 'fracTop', 'fracW', 'fracH', 'fontSize', 'bgOpacity', 'opacity', 'fillOpacity',
+  'lineWidth', 'strokeWidth', 'radius', 'rotation', 'naturalWidth', 'naturalHeight', 'dim', 'blur', 'feather',
+  'zoom', 'borderWidth', 'block', 'sx', 'sy', 'seq'];
+const OV_BOOLEANS = ['bold', 'italic', 'underline', 'noFill', 'flipX', 'flipY', 'shadow', 'ring', 'leader', 'defaultChecked'];
+const OV_COLOURS = ['color', 'fillColor', 'strokeColor', 'textColor', 'ringColor', 'outlineColor', 'noteColor',
+  'highlightColor', 'borderColor', 'dimColor'];
+const OV_TEXTS = { content: 50000, name: 200, fieldName: 200, defaultValue: 5000, option: 200, alt: 2000 };
+const OV_CHOICES = {
+  align: ['left', 'center', 'right'],
+  holeShape: ['ellipse', 'rect'],
+  magShape: ['circle', 'rect'],
+  style: ['solid', 'pixelate'],
+  numbering: ['123', 'ABC', 'abc', 'roman'],
+  mediaType: ['image/png', 'image/jpeg', 'image/webp'],
+};
+
+/**
+ * Check one saved object and return a clean copy built from scratch, or
+ * throw. `pageCount` is how many page slots there are.
+ */
+function cleanOverlay(raw, pageCount) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('an item is not an object');
+  if (!OVERLAY_TYPES.has(raw.type)) throw new Error('an item of an unknown kind');
+  const ov = { type: raw.type };
+  ov.id = typeof raw.id === 'string' && /^[\w-]{1,64}$/.test(raw.id) ? raw.id : uid();
+  if (!Number.isInteger(raw.pageDisplayIndex) || raw.pageDisplayIndex < 0 || raw.pageDisplayIndex >= pageCount) throw new Error('an item on a page that is not there');
+  ov.pageDisplayIndex = raw.pageDisplayIndex;
+  for (const k of OV_NUMBERS) {
+    if (raw[k] === undefined || raw[k] === null) continue;
+    if (typeof raw[k] !== 'number' || !Number.isFinite(raw[k])) throw new Error('a setting that should be a number');
+    ov[k] = raw[k];
+  }
+  if (![ov.fracLeft, ov.fracTop, ov.fracW, ov.fracH].every((v) => typeof v === 'number')) throw new Error('an item with no position');
+  if (ov.fracW <= 0 || ov.fracH <= 0 || ov.fracW > 4 || ov.fracH > 4 || Math.abs(ov.fracLeft) > 4 || Math.abs(ov.fracTop) > 4) throw new Error('an item far off the page');
+  for (const k of OV_BOOLEANS) if (raw[k] !== undefined) ov[k] = raw[k] === true;
+  for (const k of OV_COLOURS) {
+    if (raw[k] === undefined || raw[k] === null) continue;
+    if (typeof raw[k] !== 'string' || !HEX6.test(raw[k])) throw new Error('a colour that is not a colour');
+    ov[k] = raw[k];
+  }
+  for (const [k, max] of Object.entries(OV_TEXTS)) {
+    if (raw[k] === undefined || raw[k] === null) continue;
+    if (typeof raw[k] !== 'string') throw new Error('a text setting that is not text');
+    ov[k] = raw[k].slice(0, max);
+  }
+  for (const [k, list] of Object.entries(OV_CHOICES)) if (list.includes(raw[k])) ov[k] = raw[k];
+  if (typeof raw.fontFamily === 'string') ov.fontFamily = normalizeFontFamily(raw.fontFamily.slice(0, 60));
+  if (raw.options !== undefined) {
+    if (!Array.isArray(raw.options) || raw.options.length > 500 || !raw.options.every((t) => typeof t === 'string')) throw new Error('bad dropdown choices');
+    ov.options = raw.options.map((t) => t.slice(0, 200));
+  }
+  // Kinds with a fixed list of looks: anything unknown falls back to the usual one.
+  if (ov.type === 'shape') ov.shapeType = (SHAPE_BY_KEY[raw.shapeType] || ['oval', 'rrect'].includes(raw.shapeType)) ? raw.shapeType : 'rect';
+  if (ov.type === 'cursor') ov.kind = CURSOR_KINDS[raw.kind] ? raw.kind : 'pointer';
+  if (ov.type === 'image') {
+    // A picture must be a plain PNG, JPEG or WebP picture written into the file.
+    if (typeof raw.dataUrl !== 'string' || raw.dataUrl.length > 60 * 1024 * 1024 ||
+        !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(raw.dataUrl)) throw new Error('a picture that is not a plain picture');
+    ov.dataUrl = raw.dataUrl;
+  }
+  if (ov.type === 'radio' && !ov.fieldName) ov.fieldName = 'choices';
+  if (ov.type === 'radio' && !ov.option) ov.option = 'Choice';
+  return ov;
+}
+
+/**
+ * Check a whole saved session against a PDF of `count` pages. Returns a
+ * clean copy, or throws with a friendly reason.
+ */
+function cleanSession(d, count) {
+  if (!d || typeof d !== 'object') throw new Error('it has no editing session in it');
+  if (!Array.isArray(d.pageOrder) || d.pageOrder.length > 10000 ||
+      !d.pageOrder.every((i) => Number.isInteger(i) && i >= 0 && i < count)) throw new Error('its page list does not match its PDF');
+  const rots = Array.isArray(d.pageRots) ? d.pageRots : [];
+  if (!Array.isArray(d.overlays) || d.overlays.length > 20000) throw new Error('its list of items is not a list');
+  const overlays = d.overlays.map((o) => cleanOverlay(o, d.pageOrder.length));
+  // Every object needs its own id.
+  const ids = new Set();
+  for (const o of overlays) { if (ids.has(o.id)) o.id = uid(); ids.add(o.id); }
+  const int = (v) => (Number.isInteger(v) && v >= 0 && v < 1e9 ? v : 0);
+  return {
+    overlays,
+    pageOrder: [...d.pageOrder],
+    pageRots: d.pageOrder.map((_, k) => normRot(Number(rots[k]) || 0)),
+    fieldCounter: int(d.fieldCounter),
+    nameCounter: int(d.nameCounter),
+    seqCounter: int(d.seqCounter),
+    currentPage: Math.min(int(d.currentPage), Math.max(0, d.pageOrder.length - 1)),
+  };
+}
+
+/**
+ * Open a PDF and put a checked session back on top of it. Used by Open
+ * (for a project) and by the crash backup. Returns false if the PDF did
+ * not open (loadPdf has already said why).
+ */
+async function openWithSession(bytes, name, session) {
+  const before = state.pdfLibDoc;
+  await loadPdf(new File([bytes], name, { type: 'application/pdf' }));
+  if (!state.pdfLibDoc || state.pdfLibDoc === before) return false;   // the PDF did not open
+  const clean = cleanSession(session, state.pdfLibDoc.getPageCount());
+  state.overlays     = clean.overlays;
+  state.pageOrder    = clean.pageOrder;
+  state.pageRots     = clean.pageRots;
+  state.fieldValues  = {};
+  state.fieldCounter = clean.fieldCounter;
+  state.nameCounter  = Math.max(state.nameCounter || 0, clean.nameCounter);
+  state.seqCounter   = Math.max(clean.seqCounter, ...clean.overlays.map((o) => o.seq || 0), 0);
+  state.currentPage  = clean.currentPage;
+  setPicked([state.currentPage]);
+  history.past = []; history.future = []; updateUndoRedoBtns();
+  await renderAllThumbnails();
+  await renderCurrentPage();
+  return true;
+}
+
+async function openProject(file) {
+  if (file.size > PROJECT_MAX_BYTES) throw new Error('That project file is over 400 MB, which is too large to open here.');
+  if (state.pdfLibDoc && (state.overlays.length || history.past.length)) {
+    const ok = await confirmDialog('Open project?', 'This replaces the PDF that is open now. Anything you have not downloaded or saved will be lost.', 'Open project');
+    if (!ok) return;
+  }
+  setLoading(true, 'OPENING PROJECT…');
+  const fail = (why) => { throw new Error('That project file cannot be opened (' + why + ').'); };
+  let data;
+  try { data = JSON.parse(await file.text()); } catch { fail('it is damaged, or is not a PDFEDTR project'); }
+  if (!data || typeof data !== 'object' || data.format !== PROJECT_FORMAT) fail('it is not a PDFEDTR project');
+  if (!Number.isInteger(data.version) || data.version < 1 || data.version > PROJECT_VERSION) fail('it was made by a newer version of PDFEDTR');
+  let bytes;
+  try { bytes = base64ToBytes(data.pdf); } catch { fail('its PDF is damaged'); }
+  // A real PDF starts with "%PDF-" (within its first 1024 bytes).
+  const head = new TextDecoder('latin1').decode(bytes.subarray(0, 1024));
+  if (!head.includes('%PDF-')) fail('it does not hold a PDF');
+  const name = (typeof data.name === 'string' && data.name.trim() ? data.name.trim() : 'document.pdf').slice(0, 120).replace(/[\u0000-\u001f]/g, '');
+  // Check the session BEFORE anything on screen changes (against its own page list),
+  // so a bad file leaves what is open now untouched.
+  try { cleanSession(data, Number.MAX_SAFE_INTEGER); } catch (e) { fail(e.message); }
+  let opened;
+  try { opened = await openWithSession(bytes, name, data); } catch (e) { fail(e.message); }
+  if (!opened) return;
+  backup.touch();
+  toast('Opened the project ' + file.name + '. Everything in it can be edited.');
+}
+
+/* ══════════════════════════════════════════
    CRASH BACKUPS AND THE SPLASH SCREEN
    (SuiteBackup and suiteSplash live in the SUITE BLOCK.)
    The backup holds the PDF as it stands (including added or imported
@@ -9970,12 +10527,7 @@ const backup = SuiteBackup.session('pdfedtr', async () => {
     data: {
       bytes: await state.pdfLibDoc.save(),                 // the PDF itself (a Uint8Array)
       name: state.fileName || 'document.pdf',
-      overlays: JSON.parse(JSON.stringify(state.overlays)),
-      pageOrder: [...state.pageOrder],
-      pageRots: [...state.pageRots],
-      fieldValues: JSON.parse(JSON.stringify(state.fieldValues)),
-      fieldCounter: state.fieldCounter,
-      currentPage: state.currentPage,
+      ...sessionSnapshot(),                                // the same session a project keeps (1.18)
     }
   };
 });
@@ -9988,25 +10540,13 @@ document.addEventListener('pointerup', () => { if (state.pdfLibDoc) backup.touch
 async function restoreBackup(found) {
   const rec = await SuiteBackup.load(found.id);
   const d = rec && rec.data;
-  if (!d || !(d.bytes instanceof Uint8Array) || !Array.isArray(d.overlays) || !Array.isArray(d.pageOrder)) {
-    toast('That backup could not be read.', 'err'); return;
-  }
-  await loadPdf(new File([d.bytes], d.name, { type: 'application/pdf' }));
-  if (!state.pdfLibDoc) return;                            // loadPdf already said what went wrong
-  const count = state.pdfLibDoc.getPageCount();
-  state.overlays     = d.overlays;
-  // Keep only page numbers this PDF really has, each with a tidy turn (1.15).
-  const rots = Array.isArray(d.pageRots) ? d.pageRots : [];
-  const keep = d.pageOrder.map((i, k) => [i, normRot(Number(rots[k]) || 0)])
-                          .filter(([i]) => Number.isInteger(i) && i >= 0 && i < count);
-  state.pageOrder    = keep.map(([i]) => i);
-  state.pageRots     = keep.map(([, r]) => r);
-  state.fieldValues  = d.fieldValues || {};
-  state.fieldCounter = Number.isInteger(d.fieldCounter) ? d.fieldCounter : 0;
-  state.currentPage  = Math.min(Math.max(0, d.currentPage | 0), Math.max(0, state.pageOrder.length - 1));
-  await renderAllThumbnails();
-  await renderCurrentPage();
-  buildFieldsPanel();
+  if (!d || !(d.bytes instanceof Uint8Array)) { toast('That backup could not be read.', 'err'); return; }
+  // Restored through the same checks as a project file (1.18).
+  try { cleanSession(d, Number.MAX_SAFE_INTEGER); } catch { toast('That backup could not be read.', 'err'); return; }
+  let opened = false;
+  try { opened = await openWithSession(d.bytes, typeof d.name === 'string' ? d.name : 'document.pdf', d); }
+  catch { toast('That backup could not be read.', 'err'); return; }
+  if (!opened) return;                                     // loadPdf already said what went wrong
   await SuiteBackup.remove(found.id);                      // it lives on as this session's backup
   backup.touch();
   toast('Picked up where you left off.');
@@ -10027,7 +10567,7 @@ async function startUp() {
     hero: APP_HERO,
     heroAlt: APP_HERO_ALT,
     actions: [
-      { icon: 'open', label: 'Open a PDF', detail: 'Fill it in, sign it, mark it up or rearrange its pages', primary: true,
+      { icon: 'open', label: 'Open a PDF', detail: 'Fill it in, sign it, mark it up or rearrange its pages - or open a .pdfedtr project', primary: true,
         run: () => openPdfPicker() },
       // Start from blank pages (1.17): a handout, a sign-up sheet, a form.
       { icon: 'new', label: 'New PDF', detail: 'Start from blank pages: a handout, a sign-up sheet or a form',
@@ -10316,7 +10856,8 @@ document.addEventListener('keydown', e => {
   // While the help panel is open its own keys win: arrows move between tabs,
   // Escape closes it. Without this the same press would also nudge the
   // selection or change page behind the panel.
-  if (helpDlg.open || document.getElementById('settings-dlg').open || document.getElementById('new-dlg').open) return;
+  if (helpDlg.open || document.getElementById('settings-dlg').open || document.getElementById('new-dlg').open ||
+      document.getElementById('confirm-dlg').open) return;
   // F1 opens help from anywhere, even while typing; preventDefault stops the
   // browser opening its own help page.
   if (e.key === 'F1') { e.preventDefault(); openHelp('htab-features'); return; }
@@ -10329,6 +10870,7 @@ document.addEventListener('keydown', e => {
     if (e.key === '0') { e.preventDefault(); zoomToFit(); return; }
     if (e.key === '1') { e.preventDefault(); setZoom(1); return; }
     if (e.key === 'o' || e.key === 'O') { e.preventDefault(); openPdfPicker(); return; }
+    if (e.shiftKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); saveProject(); return; }   // 1.18
   }
 
   // Ctrl/Cmd + Z → undo
