@@ -5,6 +5,13 @@ All notable changes to SNDEDTR. Newest first.
 The version number lives in two places and both must move together on a
 release: `APP_VERSION` in `index.html` and `CACHE_VERSION` in `sw.js`.
 
+## 0.9.0 - 2026-10-10 - A tour of the features
+
+- **Features, a new first tab in Help:** an animated tour of five of SNDEDTR's favorite features - Multitrack editing, Clean up noisy audio, Duck music under the voice, Pitch correction and Export your mix - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion.
+- **? or F1 and the Help button now open Help on Features.** Keyboard shortcuts is one tab over.
+- **The splash has a "See what SNDEDTR can do" card** that opens the same tour over the splash.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `renderSuiteFeatures`, `suiteFeaturesOpen`, `suiteFeaturesCard` and their styles). The drawings are inline SVG with SVG's own animation tags, so they work offline and straight off a disk.
+
 ## 0.8.0 - 2026-10-07 - Pitch correction
 
 - **Pitch correction.** Pulls a sung or spoken note onto the nearest note of a key and scale, without changing how long anything takes or how fast the words come out. **Strength** sets how far toward the note it pulls; **Retune in** sets how fast it gets there - instant is the hard robot sound, around 60 ms is a correction nobody notices. One voice at a time; pointed at a mix it will make a mess.

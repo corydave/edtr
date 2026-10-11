@@ -995,6 +995,120 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   .suite-splash[open] { animation: suite-pop .16s ease-out; }
   @keyframes suite-pop { from { opacity: 0; transform: translateY(6px); } }
 }
+/* ---- Features: the animated tour (renderSuiteFeatures and friends) ------
+   Colours come from the app's --suite-fg (text) and --suite-accent (its own
+   colour), so every drawing follows light and dark mode. The accent is mixed
+   a little toward the text colour: darker in light mode, lighter in dark
+   mode, so it always stands out from the background. */
+.suite-feats { display: flex; flex-direction: column; gap: 10px; max-width: 640px; margin: 0 auto; }
+.suite-feat-stage {
+  --fx-fg: var(--suite-fg, currentColor);
+  --fx-acc: color-mix(in oklab, var(--suite-accent, #0046ad) 68%, var(--fx-fg));
+  --fx-pop: color-mix(in oklab, #e8590c 80%, var(--fx-fg));          /* a warm second colour */
+  --fx-ok:  color-mix(in oklab, #2f9e44 78%, var(--fx-fg));          /* "done", "fixed" */
+  color: var(--fx-fg);
+  aspect-ratio: 16 / 10; width: 100%; border-radius: 12px; overflow: hidden;
+  background: color-mix(in srgb, currentColor 5%, var(--suite-bg, Canvas));
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.suite-feat-art { display: block; width: 100%; height: 100%; }
+.suite-feat-words { min-height: 4.6em; }                 /* the controls stay put as the text changes length */
+.suite-feat-title { margin: 2px 0 4px; font-size: 16px; }
+.suite-feat-text { margin: 0; font-size: 14px; line-height: 1.5; opacity: .88; }
+.suite-feat-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.suite-feat-step, .suite-feat-pause {
+  flex: none; width: 40px; height: 40px; border-radius: 999px; padding: 0; cursor: pointer;
+  display: inline-grid; place-items: center; color: inherit; font: inherit;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+.suite-feat-step:hover, .suite-feat-pause:hover { background: color-mix(in srgb, currentColor 13%, transparent); }
+.suite-feat-step svg, .suite-feat-pause svg { width: 20px; height: 20px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feat-pause svg path[d^="M7 4"] { fill: currentColor; }     /* the play triangle is solid */
+.suite-feat-dots { display: flex; gap: 2px; flex: 1; justify-content: center; }
+/* Each dot is a 32px target (easy to tap) with a small round mark inside. */
+.suite-feat-dot { width: 32px; height: 32px; padding: 0; border: 0; background: none; cursor: pointer;
+  display: inline-grid; place-items: center; border-radius: 999px; }
+.suite-feat-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid currentColor; opacity: .55; box-sizing: border-box; }
+.suite-feat-dot[aria-current="true"]::after { background: var(--suite-accent, #0046ad); border-color: var(--suite-accent, #0046ad);
+  opacity: 1; width: 22px; border-radius: 6px; }
+.suite-feat-count { font-size: 12.5px; opacity: .75; min-width: 3.6em; text-align: center; }
+.suite-feats button:focus-visible, .suite-feats-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { .suite-feats button:focus-visible, .suite-feats-card:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-feats button:focus-visible, :root[data-theme="dark"] .suite-feats-card:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-feats button:focus-visible, :root[data-theme="light"] .suite-feats-card:focus-visible { outline-color: #0046ad; }
+@media (max-width: 420px) { .suite-feat-count { display: none; } }   /* the dots already say where you are */
+
+/* The tour as its own dialog (from the splash card). */
+.suite-feats-dlg {
+  background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 14px; padding: 18px 20px 14px; margin: auto;
+  width: min(620px, 94vw); max-width: 94vw; max-height: 94vh; overflow: auto;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .35); font: inherit; font-size: 14px; line-height: 1.45;
+}
+.suite-feats-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+.suite-feats-dlg h2 { margin: 0 0 12px; font-size: 18px; }
+.suite-feats-dlg .suite-splash-x:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+
+/* The card that opens it: as wide as its row, with a sparkle. */
+.suite-feats-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 10px 0 0; padding: 10px 14px;
+  min-height: 48px; border-radius: 10px; cursor: pointer; text-align: left; font: inherit; color: inherit;
+  background: color-mix(in srgb, var(--suite-accent, #0046ad) 9%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--suite-accent, #0046ad) 55%, currentColor);
+}
+.suite-feats-card:hover { background: color-mix(in srgb, var(--suite-accent, #0046ad) 16%, transparent); }
+.suite-feats-card-icon { flex: none; width: 26px; height: 26px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feats-card-words { display: flex; flex-direction: column; gap: 2px; }
+
+/* The drawings' own colour classes (used inside each APP_FEATURES picture).
+   Tints use color-mix, so `opacity` stays free for the animations. */
+/* Text size and weight are set here on the drawing itself (inherited), so a
+   drawing's own font-size attributes still win where it needs bigger words. */
+.suite-feat-art { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px; font-weight: 600; }
+.suite-feat-art .fx-ink   { fill: var(--fx-fg); }
+.suite-feat-art .fx-paper { fill: var(--suite-bg, Canvas); }
+.suite-feat-art .fx-soft  { fill: color-mix(in srgb, var(--fx-fg) 9%, transparent); }
+.suite-feat-art .fx-mute  { fill: color-mix(in srgb, var(--fx-fg) 26%, transparent); }
+.suite-feat-art .fx-acc   { fill: var(--fx-acc); }
+.suite-feat-art .fx-acc-soft { fill: color-mix(in srgb, var(--fx-acc) 22%, transparent); }
+.suite-feat-art .fx-pop   { fill: var(--fx-pop); }
+.suite-feat-art .fx-pop-soft { fill: color-mix(in srgb, var(--fx-pop) 25%, transparent); }
+.suite-feat-art .fx-ok    { fill: var(--fx-ok); }
+.suite-feat-art .fx-accbtn { fill: var(--suite-accent, #0046ad); }   /* the app colour itself: white text on it is 7:1 */
+.suite-feat-art .fx-white { fill: #fff; }
+.suite-feat-art .fx-line, .suite-feat-art .fx-line-acc, .suite-feat-art .fx-line-pop,
+.suite-feat-art .fx-line-mute, .suite-feat-art .fx-line-ok {
+  fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feat-art .fx-line      { stroke: var(--fx-fg); }
+.suite-feat-art .fx-line-acc  { stroke: var(--fx-acc); }
+.suite-feat-art .fx-line-pop  { stroke: var(--fx-pop); }
+.suite-feat-art .fx-line-ok   { stroke: var(--fx-ok); }
+.suite-feat-art .fx-line-white { fill: none; stroke: #fff; stroke-width: 4; }
+.suite-feat-art .fx-line-mute { stroke: color-mix(in srgb, var(--fx-fg) 30%, transparent); }
+.suite-feat-art .fx-edge  { stroke: color-mix(in srgb, var(--fx-fg) 28%, transparent); stroke-width: 1.5; }
+.suite-feat-art .fx-t     { fill: var(--fx-fg); }
+.suite-feat-art .fx-t-acc { fill: var(--fx-acc); }
+.suite-feat-art .fx-t-pop { fill: var(--fx-pop); }
+.suite-feat-art .fx-t-ok  { fill: var(--fx-ok); }
+.suite-feat-art .fx-t-mute { fill: color-mix(in srgb, var(--fx-fg) 55%, transparent); }
+.suite-feat-art .fx-t-w   { fill: #fff; }
+.suite-feat-art .fx-mono  { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 500; }
+.suite-feat-art .fx-hl    { fill: color-mix(in srgb, #fcc419 60%, transparent); }   /* highlighter yellow */
+.suite-feat-art .fx-dim   { fill: #000; fill-opacity: .55; }                          /* dims, in either theme */
+.suite-feat-art .fx-dash  { stroke-dasharray: 5 4; }
+.suite-feat-art .fx-thin  { stroke-width: 1.5; }
+.suite-feat-art .fx-thick { stroke-width: 4; }
+.suite-feat-art .fx-stop-acc { stop-color: var(--fx-acc); }
+.suite-feat-art .fx-stop-pop { stop-color: var(--fx-pop); }
+.suite-feat-art .fx-stop-ok  { stop-color: var(--fx-ok); }
+.suite-feat-art .fx-stop-hi  { stop-color: #fff; }
+.suite-feat-art .fx-stop-ink { stop-color: var(--fx-fg); }
+
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 
 table.shortcuts td { padding: 4px 6px; border-bottom: 1px solid var(--border); }
@@ -1244,7 +1358,7 @@ table.shortcuts td:first-child { width: 132px; }
     <button class="icon" id="btnTheme" title="Switch between light and dark" aria-label="Switch to light theme">
       <svg aria-hidden="true"><use href="#i-sun"/></svg>
     </button>
-    <button class="icon" id="btnHelp" title="Help: shortcuts, about, changelog, more apps (?)" aria-label="Help">
+    <button class="icon" id="btnHelp" title="Help: features, shortcuts, about, changelog, more apps (?)" aria-label="Help">
       <svg aria-hidden="true"><use href="#i-help"/></svg>
     </button>
   </header>
@@ -1401,7 +1515,8 @@ table.shortcuts td:first-child { width: 132px; }
   </header>
   <!-- Four tabs, in the same order in every app in the family. -->
   <div class="tabs" role="tablist" aria-label="Help sections">
-    <button role="tab" id="tabShortcuts" aria-controls="paneShortcuts" aria-selected="true">Keyboard shortcuts</button>
+    <button role="tab" id="tabFeatures" aria-controls="paneFeatures" aria-selected="true">Features</button>
+    <button role="tab" id="tabShortcuts" aria-controls="paneShortcuts" aria-selected="false" tabindex="-1">Keyboard shortcuts</button>
     <button role="tab" id="tabAbout" aria-controls="paneAbout" aria-selected="false" tabindex="-1">About</button>
     <button role="tab" id="tabChangelog" aria-controls="paneChangelog" aria-selected="false" tabindex="-1">Changelog</button>
     <button role="tab" id="tabApps" aria-controls="paneApps" aria-selected="false" tabindex="-1">More apps</button>
@@ -1426,7 +1541,11 @@ table.shortcuts td:first-child { width: 132px; }
     </p>
     <div id="suiteCredits"></div>
   </div>
-  <div class="content" role="tabpanel" id="paneShortcuts" aria-labelledby="tabShortcuts">
+  <div class="content" role="tabpanel" id="paneFeatures" aria-labelledby="tabFeatures">
+    <!-- The animated tour: APP_FEATURES, drawn by renderSuiteFeatures (shared SUITE block). -->
+    <div id="suiteFeatures"></div>
+  </div>
+  <div class="content" role="tabpanel" id="paneShortcuts" aria-labelledby="tabShortcuts" hidden>
     <table class="shortcuts">
       <caption class="sr-only">Keyboard shortcuts</caption>
       <tbody>
@@ -1486,12 +1605,60 @@ table.shortcuts td:first-child { width: 132px; }
    only fetched if you explicitly choose MP3 in the export dialog.
    ========================================================================== */
 
-const APP_VERSION = '0.8.0';
+const APP_VERSION = '0.9.0';
 
 /* Short changelog for the Changelog tab (newest first). The long form lives
    in CHANGELOG.md beside this file - a new release gets added to both. It is
    kept in here too so the tab still works offline and opened off a disk. */
+/* ---- Features: the animated tour (Help > Features, and the card on the splash) ----
+   SNDEDTR's favorite features, drawn and animated by renderSuiteFeatures in the
+   shared SUITE block. Each one has a title, a sentence or two, a description of the
+   animation for screen readers (alt), the best still moment in seconds (still,
+   shown when the device asks for less motion), and the drawing itself (art): a
+   small SVG whose colours come from the block's fx-* classes. Edit freely; keep
+   the drawings to fixed text written here (never anything from a file or a person). */
+const APP_FEATURES = [
+  {
+    title: "Multitrack editing",
+    text: "Put a voice, a music bed and sound effects on their own tracks, slide them into place, and select any part to edit it.",
+    alt: "Three audio clips - voice, music and a chime - slide onto their own tracks, part of the voice is selected, and the playhead runs across.",
+    still: 5.0,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="14" y="14" width="292" height="172" rx="10" class="fx-paper fx-edge"/><rect x="14" y="30" width="292" height="40" rx="6" class="fx-soft"/><text x="22" y="44" class="fx-t-mute" font-size="9">Voice</text><g><animateTransform attributeName="transform" type="translate" values="-120 0;-120 0;0 0;0 0;-120 0;-120 0" keyTimes="0;0.05;0.2;0.92;0.98;1" dur="7s" repeatCount="indefinite"/><rect x="70" y="34" width="150" height="32" rx="5" class="fx-acc-soft"/><path d="M74 49.2V50.8M77 45.89V54.11M80 44.97V55.03M83 42.46V57.54M86 41.73V58.27M89 45.74V54.26M92 46.43V53.57M95 42.69V57.31M98 47.25V52.75M101 49.2V50.8M104 49.2V50.8M107 49.2V50.8M110 49.2V50.8M113 49.2V50.8M116 49.2V50.8M119 49.2V50.8M122 49.2V50.8M125 49.2V50.8M128 47.99V52.01M131 44.35V55.65M134 42.83V57.17M137 45.9V54.1M140 40.73V59.27M143 42.16V57.84M146 44.81V55.19M149 47.25V52.75M152 46.29V53.71M155 49.2V50.8M158 49.2V50.8M161 49.2V50.8M164 49.2V50.8M167 49.2V50.8M170 49.2V50.8M173 49.2V50.8M176 49.2V50.8M179 49.2V50.8M182 45.95V54.05M185 46.85V53.15M188 45.78V54.22M191 44.73V55.27M194 39.26V60.74M197 43.41V56.59M200 43.21V56.79M203 46.42V53.58M206 48.33V51.67M209 49.2V50.8M212 49.2V50.8" class="fx-line-acc fx-thin"/></g><rect x="14" y="78" width="292" height="40" rx="6" class="fx-soft"/><text x="22" y="92" class="fx-t-mute" font-size="9">Music</text><g><animateTransform attributeName="transform" type="translate" values="200 0;200 0;0 0;0 0;200 0;200 0" keyTimes="0;0.15;0.3;0.92;0.98;1" dur="7s" repeatCount="indefinite"/><rect x="60" y="82" width="230" height="32" rx="5" class="fx-pop-soft"/><path d="M64 91.83V104.17M67 93.07V102.93M70 89.5V106.5M73 93.63V102.37M76 90.32V105.68M79 91.54V104.46M82 93.74V102.26M85 90.52V105.48M88 93.88V102.12M91 91.05V104.95M94 93.65V102.35M97 93.5V102.5M100 91.11V104.89M103 88.24V107.76M106 93.26V102.74M109 92.55V103.45M112 89.66V106.34M115 87.37V108.63M118 90.02V105.98M121 91.31V104.69M124 87.17V108.83M127 93.82V102.18M130 88.01V107.99M133 92.08V103.92M136 93.12V102.88M139 93.31V102.69M142 91.94V104.06M145 88.31V107.69M148 92.86V103.14M151 89.99V106.01M154 89.58V106.42M157 91.49V104.51M160 90.23V105.77M163 93.7V102.3M166 93.72V102.28M169 92.68V103.32M172 89.29V106.71M175 91.09V104.91M178 91.9V104.1M181 89.96V106.04M184 90.91V105.09M187 92.01V103.99M190 88.47V107.53M193 89.15V106.85M196 92.4V103.6M199 90.04V105.96M202 90.39V105.61M205 87.89V108.11M208 88.93V107.07M211 92.09V103.91M214 87.14V108.86M217 93.31V102.69M220 91.16V104.84M223 88.74V107.26M226 93.06V102.94M229 90.65V105.35M232 93.87V102.13M235 89.37V106.63M238 88.68V107.32M241 90.05V105.95M244 87.89V108.11M247 91.91V104.09M250 89.18V106.82M253 89.9V106.1M256 90V106M259 90.89V105.11M262 88.14V107.86M265 87.4V108.6M268 90.76V105.24M271 89.4V106.6M274 93.72V102.28M277 89.13V106.87M280 89.52V106.48M283 87.05V108.95" class="fx-line-pop fx-thin"/></g><rect x="14" y="126" width="292" height="40" rx="6" class="fx-soft"/><text x="22" y="140" class="fx-t-mute" font-size="9">Chime</text><g><animateTransform attributeName="transform" type="translate" values="140 0;140 0;0 0;0 0;140 0;140 0" keyTimes="0;0.25;0.4;0.92;0.98;1" dur="7s" repeatCount="indefinite"/><rect x="200" y="130" width="50" height="32" rx="5" class="fx-acc-soft"/><path d="M204 138.92V153.08M207 138.15V153.85M210 135.54V156.46M213 138.82V153.18M216 138.52V153.48M219 137.95V154.05M222 140.83V151.17M225 138.49V153.51M228 137.65V154.35M231 136.48V155.52M234 141.48V150.52M237 139.98V152.02M240 141.5V150.5M243 136.36V155.64" class="fx-line-ok fx-thin"/></g><rect x="110" y="32" width="60" height="36" rx="3" class="fx-acc-soft" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.51;0.55;0.93;0.97;1" dur="7s" repeatCount="indefinite"/></rect><line y1="24" y2="172" x1="0" x2="0" class="fx-line-pop"><animate attributeName="x1" values="40;40;280;280" keyTimes="0;0.4;0.92;1" dur="7s" repeatCount="indefinite"/><animate attributeName="x2" values="40;40;280;280" keyTimes="0;0.4;0.92;1" dur="7s" repeatCount="indefinite"/></line></svg>'
+  },
+  {
+    title: "Clean up noisy audio",
+    text: "Noise reduction learns what the background hiss sounds like and takes it out, with hum removal and a noise gate for the rest.",
+    alt: "A waveform buried in hiss; noise reduction is switched on and the hiss melts away, leaving only clear bursts of speech.",
+    still: 5.0,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="14" y="14" width="292" height="172" rx="10" class="fx-paper fx-edge"/><text x="26" y="36" class="fx-t-mute" font-size="10">interview.wav</text><path d="M28 95.43V104.57M31 92.02V107.98M34 92.37V107.63M37 93.39V106.61M40 95.1V104.9M43 91.35V108.65M46 91.25V108.75M49 93.17V106.83M52 93.22V106.78M55 94.97V105.03M58 96.48V103.52M61 94.09V105.91M64 92.7V107.3M67 96.05V103.95M70 91.34V108.66M73 94.99V105.01M76 94.99V105.01M79 96.22V103.78M82 90.02V109.98M85 91.7V108.3M88 90.81V109.19M91 92.5V107.5M94 96.28V103.72M97 94.36V105.64M100 93.27V106.73M103 95.75V104.25M106 90.31V109.69M109 94.11V105.89M112 95.49V104.51M115 91.19V108.81M118 95.69V104.31M121 90.47V109.53M124 93.55V106.45M127 92.91V107.09M130 94.27V105.73M133 93.35V106.65M136 95.29V104.71M139 96.26V103.74M142 90.87V109.13M145 94.97V105.03M148 91.43V108.57M151 95.14V104.86M154 90.2V109.8M157 90.69V109.31M160 91.59V108.41M163 91.54V108.46M166 92.73V107.27M169 91.76V108.24M172 95.7V104.3M175 93.4V106.6M178 91.12V108.88M181 95.19V104.81M184 90.5V109.5M187 90.73V109.27M190 93.84V106.16M193 94.13V105.87M196 93.57V106.43M199 93.99V106.01M202 90.03V109.97M205 93.99V106.01M208 96.33V103.67M211 95.89V104.11M214 91.83V108.17M217 90.05V109.95M220 93.28V106.72M223 93.3V106.7M226 92.92V107.08M229 91.64V108.36M232 95.06V104.94M235 92.54V107.46M238 92.88V107.12M241 92.45V107.55M244 95.33V104.67M247 95.39V104.61M250 94.24V105.76M253 90.47V109.53M256 94.25V105.75M259 92.62V107.38M262 94.51V105.49M265 95.83V104.17M268 96.07V103.93M271 91.21V108.79M274 91.45V108.55M277 94.06V105.94M280 92.06V107.94M283 92.11V107.89M286 90.66V109.34M289 90.27V109.73" class="fx-line-pop fx-thin"><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.3;0.5;0.92;0.98;1" dur="7s" repeatCount="indefinite"/></path><path d="M28 99.2V100.8M31 86.62V113.38M34 79.1V120.9M37 70.93V129.07M40 70.93V129.07M43 63.27V136.73M46 84.73V115.27M49 71.85V128.15M52 57.68V142.32M55 66.18V133.82M58 60V140M61 82.74V117.26M64 75.25V124.75M67 82.75V117.25M70 79.81V120.19M73 83.96V116.04M76 95.22V104.78M79 99.2V100.8M82 99.2V100.8M85 99.2V100.8M88 99.2V100.8M91 99.2V100.8M94 99.2V100.8M97 99.2V100.8M100 99.2V100.8M103 99.2V100.8M106 99.2V100.8M109 99.2V100.8M112 99.2V100.8M115 99.2V100.8M118 99.2V100.8M121 99.2V100.8M124 99.2V100.8M127 99.2V100.8M130 92.21V107.79M133 83.62V116.38M136 86.68V113.32M139 68.34V131.66M142 70.36V129.64M145 60.61V139.39M148 60.49V139.51M151 76.23V123.77M154 74.28V125.72M157 80.15V119.85M160 81.41V118.59M163 84.59V115.41M166 80.47V119.53M169 76.84V123.16M172 91.06V108.94M175 85.9V114.1M178 96.58V103.42M181 99.2V100.8M184 99.2V100.8M187 99.2V100.8M190 99.2V100.8M193 99.2V100.8M196 99.2V100.8M199 99.2V100.8M202 99.2V100.8M205 99.2V100.8M208 99.2V100.8M211 99.2V100.8M214 99.2V100.8M217 99.2V100.8M220 99.2V100.8M223 99.2V100.8M226 99.2V100.8M229 98.68V101.32M232 92.15V107.85M235 76.09V123.91M238 85.38V114.62M241 70.3V129.7M244 62.85V137.15M247 60.01V139.99M250 75.19V124.81M253 74.48V125.52M256 69.76V130.24M259 63.58V136.42M262 82.95V117.05M265 68.62V131.38M268 70.95V129.05M271 74.32V125.68M274 91.92V108.08M277 87.96V112.04M280 99.2V100.8M283 99.2V100.8M286 99.2V100.8M289 99.2V100.8" class="fx-line-acc fx-thin"/><rect x="196" y="24" width="96" height="22" rx="11" class="fx-soft"/><text x="206" y="39" class="fx-t" font-size="10">Noise</text><rect x="248" y="28" width="34" height="14" rx="7" class="fx-mute"/><rect x="248" y="28" width="34" height="14" rx="7" class="fx-ok" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.28;0.3;0.92;0.94;1" dur="7s" repeatCount="indefinite"/></rect><circle cy="35" r="5" class="fx-white" cx="255"><animate attributeName="cx" values="255;255;275;275;255;255" keyTimes="0;0.28;0.32;0.92;0.96;1" dur="7s" repeatCount="indefinite"/></circle><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.51;0.55;0.93;0.97;1" dur="7s" repeatCount="indefinite"/><rect x="96" y="154" width="128" height="20" rx="10" class="fx-soft"/><text x="160" y="168" class="fx-t-ok" font-size="10" text-anchor="middle">Hum and hiss removed</text></g></svg>'
+  },
+  {
+    title: "Duck music under the voice",
+    text: "Draw a volume line on the music track to tuck the music down while someone talks, then bring it back up.",
+    alt: "A volume line is drawn across the music track with a dip under the spoken words, and the music waveform shrinks in that stretch.",
+    still: 5.2,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="14" y="14" width="292" height="172" rx="10" class="fx-paper fx-edge"/><rect x="14" y="26" width="292" height="60" rx="6" class="fx-soft"/><text x="22" y="40" class="fx-t-mute" font-size="9">Voice</text><rect x="14" y="96" width="292" height="78" rx="6" class="fx-soft"/><text x="22" y="110" class="fx-t-mute" font-size="9">Music</text><path d="M30 57.2V58.8M33 57.2V58.8M36 57.2V58.8M39 57.2V58.8M42 57.2V58.8M45 57.2V58.8M48 57.2V58.8M51 57.2V58.8M54 57.2V58.8M57 57.2V58.8M60 57.2V58.8M63 57.2V58.8M66 57.2V58.8M69 57.2V58.8M72 57.2V58.8M75 57.2V58.8M78 57.2V58.8M81 57.2V58.8M84 57.2V58.8M87 57.2V58.8M90 57.2V58.8M93 57.2V58.8M96 57.2V58.8M99 57.2V58.8M102 57.2V58.8M105 57.2V58.8M108 52.17V63.83M111 46.38V69.62M114 45.09V70.91M117 48.05V67.95M120 43.54V72.46M123 49.48V66.52M126 40.75V75.25M129 45.99V70.01M132 54.63V61.37M135 57.2V58.8M138 57.2V58.8M141 57.2V58.8M144 57.2V58.8M147 57.2V58.8M150 57.2V58.8M153 57.2V58.8M156 57.2V58.8M159 56.55V59.45M162 52.45V63.55M165 48.45V67.55M168 39.95V76.05M171 49.71V66.29M174 49.8V66.2M177 43.24V72.76M180 49.72V66.28M183 51.59V64.41M186 57.2V58.8M189 57.2V58.8M192 57.2V58.8M195 57.2V58.8M198 57.2V58.8M201 57.2V58.8M204 57.2V58.8M207 57.2V58.8M210 57.2V58.8M213 57.2V58.8M216 57.2V58.8M219 57.2V58.8M222 57.2V58.8M225 57.2V58.8M228 57.2V58.8M231 57.2V58.8M234 57.2V58.8M237 57.2V58.8M240 57.2V58.8M243 57.2V58.8M246 57.2V58.8M249 57.2V58.8M252 57.2V58.8M255 57.2V58.8M258 57.2V58.8M261 57.2V58.8M264 57.2V58.8M267 57.2V58.8M270 57.2V58.8M273 57.2V58.8M276 57.2V58.8M279 57.2V58.8M282 57.2V58.8M285 57.2V58.8" class="fx-line-acc fx-thin"/><path d="M30 125.68V154.32M33 126.96V153.04M36 130.32V149.68M39 119.91V160.09M42 132.21V147.79M45 125.11V154.89M48 119.45V160.55M51 131.14V148.86M54 124.37V155.63M57 123.48V156.52M60 131.72V148.28M63 126.88V153.12M66 122.24V157.76M69 125.84V154.16M72 121.93V158.07M75 130.05V149.95M78 128.9V151.1M81 130.71V149.29M84 125.06V154.94M87 119.09V160.91M90 123.86V156.14M93 121.23V158.77M96 126.81V153.19M99 121.63V158.37M102 130.85V149.15M105 128.14V151.86M108 122.66V157.34M111 121.92V158.08M204 124.84V155.16M207 120.76V159.24M210 118.56V161.44M213 128.16V151.84M216 121.34V158.66M219 122.23V157.77M222 122.84V157.16M225 130.72V149.28M228 131.91V148.09M231 126.81V153.19M234 121.63V158.37M237 128.69V151.31M240 125.13V154.87M243 127.76V152.24M246 120.2V159.8M249 118.78V161.22M252 126.56V153.44M255 118.02V161.98M258 131.41V148.59M261 120.68V159.32M264 119.78V160.22M267 130.14V149.86M270 122.21V157.79M273 124.31V155.69M276 118.64V161.36M279 129.3V150.7M282 124.58V155.42M285 119.68V160.32" class="fx-line-pop fx-thin"/><g transform="translate(0 140)"><g><animateTransform attributeName="transform" type="scale" values="1 1;1 1;1 0.3;1 0.3;1 1;1 1" keyTimes="0;0.35;0.45;0.88;0.96;1" dur="7s" repeatCount="indefinite"/><g transform="translate(0 -140)"><path d="M119 128.6V151.4M122 122.5V157.5M125 122.52V157.48M128 120.15V159.85M131 129.64V150.36M134 129V151M137 130.2V149.8M140 129.08V150.92M143 121.8V158.2M146 130.44V149.56M149 124.7V155.3M152 129.24V150.76M155 128.09V151.91M158 126.13V153.87M161 120.32V159.68M164 123.6V156.4M167 132.09V147.91M170 128.36V151.64M173 130.2V149.8M176 119.84V160.16M179 120.72V159.28M182 120.77V159.23M185 120.48V159.52M188 121.65V158.35M191 118.72V161.28M194 120.95V159.05M197 128.63V151.37" class="fx-line-pop fx-thin"/></g></g></g><path d="M30 112H108L124 132H196L212 112H290" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" class="fx-line"><animate attributeName="stroke-dashoffset" values="1;1;0;0;1;1" keyTimes="0;0.1;0.4;0.92;0.96;1" dur="7s" repeatCount="indefinite"/></path><circle cx="108" cy="112" r="4" class="fx-ink" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.16;0.2;0.92;0.96;1" dur="7s" repeatCount="indefinite"/></circle><circle cx="124" cy="132" r="4" class="fx-ink" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.2;0.24;0.92;0.96;1" dur="7s" repeatCount="indefinite"/></circle><circle cx="196" cy="132" r="4" class="fx-ink" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.29;0.33;0.92;0.96;1" dur="7s" repeatCount="indefinite"/></circle><circle cx="212" cy="112" r="4" class="fx-ink" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.33;0.37;0.92;0.96;1" dur="7s" repeatCount="indefinite"/></circle></svg>'
+  },
+  {
+    title: "Pitch correction",
+    text: "Pull a sung or spoken note onto the nearest note of a key - gently, so nobody notices, or instantly for the robot sound - without changing the timing.",
+    alt: "A wobbly pitch line drifts between note lines, then pulls straight onto the notes of the key and an In tune label appears.",
+    still: 5.0,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="14" y="14" width="292" height="172" rx="10" class="fx-paper fx-edge"/><line x1="56" y1="150" x2="296" y2="150" class="fx-line-mute fx-thin"/><text x="48" y="154" class="fx-t-mute" font-size="10" text-anchor="end">C</text><line x1="56" y1="126" x2="296" y2="126" class="fx-line-mute fx-thin"/><text x="48" y="130" class="fx-t-mute" font-size="10" text-anchor="end">D</text><line x1="56" y1="102" x2="296" y2="102" class="fx-line-mute fx-thin"/><text x="48" y="106" class="fx-t-mute" font-size="10" text-anchor="end">E</text><line x1="56" y1="78" x2="296" y2="78" class="fx-line-mute fx-thin"/><text x="48" y="82" class="fx-t-mute" font-size="10" text-anchor="end">F</text><line x1="56" y1="54" x2="296" y2="54" class="fx-line-mute fx-thin"/><text x="48" y="58" class="fx-t-mute" font-size="10" text-anchor="end">G</text><path d="M62 156 L71.91 154.92 L81.83 143.7 L91.74 137.67 L101.65 150.45 L111.57 153.19 L121.48 101.7 L131.39 92.44 L141.3 105.73 L151.22 101.57 L161.13 89.35 L171.04 96.66 L180.96 141 L190.87 121.02 L200.78 113.25 L210.7 125.23 L220.61 129.91 L230.52 68.73 L240.43 77.44 L250.35 80.96 L260.26 78.76 L270.17 65.81 L280.09 71.35 L290 82.87" class="fx-line-pop"><animate attributeName="d" values="M62 156 L71.91 154.92 L81.83 143.7 L91.74 137.67 L101.65 150.45 L111.57 153.19 L121.48 101.7 L131.39 92.44 L141.3 105.73 L151.22 101.57 L161.13 89.35 L171.04 96.66 L180.96 141 L190.87 121.02 L200.78 113.25 L210.7 125.23 L220.61 129.91 L230.52 68.73 L240.43 77.44 L250.35 80.96 L260.26 78.76 L270.17 65.81 L280.09 71.35 L290 82.87;M62 156 L71.91 154.92 L81.83 143.7 L91.74 137.67 L101.65 150.45 L111.57 153.19 L121.48 101.7 L131.39 92.44 L141.3 105.73 L151.22 101.57 L161.13 89.35 L171.04 96.66 L180.96 141 L190.87 121.02 L200.78 113.25 L210.7 125.23 L220.61 129.91 L230.52 68.73 L240.43 77.44 L250.35 80.96 L260.26 78.76 L270.17 65.81 L280.09 71.35 L290 82.87;M62 150 L71.91 150 L81.83 150 L91.74 150 L101.65 150 L111.57 150 L121.48 102 L131.39 102 L141.3 102 L151.22 102 L161.13 102 L171.04 102 L180.96 126 L190.87 126 L200.78 126 L210.7 126 L220.61 126 L230.52 78 L240.43 78 L250.35 78 L260.26 78 L270.17 78 L280.09 78 L290 78;M62 150 L71.91 150 L81.83 150 L91.74 150 L101.65 150 L111.57 150 L121.48 102 L131.39 102 L141.3 102 L151.22 102 L161.13 102 L171.04 102 L180.96 126 L190.87 126 L200.78 126 L210.7 126 L220.61 126 L230.52 78 L240.43 78 L250.35 78 L260.26 78 L270.17 78 L280.09 78 L290 78;M62 156 L71.91 154.92 L81.83 143.7 L91.74 137.67 L101.65 150.45 L111.57 153.19 L121.48 101.7 L131.39 92.44 L141.3 105.73 L151.22 101.57 L161.13 89.35 L171.04 96.66 L180.96 141 L190.87 121.02 L200.78 113.25 L210.7 125.23 L220.61 129.91 L230.52 68.73 L240.43 77.44 L250.35 80.96 L260.26 78.76 L270.17 65.81 L280.09 71.35 L290 82.87;M62 156 L71.91 154.92 L81.83 143.7 L91.74 137.67 L101.65 150.45 L111.57 153.19 L121.48 101.7 L131.39 92.44 L141.3 105.73 L151.22 101.57 L161.13 89.35 L171.04 96.66 L180.96 141 L190.87 121.02 L200.78 113.25 L210.7 125.23 L220.61 129.91 L230.52 68.73 L240.43 77.44 L250.35 80.96 L260.26 78.76 L270.17 65.81 L280.09 71.35 L290 82.87" keyTimes="0;0.3;0.5;0.9;0.97;1" dur="7s" repeatCount="indefinite"/></path><rect x="196" y="20" width="96" height="22" rx="11" class="fx-soft"/><text x="244" y="35" class="fx-t" font-size="10" text-anchor="middle">Key: C major</text><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.48;0.52;0.93;0.97;1" dur="7s" repeatCount="indefinite"/><rect x="196" y="164" width="96" height="16" rx="8" class="fx-soft"/><text x="244" y="176" class="fx-t-ok" font-size="10" text-anchor="middle">In tune</text></g></svg>'
+  },
+  {
+    title: "Export your mix",
+    text: "Save the whole mix as one file - WAV, MP3 or Opus - matched to podcast loudness and ready to share.",
+    alt: "Three tracks slide together into one combined waveform, which becomes a single audio file with WAV, MP3 and Opus options lighting up in turn.",
+    still: 4.2,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="14" y="14" width="292" height="172" rx="10" class="fx-paper fx-edge"/><g><animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 40;0 40;0 0;0 0" keyTimes="0;0.15;0.38;0.93;0.98;1" dur="7s" repeatCount="indefinite"/><path d="M30 49.2V50.8M33 44.96V55.04M36 43.8V56.2M39 40.63V59.37M42 39.58V60.42M45 44.52V55.48M48 45.26V54.74M51 39.7V60.3M54 45.46V54.54M57 47.83V52.17M60 49.2V50.8M63 49.2V50.8M66 49.2V50.8M69 49.2V50.8M72 49.2V50.8M75 49.2V50.8M78 49.2V50.8M81 49.2V50.8M84 49.2V50.8M87 48.04V51.96M90 43.89V56.11M93 45.74V54.26M96 39.16V60.84M99 39.83V60.17M102 42.41V57.59M105 45.18V54.82M108 39.81V60.19M111 44.61V55.39M114 47.31V52.69M117 49.2V50.8M120 49.2V50.8M123 49.2V50.8M126 49.2V50.8M129 49.2V50.8M132 49.2V50.8M135 49.2V50.8M138 49.2V50.8M141 49.2V50.8M144 48.44V51.56M147 45.9V54.1M150 38.99V61.01M153 41.72V58.28M156 39.46V60.54M159 42.45V57.55M162 41.3V58.7M165 43.52V56.48M168 45.59V54.41M171 48.55V51.45M174 49.2V50.8M177 49.2V50.8" class="fx-line-acc fx-thin"><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.36;0.42;0.93;0.98;1" dur="7s" repeatCount="indefinite"/></path></g><g><animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 0;0 0;0 0;0 0" keyTimes="0;0.15;0.38;0.93;0.98;1" dur="7s" repeatCount="indefinite"/><path d="M30 82.15V97.85M33 83.73V96.27M36 79.18V100.82M39 84.44V95.56M42 80.22V99.78M45 81.77V98.23M48 84.57V95.43M51 80.48V99.52M54 84.76V95.24M57 81.15V98.85M60 84.46V95.54M63 84.27V95.73M66 81.24V98.76M69 77.58V102.42M72 83.97V96.03M75 83.07V96.93M78 79.39V100.61M81 76.48V103.52M84 79.85V100.15M87 81.49V98.51M90 76.22V103.78M93 84.68V95.32M96 77.29V102.71M99 82.46V97.54M102 83.79V96.21M105 84.03V95.97M108 82.29V97.71M111 77.67V102.33M114 83.46V96.54M117 79.81V100.19M120 79.29V100.71M123 81.71V98.29M126 80.12V99.88M129 84.53V95.47M132 84.56V95.44M135 83.23V96.77M138 78.91V101.09M141 81.21V98.79M144 82.24V97.76M147 79.77V100.23M150 80.98V99.02M153 82.37V97.63M156 77.87V102.13M159 78.74V101.26M162 82.88V97.12M165 79.87V100.13M168 80.32V99.68M171 77.14V102.86M174 78.46V101.54M177 82.48V97.52" class="fx-line-pop fx-thin"><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.36;0.42;0.93;0.98;1" dur="7s" repeatCount="indefinite"/></path></g><g><animateTransform attributeName="transform" type="translate" values="0 0;0 0;0 -40;0 -40;0 0;0 0" keyTimes="0;0.15;0.38;0.93;0.98;1" dur="7s" repeatCount="indefinite"/><path d="M30 120.98V139.02M33 120.01V139.99M36 116.69V143.31M39 120.86V139.14M42 120.48V139.52M45 119.75V140.25M48 123.42V136.58M51 120.44V139.56M54 119.37V140.63M57 117.88V142.12M60 124.24V135.76M63 122.34V137.66M66 124.27V135.73M69 117.73V142.27M72 118.79V141.21M75 124.72V135.28M78 116.16V143.84M81 116.32V143.68M84 119.15V140.85M87 119.5V140.5M90 123.67V136.33M93 124.96V135.04M96 120.29V139.71M99 124.56V135.44M102 123.37V136.63M105 122.9V137.1M108 124.83V135.17M111 120.88V139.12M114 121.09V138.91M117 117.43V142.57M120 120.38V139.62M123 119.27V140.73M126 120.55V139.45M129 119.07V140.93M132 120.94V139.06M135 122.57V137.43M138 116.02V143.98M141 116.04V143.96M144 117.45V142.55M147 118.66V141.34M150 122.23V137.77M153 123.01V136.99M156 122.47V137.53M159 124.46V135.54M162 118.13V141.87M165 121.46V138.54M168 117.4V142.6M171 121.58V138.42M174 116.38V143.62M177 117.39V142.61" class="fx-line-ok fx-thin"><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.36;0.42;0.93;0.98;1" dur="7s" repeatCount="indefinite"/></path></g><path d="M30 73.19V106.81M33 77.09V102.91M36 81.13V98.87M39 71.4V108.6M42 78.32V101.68M45 77.59V102.41M48 75.4V104.6M51 71.59V108.41M54 66.17V113.83M57 74.4V105.6M60 66.1V113.9M63 66.12V113.88M66 77.81V102.19M69 80.47V99.53M72 79.11V100.89M75 68.47V111.53M78 72.25V107.75M81 67.29V112.71M84 66.43V113.57M87 71.39V108.61M90 73.25V106.75M93 80.54V99.46M96 81.23V98.77M99 69.04V110.96M102 71.12V108.88M105 69.7V110.3M108 72.78V107.22M111 71.09V108.91M114 71.64V108.36M117 67.64V112.36M120 79.86V100.14M123 73.89V106.11M126 76.78V103.22M129 68.66V111.34M132 67.92V112.08M135 77.67V102.33M138 80.35V99.65M141 77.81V102.19M144 76.69V103.31M147 69.59V110.41M150 75.21V104.79M153 69.9V110.1M156 76.91V103.09M159 73.43V106.57M162 78.69V101.31M165 71.53V108.47M168 73.6V106.4M171 68.14V111.86M174 66.8V113.2M177 73.49V106.51" class="fx-line fx-thin" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.36;0.4;0.93;0.97;1" dur="7s" repeatCount="indefinite"/></path><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.41;0.45;0.93;0.97;1" dur="7s" repeatCount="indefinite"/><path d="M214 46h44l18 18v76h-62z" class="fx-paper fx-edge"/><path d="M258 46v18h18" class="fx-line-mute fx-thin"/><text x="245" y="104" class="fx-t" font-size="12" text-anchor="middle">mix</text></g><rect x="206" y="150" width="26" height="16" rx="4" class="fx-soft"/><rect x="206" y="150" width="26" height="16" rx="4" class="fx-line-acc" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.499;0.5;0.61;0.611;1" dur="7s" repeatCount="indefinite"/></rect><text x="219" y="161" class="fx-t" font-size="8" text-anchor="middle">WAV</text><rect x="234" y="150" width="26" height="16" rx="4" class="fx-soft"/><rect x="234" y="150" width="26" height="16" rx="4" class="fx-line-acc" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.619;0.62;0.73;0.731;1" dur="7s" repeatCount="indefinite"/></rect><text x="247" y="161" class="fx-t" font-size="8" text-anchor="middle">MP3</text><rect x="262" y="150" width="26" height="16" rx="4" class="fx-soft"/><rect x="262" y="150" width="26" height="16" rx="4" class="fx-line-acc" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.739;0.74;0.85;0.851;1" dur="7s" repeatCount="indefinite"/></rect><text x="275" y="161" class="fx-t" font-size="8" text-anchor="middle">Opus</text></svg>'
+  }
+];
+
 const CHANGELOG = [
+  { version: '0.9.0', date: '2026-10-10', notes: [
+    'New Features tab, first in Help (? or F1 or the Help button): an animated tour of five favorite features. The splash has a "See what SNDEDTR can do" card that opens the same tour.'
+  ] },
   { version: '0.8.0', date: '2026-10-07', notes: [
     'Pitch correction. Pulls a sung or spoken note onto the nearest note of a key and scale without changing how long anything takes - Strength sets how far, and Retune in sets how fast (instant is the hard robot sound, 60ms is invisible).',
     'Transpose only: move a clip up or down by whole semitones, from 11 down to 12 up, again without changing its speed.'
@@ -6085,6 +6252,7 @@ $('#btnDoExport').addEventListener('click', doExport);
      - draws the "More apps" tab of the help panel (renderSuiteApps)
      - the credits in the About tab (renderSuiteCredits)
      - the splash screen shown at start-up (suiteSplash)
+     - the animated Features tour (renderSuiteFeatures, suiteFeaturesOpen, suiteFeaturesCard)
      - crash backups and the backup icon (SuiteBackup, suiteBackupBadge)
      - installing the app (SuiteInstall) and checking for updates (SuiteUpdate)
 
@@ -6476,6 +6644,7 @@ function suiteWhen(ms) {
      actions: [ { label, detail, run, primary } ... ],   // the app's ways to begin
      resume:  { detail, run } or null,                  // only when a backup exists
      hint:    'You can also drop an image anywhere.',   // optional
+     features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
    })
@@ -6523,6 +6692,8 @@ function suiteSplash(opts) {
 
   dlg.append(close, head, actions);
   if (opts.hint) dlg.append(suiteEl('p', 'suite-splash-hint', opts.hint));
+  // The animated tour of the app's favorite features, when the app has one.
+  if (opts.features && opts.features.length) dlg.append(suiteFeaturesCard(opts.features, opts.appId));
 
   // The rest of the family, as a row of small cards, then the credits, then
   // the version (with the update check) and the Install choice.
@@ -7040,14 +7211,273 @@ function suiteBackupDialog(opts) {
   restore.focus();
 }
 
+/* ---- v4 + Features: a short, animated tour of an app's favorite features ----
+   Every app keeps its own list, APP_FEATURES, near its CHANGELOG:
+
+     const APP_FEATURES = [
+       { title: 'Merge Shapes',                       // a few words
+         text:  'Pick overlapping shapes, then ...',  // one or two sentences
+         alt:   'A square and a circle slide ...',    // what the animation shows, for screen readers
+         still: 4,                                    // seconds into the loop that make the best still picture
+         art:   '<svg viewBox="0 0 320 200">...</svg>' }
+     ];
+
+   The block draws them three ways, all with the same slider:
+     renderSuiteFeatures(el, APP_FEATURES)      the Features tab of the help panel
+     suiteFeaturesOpen(APP_FEATURES, appId)     a dialog of its own (the splash card opens this)
+     suiteFeaturesCard(APP_FEATURES, appId)     a big button that opens that dialog
+                                                (suiteSplash adds one by itself when it is given
+                                                `features`; TXTEDTR puts one on its empty pane)
+
+   The pictures are small SVG drawings that move with SVG's own animation
+   tags (<animate>, <animateTransform>), so they need no files, work offline
+   and straight off a disk, and stay sharp at any size. Their colours come
+   from classes (fx-ink, fx-acc ...) styled in the block's CSS from the app's
+   --suite-fg and --suite-accent, so every drawing follows light and dark mode
+   and takes on the app's own colour.
+
+   Safety: the drawings are fixed text written into each app's own code -
+   never anything a person typed or a file brought in - and they are read
+   with DOMParser as SVG (not dropped in with innerHTML). Titles and
+   descriptions go in with textContent.
+
+   Motion: the animation can be paused with a button (it loops forever, and
+   anything that moves for more than five seconds needs a way to stop it).
+   With "reduce motion" switched on in the device's settings, each drawing
+   starts paused on its best still frame. A drawing scrolled out of sight or
+   on a hidden tab stops, so it never costs anything in the background. */
+
+/* Turn one fixed SVG string into an element, or null if it will not parse.
+   Ids inside the drawing (clip paths, gradients ...) get a number added, so
+   two copies on one page - the help tab and the splash's tour, say - never
+   borrow each other's clip paths. */
+let suiteFeatureArtCount = 0;
+function suiteFeatureArt(svgText) {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  const svg = doc.documentElement;
+  if (!svg || svg.nodeName !== 'svg' || doc.querySelector('parsererror')) return null;
+  const tag = '-' + (++suiteFeatureArtCount);
+  const ids = new Set();
+  for (const el of svg.querySelectorAll('[id]')) { ids.add(el.id); el.id += tag; }
+  if (ids.size) {
+    for (const el of svg.querySelectorAll('*')) {
+      for (const attr of [...el.attributes]) {
+        // url(#name) in clip-path, fill, mask ...; #name in href.
+        const v = attr.value.replace(/url\(#([\w-]+)\)/g, (m, id) => ids.has(id) ? 'url(#' + id + tag + ')' : m);
+        const w = /href$/.test(attr.name) && v[0] === '#' && ids.has(v.slice(1)) ? v + tag : v;
+        if (w !== attr.value) el.setAttribute(attr.name, w);
+      }
+    }
+  }
+  return document.importNode(svg, true);
+}
+
+/* True when the person has asked their device for less motion. */
+function suiteWantsLessMotion() {
+  return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+/* Draw the slider into `container`. Returns { show(i), destroy() }. */
+function renderSuiteFeatures(container, features, opts = {}) {
+  if (container.suiteFeatures) container.suiteFeatures.destroy();   // drawn before: start again
+  container.replaceChildren();
+  if (!features || !features.length) return { show() {}, destroy() {} };
+
+  const uid = 'sf' + Math.random().toString(36).slice(2, 8);         // unique ids on this page
+  let index = 0;
+  let paused = suiteWantsLessMotion();      // paused by the person (or by their settings)
+  let offscreen = false;                    // stopped because nobody can see it
+  let svg = null;                           // the drawing on show
+
+  // The carousel pattern: a labelled region holding one slide at a time.
+  const root = suiteEl('section', 'suite-feats');
+  root.setAttribute('aria-roledescription', 'carousel');
+  root.setAttribute('aria-label', opts.label || 'Features');
+
+  const slide = suiteEl('div', 'suite-feat-slide');
+  slide.setAttribute('role', 'group');
+  slide.setAttribute('aria-roledescription', 'slide');
+  const stage = suiteEl('div', 'suite-feat-stage');
+  const words = suiteEl('div', 'suite-feat-words');
+  const title = suiteEl('h3', 'suite-feat-title');
+  title.id = uid + '-title';
+  const text = suiteEl('p', 'suite-feat-text');
+  words.append(title, text);
+  slide.append(stage, words);
+
+  // Controls: back, one dot per feature, "2 of 5", pause, next.
+  const nav = suiteEl('div', 'suite-feat-nav');
+  const prev = suiteFeatButton('suite-feat-step', 'Previous feature', '<path d="m15 18-6-6 6-6"/>');
+  const next = suiteFeatButton('suite-feat-step', 'Next feature', '<path d="m9 18 6-6-6-6"/>');
+  const dots = suiteEl('div', 'suite-feat-dots');
+  const dotButtons = features.map((f, i) => {
+    const d = suiteEl('button', 'suite-feat-dot');
+    d.type = 'button';
+    d.setAttribute('aria-label', 'Feature ' + (i + 1) + ': ' + f.title);
+    d.addEventListener('click', () => show(i, true));
+    dots.append(d);
+    return d;
+  });
+  const count = suiteEl('span', 'suite-feat-count');
+  const pause = suiteFeatButton('suite-feat-pause', '', '');
+  nav.append(prev, dots, count, pause, next);
+
+  // A quiet announcement of the new title when someone changes slide
+  // (kept separate, so nothing is read out when the slider first appears).
+  const live = suiteEl('p', 'suite-sr');
+  live.setAttribute('aria-live', 'polite');
+
+  root.append(slide, nav, live);
+  container.append(root);
+
+  prev.addEventListener('click', () => show(index - 1, true));
+  next.addEventListener('click', () => show(index + 1, true));
+  pause.addEventListener('click', () => { paused = !paused; applyMotion(); });
+
+  // Left/Right anywhere in the slider move between features; Home/End jump.
+  root.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    let to = null;
+    if (e.key === 'ArrowLeft') to = index - 1;
+    else if (e.key === 'ArrowRight') to = index + 1;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = features.length - 1;
+    if (to === null) return;
+    e.preventDefault();
+    e.stopPropagation();                       // keep the app's own arrow-key shortcuts out of it
+    show(to, true);
+  });
+
+  // Play only while it can be seen (not on a hidden tab, not scrolled away).
+  let watcher = null;
+  if ('IntersectionObserver' in window) {
+    watcher = new IntersectionObserver((entries) => {
+      offscreen = !entries.some((en) => en.isIntersecting);
+      applyMotion();
+    });
+    watcher.observe(stage);
+  }
+
+  // Start or stop the drawing, and keep the pause button's words in step.
+  function applyMotion() {
+    const label = paused ? 'Play animation' : 'Pause animation';
+    pause.setAttribute('aria-label', label);
+    pause.title = label;
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.querySelector('svg').innerHTML = paused
+      ? '<path d="M7 4v16l13-8z"/>'                                   // play (a fixed icon, not data)
+      : '<path d="M8 4v16"/><path d="M16 4v16"/>';                    // pause
+    if (!svg || !svg.pauseAnimations) return;
+    if (paused || offscreen) svg.pauseAnimations(); else svg.unpauseAnimations();
+  }
+
+  function show(i, announce) {
+    index = (i + features.length) % features.length;               // wraps round at both ends
+    const f = features[index];
+    title.textContent = f.title;
+    text.textContent = f.text;
+    slide.setAttribute('aria-label', (index + 1) + ' of ' + features.length + ': ' + f.title);
+    count.textContent = (index + 1) + ' of ' + features.length;
+    dotButtons.forEach((d, n) => d.setAttribute('aria-current', String(n === index)));
+
+    stage.replaceChildren();
+    svg = suiteFeatureArt(f.art || '');
+    if (svg) {
+      svg.classList.add('suite-feat-art');
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', f.alt || f.title);
+      svg.setAttribute('focusable', 'false');
+      stage.append(svg);
+      // A paused drawing shows its best frame rather than its first.
+      if (paused && svg.setCurrentTime) { svg.pauseAnimations(); svg.setCurrentTime(f.still || 0); }
+    }
+    applyMotion();
+    if (announce) live.textContent = 'Feature ' + (index + 1) + ' of ' + features.length + ': ' + f.title;
+  }
+
+  function destroy() {
+    if (watcher) watcher.disconnect();
+    container.suiteFeatures = null;
+  }
+
+  show(opts.start || 0, false);
+  const api = { show: (i) => show(i, true), destroy };
+  container.suiteFeatures = api;
+  return api;
+}
+
+/* A small round icon button for the slider (the icon is fixed, never data). */
+function suiteFeatButton(className, label, iconPaths) {
+  const b = suiteEl('button', className);
+  b.type = 'button';
+  if (label) { b.setAttribute('aria-label', label); b.title = label; }
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = iconPaths;
+  b.append(icon);
+  return b;
+}
+
+/* The tour in a dialog of its own, over whatever is on screen (the splash,
+   say). Closing it puts focus back where it was. */
+function suiteFeaturesOpen(features, appId) {
+  const app = SUITE_APPS.find((a) => a.id === appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-feats-dlg');
+  const h = suiteEl('h2', '', 'What ' + app.name + ' can do');
+  h.id = 'suite-feats-dlg-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the tour');
+  const body = suiteEl('div');
+  dlg.append(close, h, body);
+  document.body.append(dlg);
+  const slider = renderSuiteFeatures(body, features, { label: app.name + ' features' });
+
+  function finish() {
+    slider.destroy();
+    dlg.close();
+    dlg.remove();
+    if (back && back.isConnected && back.focus) back.focus();
+  }
+  close.addEventListener('click', finish);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); });   // Escape
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) finish(); });  // a click on the dimmed backdrop
+  dlg.showModal();
+  const first = dlg.querySelector('.suite-feat-step:last-of-type');            // "Next" is the likely first press
+  if (first) first.focus();
+  return dlg;
+}
+
+/* A wide card - "See what PDFEDTR can do" - that opens the tour. */
+function suiteFeaturesCard(features, appId) {
+  const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
+  const b = suiteEl('button', 'suite-feats-card');
+  b.type = 'button';
+  const icon = suiteFeatButton('', '', '').querySelector('svg');   // borrow the icon maker
+  // Sparkles (Lucide): "something worth seeing".
+  icon.innerHTML = '<path d="M9.94 15.5a2 2 0 0 0-1.44-1.44l-6.13-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>';
+  icon.classList.add('suite-feats-card-icon');
+  const words = suiteEl('span', 'suite-feats-card-words');
+  words.append(suiteEl('span', 'suite-splash-choice-label', 'See what ' + app.name + ' can do'),
+               suiteEl('span', 'suite-splash-choice-detail',
+                       'A quick, animated tour of ' + features.length + ' favorite features'));
+  b.append(icon, words);
+  b.addEventListener('click', () => suiteFeaturesOpen(features, appId));
+  return b;
+}
+
 /* SUITE BLOCK v4 - END ================================================== */
 
 
 /* ---- Help panel ----------------------------------------------------------
-   One panel, four tabs. openHelp('tabApps') opens straight on a tab.
+   One panel, five tabs (Features first). openHelp('tabApps') opens straight on a tab.
    -------------------------------------------------------------------------*/
 const selectHelpTab = suiteWireTabs($('#helpDialog [role="tablist"]'));
-function openHelp(tabId = 'tabShortcuts') {
+function openHelp(tabId = 'tabFeatures') {
   selectHelpTab(tabId);
   if (!$('#helpDialog').open) $('#helpDialog').showModal();
   $('#' + tabId).focus();       // focus lands on the tab, so arrows work at once
@@ -7074,7 +7504,7 @@ function renderChangelog() {
     box.append(h, ul);
   });
 }
-$('#btnHelp').addEventListener('click', () => openHelp('tabShortcuts'));
+$('#btnHelp').addEventListener('click', () => openHelp('tabFeatures'));
 $('#btnBrand').addEventListener('click', () => openHelp('tabApps'));
 $('#btnPanel').addEventListener('click', () => showPanel($('#panel').hidden));
 $('#panelClose').addEventListener('click', () => showPanel(false));
@@ -7207,8 +7637,8 @@ document.addEventListener('keydown', (event) => {
       if (track) { pushUndo('Solo'); track.soloed = !track.soloed; refreshAllFx(); render(); }
       break;
     }
-    case '?': openHelp('tabShortcuts'); break;
-    case 'F1': event.preventDefault(); openHelp('tabShortcuts'); break;   // stop the browser's own help page
+    case '?': openHelp('tabFeatures'); break;
+    case 'F1': event.preventDefault(); openHelp('tabFeatures'); break;   // stop the browser's own help page
     case 'Escape':
       state.selection = { start: 0, end: 0, active: false };
       updateSelectionUI();
@@ -7246,6 +7676,7 @@ function boot() {
   $('#helpTitle').textContent = `SNDEDTR v${APP_VERSION}`;
   renderChangelog();
   renderSuiteApps($('#suiteApps'), 'sndedtr');
+  renderSuiteFeatures($('#suiteFeatures'), APP_FEATURES);   // Help > Features: the animated tour
   renderSuiteCredits($('#suiteCredits'));
 
   // Follow the operating system's light or dark setting on first load.
@@ -7304,6 +7735,7 @@ async function startUp() {
   if (state.tracks.some((t) => t.clips.length)) return;   // a file already arrived
   suiteSplash({
     appId: 'sndedtr',
+    features: APP_FEATURES,
     actions: [
       { label: 'Import audio', detail: 'WAV, MP3, M4A, OGG, Opus, FLAC', run: () => $('#fileInput').click(), primary: true },
       { label: 'Record', detail: 'From your microphone', run: () => $('#btnRecord').click() },
