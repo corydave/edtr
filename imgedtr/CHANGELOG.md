@@ -2,6 +2,19 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.17.3 - 2026-10-11 - The source, front and center
+
+- **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `suiteSourceBox()`, drawn by `renderSuiteCredits()`).
+
+## 1.17.2 - 2026-10-11 - Step markers stay on (now it says so)
+
+- The Step marker tool (N) already stayed on after each click, so you can click 1, 2, 3 in a row (Esc or another tool when you are done). The note under Settings, Keep tool after drawing, said only the pen and highlighter did; it now names step markers too.
+
+## 1.17.1 - 2026-10-11 - Spotlight holes start round
+
+- **Spotlight: new holes are perfect circles by default** (they were ovals). A click, a drag, Enter on the canvas and Add hole all make a circle; dragging keeps it round. Choose **Ellipse** or **Rect** in the panel to change a hole's shape - the next hole uses that choice, as before.
+
 ## 1.17.0 - 2026-10-10 - A new splash
 
 - **A picture of IMGEDTR in use across the top of the splash** - the same picture as on edtrapps.com, built into the app (as a data: URI), so it shows offline too. With it, the small icon beside the name goes, since the picture already shows it.
