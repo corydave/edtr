@@ -1148,6 +1148,17 @@ Not yet, roughly in order of what teachers' files will need:
   current. `relayoutAndRender` re-sizes the area when the stage changes
   (`stageShown`), and `goToPage` doesn't re-centre (`showPage`) when
   moving to the partner. The grey on each outer side keeps its full room.
+  0.41.1 (Dave: "the staging area has limits"; a shape dragged below
+  the page was cut off): the drawing's size is no longer fixed. Each side
+  of the grey (`stage()`: x, r, y, b) is the biggest of the usual room
+  (`baseStage`), what is on the page and its partner plus an inch
+  (`stageReach`), and enough to fill the desk. `placeCanvas(px, py)` sizes
+  the SVG and scrolls so the page's corner is at (px, py) on the desk, in
+  whole pixels; `canvasP()` reads where it is now. Everything that sized
+  or scrolled before goes through it: `applyZoom(at)`, `zoomKeeping`,
+  `showPage`, `goToPage` (the partner of the pair keeps its place), and
+  `checkCanvas()` after every redraw and when the desk is resized, so the
+  page never moves while the grey grows or shrinks under a drag.
   0.39.1: zoom runs 25% to 800% (`MIN_ZOOM`, `MAX_ZOOM`; was 400%), and
   `zoomBy` (keys, buttons) keeps the page point in the middle of the desk
   in the middle (`zoomKeeping`), as the wheel and pinch already kept the

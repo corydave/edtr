@@ -2338,7 +2338,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.41.0';
+const APP_VERSION = '0.41.1';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -6989,26 +6989,102 @@ function setupSvg() {
 /* ---------- The staging area ----------
    The grey around the page is the STAGING AREA: anything can be dragged
    out there and kept for later (a spare photo, a heading you're not sure
-   about). It is half a page wide at each side and a quarter of a page tall
-   above and below. Things out there are never printed or exported, never
+   about). It is at least half a page wide at each side and a quarter of a
+   page tall above and below, and grows as far as it is needed (below). Things out there are never printed or exported, never
    read by screen readers, and the Accessibility checker leaves them alone.
    The page itself still starts at (0, 0): staging positions are simply
    negative, or past the page's width or height.
 
-   stage() gives the grey's size around the page: x on the left, r on the
-   right, y above and below. With two pages side by side (0.39.2) the side
-   the other page is on gets that page's room as well, so the drawing is
-   the same size and the pair sits in the same place whichever of the two
-   you work on: clicking the other page no longer makes them jump. */
-function stage() {
+   How big the grey is (x on the left, r on the right, y above, b below, in
+   points) - 0.41.1, Dave: "the staging area has limits": the drawing used
+   to stop a fixed way past the page, so a shape dragged further was cut
+   off (and the grey beyond it, though it looked the same, wasn't part of
+   the drawing at all). Now each side is the biggest of:
+     - the usual room (baseStage: half a page, or with two pages side by
+       side the other page's room on its side, 0.39.2);
+     - room for everything on the page (and the other page of the pair),
+       plus an inch (stageReach), so nothing is ever cut off;
+     - enough to fill the window, so every bit of grey you can see is
+       grey you can drag things into.
+   placeCanvas sizes the drawing like that while keeping the page exactly
+   where it is on screen (it scrolls to match), so the drawing can grow or
+   shrink under a drag without the page moving. */
+function baseStage() {
   const side = isFacing() || pageView === 'two' ? PAGE.width + spreadGap() + 72 : Math.max(144, PAGE.width * 0.5);
   const off = pageView === 'two' && spreadPartner(pageIndex) != null ? partnerOffset(pageIndex) : 0;   // (+ the other page is to the right, - to the left)
-  return { x: side + Math.max(0, -off), r: side + Math.max(0, off), y: Math.max(144, PAGE.height * 0.25) };
+  const y = Math.max(144, PAGE.height * 0.25);
+  return { x: side + Math.max(0, -off), r: side + Math.max(0, off), y, b: y };
 }
-let stageShown = '';                                 // the stage the drawing area was last sized for
+/** Room needed past each edge of the page for what is on it (and on the other page of the pair), plus an inch. */
+function stageReach() {
+  const W = PAGE.width, H = PAGE.height, pad = 72;
+  let x0 = 0, y0 = 0, x1 = W, y1 = H;
+  const take = (list, dx) => {
+    for (const o of list) {
+      const b = bounds(o);
+      x0 = Math.min(x0, b.x + dx); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w + dx); y1 = Math.max(y1, b.y + b.h);
+    }
+  };
+  if (doc.pages && pageNo(pageIndex)) take(pageObjs(), 0);
+  const q = pageView === 'two' && doc.pages ? spreadPartner(pageIndex) : null;
+  if (q != null) take(doc.pages[q].objects, partnerOffset(pageIndex));
+  return { x: x0 < 0 ? pad - x0 : 0, r: x1 > W ? x1 - W + pad : 0, y: y0 < 0 ? pad - y0 : 0, b: y1 > H ? y1 - H + pad : 0 };
+}
+let stageNow = null;                                 // the grey the drawing is sized for now: { x, r, y, b } in points, and k (screen px per point then)
+let canvasKey = '';                                  // what that size was worked out from (so it is only redone when something changed)
+/** The grey around the page the drawing has now (or the usual room, before the first sizing). */
+function stage() { return stageNow || baseStage(); }
+/** The top-left of the desk's visible area, on screen (inside its border). */
+function deskBox() {
+  const desk = $('desk'), r = desk.getBoundingClientRect();
+  return { left: r.left + desk.clientLeft, top: r.top + desk.clientTop };
+}
+/** Where the page's top-left corner is now, in screen pixels from the desk's visible top-left. */
+function canvasP() {
+  const desk = $('desk');
+  if (!stageNow) return { x: desk.clientWidth / 2 - PAGE.width * zoom * PX_PER_PT / 2, y: 24 };
+  const o = pageOrigin(), d = deskBox();
+  return { x: o.left - d.left, y: o.top - d.top };
+}
+/**
+ * Size the drawing (page and grey) and scroll the desk so the page's
+ * top-left corner is (px, py) screen pixels from the desk's visible
+ * top-left, with grey enough for everything on the page and to fill the
+ * window. (The scroll is kept to whole pixels, so the page never creeps.)
+ */
+function placeCanvas(px, py) {
+  if (!layers.paper) return;
+  const desk = $('desk'), k = zoom * PX_PER_PT, base = baseStage(), reach = stageReach();
+  const W = PAGE.width, H = PAGE.height, dw = desk.clientWidth, dh = desk.clientHeight;
+  const s = { k };
+  // Left and top: the usual room, room for what is out there, and at least up to the window's edge...
+  s.x = Math.max(base.x, reach.x, px / k);
+  s.y = Math.max(base.y, reach.y, py / k);
+  // ...made a touch bigger so the scroll comes out in whole pixels.
+  s.x = (Math.ceil(s.x * k - px) + px) / k;
+  s.y = (Math.ceil(s.y * k - py) + py) / k;
+  // Right and bottom: the usual room, room for what is out there, and at least to the window's far edge.
+  s.r = Math.max(base.r, reach.r, (dw - px) / k - W);
+  s.b = Math.max(base.b, reach.b, (dh - py) / k - H);
+  stageNow = s;
+  canvasKey = JSON.stringify([base, reach, dw, dh, k, W, H]);
+  svg.setAttribute('viewBox', [-s.x, -s.y, W + s.x + s.r, H + s.y + s.b].join(' '));
+  svg.setAttribute('width', String((W + s.x + s.r) * k));
+  svg.setAttribute('height', String((H + s.y + s.b) * k));
+  desk.scrollLeft = Math.round(s.x * k - px);
+  desk.scrollTop = Math.round(s.y * k - py);
+}
+/** Something on the page moved past the grey, the window changed size, or the pair changed: size the drawing again, the page staying put. */
+function checkCanvas() {
+  if (!stageNow || !layers.paper) return;
+  const desk = $('desk');
+  if (JSON.stringify([baseStage(), stageReach(), desk.clientWidth, desk.clientHeight, zoom * PX_PER_PT, PAGE.width, PAGE.height]) === canvasKey) return;
+  const p = canvasP();
+  placeCanvas(p.x, p.y);
+}
 /** Where the page's top-left corner is on screen, and screen pixels per point. */
 function pageOrigin() {
-  const r = svg.getBoundingClientRect(), k = zoom * PX_PER_PT, s = stage();
+  const r = svg.getBoundingClientRect(), s = stage(), k = s.k || zoom * PX_PER_PT;
   return { left: r.left + s.x * k, top: r.top + s.y * k, k };
 }
 /** Does an object touch the page at all? (If not, it is out in the staging area.) */
@@ -7022,9 +7098,6 @@ const inPage = (p) => p.x >= 0 && p.y >= 0 && p.x <= PAGE.width && p.y <= PAGE.h
 /** After the page size changes: the drawing area (page and staging area) and the paper. */
 function applyPageSize() {
   if (!layers.paper) return;
-  const s = stage();
-  stageShown = JSON.stringify(s);
-  svg.setAttribute('viewBox', [-s.x, -s.y, PAGE.width + s.x + s.r, PAGE.height + 2 * s.y].join(' '));
   clear(layers.paper);
   layers.paper.appendChild(svgEl('rect', { x: 0, y: 0, width: PAGE.width, height: PAGE.height, fill: '#ffffff', filter: 'url(#paperShadow)' }));
   const clipRect = document.getElementById('pageClipRect');
@@ -7048,8 +7121,8 @@ function relayoutAndRender() {
   renderLayers();
   scheduleThumbnails();
   scheduleSpell();
-  // Now on the other side of a pair (another page, a page moved): size the drawing area for it (0.39.2).
-  if (JSON.stringify(stage()) !== stageShown) applyPageSize();
+  // Something now past the grey, or the other side of a pair: size the drawing again, the page staying put (0.41.1).
+  checkCanvas();
 }
 
 function renderMargins() {
@@ -8696,7 +8769,11 @@ function goToPage(i, keepTyping) {
   if (!isMasterIndex(i)) lastPageIndex = i;           // where "Back to the pages" returns to
   // The other page of the pair on screen: it is already showing, so nothing scrolls (0.39.2).
   const sameSpread = spreadPartner(pageIndex) === i;
+  // ...and it stays exactly where it is on screen (0.41.1: the drawing is re-sized around it).
+  const keep = sameSpread ? canvasP() : null;
+  if (keep) keep.x += partnerOffset(pageIndex) * zoom * PX_PER_PT;
   pageIndex = i;
+  if (keep) placeCanvas(keep.x, keep.y);
   selectedIds = [];
   cropId = null;
   orderClicks = [];
@@ -14393,6 +14470,7 @@ function wireRulers() {
   const desk = $('desk');
   desk.addEventListener('scroll', scheduleRulers, { passive: true });
   new ResizeObserver(scheduleRulers).observe(desk);
+  new ResizeObserver(() => requestAnimationFrame(checkCanvas)).observe(desk);   // a bigger window: the grey fills it (0.41.1)
   desk.addEventListener('pointermove', (e) => { if (view.rulers) { rulerPointer = toPage(e); scheduleRulers(); } });
   desk.addEventListener('pointerleave', () => { rulerPointer = null; scheduleRulers(); });
 }
@@ -14433,22 +14511,20 @@ function wireViewBar() {
 /* ======================================================================
    14. ZOOM, THEME, HELP, AND KEYS OUTSIDE THE TEXT
    ====================================================================== */
-function applyZoom() {
-  const s = stage();
-  svg.setAttribute('width', String((PAGE.width + s.x + s.r) * zoom * PX_PER_PT));
-  svg.setAttribute('height', String((PAGE.height + 2 * s.y) * zoom * PX_PER_PT));
+/** Size the drawing for the zoom. at: where the page's top-left should be (screen px from the desk's top-left); left out, it stays where it is. */
+function applyZoom(at) {
+  const p = at || canvasP();
+  placeCanvas(p.x, p.y);
   $('zoomValue').textContent = Math.round(zoom * 100) + '%';
   if (layers.frames && Object.keys(layouts).length) renderSelection();   // handles and ports keep their size on screen
   scheduleRulers();
 }
 const MIN_ZOOM = 0.25, MAX_ZOOM = 8;                 // 25% to 800% (0.39.1: up from 400%, Dave: for fine work)
-function setZoom(z) { zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z)); applyZoom(); }
+function setZoom(z, at) { zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z)); applyZoom(at); }
 /** Zoom so that page point `pagePt` ends up under screen point (clientX, clientY): zooming "into" where you point. */
 function zoomKeeping(z, pagePt, clientX, clientY) {
-  setZoom(z);
-  const r = pageOrigin(), k = r.k, desk = $('desk');
-  desk.scrollLeft += r.left + pagePt.x * k - clientX;
-  desk.scrollTop += r.top + pagePt.y * k - clientY;
+  const k = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z)) * PX_PER_PT, d = deskBox();
+  setZoom(z, { x: clientX - d.left - pagePt.x * k, y: clientY - d.top - pagePt.y * k });
 }
 /** The page point under a screen point. */
 function pageAt(clientX, clientY) {
@@ -14538,12 +14614,10 @@ function fitZoom() {
 }
 /** Scroll so the page is in view: centred, or its top showing when it is taller than the window. */
 function showPage() {
-  const desk = $('desk'), d = desk.getBoundingClientRect(), o = pageOrigin();
-  const w = PAGE.width * o.k, h = PAGE.height * o.k;
+  const desk = $('desk'), k = zoom * PX_PER_PT, w = PAGE.width * k, h = PAGE.height * k;
   // With a partner page beside it, centre the spread (so moving between its two pages keeps it still).
-  const q = spreadPartner(pageIndex), mid = q == null ? w / 2 : w / 2 + partnerOffset(pageIndex) * o.k / 2;
-  desk.scrollLeft += o.left + mid - (d.left + desk.clientWidth / 2);
-  desk.scrollTop += h + 48 < desk.clientHeight ? o.top + h / 2 - (d.top + desk.clientHeight / 2) : o.top - d.top - 24;
+  const q = spreadPartner(pageIndex), mid = q == null ? w / 2 : w / 2 + partnerOffset(pageIndex) * k / 2;
+  placeCanvas(desk.clientWidth / 2 - mid, h + 48 < desk.clientHeight ? desk.clientHeight / 2 - h / 2 : 24);
 }
 
 /** A new object in the middle of the page, from the keyboard (Enter with a drawing tool). */
@@ -14627,7 +14701,7 @@ function wireChrome() {
     ['Delete', 'Delete what is picked'],
     [mod + ' + C, ' + mod + ' + X, ' + mod + ' + V', 'Copy, cut and paste what is picked (also between pages and documents). Text copied from another app pastes as a new text box'],
     [mod + ' + drag, or ' + mod + ' + Shift + drag', 'Drag a copy, leaving the original where it was (with Shift: in a straight line)'],
-    ['The grey around the page', 'The staging area: keep things there for later. They are not printed, exported or read'],
+    ['The grey around the page', 'The staging area: keep things there for later, as far out as you like (it grows to fit). They are not printed, exported or read'],
     [mod + ' + D', 'Duplicate'],
     [mod + ' + Shift + L', 'Lock or unlock what is picked (locked things can’t be moved or picked on the page; pick them in Layers)'],
     ['U', 'Shapes gallery: rectangles, ellipses, triangles, stars, arrows, speech bubbles and more'],
@@ -21442,11 +21516,21 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.41.1", date: "2026-10-11", title: "", notes: [
+    "The staging area has no edge any more. Before, the grey around the page stopped a fixed way out, so a shape dragged further was cut off, and the grey past that point only looked like staging area. Now all the grey you can see is staging area, and it grows to fit anything you put out there (with room to spare), so you can always scroll to it. The page stays exactly where it is while it grows or shrinks."
+  ] },
   { version: "0.41.0", date: "2026-10-10", title: "", notes: [
-    "A new splash: a picture of DSKEDTR in use across the top, a picture on each way to begin, and a smaller, quieter \"Pick up where you left off\". The splash and About now link to edtrapps.com, home of every app in the family, and to the source on GitHub (free and open source, MIT license)."
+    "A picture of DSKEDTR in use across the top of the splash - the same picture as on edtrapps.com, built into the app (as a data: URI), so it shows offline too. With it, the small icon beside the name goes, since the picture already shows it.",
+    "Every way to begin is a card with a picture: a folder opening for Open (the icon everybody knows), and pictures of their own for the rest - three publications fanned out for templates.",
+    "\"Pick up where you left off\" is smaller and quieter: a slim row under the cards rather than the big first button. It still only appears when the last session ended without saving, and the app's main way to begin keeps the focus.",
+    "Links to edtrapps.com and GitHub under the credits (on the splash and in About): \"All the apps at edtrapps.com - Free and open source on GitHub (MIT license)\".",
+    "The splash is a little wider (760px) with the picture; on a phone the cards stack in one column. The shared SUITE block was pasted in again from _edtr-suite."
   ] },
   { version: "0.40.0", date: "2026-10-10", title: "", notes: [
-    "New Features tab, first in Help (? or F1 or the Help button): an animated tour of five favorite features. The splash has a \"See what DSKEDTR can do\" card that opens the same tour."
+    "Features, a new first tab in Help: an animated tour of five of DSKEDTR's favorite features - Lay out a newsletter, Text that flows between boxes, Master pages and page numbers, Opens Publisher files and Made for every reader - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion.",
+    "? or F1 and the Help button now open Help on Features. Keyboard shortcuts is one tab over.",
+    "The splash has a \"See what DSKEDTR can do\" card that opens the same tour over the splash.",
+    "The shared SUITE block was pasted in again from _edtr-suite (new: renderSuiteFeatures, suiteFeaturesOpen, suiteFeaturesCard and their styles). The drawings are inline SVG with SVG's own animation tags, so they work offline and straight off a disk."
   ] },
   { version: "0.39.2", date: "2026-10-10", title: "", notes: [
     "Two pages side by side stay still. Clicking the other page (or picking it in the filmstrip) makes it the page you work on without the pair jumping across the window, at any zoom."

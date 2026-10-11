@@ -1,5 +1,14 @@
 # DSKEDTR changelog
 
+## 0.41.1 - 2026-10-11
+
+- **The staging area has no edge any more.** Before, the grey around the
+  page stopped a fixed way out, so a shape dragged further was cut off,
+  and the grey past that point only looked like staging area. Now all the
+  grey you can see is staging area, and it grows to fit anything you put
+  out there (with room to spare), so you can always scroll to it. The page
+  stays exactly where it is while it grows or shrinks.
+
 ## 0.41.0 - 2026-10-10
 
 - **A picture of DSKEDTR in use across the top of the splash** - the same picture as on edtrapps.com, built into the app (as a data: URI), so it shows offline too. With it, the small icon beside the name goes, since the picture already shows it.
