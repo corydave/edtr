@@ -194,7 +194,7 @@
   --radius-sm: 4px;
   --track-h: 62px;            /* height of one timeline track row */
   --ruler-h: 26px;            /* height of the time ruler */
-  --header-h: 46px;
+  --header-h: 52px;            /* the family's top bar height (IMGEDTR's 52px) */
   --gutter: 10px;
 
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -615,9 +615,9 @@ body.resizing-pool * { cursor: col-resize !important; }
   gap: 6px;
   padding: 8px var(--gutter);
   border-bottom: 1px solid var(--line);
-  font-size: 11px;
+  font-size: 12px;              /* the family's Inspector heading (IMGEDTR) */
   font-weight: 700;
-  letter-spacing: .09em;
+  letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--text-dim);
   flex: 0 0 auto;
@@ -1229,10 +1229,9 @@ body.resizing-pool * { cursor: col-resize !important; }
 .field { margin-bottom: 12px; }
 .field > label, .field-label {
   display: block;
-  font-size: 11px;
+  font-size: 13px;              /* the family's Inspector label size (IMGEDTR) */
   color: var(--text-dim);
   margin-bottom: 4px;
-  letter-spacing: .04em;
 }
 .field-label svg { vertical-align: -1px; margin-right: 2px; }
 
@@ -2260,6 +2259,19 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 .suite-links { display: inline-block; margin-top: 4px; }
 .suite-links a { color: inherit; font-weight: 600; }
 
+.suite-source { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 18px; padding: 14px 16px;
+  border-radius: 12px; border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent); }
+.suite-source-words { flex: 1 1 260px; margin: 0; font-size: 13.5px; line-height: 1.5; }
+/* The button: the text colour as its fill, so it is the strongest thing in the tab in light and dark mode. */
+.suite-source-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 10px;
+  background: var(--suite-fg, CanvasText); color: var(--suite-bg, Canvas); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.suite-source-btn:hover { filter: brightness(1.15); }
+.suite-source-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-source-btn:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { .suite-source-btn:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-source-btn:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-source-btn:focus-visible { outline-color: #0046ad; }
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 
 
@@ -3218,6 +3230,11 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
           the playhead. Drag one onto a track instead and a dashed outline
           shows exactly where it will land before you let go.</li>
       <li>Drag a clip's ends to trim it; drag its middle to move it.</li>
+      <li>A video clip carries its own sound. <strong>Separate the sound</strong>
+          (in the Inspector, under Sound or Actions) puts it on an audio track
+          as a clip of its own, so you can split, trim, move or fade the sound
+          without touching the picture. Split All (beside the scissors) cuts
+          every track at once.</li>
       <li>Select a clip and drag it straight on the preview: corners resize,
           edges crop, and the handle on the stem rotates.</li>
       <li>Select a clip and use the Inspector to size, crop, fade or adjust
@@ -3545,8 +3562,13 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       <li>Not every browser build includes H.264 and AAC, which are patented.
           Where they are missing, the export falls back to a .webm file using
           VP9 and Opus. It plays anywhere modern and converts to MP4 easily.</li>
-      <li>Decoded audio is held in memory so it can be mixed for export. Very
-          long sources will use a lot of RAM.</li>
+      <li><strong>Long recordings.</strong> Two things still hold a whole file
+          in this tab's memory: decoding a file's sound (about 23 MB a minute,
+          uncompressed) and an export (the finished video is built in memory
+          before it downloads). Files under 30 minutes and 1.5 GB, and exports
+          under about 1.5 GB, are safest. VIDEDTR warns when you import a file
+          past that, and when an export's estimated size is; trim a long
+          recording or work on it in parts.</li>
       <li>Frame-accurate seeking depends on the source file. Variable frame rate
           recordings (phones, some screen recorders) can drift slightly.</li>
       <li>Icons are <a style="color:var(--accent)">Lucide</a> (lucide.dev), used
@@ -4439,6 +4461,36 @@ function classifyFile(file) {
   return null;
 }
 
+/* --- Size warnings (3.31) ------------------------------------------------
+ * A browser tab has far less memory than a desktop editor. Two things in
+ * VIDEDTR still hold a whole file at once: decoding a file's sound (the
+ * whole file is read, and the sound kept uncompressed, about 23 MB a minute)
+ * and an export (the finished video is built in memory before it downloads).
+ * Past these sizes, either can fail - a silent export, or a tab that runs out
+ * of memory - so VIDEDTR says so up front instead of letting someone wait an
+ * hour to find out. They are warnings, not limits: nothing is refused. */
+const BIG_FILE_BYTES = 1.5 * 1024 * 1024 * 1024;   // 1.5 GB
+const BIG_FILE_SECONDS = 30 * 60;                  // 30 minutes
+const BIG_EXPORT_BYTES = 1.5 * 1024 * 1024 * 1024; // 1.5 GB
+
+/** Why this media file is big enough to worry about, or null. */
+function bigFileReason(media) {
+  if (!media || (media.kind !== "video" && media.kind !== "audio")) return null;
+  const parts = [];
+  if (media.duration > BIG_FILE_SECONDS) parts.push(Math.round(media.duration / 60) + " minutes");
+  if (media.size > BIG_FILE_BYTES) parts.push(fileSize(media.size));
+  return parts.length ? parts.join(", ") : null;
+}
+
+/** The warning itself, in words, for the toast and the Inspector. */
+function bigFileWarning(media) {
+  return '"' + media.name + '" is a long file (' + bigFileReason(media) + "). "
+    + "Very long files can run out of browser memory: its sound may not decode "
+    + "(the export would be silent), and an export over about 1.5 GB may fail. "
+    + "Under 30 minutes and 1.5 GB is safest - trim the recording, or split it "
+    + "into parts, before you import it.";
+}
+
 /**
  * Import one file into the media pool.
  * Returns the media record, or null if the browser cannot decode it.
@@ -4512,6 +4564,8 @@ async function importFile(file, options) {
   renderMediaPool();
   // The first video or picture can decide the project's shape (3.23).
   adoptShapeFrom(media);
+  // A very long or very big file gets a warning now, not a failure later (3.31).
+  if (bigFileReason(media)) toast(bigFileWarning(media), "warn", 14000);
 
   // Audio decoding happens in the background - it can take a few seconds on a
   // long file and there is no reason to make the user wait to start editing.
@@ -4723,6 +4777,7 @@ function silentClipReport() {
   const failed = [], stillDecoding = [], mutedTracks = [];
   for (const { clip, track } of allClips()) {
     if (clip.kind !== "video" && clip.kind !== "audio") continue;
+    if (clip.audioDetached) continue;                 // silent on purpose (3.28)
     const media = state.media.get(clip.mediaId);
     if (!media) continue;
     // Muting a track is easy to do while scrubbing and easy to forget, and it
@@ -6185,6 +6240,60 @@ function splitClipAt(clip, track, cutAt) {
   track.clips.push(right);
   releaseClipRuntime(clip.id);   // its out point moved, so it must re-seek
   return right;
+}
+
+/**
+ * Separate a video clip's sound onto an audio track (3.28).
+ *
+ * The sound becomes an ordinary audio clip of the same file: the same moment
+ * on the timeline, the same piece of the file (in point, length and speed),
+ * the same volume and fades - so nothing you hear changes. From then on the
+ * two are independent: split, trim, move or fade the sound without touching
+ * the picture, delete it, or slide it to fix sync. The video clip is marked
+ * `audioDetached` and plays silent, so the sound is never heard twice.
+ *
+ * The sound goes on the first ordinary audio track (not a SOUND FX one) that
+ * is free for that stretch of time; if none is, a new audio track is made
+ * just below the others.
+ */
+function separateAudio(clipId) {
+  const found = findClip(clipId);
+  if (!found || found.clip.kind !== "video") return null;
+  const clip = found.clip;
+  const media = state.media.get(clip.mediaId);
+  if (!media) { toast("Reconnect this clip's file first.", "warn"); return null; }
+  if (clip.audioDetached) { toast("This clip's sound is already separate.", "warn"); return null; }
+  if (media.audioState === "none") { toast("This clip has no sound to separate.", "warn"); return null; }
+
+  pushUndo("separate sound");
+  const tracks = state.project.tracks;
+  const ordinary = tracks.filter((t) => t.kind === "audio" && !t.sfx);
+  let track = ordinary.find((t) => isRangeFree(t, clip.start, clip.duration));
+  if (!track) {
+    track = {
+      id: uid("trk"), kind: "audio",
+      name: "Audio " + (ordinary.length + 1),
+      muted: false, hidden: false, clips: [],
+    };
+    // Just after the last ordinary audio track, so SOUND FX tracks stay at the bottom.
+    const last = ordinary.length ? tracks.indexOf(ordinary[ordinary.length - 1]) : tracks.length - 1;
+    tracks.splice(last + 1, 0, track);
+  }
+
+  const sound = makeClip(media, "audio", clip.start, clip.duration, clip.inPoint);
+  sound.start = clip.start;              // exactly - makeClip snaps to a frame, and so is clip.start
+  sound.speed = clip.speed;
+  sound.volume = clip.volume;
+  sound.fadeIn = clip.fadeIn;
+  sound.fadeOut = clip.fadeOut;
+  if (clip.label) sound.label = clip.label;
+  track.clips.push(sound);
+  clip.audioDetached = true;
+
+  renderAll();
+  toast("Sound separated onto " + track.name + ". Split, trim, move or fade it on its own.", "good", 6000);
+  announce("Sound separated onto " + track.name + ".");
+  return sound;
 }
 
 /** Split just the selected clip at the playhead. */
@@ -9726,7 +9835,9 @@ function syncPlayback(time) {
 
     // Volume: the clip's own level, shaped by its fades, muted if the track is.
     if (rt.gain) {
-      const level = track.muted ? 0 : (clip.volume || 0) * fadeFactor(clip, time);
+      // A video clip whose sound now lives on an audio track (3.28) is
+      // held silent here, so the sound is never heard twice.
+      const level = track.muted || clip.audioDetached ? 0 : (clip.volume || 0) * fadeFactor(clip, time);
       rt.gain.gain.value = clamp(level, 0, 2);
     }
   }
@@ -12175,8 +12286,10 @@ function buildClipElement(clip, track) {
     node.appendChild(chip);
   }
 
-  // Waveform, when we have decoded peaks for this media.
-  if (media && media.peaks && width > 14) {
+  // Waveform, when we have decoded peaks for this media - and not on a video
+  // clip whose sound has gone to its own clip (3.28): the waveform is a
+  // promise that this clip makes that sound.
+  if (media && media.peaks && width > 14 && !clip.audioDetached) {
     node.appendChild(buildWaveformCanvas(clip, media, width));
   }
 
@@ -13274,13 +13387,35 @@ function renderInspector() {
               : "Still decoding audio\u2026 the waveform and export mix will "
                 + "appear shortly." }));
       }
+      // 3.28: a video clip's sound can be separated onto an audio track.
+      if (clip.kind === "video" && clip.audioDetached) {
+        panel.appendChild(el("div", { class: "note",
+          text: "This clip's sound was separated onto an audio track, as a clip of its own, "
+              + "so this clip plays silent. Edit the sound there." }));
+        panel.appendChild(el("button", { text: "Use this clip's own sound again",
+          style: "width:100%;justify-content:center",
+          title: "Play this clip's sound again (delete the separate sound clip if you no longer want it)",
+          onclick: () => {
+            pushUndo("rejoin sound");
+            clip.audioDetached = false;
+            renderAll();
+            toast("This clip plays its own sound again. If the separate sound clip is still on the timeline, delete it, or you will hear both.", "", 7000);
+          } }));
+        return;
+      }
       panel.appendChild(sliderField("Volume", {
         min: 0, max: 2, step: 0.01, value: clip.volume,
         format: (v) => Math.round(v * 100) + "%",
         onInput: (v) => { beginEdit(); clip.volume = v; },
         onCommit: commitEdit,
       }));
-    }, clip.volume !== 1));
+      if (clip.kind === "video" && media && media.audioState !== "none") {
+        panel.appendChild(el("button", { text: "Separate the sound",
+          style: "width:100%;justify-content:center;margin-top:6px",
+          title: "Put this clip's sound on an audio track as a clip of its own, to move, trim, split or fade it on its own",
+          onclick: () => separateAudio(clip.id) }));
+      }
+    }, clip.volume !== 1 || !!clip.audioDetached));
   }
 
   /* --- TRANSITIONS --- */
@@ -13335,6 +13470,12 @@ function renderInspector() {
     panel.appendChild(el("div", { style: "display:grid;gap:6px" }, [
       el("button", { text: "Split at playhead  (S)", style: "justify-content:center",
         onclick: splitSelectedClip }),
+      // 3.28: only for a video clip that still has its sound.
+      ...(clip.kind === "video" && !clip.audioDetached && !(media && media.audioState === "none")
+        ? [el("button", { text: "Separate the sound", style: "justify-content:center",
+            title: "Put this clip's sound on an audio track as a clip of its own",
+            onclick: () => separateAudio(clip.id) })]
+        : []),
       el("button", { text: "Duplicate", style: "justify-content:center",
         onclick: () => {
           pushUndo("duplicate clip");
@@ -14337,6 +14478,11 @@ function renderMediaInspector(body, media) {
   if (media.path) {
     body.appendChild(el("div", { class: "media-sub", style: "color:var(--text-dim);overflow-wrap:anywhere;margin:-6px 0 10px",
       text: "Imported from " + media.path }));
+  }
+
+  /* --- A very long or big file (3.31) --- */
+  if (bigFileReason(media)) {
+    body.appendChild(el("div", { class: "note warn", text: bigFileWarning(media) }));
   }
 
   /* --- How many clips use it --- */
@@ -15823,6 +15969,10 @@ function validateProject(raw) {
           shadow: rawText.shadow !== false,
         };
       }
+
+      // A video clip whose sound has been separated onto an audio track
+      // (3.28) plays silent. Only `true` counts; nothing else is kept.
+      if (clipKind === "video" && rawClip.audioDetached === true) clip.audioDetached = true;
 
       // Fades can never be longer than half the clip.
       clip.fadeIn = Math.min(clip.fadeIn, clip.duration / 2);
@@ -18699,6 +18849,7 @@ async function renderAudioMix(durationSeconds, sampleRate) {
   for (const { clip, track } of allClips()) {
     if (track.muted) continue;
     if (clip.kind !== "video" && clip.kind !== "audio") continue;
+    if (clip.audioDetached) continue;                 // its sound is on an audio track (3.28)
     const media = state.media.get(clip.mediaId);
     if (!media || !media.audioBuffer) continue;      // no decoded audio -> silent
 
@@ -19923,6 +20074,36 @@ function renderSuiteCredits(container) {
   const links = suiteEl('p', 'suite-credits-links');
   links.append(suiteLinksLine());
   container.append(made, by, row, links);
+
+  // The source code, front and centre: a box with a clear GitHub button at
+  // the TOP of the About tab (the credits themselves sit lower down), so
+  // nobody has to hunt for it. Falls back to the top of the credits when
+  // the credits are not inside a tab panel.
+  const source = suiteSourceBox();
+  const pane = container.closest('[role="tabpanel"]');
+  const old = pane && pane.querySelector(':scope > .suite-source');
+  if (old) old.remove();                                  // drawn before: replace it
+  if (pane) pane.prepend(source); else container.prepend(source);
+}
+
+/* "Free and open source" with a big "View the source on GitHub" button. */
+function suiteSourceBox() {
+  const box = suiteEl('section', 'suite-source');
+  box.setAttribute('aria-label', 'Source code');
+  const words = suiteEl('p', 'suite-source-words');
+  words.append(suiteEl('strong', '', 'Free and open source. '),
+    'Every line of this app is on GitHub under the ' + SUITE_LINKS.license + ' license: read how it works, use it, change it, share it. ' +
+    'It runs in your browser, keeps your files on your device, needs no sign-in and works offline.');
+  const btn = suiteLink(SUITE_LINKS.source.url, '', 'suite-source-btn');
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  // The GitHub mark (Lucide's line version) - a fixed drawing, not data.
+  icon.innerHTML = '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>';
+  btn.append(icon, document.createTextNode('View the source on GitHub'), suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  box.append(btn, words);
+  return box;
 }
 
 /* The one-line version, for the foot of the splash screen. */
@@ -20957,6 +21138,19 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: "3.32", date: "2026-10-11", notes: [
+    "About now starts with a \"View the source on GitHub\" button: every app is free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in and works offline.",
+    "The top bar is now the family's standard 52px tall, and Inspector headings and labels match IMGEDTR (12px bold capitals, 13px labels)."
+  ] },
+  { version: "3.31", date: "2026-10-11", notes: [
+    "Warnings for very long files: importing a file over 30 minutes or 1.5 GB says, up front, that its sound may not decode (a silent export) and that big exports can fail - and suggests trimming or working in parts. The same note stays in the Inspector for that file.",
+    "The Export box warns when the finished file would be over about 1.5 GB, since it is built in the tab's memory before it downloads, and suggests lowering the quality or exporting in parts.",
+  ] },
+  { version: "3.30", date: "2026-10-11", notes: [
+    "Separate the sound: a video clip's sound can go onto an audio track as a clip of its own (Inspector, under Sound or Actions). Split, trim, move or fade it without touching the picture.",
+    "Nothing you hear changes when you separate it: same moment, same piece of the file, same volume, speed and fades. The video clip then plays silent, and its waveform goes with the sound.",
+    "Use this clip's own sound again (under Sound) undoes it later; Ctrl+Z undoes it straight away.",
+  ] },
   { version: "3.29", date: "2026-10-10", notes: [
     "A new splash: a picture of VIDEDTR in use across the top, a picture on each way to begin, and a smaller, quieter \"Pick up where you left off\". The splash and About now link to edtrapps.com, home of every app in the family, and to the source on GitHub (free and open source, MIT license)."
   ] },
@@ -21316,6 +21510,16 @@ function updateExportEstimate() {
   estimate.textContent =
     timecode(duration, fps) + " long · " + frames + " frames · roughly " +
     fileSize(sizeBytes) + ".";
+  // 3.31: the finished file is built in this tab's memory before it
+  // downloads, so a very big one can crash the tab. Say so before, not after.
+  const big = sizeBytes > BIG_EXPORT_BYTES;
+  estimate.classList.toggle("warn", big);
+  if (big) {
+    estimate.textContent += " That is big for a browser: the finished file is built in "
+      + "this tab's memory before it downloads, and over about 1.5 GB the tab may run "
+      + "out of memory. Lower the quality or resolution, or export it in parts (Delete "
+      + "the rest, export, then Undo).";
+  }
 }
 
 /**
@@ -22123,7 +22327,7 @@ function init() {
 /* The single source of truth for the version. The header, the help dialog and
    every saved project file read it from here, so there is exactly one line to
    change at release and no way for them to disagree. */
-const APP_VERSION = "3.29";
+const APP_VERSION = "3.32";
 const APP_BUILT = "2026-09-26";
 
 /* ===========================================================================

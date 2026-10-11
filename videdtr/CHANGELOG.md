@@ -12,6 +12,25 @@ refreshes the page inside it, and Check for updates compares the server's
 Releases before 3.4 went out without notes. Rather than guess at them, this
 file starts at 3.4.
 
+## 3.32 - 2026-10-11 - The source, front and center
+
+- **The top bar is the family's standard 52px tall**, and Inspector headings and labels match IMGEDTR's (headings 12px bold capitals with .08em spacing, labels 13px).
+- **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `suiteSourceBox()`, drawn by `renderSuiteCredits()`).
+
+## 3.31 - 2026-10-11 - Warnings for very long files
+
+- **Importing a very long or big file warns.** Over 30 minutes or 1.5 GB, a toast says what can go wrong: its sound may not decode (so the export would be silent) and a big export may fail. It suggests trimming the recording or working on it in parts. The same note stays in the Inspector when that file is selected in the Media Pool. Nothing is refused.
+- **The Export box warns about big exports.** When the estimated file is over about 1.5 GB, the estimate turns into a warning: the finished video is built in the tab's memory before it downloads, so the tab may run out of memory. Lower the quality or resolution, or export in parts.
+- Why these numbers: decoding a file's sound reads the whole file and keeps the sound uncompressed (about 23 MB a minute), and an export is assembled in memory (about 60 MB a minute at the default quality). Help > Known limits explains the same. The next step is to remove both limits: decode sound a piece at a time, and write exports straight to disk where the browser allows it (Chrome and Edge).
+
+## 3.30 - 2026-10-11 - Separate the sound
+
+- **Separate the sound.** A video clip's sound can now go onto an audio track as a clip of its own: Inspector > Sound or Actions > Separate the sound. Split, trim, move, fade or delete the sound without touching the picture, or slide it to fix sync.
+- **Nothing you hear changes** when you do it: the new audio clip has the same start, the same piece of the file (in point, length and speed), the same volume and fades. It goes on the first ordinary audio track free for that stretch (never a SOUND FX track), or a new audio track just below the others.
+- The video clip is marked `audioDetached` and plays silent, in the preview and in the export, so the sound is never heard twice. Its waveform moves to the sound clip. A project saved with a separated clip keeps it separated (only `true` is read back).
+- **Use this clip's own sound again** (under Sound) switches the video clip's sound back on later; Ctrl+Z undoes a separation straight away.
+
 ## 3.29 - 2026-10-10 - A new splash
 
 - **A picture of VIDEDTR in use across the top of the splash** - the same picture as on edtrapps.com, built into the app (as a data: URI), so it shows offline too. With it, the small icon beside the name goes, since the picture already shows it.
