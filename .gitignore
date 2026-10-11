@@ -1,0 +1,6 @@
+# Apps kept only on the local machine (not published in this repo)
+gamedtr/
+
+# macOS
+.DS_Store
+Icon

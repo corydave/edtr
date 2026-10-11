@@ -168,7 +168,6 @@ scrncstr/     SCRNCSTR
 vctredtr/     VCTREDTR
 3dedtr/       3DEDTR
 dskedtr/      DSKEDTR
-gamedtr/      GAMEDTR (in development)
 apps-landing/ the apps page, with the screenshots used above
 ```
 
