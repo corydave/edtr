@@ -1779,6 +1779,20 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     .field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--amber); justify-self: start; }
     .field select:focus-visible, .field input:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
     .hint { color: var(--text-mid); font-size: 12.5px; line-height: 1.45; margin: -2px 0 14px; }
+    .field > .label { color: var(--text-mid); font-size: 13px; }
+    .field input[type="number"] { width: 100px; height: 34px; padding: 0 8px; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; }
+    /* Two radio buttons that look like one switch (Portrait | Landscape). */
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; justify-self: start; }
+    .seg label { position: relative; padding: 6px 12px; cursor: pointer; font-size: 13px; color: var(--text); }
+    .seg label + label { border-left: 1px solid var(--border); }
+    .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+    .seg label:has(input:checked) { background: var(--amber); color: var(--on-amber); }
+    .seg label:has(input:focus-visible) { outline: 3px solid var(--amber); outline-offset: 1px; }
+    .dlg-foot .btn-ghost { height: 36px; padding: 0 16px; font-size: 14px; border-radius: var(--r-lg); }
+    /* A warning in the Inspector (things a redaction will switch off). */
+    #inspector #context-bar .insp-warn { padding: 8px 10px; border-radius: 8px; color: var(--text);
+      background: color-mix(in srgb, #f59e0b 16%, transparent); border: 1px solid color-mix(in srgb, #f59e0b 50%, transparent); }
     @media (max-width: 420px) { .field { grid-template-columns: 1fr; gap: 4px; } }
 
     /* ── Tooltips (1.13) ──
@@ -1811,6 +1825,57 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     .insp-note { font-size: 13px; color: var(--text); font-family: var(--font-ui); }
     #inspector #context-bar .insp-help { flex-basis: 100%; margin: 4px 0 0; font-size: 12.5px; line-height: 1.45;
       color: var(--text-mid); font-family: var(--font-ui); }
+
+    /* ═══════════════════════════════════════════════════
+       INSPECTOR PARITY (1.17) - IMGEDTR's sizes: 12px bold
+       uppercase headings, 13px labels and hints, 30px
+       controls, and its action bar of icon buttons.
+    ═══════════════════════════════════════════════════ */
+    #inspector { font-family: var(--font-ui); font-size: 14px; }
+    #inspector .insp-section { padding: 12px; }
+    #inspector .insp-title {
+      margin: 0 0 10px; font-family: var(--font-ui); font-size: 12px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase; color: var(--text-mid);
+    }
+    #inspector .insp-empty { font-size: 13px; line-height: 1.45; color: var(--text-mid); }
+    #inspector #context-bar { gap: 8px; }
+    #inspector #context-bar .insp-row { grid-template-columns: 96px 1fr; gap: 8px; margin: 0; }
+    #inspector .insp-label { font-size: 13px; }
+    #inspector .ctx-input, #inspector .ctx-select { height: 30px; font-size: 13px; border-radius: 6px; background: var(--surface); }
+    #inspector .ctx-input.wide { width: 100%; min-width: 0; }
+    #inspector .insp-textarea { height: auto; min-height: 52px; width: 100%; padding: 6px 8px; resize: vertical; font-family: var(--font-ui); line-height: 1.4; }
+    #inspector .ctx-btn { height: 30px; min-width: 32px; font-size: 13px; }
+    #inspector .ctx-btn svg.icon { width: 18px; height: 18px; }
+    #inspector .ctx-btn.on { background: var(--amber); color: var(--on-amber); border-color: var(--amber); }
+    #inspector .ctx-val { font-family: var(--font-ui); font-size: 12px; min-width: 40px; }
+    .insp-unit { font-size: 12px; color: var(--text-mid); }
+    /* A slider row: the slider takes the room, the value stays in view. */
+    #inspector .insp-ctl > div:has(> .ctx-range) { flex: 1; min-width: 0; }
+    #inspector .insp-ctl .ctx-range { min-width: 0; }
+    #inspector #context-bar .insp-row { grid-template-columns: 88px minmax(0, 1fr); }
+    /* The action bar: a full-width strip, the same as IMGEDTR's layer actions. */
+    #inspector .insp-actions {
+      flex-basis: 100%; display: flex; justify-content: space-between; align-items: center;
+      margin: -2px -12px 6px; padding: 4px 8px; background: var(--surface);
+      border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft);
+    }
+    #inspector .insp-actions .ctx-btn { height: 32px; min-width: 36px; color: var(--text); }
+    #inspector .insp-actions .ctx-btn.del { color: var(--red); }
+    /* X / Y / W / H, two to a line. */
+    .insp-xywh { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
+    .insp-xy { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-mid); }
+    .insp-xy span { width: 12px; }
+    .insp-xy input { flex: 1; min-width: 0; width: 100% !important; }
+
+    /* Right-click menus (1.17): the app's menu look, with shortcuts on the right. */
+    .ctx-menu { min-width: 220px; padding: 4px; z-index: 250; }
+    .ctx-menu .fm-item { gap: 10px; font-size: 13.5px; padding: 7px 10px; color: var(--text); }
+    .ctx-menu .fm-item svg.icon { width: 17px; height: 17px; opacity: .85; }
+    .ctx-menu .ctx-menu-label { flex: 1; }
+    .ctx-menu kbd { font-family: var(--font-ui); font-size: 11.5px; color: var(--text-mid); }
+    .ctx-menu .fm-item.danger { color: var(--red); }
+    .ctx-menu .fm-item[aria-disabled="true"] { opacity: .4; cursor: default; }
+    .ctx-menu .fm-item:focus-visible { outline: 3px solid var(--amber); outline-offset: -3px; }
 
     /* ═══════════════════════════════════════════════════
        PHONE LAYOUT (1.15) - mobile first, the same as IMGEDTR:
@@ -2012,6 +2077,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   <!-- Everything else scrolls sideways on a narrow screen instead of wrapping. -->
   <div class="topbar-scroll">
     <div class="h-group" role="group" aria-label="File">
+      <button class="icon-btn" id="btn-new" data-tip="New PDF: start from blank pages" aria-label="New PDF" aria-haspopup="dialog"><span data-icon="newDoc"></span></button>
       <button class="icon-btn" id="btn-open" data-tip="Open a PDF" data-keys="Ctrl+O" aria-label="Open a PDF"><span data-icon="folder"></span></button>
     </div>
     <div class="h-sep" aria-hidden="true"></div>
@@ -2128,8 +2194,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
        pages. Click or tap a page and the page pill opens above it. -->
   <aside id="sidebar" class="filmstrip" aria-label="Pages">
     <div class="film-tools" role="group" aria-label="Add pages">
-      <button class="icon-btn" id="btn-add-blank" disabled data-tip="Add a blank page after this one" aria-label="Add a blank page after this one"><span data-icon="plus"></span></button>
-      <button class="icon-btn" id="btn-insert-pdf" disabled data-tip="Insert another PDF after this page" aria-label="Insert another PDF after this page"><span data-icon="fileInsert"></span></button>
+      <button class="icon-btn" id="btn-add-blank" data-tip="Add a blank page after this one" aria-label="Add a blank page after this one"><span data-icon="plus"></span></button>
+      <button class="icon-btn" id="btn-insert-pdf" data-tip="Insert another PDF after this page" aria-label="Insert another PDF after this page"><span data-icon="fileInsert"></span></button>
     </div>
     <div id="page-list" role="listbox" aria-label="Pages" aria-orientation="horizontal" aria-multiselectable="true" aria-describedby="film-help"></div>
     <!-- The page pill: opens above a page when it is clicked or tapped (or
@@ -2308,6 +2374,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
         <tr><td><kbd>Ctrl</kbd>+click / <kbd>Shift</kbd>+click a page</td><td>Pick several pages; the page pill acts on all of them</td></tr>
         <tr><td><kbd>&uarr;</kbd> <kbd>&darr;</kbd> in the tool rail</td><td>Move between tools</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></td><td>Copy, cut, paste the selected element</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Duplicate the selected element</td></tr>
+        <tr><td>Right-click, or <kbd>Shift</kbd>+<kbd>F10</kbd></td><td>A menu of actions for the selected element, or for the spot on the page you clicked (press and hold on a touch screen)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Redo (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Open a PDF</td></tr>
@@ -2391,6 +2459,43 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       <p class="hint" id="set-keep-hint">On: after you place a red X, a checkmark, a highlight, a shape or a form field, the same tool stays ready for the next one - handy for marking a whole page. Off: PDFEDTR goes back to Select, so you can adjust what you just placed.</p>
     </div>
     <div class="dlg-foot"><button class="btn btn-primary" value="ok">Done</button></div>
+  </form>
+</dialog>
+
+<!-- ══════════ NEW PDF (1.17) ══════════
+     Start a PDF from blank pages: a quick handout, a sign-up sheet, or a
+     form to fill in. Pages can be added, moved and turned afterwards. -->
+<dialog id="new-dlg" class="app-dlg" aria-labelledby="new-title">
+  <form method="dialog" id="new-form">
+    <div class="dlg-head">
+      <h2 id="new-title">New PDF</h2>
+      <button type="button" class="icon-btn" data-close aria-label="Close"><span data-icon="x"></span></button>
+    </div>
+    <div class="dlg-body">
+      <div class="field">
+        <label for="new-size">Page size</label>
+        <select id="new-size">
+          <option value="letter">Letter (8.5 × 11 in)</option>
+          <option value="legal">Legal (8.5 × 14 in)</option>
+          <option value="tabloid">Tabloid (11 × 17 in)</option>
+          <option value="a4">A4 (210 × 297 mm)</option>
+          <option value="a5">A5 (148 × 210 mm)</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="label" id="new-orient-label">Orientation</span>
+        <div class="seg" role="radiogroup" aria-labelledby="new-orient-label">
+          <label><input type="radio" name="new-orient" value="portrait" checked> Portrait</label>
+          <label><input type="radio" name="new-orient" value="landscape"> Landscape</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="new-pages">Pages</label>
+        <input type="number" id="new-pages" min="1" max="100" value="1" inputmode="numeric">
+      </div>
+      <p class="hint">Then add text, shapes, form fields and more. The + under the pages adds another blank page any time.</p>
+    </div>
+    <div class="dlg-foot"><button type="button" class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" value="ok" id="new-create">Create PDF</button></div>
   </form>
 </dialog>
 
@@ -2487,6 +2592,15 @@ const ICONS = {
   spotlight:   '<rect x="2" y="4" width="20" height="16" rx="2" stroke-dasharray="2 2.2"/><circle cx="12" cy="12" r="4.5"/>',
   magnifier:   '<circle cx="10" cy="10" r="7"/><path d="m21 21-6-6"/><path d="M7 10h6M10 7v6"/>',
   redact:      '<rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M6 10h8M6 14h12" stroke-width="3"/>',
+  // The Inspector's action bar and text alignment (1.17) - IMGEDTR's drawings.
+  up:          '<path d="m18 15-6-6-6 6"/>',
+  down:        '<path d="m6 9 6 6 6-6"/>',
+  top:         '<path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/>',
+  bottom:      '<path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/>',
+  alignTextL:  '<path d="M21 6H3"/><path d="M15 12H3"/><path d="M17 18H3"/>',
+  alignTextC:  '<path d="M21 6H3"/><path d="M17 12H7"/><path d="M19 18H5"/>',
+  alignTextR:  '<path d="M21 6H3"/><path d="M21 12H9"/><path d="M21 18H7"/>',
+  newDoc:      '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/>',
   flipH:       '<path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 20v2"/><path d="M12 14v2"/><path d="M12 8v2"/><path d="M12 2v2"/>',
   flipV:       '<path d="m17 3-5 5-5-5h10"/><path d="m17 21-5-5-5 5h10"/><path d="M4 12H2"/><path d="M10 12H8"/><path d="M16 12h-2"/><path d="M22 12h-2"/>',
   help:        '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
@@ -2542,6 +2656,8 @@ const SETTINGS_DEFAULTS = {
   openZoom: 'fit',     // how big a PDF opens: 'fit' (page width, at most 150%), '1', '1.5'
   sheet: 1 / 3,        // phones: where the top of the Inspector sheet sits, as a share of the screen (1.15)
   scrollPages: true,   // scrolling past the end of a page goes to the next one (1.16)
+  newSize: 'letter',   // the last page size picked for a new PDF (1.17)
+  newOrient: 'portrait',
 };
 const settings = loadSettings();
 
@@ -2556,6 +2672,8 @@ function loadSettings() {
     if (['fit', '1', '1.5'].includes(saved.openZoom)) out.openZoom = saved.openZoom;
     if (typeof saved.sheet === 'number' && saved.sheet > 0.1 && saved.sheet < 0.95) out.sheet = saved.sheet;
     if (typeof saved.scrollPages === 'boolean') out.scrollPages = saved.scrollPages;
+    if (['letter', 'legal', 'tabloid', 'a4', 'a5'].includes(saved.newSize)) out.newSize = saved.newSize;
+    if (['portrait', 'landscape'].includes(saved.newOrient)) out.newOrient = saved.newOrient;
   } else {
     // First run of 1.13: carry over the theme the old toggle saved.
     try {
@@ -2633,6 +2751,7 @@ const state = {
   editingLive: false,
 
   nameCounter: 0, // gives each new object a default name like "Text 3"
+  seqCounter:  0, // counts up as steps are placed, so they number in that order (1.17)
 
   // Pages (1.15): each page's extra turn, the pages picked in the filmstrip,
   // and copied pages waiting to be pasted.
@@ -2675,6 +2794,7 @@ const dom = {
   shapeIcon:    document.getElementById('shape-icon'),
   fieldIcon:    document.getElementById('field-icon'),
   canvasArea:   document.getElementById('canvas-area'),
+  inspTitle:    document.getElementById('insp-props-title'),
   zoomOut:      document.getElementById('btn-zoom-out'),
   zoom100:      document.getElementById('btn-zoom-100'),
   zoomIn:       document.getElementById('btn-zoom-in'),
@@ -3849,10 +3969,7 @@ function buildOverlayEl(ov, cw, ch) {
   } else if (ov.type === 'magnifier') {
     buildMagnifierEl(el, ov, cw, ch);
   } else if (ov.type === 'redact') {
-    const box = document.createElement('div');
-    box.className = 'ov-redact';
-    box.style.background = ov.fillColor || '#000000';
-    el.appendChild(box);
+    el.appendChild(buildRedactPreview(ov, cw, ch));
 
   } else if (ov.type === 'highlight') {
     // Semi-transparent coloured rectangle — no border needed, ov-item handles selection
@@ -3975,6 +4092,8 @@ function buildOverlayEl(ov, cw, ch) {
   del.className = 'ov-del';
   del.textContent = '×';
   del.setAttribute('aria-label', 'Remove element');
+  del.dataset.tip = 'Delete';
+  del.dataset.keys = 'Delete';
   del.addEventListener('click', e => { e.stopPropagation(); removeOverlay(ov.id); });
   el.appendChild(del);
 
@@ -3989,7 +4108,7 @@ function buildOverlayEl(ov, cw, ch) {
     const rot = document.createElement('button');
     rot.className = 'ov-rotate';
     rot.type = 'button';
-    rot.title = 'Drag to rotate - hold Shift to snap to 15°';
+    rot.dataset.tip = 'Drag to rotate - hold Shift to snap to 15°';
     rot.setAttribute('aria-label', 'Rotate image');
     wireRotate(rot, ov, el);
     el.appendChild(rot);
@@ -4644,7 +4763,11 @@ function stepNumberOf(ov) {
   for (const o of state.overlays) {
     if (o === ov || o.type !== 'step') continue;
     if (o.pageDisplayIndex < ov.pageDisplayIndex) n++;
-    else if (o.pageDisplayIndex === ov.pageDisplayIndex && state.overlays.indexOf(o) < state.overlays.indexOf(ov)) n++;
+    // On one page, in the order they were placed (seq), so bringing a step to
+    // the front does not change its number. (Steps from before seq existed
+    // fall back to their place in the list.)
+    else if (o.pageDisplayIndex === ov.pageDisplayIndex &&
+             (o.seq ?? state.overlays.indexOf(o)) < (ov.seq ?? state.overlays.indexOf(ov))) n++;
   }
   return n;
 }
@@ -4842,7 +4965,7 @@ function buildMagnifierEl(el, ov, cw, ch) {
   const k = dom.pageCanvas.width / cw;               // canvas pixels per screen pixel
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height);
   g.drawImage(dom.pageCanvas, spot.x * k, spot.y * k, spot.w * k, spot.h * k, 0, 0, cv.width, cv.height);
-  paintRedactions(g, ov.pageDisplayIndex, (fx) => (fx * cw - spot.x) / spot.w * cv.width, (fy) => (fy * ch - spot.y) / spot.h * cv.height, cv.width / spot.w * cw, cv.height / spot.h * ch);
+  paintRedactions(g, ov.pageDisplayIndex, (fx) => (fx * cw - spot.x) / spot.w * cv.width, (fy) => (fy * ch - spot.y) / spot.h * cv.height, cv.width / spot.w * cw, cv.height / spot.h * ch, cv.width / spot.w * state.scale);
   el.appendChild(cv);
   // 2. The border, the area's ring and the joining line, in one page-sized
   //    svg behind the callout (clicks pass through it).
@@ -4911,12 +5034,42 @@ function buildMagnifierEl(el, ov, cw, ch) {
  * fraction (for widths and heights). Used by the magnifier (screen and
  * download) and by the flattening of redacted pages.
  */
-function paintRedactions(g, slot, X, Y, sx, sy) {
+function paintRedactions(g, slot, X, Y, sx, sy, pxPerPt) {
   for (const r of state.overlays) {
     if (r.type !== 'redact' || r.pageDisplayIndex !== slot) continue;
-    g.fillStyle = r.fillColor || '#000000';
-    g.fillRect(X(r.fracLeft), Y(r.fracTop), r.fracW * sx, r.fracH * sy);
+    const x = X(r.fracLeft), y = Y(r.fracTop), w = r.fracW * sx, h = r.fracH * sy;
+    if (r.style === 'pixelate') pixelateArea(g, x, y, w, h, Math.max(2, (r.block || 10) * (pxPerPt || 1)));
+    else { g.fillStyle = r.fillColor || '#000000'; g.fillRect(x, y, w, h); }
   }
+}
+/**
+ * Pixelate (1.17, as in IMGEDTR): shrink an area of the canvas to a few
+ * coloured blocks and stretch them back up with no smoothing. `block` is the
+ * block size in canvas pixels. What is under the area is gone from the
+ * picture - only the blocks' average colours are left.
+ */
+function pixelateArea(g, x, y, w, h, block) {
+  if (w < 1 || h < 1) return;
+  const cols = Math.max(1, Math.ceil(w / block)), rows = Math.max(1, Math.ceil(h / block));
+  // Shrink in halves (each step averages 2 x 2 pixels), so each block really
+  // is the average of its area rather than a few sampled pixels.
+  let src = document.createElement('canvas');
+  src.width = Math.max(1, Math.round(w)); src.height = Math.max(1, Math.round(h));
+  src.getContext('2d').drawImage(g.canvas, x, y, w, h, 0, 0, src.width, src.height);
+  while (src.width / 2 >= cols && src.height / 2 >= rows) {
+    const half = document.createElement('canvas');
+    half.width = Math.max(cols, Math.round(src.width / 2)); half.height = Math.max(rows, Math.round(src.height / 2));
+    half.getContext('2d').drawImage(src, 0, 0, half.width, half.height);
+    src = half;
+  }
+  const tiny = document.createElement('canvas');
+  tiny.width = cols; tiny.height = rows;
+  tiny.getContext('2d').drawImage(src, 0, 0, cols, rows);
+  g.save();
+  g.beginPath(); g.rect(x, y, w, h); g.clip();              // the blocks never spill past the box
+  g.imageSmoothingEnabled = false;
+  g.drawImage(tiny, 0, 0, cols, rows, x, y, cols * block, rows * block);
+  g.restore();
 }
 
 /**
@@ -4925,17 +5078,38 @@ function paintRedactions(g, slot, X, Y, sx, sy) {
  * the drag is holding on to it). The spotlight's dim layer and the
  * magnifier's picture and lines depend on where the box is, too.
  */
-const TEACH_TYPES = ['step', 'cursor', 'spotlight', 'magnifier'];
+const TEACH_TYPES = ['step', 'cursor', 'spotlight', 'magnifier', 'redact'];
 function redrawTeach(el, ov) {
   if (!TEACH_TYPES.includes(ov.type)) return;
   const cw = pageW(), ch = pageH();
-  el.querySelectorAll('.ov-teach-svg, .ov-spot-dim, .ov-mag-canvas, .ov-mag-lines, .ov-mag-frame, .ov-mag-grip').forEach((n) => n.remove());
+  if (ov.type === 'redact' && ov.style !== 'pixelate') return;   // a solid box just stretches
+  el.querySelectorAll('.ov-teach-svg, .ov-spot-dim, .ov-mag-canvas, .ov-mag-lines, .ov-mag-frame, .ov-mag-grip, .ov-redact').forEach((n) => n.remove());
   const holder = document.createDocumentFragment();
   if (ov.type === 'step') holder.appendChild(buildStepSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale));
   else if (ov.type === 'cursor') holder.appendChild(buildCursorSvg(ov, ov.fracW * cw, ov.fracH * ch));
   else if (ov.type === 'spotlight') holder.appendChild(buildSpotlightSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale, cw, ch));
   else if (ov.type === 'magnifier') { const tmp = document.createElement('div'); buildMagnifierEl(tmp, ov, cw, ch); holder.append(...tmp.childNodes); }
+  else if (ov.type === 'redact') holder.appendChild(buildRedactPreview(ov, cw, ch));
   el.insertBefore(holder, el.firstChild);
+}
+
+/** A redaction on screen: a solid box, or the page under it pixelated (1.17). */
+function buildRedactPreview(ov, cw, ch) {
+  if (ov.style !== 'pixelate') {
+    const box = document.createElement('div');
+    box.className = 'ov-redact';
+    box.style.background = ov.fillColor || '#000000';
+    return box;
+  }
+  const W = ov.fracW * cw, H = ov.fracH * ch, k = dom.pageCanvas.width / cw;   // canvas pixels per screen pixel
+  const cv = document.createElement('canvas');
+  cv.className = 'ov-redact';
+  cv.width = Math.max(1, Math.round(W * k)); cv.height = Math.max(1, Math.round(H * k));
+  const g = cv.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height);
+  g.drawImage(dom.pageCanvas, ov.fracLeft * cw * k, ov.fracTop * ch * k, W * k, H * k, 0, 0, cv.width, cv.height);
+  pixelateArea(g, 0, 0, cv.width, cv.height, Math.max(2, (ov.block || 10) * state.scale * k));
+  return cv;
 }
 
 /** Redraw just one overlay in place (keeps it selected). */
@@ -5003,7 +5177,7 @@ async function drawMagnifierToPdf(outDoc, page, ov, pgW, pgH) {
                                   offsetX: -spot.x * scale, offsetY: -spot.y * scale });
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height);
   await jsPage.render({ canvasContext: g, viewport: vp }).promise;
-  paintRedactions(g, ov.pageDisplayIndex, (fx) => (fx * pgW - spot.x) * scale, (fy) => (fy * pgH - spot.y) * scale, pgW * scale, pgH * scale);
+  paintRedactions(g, ov.pageDisplayIndex, (fx) => (fx * pgW - spot.x) * scale, (fy) => (fy * pgH - spot.y) * scale, pgW * scale, pgH * scale, scale);
   // Cut it to the callout's shape (transparent outside), then embed it.
   const out = document.createElement('canvas');
   out.width = cv.width; out.height = cv.height;
@@ -5053,6 +5227,44 @@ async function drawMagnifierToPdf(outDoc, page, ov, pgW, pgH) {
 ══════════════════════════════════════════ */
 const REDACT_DPI = 200;
 
+/**
+ * What on page slot `slot` stops working when the page is flattened (1.17):
+ * links, radio buttons and other kinds of form field PDFEDTR does not bring
+ * in as its own (signature fields, buttons, list boxes), and comments. Text
+ * boxes, checkboxes and dropdowns are fine: PDFEDTR writes them back on top.
+ * Returns a list of plain phrases, e.g. ['2 links', 'radio buttons'].
+ */
+function redactLosses(slot) {
+  const out = [];
+  try {
+    const doc = state.pdfLibDoc, page = doc.getPage(state.pageOrder[slot]);
+    const annots = page.node.Annots();
+    let links = 0, notes = 0;
+    if (annots) {
+      for (let i = 0; i < annots.size(); i++) {
+        const a = doc.context.lookup(annots.get(i));
+        const sub = a && a.get && a.get(PDFLib.PDFName.of('Subtype'));
+        const name = sub ? sub.toString() : '';
+        if (name === '/Link') links++;
+        else if (['/Text', '/FreeText', '/Highlight', '/Underline', '/StrikeOut', '/Ink', '/Stamp'].includes(name)) notes++;
+      }
+    }
+    if (links) out.push(links === 1 ? 'a link' : links + ' links');
+    const kept = new Set(['textfield', 'checkbox', 'dropdown']);
+    const kinds = new Set();
+    for (const f of doc.getForm().getFields()) {
+      const kind = pdfFieldKind(f);
+      if (kept.has(kind)) continue;
+      let here = false;
+      try { here = f.acroField.getWidgets().some((w) => widgetOnPage(doc, page, w)); } catch { here = false; }
+      if (here) kinds.add(kind === 'radio' ? 'radio buttons' : 'other form fields');
+    }
+    out.push(...kinds);
+    if (notes) out.push(notes === 1 ? 'a comment' : notes + ' comments');
+  } catch (e) { console.warn('Could not check the page for links and fields', e); }
+  return out;
+}
+
 /** Is this widget annotation on this page? (Compares the page's annotation list.) */
 function widgetOnPage(outDoc, page, widget) {
   const annots = page.node.Annots();
@@ -5082,7 +5294,7 @@ async function flattenRedactedPage(outDoc, outForm, k, slot) {
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height);
   // ENABLE_FORMS: draw comments and other annotations, but not form fields.
   await jsPage.render({ canvasContext: g, viewport: vp, annotationMode: pdfjsLib.AnnotationMode.ENABLE_FORMS }).promise;
-  paintRedactions(g, slot, (fx) => fx * cv.width, (fy) => fy * cv.height, cv.width, cv.height);
+  paintRedactions(g, slot, (fx) => fx * cv.width, (fy) => fy * cv.height, cv.width, cv.height, scale);
   const png = await new Promise((res) => cv.toBlob(res, 'image/png'));
   const img = await outDoc.embedPng(new Uint8Array(await png.arrayBuffer()));
   // The new page is the size of the page AS IT LOOKS, and is not turned:
@@ -5331,7 +5543,7 @@ function wireMove(el, ov, rzHandle) {
       el.style.left = (ov.fracLeft * cw) + 'px';
       el.style.top  = (ov.fracTop  * ch) + 'px';
       renderGuideLines(snap.hGuides, snap.vGuides, cw, ch);
-      if (ov.type === 'spotlight' || ov.type === 'magnifier') redrawTeach(el, ov);   // their pictures depend on where they are
+      if (ov.type === 'spotlight' || ov.type === 'magnifier' || ov.type === 'redact') redrawTeach(el, ov);   // their pictures depend on where they are
       if (state.selectedId === ov.id) positionContextBar(el);
     };
     const up = () => {
@@ -5462,6 +5674,53 @@ function copyOverlay() {
   toast('Copied - Ctrl+V to paste');
 }
 
+/**
+ * Duplicate (1.17): a copy just below and to the right, selected, so it can
+ * be dragged straight away. Ctrl+D, or the Inspector's first button.
+ */
+function duplicateOverlay(ov) {
+  snapshot();
+  const copy = JSON.parse(JSON.stringify(ov));
+  copy.id = uid();
+  copy.seq = ++state.seqCounter;                   // a copied step is a new step
+  if (copy.fieldName) delete copy.fieldName;       // a field needs its own name in the PDF
+  if (['textfield', 'checkbox', 'dropdown'].includes(copy.type)) { state.fieldCounter++; copy.fieldName = `field_${state.fieldCounter}`; }
+  else setOverlayName(copy, uniqueOverlayName(overlayName(copy), copy.id));
+  const dx = 10 / (state.pageWpt || 612), dy = 10 / (state.pageHpt || 792);   // 10 points over and down
+  copy.fracLeft = Math.min(1 - copy.fracW, copy.fracLeft + dx);
+  copy.fracTop  = Math.min(1 - copy.fracH, copy.fracTop + dy);
+  if (copy.type === 'magnifier') { copy.sx = Math.min(1, copy.sx + dx); copy.sy = Math.min(1, copy.sy + dy); }
+  state.overlays.push(copy);
+  refreshOverlays();
+  selectOverlay(copy.id);
+}
+
+/**
+ * Arrange (1.17): what sits on top of what on a page. Things are drawn in
+ * the order they are listed, so moving one later in the list brings it
+ * forward. Only things on the same page count.
+ */
+function arrangeOverlay(ov, how) {
+  const list = state.overlays;
+  const samePage = list.filter(o => o.pageDisplayIndex === ov.pageDisplayIndex);
+  const pos = samePage.indexOf(ov);
+  let target = pos;
+  if (how === 'front') target = samePage.length - 1;
+  else if (how === 'back') target = 0;
+  else if (how === 'forward') target = Math.min(samePage.length - 1, pos + 1);
+  else if (how === 'backward') target = Math.max(0, pos - 1);
+  if (target === pos) { toast(how === 'front' || how === 'forward' ? 'Already at the front.' : 'Already at the back.'); return; }
+  snapshot();
+  samePage.splice(pos, 1);
+  samePage.splice(target, 0, ov);
+  // Put the page's things back into their slots in the full list, in the new order.
+  let k = 0;
+  state.overlays = list.map(o => o.pageDisplayIndex === ov.pageDisplayIndex ? samePage[k++] : o);
+  refreshOverlays();
+  selectOverlay(ov.id);
+  toast({ front: 'Brought to the front.', back: 'Sent to the back.', forward: 'Brought forward.', backward: 'Sent backward.' }[how]);
+}
+
 /** Copy then delete the selected overlay (cut). */
 function cutOverlay() {
   if (!state.selectedId) return;
@@ -5482,6 +5741,7 @@ function pasteOverlay() {
 
   const copy      = JSON.parse(JSON.stringify(state.clipboard));
   copy.id         = uid();
+  copy.seq        = ++state.seqCounter;            // a pasted step is a new step (1.17)
   copy.pageDisplayIndex = state.currentPage; // paste on whatever page is active
 
   // Give the copy its own name (e.g. "Header" -> "Header_01") so pasted
@@ -5499,11 +5759,9 @@ function pasteOverlay() {
   state.clipboard = JSON.parse(JSON.stringify(copy));
 
   // Add to DOM and select it so the user can immediately see and move it
-  const cw = pageW();
-  const ch = pageH();
-  const el = buildOverlayEl(copy, cw, ch);
-  dom.overlayEl.appendChild(el);
-  selectOverlay(copy.id, el);
+  // (all redrawn, so a pasted step's number shows correctly - 1.17).
+  refreshOverlays();
+  selectOverlay(copy.id);
 }
 
 /**
@@ -5668,6 +5926,7 @@ function createOverlay(type, extra = {}, rect) {
 
   /* Teacher tools (1.16): their usual look. */
   } else if (type === 'step') {
+    ov.seq       = ++state.seqCounter;            // the order steps were placed (numbers follow it)
     ov.fillColor = extra.fillColor ?? state.lastStepColor ?? '#d4400b';
     ov.textColor = '#ffffff';
     ov.ring      = true;
@@ -5695,6 +5954,8 @@ function createOverlay(type, extra = {}, rect) {
     ov.sy = extra.sy ?? (rect.fracTop + rect.fracH / 2);
   } else if (type === 'redact') {
     ov.fillColor = '#000000';
+    ov.style     = state.lastRedactStyle || 'solid';   // 'solid' or 'pixelate' (1.17)
+    ov.block     = 10;                                  // pixelate block size, in points
 
   } else {
     // field types
@@ -6105,6 +6366,7 @@ function hideContextBar() {
   state.hasSnapshotForCurrentEdit = false;
   document.querySelectorAll('.ov-item.sel').forEach(e => e.classList.remove('sel', 'editing'));
   dom.contextBar.hidden = true;
+  if (dom.inspTitle) dom.inspTitle.textContent = 'Properties';
 }
 
 /**
@@ -6222,7 +6484,7 @@ function wireBarDrag(gripEl, ov) {
       el.style.left = (ov.fracLeft * cw) + 'px';
       el.style.top  = (ov.fracTop  * ch) + 'px';
       renderGuideLines(snap.hGuides, snap.vGuides, cw, ch);
-      if (ov.type === 'spotlight' || ov.type === 'magnifier') redrawTeach(el, ov);   // their pictures depend on where they are
+      if (ov.type === 'spotlight' || ov.type === 'magnifier' || ov.type === 'redact') redrawTeach(el, ov);   // their pictures depend on where they are
       positionContextBar(el);
     };
     const up = () => {
@@ -6254,12 +6516,8 @@ function buildContextBar(ov) {
   wireBarDrag(grip, ov);
   bar.appendChild(grip);
 
-  /* ── Type label ── */
-  const typeLabel = document.createElement('span');
-  typeLabel.className = 'ctx-type';
-  typeLabel.textContent = TYPE_LABELS[ov.type] || ov.type;
-  bar.appendChild(typeLabel);
-  bar.appendChild((() => { const s = document.createElement('div'); s.className = 'ctx-sep'; return s; })());
+  /* ── The heading says what is selected, as in IMGEDTR ("Shape properties"). ── */
+  dom.inspTitle.textContent = (TYPE_LABELS[ov.type] || 'Element') + ' properties';
 
   /* ── Helpers ── */
   const label  = t  => { const s = document.createElement('span'); s.className = 'ctx-label'; s.textContent = t; return s; };
@@ -6284,7 +6542,7 @@ function buildContextBar(ov) {
   const inp  = (type, val, w, onInput) => {
     const i = document.createElement('input'); i.type = type;
     i.className = 'ctx-input'; i.value = val;
-    if (w) i.style.width = w;
+    if (w) i.style.width = w; else i.classList.add('wide');   // no width: fill the row
     // snapshot once on first keystroke, not on every character
     i.addEventListener('input', () => { snapshotOnce(); onInput(i.value); }); return i;
   };
@@ -6341,6 +6599,8 @@ function buildContextBar(ov) {
     // each dropdown change is discrete — snapshot immediately
     s.addEventListener('change', () => { snapshotOnce(); onChange(s.value); }); return s;
   };
+  /* A small unit after a number box ("pt", "°"). */
+  const unitLabel = (t) => { const u = document.createElement('span'); u.className = 'insp-unit'; u.textContent = t; return u; };
   /* One labelled row, like IMGEDTR's Properties: the label on the left,
      the control(s) on the right. (1.14) */
   const row = (text, ...controls) => {
@@ -6357,7 +6617,7 @@ function buildContextBar(ov) {
   };
   /* The family's colour swatches (IMGEDTR's), plus a "custom" swatch that
      opens the browser's colour picker. The chosen one gets a ring. (1.14) */
-  const swatches = (current, onPick) => {
+  const swatches = (current, onPick, list = SWATCHES) => {
     const wrap = document.createElement('div');
     wrap.className = 'swatches';
     wrap.setAttribute('role', 'group');
@@ -6368,17 +6628,17 @@ function buildContextBar(ov) {
     custom.type = 'color';
     custom.className = 'swatch-custom';
     custom.value = /^#[0-9a-f]{6}$/i.test(current) ? current : '#000000';
-    custom.title = 'Any colour';
+    custom.dataset.tip = 'Any colour';
     custom.setAttribute('aria-label', 'Any colour');
     custom.addEventListener('input', () => choose(custom.value.toLowerCase()));
     wrap.appendChild(custom);
-    SWATCHES.forEach(([hex, name]) => {
+    list.forEach(([hex, name]) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'swatch';
       b.dataset.color = hex;
       b.style.background = hex;
-      b.title = name;
+      b.dataset.tip = name;
       b.setAttribute('aria-label', name);
       b.addEventListener('click', () => choose(hex));
       wrap.appendChild(b);
@@ -6387,46 +6647,92 @@ function buildContextBar(ov) {
     return wrap;
   };
 
-  /* ═══════ TEXT overlay ═══════ */
+  /* ── The action bar (1.17), IMGEDTR's layer actions: duplicate, the four
+        arrange buttons (what sits on top of what), and delete. ── */
+  const acts = document.createElement('div');
+  acts.className = 'insp-actions';
+  acts.setAttribute('role', 'toolbar');
+  acts.setAttribute('aria-label', 'Arrange');
+  [['duplicate', 'Duplicate', 'Ctrl+D', () => duplicateOverlay(ov)],
+   ['top', 'Bring to front', null, () => arrangeOverlay(ov, 'front')],
+   ['up', 'Bring forward', null, () => arrangeOverlay(ov, 'forward')],
+   ['down', 'Send backward', null, () => arrangeOverlay(ov, 'backward')],
+   ['bottom', 'Send to back', null, () => arrangeOverlay(ov, 'back')],
+   ['trash', 'Delete', 'Delete', () => removeOverlay(ov.id)]].forEach(([icon, name, keys, run]) => {
+    const b = btn(iconHtml(icon), name, run, icon === 'trash' ? 'del' : '');
+    if (keys) b.dataset.keys = keys;
+    acts.appendChild(b);
+  });
+  bar.appendChild(acts);
+
+  /* ── Name (not for form fields: their name is in their own section) ── */
+  if (!['textfield', 'checkbox', 'dropdown'].includes(ov.type)) {
+    const nameInp = inp('text', ov.name || '', null, v => setOverlayName(ov, v));
+    nameInp.placeholder = 'Untitled';
+    nameInp.setAttribute('aria-label', 'Name');
+    bar.appendChild(row('Name', nameInp));
+  }
+
+  /* ── Where it is and how big, in points from the page's top-left (as IMGEDTR's X / Y / W / H). ── */
+  const geo = document.createElement('div');
+  geo.className = 'insp-xywh';
+  const pw = state.pageWpt || 612, ph = state.pageHpt || 792;
+  [['X', 'fracLeft', pw, 'Left edge'], ['Y', 'fracTop', ph, 'Top edge'], ['W', 'fracW', pw, 'Width'], ['H', 'fracH', ph, 'Height']].forEach(([lab, key, full, name]) => {
+    const wrap = document.createElement('label');
+    wrap.className = 'insp-xy';
+    const t = document.createElement('span'); t.textContent = lab;
+    const n = document.createElement('input');
+    n.type = 'number'; n.className = 'ctx-input'; n.step = '1';
+    n.value = Math.round(ov[key] * full);
+    n.setAttribute('aria-label', name + ' in points');
+    n.addEventListener('change', () => {
+      const v = parseFloat(n.value);
+      if (!Number.isFinite(v)) { n.value = Math.round(ov[key] * full); return; }
+      snapshotOnce();
+      if (key === 'fracW' || key === 'fracH') ov[key] = Math.max(4 / full, Math.min(1, v / full));
+      else ov[key] = Math.max(0, Math.min(1 - (key === 'fracLeft' ? ov.fracW : ov.fracH), v / full));
+      refreshOverlays();
+      const el = dom.overlayEl.querySelector(`[data-id="${ov.id}"]`);
+      if (el) el.classList.add('sel');
+    });
+    wrap.append(t, n);
+    geo.appendChild(wrap);
+  });
+  bar.appendChild(row('Position', geo));
+
+  /* ═══════ TEXT overlay ═══════ (1.17: rows like IMGEDTR's) */
   if (ov.type === 'text') {
     /*
      * Only the three families every PDF reader has built in. Web fonts can't
      * be written into the file by pdf-lib, so offering them would guarantee
      * the download looked different from the preview.
      */
-    bar.appendChild(sel(
-      [['Helvetica','Helvetica'],['Times','Times'],['Courier','Courier']],
-      normalizeFontFamily(ov.fontFamily),
-      v => { ov.fontFamily = v; updateTextInDom(ov); }
-    ));
-    bar.lastChild.style.width = '100px';
-
-    bar.appendChild(sep());
-    const sizeInp = inp('number', ov.fontSize || 16, '46px', v => { ov.fontSize = parseInt(v) || 14; updateTextInDom(ov); });
-    sizeInp.min = 6; sizeInp.max = 144; sizeInp.setAttribute('aria-label', 'Font size');
-    bar.appendChild(sizeInp);
-
-    bar.appendChild(sep());
-    bar.appendChild(toggleBtn('<b>B</b>', 'Bold',      ov.bold,      v => { ov.bold      = v; updateTextInDom(ov); }));
-    bar.appendChild(toggleBtn('<i>I</i>',  'Italic',    ov.italic,    v => { ov.italic    = v; updateTextInDom(ov); }));
-    bar.appendChild(toggleBtn('<u>U</u>',  'Underline', ov.underline, v => { ov.underline = v; updateTextInDom(ov); }));
-
-    bar.appendChild(sep());
-    bar.appendChild(label('color'));
-    bar.appendChild(clr(ov.color || '#000000', v => { ov.color = v; updateTextInDom(ov); }));
-
-    bar.appendChild(sep());
-    bar.appendChild(label('bg%'));
-    const bgInp = inp('number', Math.round((ov.bgOpacity ?? 0) * 100), '46px', v => { ov.bgOpacity = parseInt(v) / 100; updateTextInDom(ov); });
-    bgInp.min = 0; bgInp.max = 100; bgInp.setAttribute('aria-label', 'Background opacity');
-    bar.appendChild(bgInp);
-
-    bar.appendChild(sep());
-    bar.appendChild(sel(
-      [['left','L'],['center','C'],['right','R']],
-      ov.align || 'left',
-      v => { ov.align = v; updateTextInDom(ov); }
-    ));
+    const font = sel([['Helvetica','Helvetica (sans)'],['Times','Times (serif)'],['Courier','Courier (typewriter)']],
+      normalizeFontFamily(ov.fontFamily), v => { ov.fontFamily = v; updateTextInDom(ov); });
+    font.setAttribute('aria-label', 'Font');
+    bar.appendChild(row('Font', font));
+    const sizeInp = inp('number', ov.fontSize || 16, '72px', v => { ov.fontSize = parseInt(v) || 14; updateTextInDom(ov); });
+    sizeInp.min = 6; sizeInp.max = 144; sizeInp.setAttribute('aria-label', 'Font size in points');
+    bar.appendChild(row('Size', sizeInp, unitLabel('pt')));
+    const styles = document.createElement('div');
+    styles.className = 'insp-btns';
+    styles.appendChild(toggleBtn('<b>B</b>', 'Bold',      ov.bold,      v => { ov.bold      = v; updateTextInDom(ov); }));
+    styles.appendChild(toggleBtn('<i>I</i>', 'Italic',    ov.italic,    v => { ov.italic    = v; updateTextInDom(ov); }));
+    styles.appendChild(toggleBtn('<u>U</u>', 'Underline', ov.underline, v => { ov.underline = v; updateTextInDom(ov); }));
+    bar.appendChild(row('Style', styles));
+    const align = document.createElement('div');
+    align.className = 'insp-btns';
+    [['left', 'alignTextL', 'Align left'], ['center', 'alignTextC', 'Centre'], ['right', 'alignTextR', 'Align right']].forEach(([v, icon, name]) => {
+      const b = btn(iconHtml(icon), name, () => {
+        snapshotOnce(); ov.align = v; updateTextInDom(ov);
+        align.querySelectorAll('.ctx-btn').forEach(x => x.classList.toggle('on', x === b));
+      });
+      b.classList.toggle('on', (ov.align || 'left') === v);
+      align.appendChild(b);
+    });
+    bar.appendChild(row('Align', align));
+    bar.appendChild(row('Colour', swatches(ov.color || '#000000', v => { ov.color = v; updateTextInDom(ov); })));
+    bar.appendChild(row('Background', range(0, 100, 1, Math.round((ov.bgOpacity ?? 0) * 100), '%', v => { ov.bgOpacity = v / 100; updateTextInDom(ov); })));
 
   /* ═══════ SHAPE overlay ═══════ (1.14: laid out in rows like IMGEDTR's) */
   } else if (ov.type === 'shape') {
@@ -6558,108 +6864,87 @@ function buildContextBar(ov) {
     bar.appendChild(tip);
 
   } else if (ov.type === 'redact') {
-    bar.appendChild(row('Colour', swatches(ov.fillColor || '#000000', (v) => { ov.fillColor = v; refreshOneOverlay(ov); })));
+    const style = sel([['solid', 'Solid box'], ['pixelate', 'Pixelate']], ov.style || 'solid', (v) => {
+      ov.style = v; state.lastRedactStyle = v; refreshOneOverlay(ov); buildContextBar(ov);
+    });
+    style.setAttribute('aria-label', 'Redaction style');
+    bar.appendChild(row('Style', style));
+    if (ov.style === 'pixelate') {
+      bar.appendChild(row('Block size', range(6, 30, 1, ov.block || 10, ' pt', (v) => { ov.block = v; refreshOneOverlay(ov); })));
+    } else {
+      bar.appendChild(row('Colour', swatches(ov.fillColor || '#000000', (v) => { ov.fillColor = v; refreshOneOverlay(ov); })));
+    }
     const tip = document.createElement('p');
     tip.className = 'insp-help';
-    tip.textContent = 'When you download, this page becomes a picture with the box burned in, so nothing is left under it - and the file is checked before it is saved. The page\'s own text can then no longer be selected or searched.';
+    tip.textContent = 'When you download, this page becomes a picture with the redaction burned in, so nothing is left under it - and the file is checked before it is saved. The page\'s own text can then no longer be selected or searched. Text boxes, notes and form fields you added on this page still work.' +
+      (ov.style === 'pixelate' ? ' Pixelation can sometimes be partly undone when the blocks are small, so a solid box is the safest choice for anything sensitive.' : '');
     bar.appendChild(tip);
+    // Anything on this page that cannot survive being turned into a picture.
+    const losses = redactLosses(ov.pageDisplayIndex);
+    if (losses.length) {
+      const warn = document.createElement('p');
+      warn.className = 'insp-help insp-warn';
+      warn.setAttribute('role', 'note');
+      warn.textContent = 'Heads up: this page also has ' + losses.join(', ') + '. These stop working when the page becomes a picture (they still show, but can no longer be clicked or filled in).';
+      bar.appendChild(warn);
+    }
 
-  /* ═══════ HIGHLIGHT overlay ═══════ */
+  /* ═══════ HIGHLIGHT overlay ═══════ (1.17: rows) */
   } else if (ov.type === 'highlight') {
-    bar.appendChild(label('colour'));
+    const HL = [['#fde68a', 'Yellow'], ['#a7f3d0', 'Green'], ['#fbcfe8', 'Pink'], ['#bfdbfe', 'Blue'], ['#ddd6fe', 'Purple']];
+    bar.appendChild(row('Colour', swatches(ov.highlightColor || '#fde68a', v => {
+      ov.highlightColor = v;
+      state.currentHighlightColor = v;
+      updateHighlightInDom(ov);
+      // Mirror the choice in the tool's colour menu.
+      document.querySelectorAll('#highlight-menu .hl-swatch').forEach(sw => sw.classList.toggle('current', sw.dataset.color === v));
+    }, HL)));
+    bar.appendChild(row('Strength', range(15, 90, 1, Math.round((ov.opacity ?? 0.45) * 100), '%', v => { ov.opacity = v / 100; updateHighlightInDom(ov); })));
 
-    // One swatch button per highlight colour
-    const HLCOLORS = [
-      ['#fde68a','Yellow'],['#a7f3d0','Green'],['#fbcfe8','Pink'],
-      ['#bfdbfe','Blue'],  ['#ddd6fe','Purple']
-    ];
-    const swatchRow = document.createElement('div');
-    swatchRow.style.cssText = 'display:flex;gap:4px;align-items:center;';
-    HLCOLORS.forEach(([hex, name]) => {
-      const sw = document.createElement('button');
-      sw.className = 'ctx-hl-swatch' + (ov.highlightColor === hex ? ' active' : '');
-      sw.style.background = hex;
-      sw.title = name;
-      sw.setAttribute('aria-label', name);
-      sw.addEventListener('click', () => {
-        snapshotOnce();
-        ov.highlightColor = hex;
-        state.currentHighlightColor = hex;
-        updateHighlightInDom(ov);
-        swatchRow.querySelectorAll('.ctx-hl-swatch').forEach(s => s.classList.remove('active'));
-        sw.classList.add('active');
-        // Mirror selection in the toolbar submenu
-        document.querySelectorAll('#highlight-menu .hl-swatch').forEach(s => {
-          s.classList.toggle('current', s.dataset.color === hex);
-        });
-      });
-      swatchRow.appendChild(sw);
-    });
-    bar.appendChild(swatchRow);
-
-  /* ═══════ STICKY NOTE overlay ═══════ */
+  /* ═══════ STICKY NOTE overlay ═══════ (1.17: rows) */
   } else if (ov.type === 'sticky') {
-    bar.appendChild(label('note'));
-    bar.appendChild(clr(ov.noteColor || '#fef08a', v => { ov.noteColor = v; updateStickyInDom(ov); }));
+    const NOTES = [['#fef08a', 'Yellow'], ['#bbf7d0', 'Green'], ['#fbcfe8', 'Pink'], ['#bfdbfe', 'Blue'], ['#fed7aa', 'Orange'], ['#ffffff', 'White']];
+    bar.appendChild(row('Note colour', swatches(ov.noteColor || '#fef08a', v => { ov.noteColor = v; updateStickyInDom(ov); }, NOTES)));
+    bar.appendChild(row('Text colour', swatches(ov.textColor || '#333333', v => { ov.textColor = v; updateStickyInDom(ov); })));
+    const szInp = inp('number', ov.fontSize || 13, '72px', v => { ov.fontSize = parseInt(v) || 13; updateStickyInDom(ov); });
+    szInp.min = 8; szInp.max = 36; szInp.setAttribute('aria-label', 'Text size in points');
+    bar.appendChild(row('Text size', szInp, unitLabel('pt')));
 
-    bar.appendChild(sep());
-    bar.appendChild(label('text'));
-    bar.appendChild(clr(ov.textColor || '#333333', v => { ov.textColor = v; updateStickyInDom(ov); }));
-
-    bar.appendChild(sep());
-    const szInp = inp('number', ov.fontSize || 13, '46px', v => { ov.fontSize = parseInt(v) || 13; updateStickyInDom(ov); });
-    szInp.min = 8; szInp.max = 36; szInp.setAttribute('aria-label', 'Font size');
-    bar.appendChild(szInp);
-
-  /* ═══════ IMAGE overlay ═══════ */
+  /* ═══════ IMAGE overlay ═══════ (1.17: rows) */
   } else if (ov.type === 'image') {
-    bar.appendChild(label('corners'));
-    bar.appendChild(range(0, 60, 1, ov.radius ?? 0, 'pt', v => { ov.radius = v; updateImageInDom(ov); }));
-
-    bar.appendChild(sep());
-    bar.appendChild(label('opacity'));
-    bar.appendChild(range(10, 100, 1, Math.round((ov.opacity ?? 1) * 100), '%', v => {
-      ov.opacity = v / 100; updateImageInDom(ov);
-    }));
-
-    bar.appendChild(sep());
-    bar.appendChild(toggleBtn(
-      '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3">' +
-        '<rect x="2" y="2" width="9" height="9" rx="1"/>' +
-        '<path d="M5 13.5h7.5a1 1 0 0 0 1-1V5" opacity="0.5" stroke-linecap="round"/></svg>',
-      'Drop shadow', ov.shadow, v => { ov.shadow = v; updateImageInDom(ov); }
-    ));
-
-    bar.appendChild(sep());
-    bar.appendChild(label('rotate'));
-    const rot = inp('number', Math.round(ov.rotation || 0), '52px', v => {
+    bar.appendChild(row('Corners', range(0, 60, 1, ov.radius ?? 0, ' pt', v => { ov.radius = v; updateImageInDom(ov); })));
+    bar.appendChild(row('Opacity', range(10, 100, 1, Math.round((ov.opacity ?? 1) * 100), '%', v => { ov.opacity = v / 100; updateImageInDom(ov); })));
+    const shadow = document.createElement('input');
+    shadow.type = 'checkbox'; shadow.checked = !!ov.shadow; shadow.setAttribute('aria-label', 'Drop shadow');
+    shadow.addEventListener('change', () => { snapshotOnce(); ov.shadow = shadow.checked; updateImageInDom(ov); });
+    bar.appendChild(row('Shadow', shadow));
+    const rot = inp('number', Math.round(ov.rotation || 0), '72px', v => {
       ov.rotation = ((parseFloat(v) || 0) % 360 + 360) % 360;
       updateImageInDom(ov);
     });
     rot.min = 0; rot.max = 359; rot.step = 1;
     rot.setAttribute('aria-label', 'Rotation in degrees');
-    bar.appendChild(rot);
-
+    bar.appendChild(row('Rotate', rot, unitLabel('°')));
     /*
      * Alt text. This is written into the saved PDF as an accessible
      * description, so it is worth filling in for anything that carries
-     * meaning — and worth leaving blank for anything purely decorative.
+     * meaning - and worth leaving blank for anything purely decorative.
      */
-    bar.appendChild(sep());
-    bar.appendChild(label('alt text'));
-    const altInp = inp('text', ov.alt || '', '170px', v => { ov.alt = v; updateImageInDom(ov); });
-    altInp.placeholder = 'Describe this image';
+    const altInp = document.createElement('textarea');
+    altInp.className = 'ctx-input insp-textarea';
+    altInp.rows = 2;
+    altInp.value = ov.alt || '';
+    altInp.placeholder = 'Describe this image for screen readers';
     altInp.setAttribute('aria-label', 'Alternative text describing this image');
-    bar.appendChild(altInp);
+    altInp.addEventListener('input', () => { snapshotOnce(); ov.alt = altInp.value; updateImageInDom(ov); });
+    bar.appendChild(row('Alt text', altInp));
 
-  /* ═══════ FIELD overlays (textfield / checkbox / dropdown) ═══════ */
+  /* ═══════ FIELD overlays (textfield / checkbox / dropdown) ═══════ (1.17: rows) */
   } else {
-    bar.appendChild(label('name'));
-    const nameInp = inp('text', ov.fieldName || '', '110px', v => { ov.fieldName = v; updateFieldPreviewInDom(ov); });
+    const nameInp = inp('text', ov.fieldName || '', null, v => { ov.fieldName = v; updateFieldPreviewInDom(ov); });
     nameInp.placeholder = 'field_name';
-    nameInp.setAttribute('aria-label', 'Field name');
-    bar.appendChild(nameInp);
-
+    nameInp.setAttribute('aria-label', 'Field name (saved in the PDF)');
+    bar.appendChild(row('Field name', nameInp));
     /*
      * Text size for the field. Setting it explicitly matters: left to itself
      * a PDF reader auto-sizes field text to fill the box, which is why an
@@ -6667,39 +6952,24 @@ function buildContextBar(ov) {
      * than the one on screen.
      */
     if (ov.type !== 'checkbox') {
-      bar.appendChild(sep());
-      bar.appendChild(label('size'));
-      const fSize = inp('number', ov.fontSize || state.lastFieldFontSize, '46px', v => {
+      const fSize = inp('number', ov.fontSize || state.lastFieldFontSize, '72px', v => {
         ov.fontSize = parseInt(v) || 11;
         state.lastFieldFontSize = ov.fontSize;
         updateFieldPreviewInDom(ov);
       });
-      fSize.min = 4; fSize.max = 72; fSize.setAttribute('aria-label', 'Field text size');
-      bar.appendChild(fSize);
+      fSize.min = 4; fSize.max = 72; fSize.setAttribute('aria-label', 'Field text size in points');
+      bar.appendChild(row('Text size', fSize, unitLabel('pt')));
     }
-
     if (ov.type === 'dropdown') {
-      bar.appendChild(sep());
-      bar.appendChild(label('options'));
-      const optsInp = inp('text', (ov.options || []).join(', '), '130px', v => {
-        ov.options = v.split(',').map(s => s.trim()).filter(Boolean);
+      const optsInp = inp('text', (ov.options || []).join(', '), null, v => {
+        ov.options = v.split(',').map(t => t.trim()).filter(Boolean);
         updateFieldPreviewInDom(ov); // rebuild the <select> options live
       });
       optsInp.placeholder = 'A, B, C';
-      optsInp.setAttribute('aria-label', 'Dropdown options, comma-separated');
-      bar.appendChild(optsInp);
+      optsInp.setAttribute('aria-label', 'Dropdown options, separated by commas');
+      bar.appendChild(row('Options', optsInp));
     }
   }
-
-  /* ── Into the name / settings panel ── */
-  bar.appendChild(sep());
-  const settingsBtn = btn(ICON_SLIDERS, 'Name & settings', () => exitFormatMode());
-  settingsBtn.setAttribute('aria-label', 'Name and settings');
-  bar.appendChild(settingsBtn);
-
-  /* ── Delete button (always shown) ── */
-  bar.appendChild(sep());
-  bar.appendChild(btn('🗑', 'Delete element', () => removeOverlay(ov.id), 'del'));
 
   bar.hidden = false;
 }
@@ -7686,7 +7956,12 @@ function openMenu(menuEl, refEl, _unused) {
   }
 }
 function closeAllMenus() {
-  document.querySelectorAll('.floating-menu.open').forEach(m => m.classList.remove('open'));
+  document.querySelectorAll('.floating-menu.open').forEach(m => {
+    // Just opened by a finger's long press (1.17): the pretend mouse press
+    // the browser sends straight after must not close it.
+    if (m.id === 'ctx-menu' && performance.now() - ctxLongPressAt < 1000) return;
+    m.classList.remove('open');
+  });
   // Update aria-expanded on the dropdown buttons
   if (dom.toolShape) dom.toolShape.setAttribute('aria-expanded', 'false');
   if (dom.toolField) dom.toolField.setAttribute('aria-expanded', 'false');
@@ -7723,10 +7998,58 @@ dom.dropZone.addEventListener('dragover', e => { e.preventDefault(); dom.dropZon
 dom.dropZone.addEventListener('dragleave', () => dom.dropZone.classList.remove('dragover'));
 dom.dropZone.addEventListener('drop', e => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) loadPdf(e.dataTransfer.files[0]); });
 
+/* ── New PDF (1.17) ──
+   Builds a PDF of blank pages with pdf-lib, then opens it the normal way,
+   so a new PDF works exactly like one you opened. Sizes are in points
+   (72 to an inch). */
+const PAGE_SIZES = {
+  letter: [612, 792], legal: [612, 1008], tabloid: [792, 1224],
+  a4: [595.28, 841.89], a5: [419.53, 595.28],
+};
+function openNewPdfDialog() {
+  // Starting over loses anything not downloaded yet, so say so first.
+  if (state.pdfLibDoc && (state.overlays.length || history.past.length) &&
+      !confirm('Start a new PDF? Anything you have not downloaded from this one will be lost.')) return;
+  const dlg = document.getElementById('new-dlg');
+  document.getElementById('new-size').value = settings.newSize;
+  dlg.querySelector(`input[name="new-orient"][value="${settings.newOrient}"]`).checked = true;
+  document.getElementById('new-pages').value = 1;
+  suiteSplashClose();
+  dlg.showModal();
+}
+async function createBlankPdf(sizeKey, orient, count) {
+  const [w, h] = PAGE_SIZES[sizeKey] || PAGE_SIZES.letter;
+  const [pw, ph] = orient === 'landscape' ? [h, w] : [w, h];
+  const n = Math.max(1, Math.min(100, Math.round(count) || 1));
+  const doc = await PDFLib.PDFDocument.create();
+  for (let i = 0; i < n; i++) doc.addPage([pw, ph]);
+  doc.setTitle('New PDF');
+  doc.setCreator('PDFEDTR');
+  const bytes = await doc.save();
+  await loadPdf(new File([bytes], 'New PDF.pdf', { type: 'application/pdf' }));
+}
+(() => {
+  const dlg = document.getElementById('new-dlg');
+  dlg.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => dlg.close()));
+  document.getElementById('new-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const size = document.getElementById('new-size').value;
+    const orient = dlg.querySelector('input[name="new-orient"]:checked').value;
+    const pages = parseInt(document.getElementById('new-pages').value, 10);
+    if (PAGE_SIZES[size]) settings.newSize = size;
+    if (orient === 'portrait' || orient === 'landscape') settings.newOrient = orient;
+    saveSettings();
+    dlg.close();
+    await createBlankPdf(size, orient, pages);
+  });
+  document.getElementById('btn-new').addEventListener('click', openNewPdfDialog);
+})();
+
 /* ── Add pages (1.15): the + and Insert a PDF buttons at the left of the filmstrip ──
    Both add after the page showing (pick the last page first to add at the end). */
-dom.btnAddBlank.addEventListener('click', () => addBlankPage('after'));
-dom.btnInsertPdf.addEventListener('click', () => dom.importInput.click());
+// With no PDF open yet (1.17): + starts a new PDF, and Insert opens one.
+dom.btnAddBlank.addEventListener('click', () => state.pdfLibDoc ? addBlankPage('after') : openNewPdfDialog());
+dom.btnInsertPdf.addEventListener('click', () => state.pdfLibDoc ? dom.importInput.click() : openPdfPicker());
 dom.importInput.addEventListener('change', e => {
   if (e.target.files[0]) importPdf(e.target.files[0], 'after');
   dom.importInput.value = '';
@@ -8103,6 +8426,13 @@ dom.pageWrapper.addEventListener('mousedown', e => {
 
 /* ── Close menus when clicking anywhere else ── */
 document.addEventListener('mousedown', e => {
+  // A press inside any open menu (the More menu, a right-click menu...) is
+  // not "outside": leave the menu, and the selection, alone so the item's
+  // click can happen (1.17).
+  if (e.target.closest && e.target.closest('.floating-menu.open')) return;
+  // A finger's long press opens a menu, and then the browser also sends a
+  // pretend mouse press: that must not close the menu straight away.
+  if (performance.now() - ctxLongPressAt < 1000) return;
   /*
    * Only call closeAllMenus() when the click is truly OUTSIDE every open menu.
    * We must list each menu+trigger pair so the menus aren't killed on mousedown
@@ -9451,7 +9781,7 @@ function suiteFeaturesCard(features, appId) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.16';
+const APP_VERSION = '1.17';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -9508,6 +9838,13 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.17', date: '2026-10-11', notes: [
+    'New PDF: start from blank pages (Letter, Legal, Tabloid, A4 or A5, portrait or landscape) - from the splash, the new button in the top bar, or the + under the pages before any PDF is open.',
+    'Right-click menus: on anything you placed (duplicate, copy, cut, paste, bring to front, send to back, delete) and on an empty spot of the page (paste, or drop a text box, note, date, step, X or checkmark right there). Press and hold on a touch screen, or Shift+F10 from the keyboard.',
+    'The Inspector now matches IMGEDTR: the same headings and sizes, an action bar (duplicate, the four arrange buttons, delete), a name and X / Y / W / H for everything, and tidy labelled rows for text, notes, highlights, pictures and form fields.',
+    'Redact can pixelate as well as cover with a solid box. The Inspector warns when a page to be redacted has links, radio buttons or comments, which stop working once the page becomes a picture (text boxes, checkboxes and dropdowns keep working).',
+    'Tooltips on the remaining buttons, and Ctrl+D duplicates.'
+  ] },
   { version: '1.16', date: '2026-10-11', notes: [
     'IMGEDTR\'s teacher tools: step numbers that count up by themselves (and renumber when one is deleted), cursor stamps to show where to click, a spotlight that dims everything but one spot, and a magnifier that zooms in on one spot.',
     'Redact that really removes: each page with a redaction becomes a picture when you download, with the box burned in, so nothing is left under it. The finished file is checked before it is saved.',
@@ -9692,6 +10029,9 @@ async function startUp() {
     actions: [
       { icon: 'open', label: 'Open a PDF', detail: 'Fill it in, sign it, mark it up or rearrange its pages', primary: true,
         run: () => openPdfPicker() },
+      // Start from blank pages (1.17): a handout, a sign-up sheet, a form.
+      { icon: 'new', label: 'New PDF', detail: 'Start from blank pages: a handout, a sign-up sheet or a form',
+        run: () => openNewPdfDialog() },
       // Signing is one of the most common reasons to open a PDF, so it has
       // its own way in (1.14): pick the PDF, and the signature panel opens.
       { icon: ICONS.signature, label: 'Sign a PDF', detail: 'Open a PDF and add your signature: draw it or type it',
@@ -9976,7 +10316,7 @@ document.addEventListener('keydown', e => {
   // While the help panel is open its own keys win: arrows move between tabs,
   // Escape closes it. Without this the same press would also nudge the
   // selection or change page behind the panel.
-  if (helpDlg.open || document.getElementById('settings-dlg').open) return;
+  if (helpDlg.open || document.getElementById('settings-dlg').open || document.getElementById('new-dlg').open) return;
   // F1 opens help from anywhere, even while typing; preventDefault stops the
   // browser opening its own help page.
   if (e.key === 'F1') { e.preventDefault(); openHelp('htab-features'); return; }
@@ -10004,6 +10344,12 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !inTextField && state.selectedId) { e.preventDefault(); copyOverlay(); return; }
   if ((e.ctrlKey || e.metaKey) && e.key === 'x' && !inTextField && state.selectedId) { e.preventDefault(); cutOverlay();  return; }
   if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !inTextField)                     { e.preventDefault(); pasteOverlay(); return; }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D') && !inTextField && state.selectedId) {
+    e.preventDefault();                            // the browser would bookmark the page
+    const ov = state.overlays.find(o => o.id === state.selectedId);
+    if (ov) duplicateOverlay(ov);
+    return;
+  }
 
   /*
    * Escape steps back one level at a time, and has to run before the
@@ -10389,6 +10735,170 @@ const applyTheme = (function initTheme() {
     });
   }, { passive: false });
 })();
+
+/* ══════════════════════════════════════════
+   RIGHT-CLICK MENUS (1.17)
+   ─────────────────────────────────────────
+   Right-click (or press and hold with a finger, or Shift+F10 / the Menu
+   key on the keyboard) for a menu of what makes sense right there:
+     on something you placed  Duplicate, Copy, Cut, Paste, Bring to front,
+                              Send to back, Delete
+     on an empty part of the page   Paste here, and quick ways to drop a
+                              text box, a note, today's date or a step
+                              exactly where you clicked
+   (The page thumbnails have their own: the page pill.)
+   It is a proper menu for screen readers and the keyboard: arrow keys move,
+   Enter picks, Escape closes and puts focus back where it was.
+══════════════════════════════════════════ */
+const ctxMenu = document.createElement('div');
+ctxMenu.className = 'floating-menu ctx-menu';
+ctxMenu.id = 'ctx-menu';
+ctxMenu.setAttribute('role', 'menu');
+document.body.appendChild(ctxMenu);
+let ctxMenuReturn = null;                          // where focus goes back to when it closes
+let ctxLongPressAt = 0;                            // when a finger long-press last opened the menu
+
+/**
+ * Open the menu at (x, y) with these items:
+ * [{ label, icon, keys, run, danger, disabled }] - or 'sep' for a line.
+ */
+function openCtxMenu(x, y, items, label) {
+  closeAllMenus();
+  ctxMenuReturn = document.activeElement;
+  ctxMenu.replaceChildren();
+  ctxMenu.setAttribute('aria-label', label);
+  for (const it of items) {
+    if (it === 'sep') { const d = document.createElement('div'); d.className = 'am-divider'; d.setAttribute('role', 'separator'); ctxMenu.appendChild(d); continue; }
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'fm-item' + (it.danger ? ' danger' : '');
+    b.setAttribute('role', 'menuitem');
+    if (it.disabled) b.setAttribute('aria-disabled', 'true');
+    b.appendChild(makeIcon(it.icon));
+    const t = document.createElement('span'); t.className = 'ctx-menu-label'; t.textContent = it.label;
+    b.appendChild(t);
+    if (it.keys) { const k = document.createElement('kbd'); k.textContent = it.keys; b.appendChild(k); }
+    b.addEventListener('click', () => { if (it.disabled) return; closeCtxMenu(false); it.run(); });
+    ctxMenu.appendChild(b);
+  }
+  ctxMenu.classList.add('open');
+  // Keep it on screen: flip left or up when it would run off the edge.
+  const r = ctxMenu.getBoundingClientRect();
+  ctxMenu.style.left = Math.max(8, Math.min(x, window.innerWidth - r.width - 8)) + 'px';
+  ctxMenu.style.top = Math.max(8, Math.min(y, window.innerHeight - r.height - 8)) + 'px';
+  const first = ctxMenu.querySelector('.fm-item:not([aria-disabled="true"])');
+  if (first) first.focus();
+}
+function closeCtxMenu(restoreFocus = true) {
+  if (!ctxMenu.classList.contains('open')) return;
+  ctxMenu.classList.remove('open');
+  if (restoreFocus && ctxMenuReturn && ctxMenuReturn.focus) ctxMenuReturn.focus();
+}
+ctxMenu.addEventListener('keydown', (e) => {
+  const items = [...ctxMenu.querySelectorAll('.fm-item')];
+  const i = items.indexOf(document.activeElement);
+  let next = null;
+  if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); e.stopPropagation(); closeCtxMenu(); return; }
+  if (e.key === 'ArrowDown') next = (i + 1) % items.length;
+  else if (e.key === 'ArrowUp') next = (i - 1 + items.length) % items.length;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = items.length - 1;
+  if (next === null) return;
+  e.preventDefault(); e.stopPropagation();
+  items[next].focus();
+});
+document.addEventListener('pointerdown', (e) => { if (!ctxMenu.contains(e.target)) closeCtxMenu(false); }, true);
+window.addEventListener('blur', () => closeCtxMenu(false));
+
+/** The menu for something you placed. */
+function overlayMenu(ov, x, y) {
+  const el = dom.overlayEl.querySelector(`[data-id="${ov.id}"]`);
+  if (state.selectedId !== ov.id) selectOverlay(ov.id, el);
+  openCtxMenu(x, y, [
+    { label: 'Duplicate', icon: 'duplicate', keys: 'Ctrl+D', run: () => duplicateOverlay(ov) },
+    { label: 'Copy', icon: 'copy', keys: 'Ctrl+C', run: () => { state.selectedId = ov.id; copyOverlay(); } },
+    { label: 'Cut', icon: 'scissors', keys: 'Ctrl+X', run: () => { state.selectedId = ov.id; cutOverlay(); } },
+    { label: 'Paste', icon: 'paste', keys: 'Ctrl+V', disabled: !state.clipboard, run: () => pasteOverlay() },
+    'sep',
+    { label: 'Bring to front', icon: 'top', run: () => arrangeOverlay(ov, 'front') },
+    { label: 'Send to back', icon: 'bottom', run: () => arrangeOverlay(ov, 'back') },
+    'sep',
+    { label: 'Delete', icon: 'trash', keys: 'Del', danger: true, run: () => removeOverlay(ov.id) },
+  ], (TYPE_LABELS[ov.type] || 'Element') + ' actions');
+}
+
+/** The menu for an empty spot on the page: things land where you clicked. */
+function pageMenu(clientX, clientY) {
+  const r = dom.pageCanvas.getBoundingClientRect();
+  const fx = (clientX - r.left) / r.width, fy = (clientY - r.top) / r.height;   // where on the page, 0..1
+  const at = (type, extra = {}) => {
+    const sz = defaultSizeFor(type, extra);
+    const centred = type === 'step';
+    createOverlay(type, extra, {
+      fracLeft: centred ? fx - sz.w / 2 : fx,
+      fracTop: centred ? fy - sz.h / 2 : (type === 'text' ? fy - sz.h : fy),   // text sits ON the line clicked
+      fracW: sz.w, fracH: sz.h,
+    });
+  };
+  openCtxMenu(clientX, clientY, [
+    { label: 'Paste here', icon: 'paste', keys: 'Ctrl+V', disabled: !state.clipboard, run: () => {
+        pasteOverlay();
+        // Move the pasted copy so its top-left corner is where you clicked.
+        const ov = state.overlays.find(o => o.id === state.selectedId);
+        if (ov) { ov.fracLeft = Math.max(0, Math.min(1 - ov.fracW, fx)); ov.fracTop = Math.max(0, Math.min(1 - ov.fracH, fy)); refreshOverlays(); selectOverlay(ov.id); }
+      } },
+    'sep',
+    { label: 'Text here', icon: 'type', keys: 'T', run: () => at('text') },
+    { label: 'Sticky note here', icon: 'sticky', keys: 'S', run: () => at('sticky') },
+    { label: "Today's date here", icon: 'calendar', keys: 'D', run: () => at('text', { content: todayISO() }) },
+    { label: 'Step number here', icon: 'step', keys: 'N', run: () => at('step') },
+    { label: 'Red X here', icon: 'x', run: () => at('shape', { shapeType: 'xmark', strokeColor: '#dc2626', lineWidth: 8, noFill: true }) },
+    { label: 'Checkmark here', icon: 'check', run: () => at('shape', { shapeType: 'check', strokeColor: '#16a34a', lineWidth: 8, noFill: true }) },
+  ], 'Page actions');
+}
+
+// Right-click on the page or on something placed on it.
+dom.pageWrapper.addEventListener('contextmenu', (e) => {
+  if (!state.pdfJsDoc || state.pendingPlacement) return;
+  // Android also sends "contextmenu" after a long press: the menu is already open.
+  if (performance.now() - ctxLongPressAt < 1000) { e.preventDefault(); return; }
+  if (e.target.closest('textarea, input, select')) return;      // keep the browser's menu for typing
+  e.preventDefault();
+  const item = e.target.closest('.ov-item');
+  const ov = item && state.overlays.find(o => o.id === item.dataset.id);
+  if (ov) overlayMenu(ov, e.clientX, e.clientY); else pageMenu(e.clientX, e.clientY);
+});
+
+// Press and hold with a finger (iPhones and iPads never send "contextmenu").
+(() => {
+  let timer = null, sx = 0, sy = 0;
+  dom.pageWrapper.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch' || state.pendingPlacement) return;
+    sx = e.clientX; sy = e.clientY;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      ctxLongPressAt = performance.now();
+      const item = document.elementFromPoint(sx, sy)?.closest('.ov-item');
+      const ov = item && state.overlays.find(o => o.id === item.dataset.id);
+      if (ov) overlayMenu(ov, sx, sy); else if (document.elementFromPoint(sx, sy)?.closest('#page-wrapper')) pageMenu(sx, sy);
+    }, 550);
+  });
+  const cancel = (e) => { if (timer && (e.type !== 'pointermove' || Math.hypot(e.clientX - sx, e.clientY - sy) > 8)) { clearTimeout(timer); timer = null; } };
+  ['pointermove', 'pointerup', 'pointercancel'].forEach((t) => dom.pageWrapper.addEventListener(t, cancel));
+})();
+
+// Keyboard: Shift+F10 or the Menu key on a selected element opens its menu.
+document.addEventListener('keydown', (e) => {
+  if (!(e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) return;
+  const ov = state.selectedId && state.overlays.find(o => o.id === state.selectedId);
+  if (!ov) return;
+  const el = dom.overlayEl.querySelector(`[data-id="${ov.id}"]`);
+  if (!el) return;
+  e.preventDefault();
+  const r = el.getBoundingClientRect();
+  overlayMenu(ov, r.left + 8, r.bottom + 4);
+});
 
 /* ══════════════════════════════════════════
    SETTINGS DIALOG (1.13)

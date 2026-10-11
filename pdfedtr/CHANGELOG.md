@@ -17,6 +17,50 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.17 - 2026-10-11 - New PDF, right-click menus, the Inspector at parity
+
+The last of five releases bringing PDFEDTR up to IMGEDTR, plus Dave's
+additions.
+
+- **New PDF from scratch.** A "New PDF" card on the splash, a New button at the
+  start of the top bar, and the filmstrip's + before any PDF is open all bring
+  up a small dialog: page size (Letter, Legal, Tabloid, A4, A5), Portrait or
+  Landscape, and how many pages (1 to 100). pdf-lib builds the blank PDF and it
+  opens the normal way, so everything works on it - text, shapes, form fields
+  for a fillable form. The choice of size is remembered. Before a PDF is open,
+  the filmstrip's Insert a PDF button opens one. Starting a new PDF over work
+  you have not downloaded asks first.
+- **Right-click menus.** On anything placed: Duplicate, Copy, Cut, Paste, Bring
+  to front, Send to back, Delete. On an empty spot of the page: Paste here, and
+  Text, Sticky note, Today's date, Step number, Red X or Checkmark right where
+  you clicked. Press and hold with a finger (iPhones never send right-clicks),
+  or Shift+F10 / the Menu key on a selected element. Arrow keys, Enter and
+  Escape work inside, and focus goes back where it was.
+- **The Inspector, at parity with IMGEDTR.** Headings in IMGEDTR's 12px bold
+  uppercase (they were 10px monospace), "Shape properties"-style titles, 13px
+  labels, 30px controls. An action bar like IMGEDTR's layer actions:
+  Duplicate, Bring to front, Bring forward, Send backward, Send to back, Delete.
+  A Name and X / Y / W / H in points for everything. Text, sticky notes,
+  highlights, pictures and form fields now use labelled rows with swatches
+  (text gets alignment buttons; alt text gets a proper box). The old
+  "name and settings" second panel is gone - its name box is in the main one.
+- **Arrange** (bring forward / send back) changes what sits on top on a page.
+  Step numbers follow the order steps were placed, so arranging never
+  renumbers them. Ctrl+D duplicates.
+- **Pixelate redaction**, as in IMGEDTR: the area becomes blocks of its own
+  average colours (block size 6 to 30 pt), on screen, in magnifiers and in the
+  flattened page. Solid stays the default; the Inspector notes that pixelation
+  can sometimes be partly undone when the blocks are small.
+- **What survives redaction.** Text boxes, notes, checkboxes and dropdowns
+  PDFEDTR knows about are written back as real fields on top of the flattened
+  page (checked: a redacted page with a checkbox and a dropdown downloads with
+  both still working). Links, radio buttons, other kinds of fields and comments
+  on that page stop working; the Inspector now says so when the page has any.
+- Fixed: picking an item in the phone's More menu with a mouse (a narrow
+  desktop window) closed the menu before the item could act.
+- Tooltips: the delete handle, colour swatches and the picture turn handle now
+  use the shared tooltips.
+
 ## 1.16 - 2026-10-11 - Teacher tools, real redaction, scrolling pages
 
 The fourth of five releases bringing PDFEDTR up to IMGEDTR.
