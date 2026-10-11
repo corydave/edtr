@@ -15,11 +15,7 @@ for people who are new to vibe coding: color-coded code, a live preview for HTML
 and Markdown, and a warning when pasted text hides curly quotes or invisible
 characters.
 
-Building something is only part of the job, though. Once you have a project, you
-need the content around it: a how-to guide with screenshots, a PDF form people
-can fill in, a podcast clip, a screen recording, a video, a logo, a flyer. So
-the project grew one tool at a time, each aimed at a piece of content creation
-that would otherwise mean an account, an upload, a subscription or a big install:
+Building something is only part of the job, though. Once you have a project, you need the content around it: a how-to guide with screenshots, a PDF form people can fill in, a podcast clip, a screen recording, a video, a logo, a flyer. So the project grew one tool at a time, each addressing a piece of content creation that wouldn't require expertise, an account, an upload, a subscription or a big install:
 
 | After TXTEDTR came | To help with |
 |---|---|
@@ -44,6 +40,7 @@ that would otherwise mean an account, an upload, a subscription or a big install
 - **One family.** The apps share the same look, naming and habits (light and
   dark mode, a built-in help panel, a changelog), so learning one makes the next
   easier.
+- **Mobile friendly.** Every app is tested on phones, tablets, and desktop. Intentionality at every size!
 
 ## The apps
 
@@ -58,7 +55,7 @@ that would otherwise mean an account, an upload, a subscription or a big install
 | <img src="vctredtr/icon-192.png" width="48" alt="VCTREDTR icon"> | [**VCTREDTR**](https://vctredtr.app) | Draw vector art and merge shapes the way PowerPoint does (union, subtract, fragment and more), with a live view of the SVG code. |
 | <img src="3dedtr/icon-192.png" width="48" alt="3DEDTR icon"> | [**3DEDTR**](https://3dedtr.app) | Build 3D models from simple shapes, cut and merge them, and export them ready for the 3D printer, all measured in millimeters. |
 | <img src="dskedtr/icon-192.png" width="48" alt="DSKEDTR icon"> | [**DSKEDTR**](https://dskedtr.app) | Lay out newsletters, flyers and booklets: text flows from box to box and page to page, with shapes, pictures, master pages and a PDF ready to print. |
-| <img src="gamedtr/icon-192.png" width="48" alt="GAMEDTR icon"> | **GAMEDTR** | A 2D game maker for kids and teens. In development and not released yet. |
+
 
 ## A look at each one
 
