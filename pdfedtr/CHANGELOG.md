@@ -17,6 +17,46 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.14 - 2026-10-11 - Shapes, and Sign a PDF
+
+The second of five releases bringing PDFEDTR up to IMGEDTR.
+
+- **Sign a PDF on the splash.** A second card beside Open a PDF: pick the PDF
+  and the signature panel (draw it or type it) opens as soon as it loads. All
+  the Open buttons now go through one `openPdfPicker()`, so a cancelled
+  "Sign a PDF" never leaves the next Open going to the signature panel.
+- **IMGEDTR's Shapes panel.** The Shape tool opens a panel of 23 shapes in
+  three groups - Basic (rectangle, ellipse, triangle, right triangle, diamond,
+  pentagon, hexagon, octagon, arrow), Symbols (star, heart, solid check mark,
+  solid X, plus, #, no sign, warning sign) and Callouts and awards (speech
+  bubble, block arrow, location pin, light bulb, award ribbon, badge). The same
+  drawings as IMGEDTR, with their usual colours (the warning sign is yellow,
+  the no sign red). Arrow keys move around the panel, Enter picks, Escape
+  closes; the Shapes button shows the shape it will draw next.
+- **One rectangle.** Rectangle and Rounded Rect are now one shape with a
+  **Corners** slider (0 to 72 pt) in the Inspector, the way IMGEDTR does it.
+  Oval is now Ellipse.
+- **Shift keeps proportions** while drawing or resizing a shape (a square, a
+  circle, an even star or hexagon); clicking instead of dragging drops a shape
+  at its usual proportions. The red X and checkmark always stay square.
+- **The shape Inspector, in rows like IMGEDTR's:** Shape (swap for another,
+  keeping the box), Make regular, Outline and Fill colour as IMGEDTR's
+  swatches plus "any colour", Thickness in points, Fill on or off, Fill
+  opacity, Corners, and Flip across / down.
+- **Fixed: shapes missing from the download.** Red Xs, green checkmarks,
+  rounded rectangles, the arrow's head and the sticky note's folded corner were
+  written below the bottom of the page (pdf-lib's `drawSvgPath` measures y
+  downward, and they were given upward measurements), so they never showed in
+  the downloaded PDF. Every shape is now drawn by one routine, the same numbers
+  on screen and in the PDF, checked by rendering a download in Playwright.
+- **Outlines are true points.** The outline thickness used to stretch with the
+  shape on screen while the PDF used a fixed width, so they rarely matched. It
+  is now set in points and drawn the same on both, sitting just inside the box.
+  Shapes saved by 1.13 or earlier are upgraded on open without changing how
+  they look in the download.
+- Inspector buttons now use the shared tooltips and are named for screen
+  readers (B reads as "Bold").
+
 ## 1.13 - 2026-10-11 - IMGEDTR's look, zoom and Settings
 
 The first of five releases bringing PDFEDTR up to IMGEDTR.

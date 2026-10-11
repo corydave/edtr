@@ -1634,6 +1634,50 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     }
 
     /* ═══════════════════════════════════════════════════
+       SHAPES PANEL (1.14) - IMGEDTR's: headed groups of
+       44px shape buttons, four to a row.
+    ═══════════════════════════════════════════════════ */
+    .floating-menu.shapes-pop { display: none; padding: 4px 12px 12px; min-width: 0;
+      max-height: calc(100dvh - 16px); overflow-y: auto; background: var(--panel); border-radius: 10px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.22); }
+    .floating-menu.shapes-pop.open { display: block; }
+    .shapes-pop h2 { font-family: var(--font-ui); font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-mid); margin: 10px 0 6px; }
+    .shape-grid { display: grid; grid-template-columns: repeat(4, 44px); gap: 6px; }
+    .shape-btn { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; cursor: pointer;
+      color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+    .shape-btn svg { width: 26px; height: 26px; }
+    .shape-btn:hover { border-color: var(--amber); }
+    .shape-btn[aria-pressed="true"] { background: var(--amber); color: var(--on-amber); border-color: var(--amber); }
+    .shape-btn:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+    /* ═══════════════════════════════════════════════════
+       INSPECTOR ROWS (1.14) - labelled rows like IMGEDTR's
+       Properties: the label on the left, its control on the
+       right. (Shapes use them first; the other kinds of
+       element move over as the overhaul goes on.)
+    ═══════════════════════════════════════════════════ */
+    #inspector #context-bar .insp-row { flex-basis: 100%; display: grid; grid-template-columns: 92px 1fr;
+      align-items: center; gap: 8px; margin: 2px 0; }
+    .insp-label { color: var(--text-mid); font-size: 13px; font-family: var(--font-ui); }
+    .insp-ctl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+    .insp-ctl .ctx-select { height: 30px; width: 100%; font-size: 13px; }
+    .insp-ctl .ctx-range { flex: 1; width: auto; min-width: 80px; }
+    .insp-ctl input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--amber); }
+    .insp-btns { display: flex; gap: 4px; }
+    .insp-btns .ctx-btn { width: 34px; height: 30px; padding: 0; }
+    .insp-btns .ctx-btn svg.icon { width: 18px; height: 18px; }
+    .ctx-btn.wide { height: 30px; padding: 0 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; }
+    /* Colour swatches: IMGEDTR's round chips; the chosen one gets a ring. */
+    .swatches { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .swatch { width: 22px; height: 22px; border-radius: 50%; padding: 0; cursor: pointer;
+      border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--border); }
+    .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--amber); }
+    .swatch:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+    .swatch-custom { width: 30px; height: 26px; padding: 0; border: 1px solid var(--border); border-radius: 6px;
+      background: none; cursor: pointer; }
+
+    /* ═══════════════════════════════════════════════════
        DIALOGS (1.13) - Settings, laid out like IMGEDTR's.
     ═══════════════════════════════════════════════════ */
     .app-dlg {
@@ -1733,25 +1777,11 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   </div>
 </div>
 
-<!-- ══════════ SHAPE TYPE SUBMENU ══════════ -->
-<div class="floating-menu" id="shape-menu" role="menu" aria-label="Shape type">
-  <button class="fm-item current" role="menuitem" data-shape="rect">
-    <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="11" height="11" rx="1"/></svg>
-    Rectangle
-  </button>
-  <button class="fm-item" role="menuitem" data-shape="rrect">
-    <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="11" height="11" rx="4"/></svg>
-    Rounded Rect
-  </button>
-  <button class="fm-item" role="menuitem" data-shape="oval">
-    <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="6.5" cy="6.5" rx="5.5" ry="5.5"/></svg>
-    Oval
-  </button>
-  <button class="fm-item" role="menuitem" data-shape="arrow">
-    <svg viewBox="0 0 13 13" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="6.5" x2="9" y2="6.5"/><polyline points="7,3.5 11,6.5 7,9.5" fill="currentColor" stroke="none"/></svg>
-    Arrow
-  </button>
-</div>
+<!-- ══════════ SHAPES PANEL (1.14) ══════════
+     The same panel as IMGEDTR's: every shape as a button, in three groups.
+     Built by buildShapesPanel() from SHAPES in the script. Arrow keys move
+     between shapes, Enter picks one, Escape closes. -->
+<div class="floating-menu shapes-pop" id="shape-menu" role="dialog" aria-label="Shapes"></div>
 
 <!-- ══════════ FIELD TYPE SUBMENU ══════════ -->
 <div class="floating-menu" id="field-menu" role="menu" aria-label="Field type">
@@ -2063,6 +2093,8 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
         <tr><td><kbd>Ctrl</kbd>+<kbd>0</kbd></td><td>Fit the page width</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>1</kbd></td><td>Zoom to 100%</td></tr>
         <tr><td><kbd>Alt</kbd> while dragging</td><td>Move freely, without snapping to guides</td></tr>
+        <tr><td><kbd>Shift</kbd> while drawing or resizing a shape</td><td>Keep its regular proportions (a square, a circle, an even star)</td></tr>
+        <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd> in the Shapes panel</td><td>Move between shapes; <kbd>Enter</kbd> picks one, <kbd>Esc</kbd> closes</td></tr>
         <tr><td><kbd>?</kbd> or <kbd>F1</kbd></td><td>This panel</td></tr>
       </tbody>
     </table>
@@ -2204,6 +2236,8 @@ const ICONS = {
   inspector:   '<path d="M5 20v-8M5 8V4M12 20v-5M12 11V4M19 20v-3M19 13V4M3 12h4M10 15h4M17 17h4"/>',
   sun:         '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   moon:        '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  flipH:       '<path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 20v2"/><path d="M12 14v2"/><path d="M12 8v2"/><path d="M12 2v2"/>',
+  flipV:       '<path d="m17 3-5 5-5-5h10"/><path d="m17 21-5-5-5 5h10"/><path d="M4 12H2"/><path d="M10 12H8"/><path d="M16 12h-2"/><path d="M22 12h-2"/>',
   help:        '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   settings:    '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
 };
@@ -2221,6 +2255,16 @@ function makeIcon(name) {
   svg.innerHTML = ICONS[name] || '';
   return svg;
 }
+
+/** An icon as markup, for the few places that build buttons from strings. */
+function iconHtml(name) { return makeIcon(name).outerHTML; }
+
+/* The family's colour swatches (the same as IMGEDTR's), with names for
+   screen readers and tooltips. (1.14) */
+const SWATCHES = [
+  ['#0046ad', 'Blue'], ['#d4400b', 'Red-orange'], ['#f45922', 'Orange'], ['#305305', 'Dark green'],
+  ['#58a618', 'Green'], ['#facc15', 'Yellow'], ['#111827', 'Black'], ['#ffffff', 'White'],
+];
 
 /** Fill every <span data-icon="..."> inside root with its icon. */
 function fillIcons(root = document) {
@@ -2283,7 +2327,7 @@ const state = {
   fieldValues: {},      // existing field values for export { name → {type,value} }
   scale:       1.5,     // render scale for PDF.js
 
-  currentShapeType: 'rect',       // last-chosen shape type
+  currentShapeType: 'rect',       // last-chosen shape type (a key from SHAPES)
   currentFieldType: 'textfield',  // last-chosen field type
   fieldCounter:     0,            // auto-increments for unique field names
   hasSnapshotForCurrentEdit: false, // prevents double-snapshotting while editing one element
@@ -3149,6 +3193,8 @@ async function renderCurrentPage() {
   }
   state.pageCssW = viewport.width;
   state.pageCssH = viewport.height;
+  state.pageWpt  = viewport.width  / state.scale;   // the page's size in points (pdf.js: 1 point = 1 unit at scale 1)
+  state.pageHpt  = viewport.height / state.scale;
   dom.pageCanvas.width  = Math.round(viewport.width  * ratio);
   dom.pageCanvas.height = Math.round(viewport.height * ratio);
   dom.pageCanvas.style.width  = viewport.width  + 'px';
@@ -3529,110 +3575,449 @@ function applyStickyTextStyles(ta, ov) {
   ].join(' ');
 }
 
-/** Build the SVG element shown inside a shape overlay */
-function buildShapeSvg(ov) {
-  const NS  = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
-  svg.classList.add('ov-shape-svg');
+/* ══════════════════════════════════════════
+   SHAPES (1.14) - the same shapes as IMGEDTR
+   ─────────────────────────────────────────
+   Every shape is drawn in a 100 x 100 box as an SVG path ("d"), then
+   stretched to fit the shape's box on the page. The SAME numbers draw it
+   on screen (as an <svg>) and write it into the PDF (with pdf-lib), so the
+   download always matches the preview.
 
-  const fill    = ov.fillColor   || '#4488ff';
-  const fillOp  = ov.fillOpacity ?? 0.3;
-  const stroke  = ov.strokeColor || '#2244cc';
-  const strokeW = ov.strokeWidth ?? 2;
-  const noFill  = ov.noFill ?? false;
+   A shape's settings (on the overlay object, "ov"):
+     shapeType    which shape (a key from SHAPES below)
+     strokeColor  outline colour            lineWidth   outline thickness, in points
+     fillColor    fill colour               noFill      true = no fill
+     fillOpacity  0..1                      radius      rounded corners, in points (rectangle only)
+     flipX/flipY  mirrored across / down
 
-  if (ov.shapeType === 'rect') {
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.setAttribute('preserveAspectRatio', 'none');
-    const r = document.createElementNS(NS, 'rect');
-    r.setAttribute('x', '1'); r.setAttribute('y', '1');
-    r.setAttribute('width', '98'); r.setAttribute('height', '98');
-    r.setAttribute('rx', '1');
-    r.setAttribute('fill', noFill ? 'none' : fill);
-    if (!noFill) r.setAttribute('fill-opacity', String(fillOp));
-    r.setAttribute('stroke', stroke);
-    r.setAttribute('stroke-width', String(strokeW * 1.5));
-    svg.appendChild(r);
+   There is one rectangle: rounded corners are a setting in the
+   Inspector, not a separate shape (IMGEDTR works the same way).
+══════════════════════════════════════════ */
 
-  } else if (ov.shapeType === 'rrect') {
-    /* Rounded rectangle — rx scales with the viewBox so corners always look right */
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.setAttribute('preserveAspectRatio', 'none');
-    const r = document.createElementNS(NS, 'rect');
-    r.setAttribute('x', '2'); r.setAttribute('y', '2');
-    r.setAttribute('width', '96'); r.setAttribute('height', '96');
-    r.setAttribute('rx', '14'); r.setAttribute('ry', '14');
-    r.setAttribute('fill', noFill ? 'none' : fill);
-    if (!noFill) r.setAttribute('fill-opacity', String(fillOp));
-    r.setAttribute('stroke', stroke);
-    r.setAttribute('stroke-width', String(strokeW * 1.5));
-    svg.appendChild(r);
+/* ── Helpers that build the shape drawings (copied from IMGEDTR) ── */
 
-  } else if (ov.shapeType === 'oval') {
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.setAttribute('preserveAspectRatio', 'none');
-    const e = document.createElementNS(NS, 'ellipse');
-    e.setAttribute('cx', '50'); e.setAttribute('cy', '50');
-    e.setAttribute('rx', '48'); e.setAttribute('ry', '48');
-    e.setAttribute('fill', noFill ? 'none' : fill);
-    if (!noFill) e.setAttribute('fill-opacity', String(fillOp));
-    e.setAttribute('stroke', stroke);
-    e.setAttribute('stroke-width', String(strokeW * 1.5));
-    svg.appendChild(e);
-
-  } else if (ov.shapeType === 'arrow') {
-    /*
-     * Arrow points left → right. We use a natural 5:1 viewBox so the
-     * arrowhead looks proportional at typical overlay sizes.
-     * preserveAspectRatio="xMidYMid meet" keeps it from distorting.
-     */
-    svg.setAttribute('viewBox', '0 0 100 20');
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    // Shaft
-    const shaft = document.createElementNS(NS, 'line');
-    shaft.setAttribute('x1', '2');  shaft.setAttribute('y1', '10');
-    shaft.setAttribute('x2', '76'); shaft.setAttribute('y2', '10');
-    shaft.setAttribute('stroke', stroke);
-    shaft.setAttribute('stroke-width', String(strokeW * 1.8));
-    shaft.setAttribute('stroke-linecap', 'round');
-    svg.appendChild(shaft);
-    // Arrowhead (filled triangle)
-    const head = document.createElementNS(NS, 'polygon');
-    head.setAttribute('points', '74,2 98,10 74,18');
-    head.setAttribute('fill', stroke); // same color as stroke
-    svg.appendChild(head);
-
-  } else if (ov.shapeType === 'xmark') {
-    // A grading "wrong" mark: two diagonal strokes forming an X.
-    // Like the arrow, this is a pure stroke — it never has a fill.
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    const x = document.createElementNS(NS, 'path');
-    x.setAttribute('d', 'M15 15 L85 85 M85 15 L15 85');
-    x.setAttribute('fill', 'none');
-    x.setAttribute('stroke', stroke);
-    x.setAttribute('stroke-width', String(strokeW * 1.8));
-    x.setAttribute('stroke-linecap', 'round');
-    svg.appendChild(x);
-
-  } else if (ov.shapeType === 'check') {
-    // A grading "correct" mark. Same tick shape as the checkbox widget
-    // ticks elsewhere in the app, so the two stay visually consistent.
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    const c = document.createElementNS(NS, 'path');
-    c.setAttribute('d', 'M18 52 L42 76 L84 22');
-    c.setAttribute('fill', 'none');
-    c.setAttribute('stroke', stroke);
-    c.setAttribute('stroke-width', String(strokeW * 1.8));
-    c.setAttribute('stroke-linecap', 'round');
-    c.setAttribute('stroke-linejoin', 'round');
-    svg.appendChild(c);
+/** Signed area of a polygon: positive when its points go clockwise on screen. */
+function polyArea(pts) {
+  let a = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % pts.length];
+    a += x1 * y2 - x2 * y1;
   }
+  return a / 2;
+}
+/**
+ * A closed outline through some points, as an SVG path. Outlines go
+ * clockwise and holes go the other way round, which is what tells the
+ * "non-zero" fill rule (used by both browsers and PDFs) to leave holes empty.
+ */
+function ringPath(pts, hole = false) {
+  const clockwise = polyArea(pts) > 0;
+  if (clockwise === hole) pts = pts.slice().reverse();      // flip it if it goes the wrong way
+  return 'M' + pts.map(([x, y]) => x.toFixed(2) + ' ' + y.toFixed(2)).join('L') + 'Z';
+}
+/** Points around a circle or ellipse (used for regular polygons and rings). */
+function circlePts(n, rx, ry = rx, cx = 50, cy = 50, startDeg = -90) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (startDeg + i * 360 / n) * Math.PI / 180;
+    pts.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]);
+  }
+  return pts;
+}
+/** A star: points alternate between an outer and an inner radius. */
+function starPts(points, outer, inner) {
+  const pts = [];
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 ? inner : outer, a = (-90 + i * 180 / points) * Math.PI / 180;
+    pts.push([50 + r * Math.cos(a), 50 + r * Math.sin(a)]);
+  }
+  return pts;
+}
+/** Stretch one or more point lists together so they exactly fill the 0-100 box. */
+function fitPts(...lists) {
+  const all = lists.flat();
+  const xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys);
+  const sx = 100 / (Math.max(...xs) - x0), sy = 100 / (Math.max(...ys) - y0);
+  return lists.map((pts) => pts.map(([x, y]) => [(x - x0) * sx, (y - y0) * sy]));
+}
+/** A full circle as an SVG path (two half arcs). hole = true goes the other way. */
+function circlePath(cx, cy, r, hole = false) {
+  const sweep = hole ? 0 : 1;
+  return `M${cx - r} ${cy}A${r} ${r} 0 1 ${sweep} ${cx + r} ${cy}A${r} ${r} 0 1 ${sweep} ${cx - r} ${cy}Z`;
+}
 
+/* The # sign: four bars joined into one outline, with the middle square as a
+   hole, then leaned to the right a little like a handwritten #. */
+const HASH = (() => {
+  const outer = [[22, 0], [40, 0], [40, 22], [60, 22], [60, 0], [78, 0], [78, 22], [100, 22], [100, 40], [78, 40],
+    [78, 60], [100, 60], [100, 78], [78, 78], [78, 100], [60, 100], [60, 78], [40, 78], [40, 100], [22, 100],
+    [22, 78], [0, 78], [0, 60], [22, 60], [22, 40], [0, 40], [0, 22], [22, 22]];
+  const hole = [[40, 40], [60, 40], [60, 60], [40, 60]];
+  const lean = (pts) => pts.map(([x, y]) => [x + (50 - y) * 0.18, y]);
+  const [o, h] = fitPts(lean(outer), lean(hole));
+  return ringPath(o) + ringPath(h, true);
+})();
+
+/* The "no" (prohibited) sign: a ring plus a slash from top-left to bottom-right. */
+const NO_SIGN = (() => {
+  const u = [Math.SQRT1_2, Math.SQRT1_2], n = [-Math.SQRT1_2, Math.SQRT1_2];   // along the slash, and across it
+  const at = (a, b) => [50 + u[0] * a + n[0] * b, 50 + u[1] * a + n[1] * b];
+  const slash = [at(-40, -7), at(40, -7), at(40, 7), at(-40, 7)];
+  return circlePath(50, 50, 50) + circlePath(50, 50, 38, true) + ringPath(slash);
+})();
+
+/* The award ribbon: a scalloped rosette with two tails. Drawn in a
+   100 x 140 space, then squashed into the 100 x 100 box (and stretched back
+   out by its default size, so it keeps its shape). */
+const RIBBON = (() => {
+  const Y = 100 / 140;                             // squash factor for y
+  const p = (x, y) => x.toFixed(2) + ' ' + (y * Y).toFixed(2);
+  // Rosette: 18 rounded bumps (quadratic curves) around a circle.
+  const bumps = 18, r = 42, peak = 50;
+  let d = '';
+  for (let i = 0; i <= bumps; i++) {
+    const a = (-90 + i * 360 / bumps) * Math.PI / 180, mid = (-90 + (i - 0.5) * 360 / bumps) * Math.PI / 180;
+    const x = 50 + r * Math.cos(a), y = 50 + r * Math.sin(a);
+    if (i === 0) d += 'M' + p(x, y);
+    else d += 'Q' + p(50 + peak * Math.cos(mid), 50 + peak * Math.sin(mid)) + ' ' + p(x, y);
+  }
+  d += 'Z';
+  const squash = (pts) => pts.map(([x, y]) => [x, y * Y]);
+  const leftTail = [[30, 78], [50, 90], [38, 140], [29, 127], [16, 136]];
+  const rightTail = leftTail.map(([x, y]) => [100 - x, y]);
+  // Tails first, so the rosette's outline is drawn over the tops of them.
+  const tails = ringPath(squash(leftTail)) + ringPath(squash(rightTail));
+  const ring = ringPath(squash(circlePts(48, 31))) + ringPath(squash(circlePts(48, 26)), true);
+  return { d: tails + d, detail: ring };
+})();
+
+/* "aspect" = width / height of the REGULAR version of a shape (every side
+   the same length). Shift keeps a shape at this proportion while you draw
+   or resize it, and "Make regular" snaps a drawn one back to it.
+     - A regular hexagon with points left and right, and an equilateral
+       triangle, are 2 wide for every 1.732 (the square root of 3) tall.
+     - A regular pentagon and a 5-point star: width = 2 x sin 72 degrees,
+       height = 1 + cos 36 degrees, so about 1.051 wide per 1 tall.        */
+const EQUILATERAL = 2 / Math.sqrt(3);
+const FIVE_POINT = (2 * Math.sin(72 * Math.PI / 180)) / (1 + Math.cos(36 * Math.PI / 180));
+
+/*
+ * Every shape. The groups are the headings in the Shapes panel.
+ *   size     [width, height] of its usual look, for a click without a drag
+ *   preset   its usual colours (fill, outline, thickness in points)
+ *   detail   extra parts filled with the OUTLINE colour (the "!" in the
+ *            warning sign, the ring on the ribbon)
+ *   strokeOnly  drawn as a line, never filled (the arrow and grading marks)
+ *   hidden   not in the panel (the red X and checkmark have their own tools)
+ * The two grading marks keep their old keys ('xmark', 'check'), so PDFs
+ * edited in earlier versions still open the same; the filled check and X
+ * from IMGEDTR are 'checkBadge' and 'xBadge' here.
+ */
+const SHAPES = [
+  // --- Basic ---------------------------------------------------------------
+  { key: 'rect', label: 'Rectangle', group: 'Basic', d: 'M0 0H100V100H0Z' },
+  { key: 'ellipse', label: 'Ellipse', group: 'Basic', aspect: 1, d: circlePath(50, 50, 50) },
+  { key: 'triangle', label: 'Triangle', group: 'Basic', aspect: EQUILATERAL, d: ringPath([[50, 0], [100, 100], [0, 100]]) },
+  { key: 'rightTriangle', label: 'Right triangle', group: 'Basic', aspect: 1, d: ringPath([[0, 0], [100, 100], [0, 100]]) },
+  { key: 'diamond', label: 'Diamond', group: 'Basic', aspect: 1, d: ringPath([[50, 0], [100, 50], [50, 100], [0, 50]]) },
+  { key: 'pentagon', label: 'Pentagon', group: 'Basic', aspect: FIVE_POINT, d: ringPath(fitPts(circlePts(5, 50))[0]) },
+  { key: 'hexagon', label: 'Hexagon', group: 'Basic', aspect: EQUILATERAL, d: ringPath(fitPts(circlePts(6, 50, 50, 50, 50, 0))[0]) },
+  { key: 'octagon', label: 'Octagon (stop sign)', group: 'Basic', aspect: 1, d: ringPath(fitPts(circlePts(8, 50, 50, 50, 50, 22.5))[0]) },
+  // The line arrow PDFEDTR has always had: a shaft, and a solid head in the outline colour.
+  { key: 'arrow', label: 'Arrow', group: 'Basic', strokeOnly: true, size: [220, 60], d: 'M2 50H76', detail: 'M70 10L100 50L70 90Z' },
+  // --- Symbols -------------------------------------------------------------
+  { key: 'star', label: 'Star', group: 'Symbols', aspect: FIVE_POINT, d: ringPath(fitPts(starPts(5, 50, 20))[0]) },
+  { key: 'heart', label: 'Heart', group: 'Symbols',
+    d: 'M50 100C22 78 0 56 0 30C0 13 13 0 28 0C39 0 46 7 50 17C54 7 61 0 72 0C87 0 100 13 100 30C100 56 78 78 50 100Z' },
+  { key: 'checkBadge', label: 'Check mark (solid)', group: 'Symbols', preset: { fill: '#16a34a', stroke: '#ffffff', width: 2 },
+    d: ringPath(fitPts([[0, 55], [15, 40], [36, 61], [85, 12], [100, 27], [36, 90]])[0]) },
+  { key: 'xBadge', label: 'X mark (solid)', group: 'Symbols', preset: { fill: '#dc2626', stroke: '#ffffff', width: 2 },
+    d: ringPath(fitPts([[35, 0], [65, 0], [65, 35], [100, 35], [100, 65], [65, 65], [65, 100], [35, 100], [35, 65], [0, 65], [0, 35], [35, 35]]
+      .map(([x, y]) => { const a = Math.PI / 4, dx = x - 50, dy = y - 50; return [50 + dx * Math.cos(a) - dy * Math.sin(a), 50 + dx * Math.sin(a) + dy * Math.cos(a)]; }))[0]) },
+  { key: 'plus', label: 'Plus', group: 'Symbols',
+    d: ringPath([[35, 0], [65, 0], [65, 35], [100, 35], [100, 65], [65, 65], [65, 100], [35, 100], [35, 65], [0, 65], [0, 35], [35, 35]]) },
+  { key: 'hash', label: 'Pound / hash sign (#)', group: 'Symbols', preset: { fill: '#8a1c5c', stroke: '#ffffff', width: 2 }, d: HASH },
+  { key: 'noSign', label: 'No sign (prohibited)', group: 'Symbols', preset: { fill: '#d0021b', stroke: '#ffffff', width: 2 }, d: NO_SIGN },
+  { key: 'warning', label: 'Warning sign', group: 'Symbols', size: [180, 160], aspect: EQUILATERAL,
+    preset: { fill: '#facc15', stroke: '#111827', width: 3 },
+    d: ringPath([[50, 0], [100, 100], [0, 100]]),
+    detail: ringPath([[46, 36], [54, 36], [52.5, 72], [47.5, 72]]) + circlePath(50, 85, 5) },
+  // --- Callouts and awards -------------------------------------------------
+  { key: 'speech', label: 'Speech bubble', group: 'Callouts and awards', size: [240, 160],
+    d: 'M14 0H86A14 14 0 0 1 100 14V60A14 14 0 0 1 86 74H44L16 100L24 74H14A14 14 0 0 1 0 60V14A14 14 0 0 1 14 0Z' },
+  { key: 'blockArrow', label: 'Block arrow', group: 'Callouts and awards', size: [220, 120],
+    d: ringPath([[0, 30], [60, 30], [60, 0], [100, 50], [60, 100], [60, 70], [0, 70]]) },
+  { key: 'pin', label: 'Location pin', group: 'Callouts and awards', size: [120, 150],
+    d: 'M50 100C34 82 0 66 0 40A50 40 0 1 1 100 40C100 66 66 82 50 100Z' +
+       'M32 40A18 15 0 1 0 68 40A18 15 0 1 0 32 40Z' },            // the hole in the middle (drawn the other way)
+  { key: 'bulb', label: 'Light bulb (idea)', group: 'Callouts and awards', size: [120, 160],
+    d: 'M28 74C28 62 0 56 0 36A50 36 0 1 1 100 36C100 56 72 62 72 74Z M30 79H70V86H30Z M36 91H64V100H36Z' },
+  { key: 'ribbon', label: 'Award ribbon', group: 'Callouts and awards', size: [140, 196],
+    preset: { fill: '#1d4ed8', stroke: '#ffffff', width: 2 }, d: RIBBON.d, detail: RIBBON.detail },
+  { key: 'seal', label: 'Badge / seal', group: 'Callouts and awards', aspect: 1, d: ringPath(starPts(16, 50, 42)) },
+  // --- Grading marks (their own tools in the rail, so not in the panel) ----
+  { key: 'xmark', label: 'Red X', group: 'Marks', hidden: true, strokeOnly: true, aspect: 1, d: 'M15 15L85 85M85 15L15 85' },
+  { key: 'check', label: 'Green checkmark', group: 'Marks', hidden: true, strokeOnly: true, aspect: 1, d: 'M18 52L42 76L84 22' },
+];
+const SHAPE_BY_KEY = Object.fromEntries(SHAPES.map((s) => [s.key, s]));
+
+/** The shape definition for an overlay (old saved names included). */
+function shapeDef(ov) {
+  const key = ov.shapeType === 'rrect' ? 'rect' : ov.shapeType === 'oval' ? 'ellipse' : ov.shapeType;
+  return SHAPE_BY_KEY[key] || SHAPE_BY_KEY.rect;
+}
+
+/**
+ * Bring a shape saved by an earlier version (1.13 or before) up to date,
+ * without changing how it looks in the downloaded PDF:
+ *   - 'oval' is now 'ellipse'; 'rrect' is now a rectangle with corners
+ *     (14% of its shorter side, the old fixed rounding).
+ *   - The old "strokeWidth" was in screen pixels; the PDF got 0.75 of it
+ *     (1.35x that for the grading marks, 1.5x for the arrow's shaft).
+ *     lineWidth is in points, exactly what the PDF gets.
+ * Safe to call many times: it only changes a shape that still needs it.
+ */
+function upgradeShape(ov, pgWpt, pgHpt) {
+  if (ov.type !== 'shape') return;
+  if (ov.lineWidth == null) {
+    const old = ov.strokeWidth ?? 2;
+    const k = ['xmark', 'check'].includes(ov.shapeType) ? 1.35 : ov.shapeType === 'arrow' ? 1.125 : 0.75;
+    ov.lineWidth = Math.round(old * k * 10) / 10;
+  }
+  if (ov.shapeType === 'oval') ov.shapeType = 'ellipse';
+  if (ov.shapeType === 'rrect') {
+    // The page size is needed to turn "14% of the shorter side" into points.
+    if (!pgWpt || !pgHpt) return;
+    ov.radius = Math.round(Math.min(ov.fracW * pgWpt, ov.fracH * pgHpt) * 0.14);
+    ov.shapeType = 'rect';
+  }
+  if (ov.radius == null) ov.radius = 0;
+}
+
+/* ── A tiny SVG path engine ──
+   SVG paths can be stretched by a different amount across and down (a
+   circle becoming an oval), but pdf-lib can only scale a path evenly. So we
+   do the stretching ourselves: read the path into absolute points, turn each
+   arc into curves (an arc cannot be stretched unevenly, but a curve can),
+   move every point, and write it back out. Only the commands our shapes
+   use are handled: M L H V C Q A Z, all capital letters (absolute). */
+
+/** Read "M0 0H100..." into a list of [command, numbers...]. */
+function parsePath(d) {
+  const out = [];
+  const tokens = d.match(/[MLHVCQAZ]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?/gi) || [];
+  const ARGS = { M: 2, L: 2, H: 1, V: 1, C: 6, Q: 4, A: 7, Z: 0 };
+  let i = 0, cmd = null;
+  while (i < tokens.length) {
+    if (/^[A-Za-z]$/.test(tokens[i])) {
+      cmd = tokens[i++];
+      if (cmd !== cmd.toUpperCase()) throw new Error('Shape paths must use capital (absolute) commands');
+      if (cmd === 'Z') { out.push(['Z']); continue; }
+    }
+    if (!cmd || cmd === 'Z') throw new Error('Bad shape path');
+    const n = ARGS[cmd];
+    out.push([cmd, ...tokens.slice(i, i + n).map(Number)]);
+    i += n;
+    if (cmd === 'M') cmd = 'L';                    // numbers after an M are lines
+  }
+  return out;
+}
+
+/** One SVG arc as cubic curves: returns [[c1x,c1y,c2x,c2y,x,y], ...]. */
+function arcToCubics(x1, y1, rx, ry, rotDeg, largeArc, sweep, x2, y2) {
+  if (rx === 0 || ry === 0) return [[x1, y1, x2, y2, x2, y2]];
+  const phi = rotDeg * Math.PI / 180, cos = Math.cos(phi), sin = Math.sin(phi);
+  // Step 1: move to a space where the arc's ellipse is centred and unrotated.
+  const dx = (x1 - x2) / 2, dy = (y1 - y2) / 2;
+  const x1p = cos * dx + sin * dy, y1p = -sin * dx + cos * dy;
+  rx = Math.abs(rx); ry = Math.abs(ry);
+  const lambda = (x1p * x1p) / (rx * rx) + (y1p * y1p) / (ry * ry);
+  if (lambda > 1) { rx *= Math.sqrt(lambda); ry *= Math.sqrt(lambda); }   // radii too small: grow them
+  // Step 2: the centre.
+  const num = rx * rx * ry * ry - rx * rx * y1p * y1p - ry * ry * x1p * x1p;
+  const den = rx * rx * y1p * y1p + ry * ry * x1p * x1p;
+  let co = Math.sqrt(Math.max(0, num / den));
+  if (largeArc === sweep) co = -co;
+  const cxp = co * rx * y1p / ry, cyp = -co * ry * x1p / rx;
+  const cx = cos * cxp - sin * cyp + (x1 + x2) / 2;
+  const cy = sin * cxp + cos * cyp + (y1 + y2) / 2;
+  // Step 3: start angle and how far round it goes.
+  const ang = (ux, uy, vx, vy) => {
+    const a = Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+    return a;
+  };
+  const t1 = ang(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry);
+  let dt = ang((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry);
+  if (!sweep && dt > 0) dt -= 2 * Math.PI;
+  if (sweep && dt < 0) dt += 2 * Math.PI;
+  // Step 4: one curve per quarter turn (or less) - accurate to a hair.
+  const segs = Math.ceil(Math.abs(dt) / (Math.PI / 2));
+  const step = dt / segs, k = (4 / 3) * Math.tan(step / 4);
+  const point = (t) => [cx + rx * Math.cos(t) * cos - ry * Math.sin(t) * sin,
+                        cy + rx * Math.cos(t) * sin + ry * Math.sin(t) * cos];
+  const deriv = (t) => [-rx * Math.sin(t) * cos - ry * Math.cos(t) * sin,
+                        -rx * Math.sin(t) * sin + ry * Math.cos(t) * cos];
+  const out = [];
+  for (let s = 0; s < segs; s++) {
+    const a = t1 + s * step, b = a + step;
+    const [ax, ay] = point(a), [bx, by] = point(b);
+    const [dax, day] = deriv(a), [dbx, dby] = deriv(b);
+    out.push([ax + k * dax, ay + k * day, bx - k * dbx, by - k * dby, bx, by]);
+  }
+  return out;
+}
+
+/** A path as plain segments (M, L, C, Q, Z only, absolute), cached per drawing. */
+const plainPathCache = new Map();
+function plainPath(d) {
+  if (plainPathCache.has(d)) return plainPathCache.get(d);
+  const out = [];
+  let x = 0, y = 0, sx = 0, sy = 0;               // current point, and where this outline started
+  for (const [c, ...a] of parsePath(d)) {
+    if (c === 'M') { x = sx = a[0]; y = sy = a[1]; out.push(['M', x, y]); }
+    else if (c === 'L') { x = a[0]; y = a[1]; out.push(['L', x, y]); }
+    else if (c === 'H') { x = a[0]; out.push(['L', x, y]); }
+    else if (c === 'V') { y = a[0]; out.push(['L', x, y]); }
+    else if (c === 'C') { out.push(['C', ...a]); x = a[4]; y = a[5]; }
+    else if (c === 'Q') { out.push(['Q', ...a]); x = a[2]; y = a[3]; }
+    else if (c === 'A') {
+      for (const cub of arcToCubics(x, y, a[0], a[1], a[2], a[3], a[4], a[5], a[6])) out.push(['C', ...cub]);
+      x = a[5]; y = a[6];
+    }
+    else if (c === 'Z') { out.push(['Z']); x = sx; y = sy; }
+  }
+  plainPathCache.set(d, out);
+  return out;
+}
+
+/** Stretch a path: each point (x, y) becomes (x * sx + tx, y * sy + ty). */
+function mapPath(d, sx, sy, tx, ty) {
+  const f = (v) => (Math.round(v * 100) / 100).toString();   // 2 decimals is plenty
+  return plainPath(d).map(([c, ...a]) => {
+    if (c === 'Z') return 'Z';
+    const pts = [];
+    for (let i = 0; i < a.length; i += 2) pts.push(f(a[i] * sx + tx) + ' ' + f(a[i + 1] * sy + ty));
+    return c + pts.join(' ');
+  }).join('');
+}
+
+/** A rectangle with rounded corners as a path (corner curves are quarter circles). */
+function roundRectPathD(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  const f = (v) => (Math.round(v * 100) / 100).toString();
+  if (r < 0.01) return `M${f(x)} ${f(y)}H${f(x + w)}V${f(y + h)}H${f(x)}Z`;
+  const k = r * 0.5523;                           // how far a curve's handle reaches for a quarter circle
+  return `M${f(x + r)} ${f(y)}H${f(x + w - r)}` +
+    `C${f(x + w - r + k)} ${f(y)} ${f(x + w)} ${f(y + r - k)} ${f(x + w)} ${f(y + r)}V${f(y + h - r)}` +
+    `C${f(x + w)} ${f(y + h - r + k)} ${f(x + w - r + k)} ${f(y + h)} ${f(x + w - r)} ${f(y + h)}H${f(x + r)}` +
+    `C${f(x + r - k)} ${f(y + h)} ${f(x)} ${f(y + h - r + k)} ${f(x)} ${f(y + h - r)}V${f(y + r)}` +
+    `C${f(x)} ${f(y + r - k)} ${f(x + r - k)} ${f(y)} ${f(x + r)} ${f(y)}Z`;
+}
+
+/**
+ * Where a shape's outline goes inside its box, in whatever units the box is
+ * given in (screen pixels for the preview, points for the PDF).
+ *   W, H   the box's size        u   how many of those units make one point
+ *   ox, oy the box's top-left corner
+ * Like IMGEDTR, the outline sits just INSIDE the box, so a thick outline
+ * never spills over its edges.
+ * Returns { main, detail, line } - two path strings and the outline thickness.
+ */
+function shapeGeometry(ov, W, H, u, ox = 0, oy = 0) {
+  const def = shapeDef(ov);
+  const line = Math.max(0, (ov.lineWidth ?? 1.5) * u);
+  if (def.key === 'rect') {
+    // The rectangle is built for its real size, so the corners stay round
+    // (not squashed) whatever shape the box is.
+    const r = ov.shapeType === 'rrect' ? Math.min(W, H) * 0.14 : (ov.radius || 0) * u;
+    return { main: roundRectPathD(ox + line / 2, oy + line / 2, Math.max(0.01, W - line), Math.max(0.01, H - line), r),
+             detail: null, line };
+  }
+  // Shrink the drawing evenly (so a regular hexagon stays regular at any
+  // thickness), just enough for the outline to fit on the tighter side.
+  const k = Math.max(0.01, Math.min((W - line) / W, (H - line) / H));
+  const iw = Math.max(0.01, W * k), ih = Math.max(0.01, H * k);
+  const ix = ox + (W - iw) / 2, iy = oy + (H - ih) / 2;
+  // A mirrored shape uses a negative stretch, starting from the far edge.
+  const sx = (ov.flipX ? -1 : 1) * iw / 100, sy = (ov.flipY ? -1 : 1) * ih / 100;
+  const tx = ix + (ov.flipX ? iw : 0), ty = iy + (ov.flipY ? ih : 0);
+  return { main: mapPath(def.d, sx, sy, tx, ty), detail: def.detail ? mapPath(def.detail, sx, sy, tx, ty) : null, line };
+}
+
+/** Build the on-screen <svg> for a shape overlay, sized to its box right now. */
+function buildShapeSvg(ov) {
+  upgradeShape(ov, state.pageWpt, state.pageHpt);
+  const NS = 'http://www.w3.org/2000/svg';
+  const def = shapeDef(ov);
+  const W = Math.max(1, ov.fracW * pageW()), H = Math.max(1, ov.fracH * pageH());
+  const g = shapeGeometry(ov, W, H, state.scale);   // one point is state.scale screen pixels
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'ov-shape-svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('aria-hidden', 'true');
+  const main = document.createElementNS(NS, 'path');
+  main.setAttribute('d', g.main);
+  if (def.strokeOnly || ov.noFill) main.setAttribute('fill', 'none');
+  else { main.setAttribute('fill', ov.fillColor || '#4488ff'); main.setAttribute('fill-opacity', String(ov.fillOpacity ?? 0.3)); }
+  if (g.line > 0) {
+    main.setAttribute('stroke', ov.strokeColor || '#2244cc');
+    main.setAttribute('stroke-width', String(g.line));
+    main.setAttribute('stroke-linejoin', 'round');   // the PDF uses round joins too
+    main.setAttribute('stroke-linecap', 'round');
+  }
+  svg.appendChild(main);
+  if (g.detail) {
+    const det = document.createElementNS(NS, 'path');
+    det.setAttribute('d', g.detail);
+    det.setAttribute('fill', ov.strokeColor || '#2244cc');
+    svg.appendChild(det);
+  }
   return svg;
+}
+
+/**
+ * Write a shape into the PDF. boxLeft / boxTop are its top-left corner
+ * measured in points from the page's TOP-left (as on screen).
+ * pdf-lib's drawSvgPath reads paths the SVG way up (y grows downward from
+ * the x / y you give it), so handing it y = the page height lets us use
+ * top-down page points directly. (Before 1.14 the grading marks, rounded
+ * rectangles, arrowheads and sticky-note corners were given bottom-up
+ * points instead, so they landed below the page and never showed up in
+ * the download.)
+ */
+function drawShapeToPdf(page, ov, pgW, pgH) {
+  upgradeShape(ov, pgW, pgH);
+  const def = shapeDef(ov);
+  const W = ov.fracW * pgW, H = ov.fracH * pgH;
+  const g = shapeGeometry(ov, W, H, 1, ov.fracLeft * pgW, ov.fracTop * pgH);
+  const stroke = PDFLib.rgb(...parseHex(ov.strokeColor || '#2244cc'));
+  const filled = !def.strokeOnly && !ov.noFill;
+  // Round line joins and ends, matching the preview (pdf-lib has no option
+  // for joins, so set it on the page's graphics state around the drawing).
+  page.pushOperators(PDFLib.pushGraphicsState(), PDFLib.setLineJoin(PDFLib.LineJoinStyle.Round));
+  const opts = { x: 0, y: pgH };
+  if (filled) { opts.color = PDFLib.rgb(...parseHex(ov.fillColor || '#4488ff')); opts.opacity = ov.fillOpacity ?? 0.3; }
+  if (g.line > 0) { opts.borderColor = stroke; opts.borderWidth = g.line; opts.borderLineCap = PDFLib.LineCapStyle.Round; }
+  if (filled || g.line > 0) page.drawSvgPath(g.main, opts);
+  if (g.detail) page.drawSvgPath(g.detail, { x: 0, y: pgH, color: stroke });
+  page.pushOperators(PDFLib.popGraphicsState());
+}
+
+/** Width / height that Shift keeps: the regular shape, or its usual size, or as drawn. */
+function shapeAspect(key) {
+  const def = SHAPE_BY_KEY[key];
+  if (!def) return 1;
+  return def.aspect || (def.size ? def.size[0] / def.size[1] : 1);
+}
+
+/** A small <svg> picture of a shape, for buttons (fixed drawings only). */
+function shapeIconSvg(key, strokeWidth = 7) {
+  const s = SHAPE_BY_KEY[key] || SHAPE_BY_KEY.rect;
+  const pad = strokeWidth + 2;
+  return `<svg class="icon shape-pic" viewBox="${-pad} ${-pad} ${100 + pad * 2} ${100 + pad * 2}" aria-hidden="true" focusable="false">` +
+    `<path d="${s.d}" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linejoin="round" stroke-linecap="round"/>` +
+    (s.detail ? `<path d="${s.detail}" fill="currentColor" stroke="none"/>` : '') + '</svg>';
 }
 
 /** Update the SVG element inside an existing shape overlay in the DOM */
@@ -3911,6 +4296,16 @@ function wireMove(el, ov, rzHandle) {
         ov.fracW = sidePx / cw;
         ov.fracH = sidePx / ch;
 
+      } else if (ov.type === 'shape' && (e2.shiftKey || ['xmark', 'check'].includes(ov.shapeType))) {
+        /* Shift keeps a shape at its regular proportions (1.14, as in
+           IMGEDTR); the grading marks always stay square. Follows whichever
+           way the pointer moved further, in screen pixels. */
+        const a = shapeAspect(ov.shapeType);
+        let wPx = Math.max(10, sw * cw + dx), hPx = Math.max(10, sh * ch + dy);
+        if (Math.abs(dx) >= Math.abs(dy)) hPx = wPx / a; else wPx = hPx * a;
+        ov.fracW = Math.min(1 - ov.fracLeft, wPx / cw);
+        ov.fracH = Math.min(1 - ov.fracTop,  hPx / ch);
+
       } else {
         // All other overlay types: free resize
         ov.fracW = Math.max(0.04, sw + dx / cw);
@@ -3919,6 +4314,9 @@ function wireMove(el, ov, rzHandle) {
 
       el.style.width  = (ov.fracW * cw) + 'px';
       el.style.height = (ov.fracH * ch) + 'px';
+      // A shape's outline is drawn for its exact size (so corners stay round
+      // and the thickness stays true), so redraw it as it grows.
+      if (ov.type === 'shape') updateShapeInDom(ov);
       if (state.selectedId === ov.id) positionContextBar(el);
     };
     const up = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', up); };
@@ -4020,6 +4418,18 @@ const DEFAULT_SIZES = {
 
 /** Work out which entry of DEFAULT_SIZES applies to a tool + its options. */
 function defaultSizeFor(type, extra = {}) {
+  /* Shapes from the Shapes panel (1.14): their usual proportions, about a
+     fifth of the page wide, worked out through screen pixels so a square
+     really is square on the page. The rectangle keeps its old size. */
+  if (type === 'shape' && !['rect', 'arrow', 'xmark', 'check'].includes(extra.shapeType) && pageW() && pageH()) {
+    const def = SHAPE_BY_KEY[extra.shapeType];
+    if (def) {
+      const side = 0.2 * pageW();                                  // px
+      const [w, h] = def.size ? [def.size[0] * side / 160, def.size[1] * side / 160]
+                              : [side, side / shapeAspect(def.key)];
+      return { w: w / pageW(), h: h / pageH() };
+    }
+  }
   const key = type === 'field' ? extra.fieldType
             : type === 'shape' && ['arrow', 'xmark', 'check'].includes(extra.shapeType) ? extra.shapeType
             : type;
@@ -4092,11 +4502,17 @@ function createOverlay(type, extra = {}, rect) {
   } else if (type === 'shape') {
     ov.type        = 'shape';
     ov.shapeType   = extra.shapeType || state.currentShapeType;
-    ov.fillColor   = extra.fillColor   ?? '#4488ff';
-    ov.fillOpacity = extra.fillOpacity ?? 0.3;
-    ov.strokeColor = extra.strokeColor ?? '#2244cc';
-    ov.strokeWidth = extra.strokeWidth ?? 2;
+    // A shape's usual colours (the warning sign is yellow, the no sign red...),
+    // unless the tool asked for its own.
+    const preset   = (SHAPE_BY_KEY[ov.shapeType] || {}).preset;
+    ov.fillColor   = extra.fillColor   ?? (preset ? preset.fill : '#4488ff');
+    ov.fillOpacity = extra.fillOpacity ?? (preset ? 1 : 0.3);
+    ov.strokeColor = extra.strokeColor ?? (preset ? preset.stroke : '#2244cc');
+    ov.lineWidth   = extra.lineWidth   ?? (preset ? preset.width : 1.5);   // points
     ov.noFill      = extra.noFill      ?? false;
+    ov.radius      = extra.radius      ?? 0;       // rounded corners in points (rectangle only)
+    ov.flipX       = false;
+    ov.flipY       = false;
 
   } else if (type === 'image') {
     ov.dataUrl       = extra.dataUrl;
@@ -4235,9 +4651,14 @@ function beginPlacement(type, extra = {}) {
   const labelKey = type === 'field' ? extra.fieldType
                  : type === 'shape' && PLACEMENT_LABELS[extra.shapeType] ? extra.shapeType
                  : type;
-  const label = PLACEMENT_LABELS[labelKey] || 'element';
+  // A shape from the Shapes panel is named ("Click the page to place the star").
+  const shapeName = type === 'shape' && !PLACEMENT_LABELS[extra.shapeType] && SHAPE_BY_KEY[extra.shapeType]
+    ? SHAPE_BY_KEY[extra.shapeType].label.replace(/ \(.*\)$/, '').toLowerCase() : null;
+  const label = shapeName || PLACEMENT_LABELS[labelKey] || 'element';
+  // Built from fixed words only (label comes from this file, never from a PDF).
   dom.placementHint.innerHTML =
-    `Click the page to place the ${label}, or drag to size it. ` +
+    `Click the page to place the ${label}, or drag to size it` +
+    (type === 'shape' && shapeName ? ' (<kbd>Shift</kbd> keeps its shape)' : '') + '. ' +
     `<kbd>Enter</kbd> centres it · <kbd>Esc</kbd> cancels`;
   dom.placementHint.hidden = false;
 }
@@ -4280,9 +4701,17 @@ function handlePlacementPointerDown(e) {
   const start = eventToCanvasPoint(e);
 
   let current = start;
+  // Shift while drawing a shape keeps its regular proportions (1.14).
+  const keepShape = (e2, p) => {
+    if (type !== 'shape' || !(e2.shiftKey || ['xmark', 'check'].includes(extra.shapeType))) return p;
+    const a = shapeAspect(extra.shapeType);
+    const w = Math.abs(p.x - start.x), h = Math.abs(p.y - start.y);
+    const W = Math.max(w, h * a), H = W / a;
+    return { x: start.x + Math.sign(p.x - start.x || 1) * W, y: start.y + Math.sign(p.y - start.y || 1) * H };
+  };
 
   const onMove = e2 => {
-    current = eventToCanvasPoint(e2);
+    current = keepShape(e2, eventToCanvasPoint(e2));
     const x = Math.min(start.x, current.x);
     const y = Math.min(start.y, current.y);
     const w = Math.abs(current.x - start.x);
@@ -4659,7 +5088,13 @@ function buildContextBar(ov) {
   const btn    = (html, title, onClick, cls = '') => {
     const b = document.createElement('button');
     b.className = `ctx-btn ${cls}`;
-    b.innerHTML = html; b.title = title;
+    b.type = 'button';
+    // html is always a fixed string from this file (an icon or a letter).
+    b.innerHTML = html;
+    // 1.14: the shared tooltip bubble instead of a slow "title", and the same
+    // words as the button's name for screen readers (so "B" reads as "Bold").
+    b.dataset.tip = title;
+    b.setAttribute('aria-label', title);
     b.addEventListener('click', onClick); return b;
   };
   const toggleBtn = (html, title, isOn, onToggle) => {
@@ -4709,7 +5144,8 @@ function buildContextBar(ov) {
     r.min = min; r.max = max; r.step = step; r.value = value;
     const out = document.createElement('span');
     out.className = 'ctx-val';
-    const show = v => { out.textContent = unit === '%' ? Math.round(v) + '%' : Math.round(v) + unit; };
+    // Whole numbers, or one decimal place for half-point steps (2.5 pt).
+    const show = v => { v = Number(v); out.textContent = unit === '%' ? Math.round(v) + '%' : (Math.round(v * 10) / 10) + unit; };
     show(value);
     r.addEventListener('input', () => { snapshotOnce(); show(r.value); onInput(parseFloat(r.value)); });
     wrap.appendChild(r); wrap.appendChild(out);
@@ -4725,6 +5161,51 @@ function buildContextBar(ov) {
     });
     // each dropdown change is discrete — snapshot immediately
     s.addEventListener('change', () => { snapshotOnce(); onChange(s.value); }); return s;
+  };
+  /* One labelled row, like IMGEDTR's Properties: the label on the left,
+     the control(s) on the right. (1.14) */
+  const row = (text, ...controls) => {
+    const r = document.createElement('div');
+    r.className = 'insp-row';
+    const l = document.createElement('span');
+    l.className = 'insp-label';
+    l.textContent = text;
+    const c = document.createElement('div');
+    c.className = 'insp-ctl';
+    controls.forEach((x) => c.appendChild(x));
+    r.append(l, c);
+    return r;
+  };
+  /* The family's colour swatches (IMGEDTR's), plus a "custom" swatch that
+     opens the browser's colour picker. The chosen one gets a ring. (1.14) */
+  const swatches = (current, onPick) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'swatches';
+    wrap.setAttribute('role', 'group');
+    wrap.setAttribute('aria-label', 'Colours');
+    const mark = () => wrap.querySelectorAll('.swatch').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.color === current.toLowerCase())));
+    const choose = (hex) => { snapshotOnce(); current = hex; custom.value = hex; mark(); onPick(hex); };
+    const custom = document.createElement('input');
+    custom.type = 'color';
+    custom.className = 'swatch-custom';
+    custom.value = /^#[0-9a-f]{6}$/i.test(current) ? current : '#000000';
+    custom.title = 'Any colour';
+    custom.setAttribute('aria-label', 'Any colour');
+    custom.addEventListener('input', () => choose(custom.value.toLowerCase()));
+    wrap.appendChild(custom);
+    SWATCHES.forEach(([hex, name]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'swatch';
+      b.dataset.color = hex;
+      b.style.background = hex;
+      b.title = name;
+      b.setAttribute('aria-label', name);
+      b.addEventListener('click', () => choose(hex));
+      wrap.appendChild(b);
+    });
+    mark();
+    return wrap;
   };
 
   /* ═══════ TEXT overlay ═══════ */
@@ -4768,22 +5249,73 @@ function buildContextBar(ov) {
       v => { ov.align = v; updateTextInDom(ov); }
     ));
 
-  /* ═══════ SHAPE overlay ═══════ */
+  /* ═══════ SHAPE overlay ═══════ (1.14: laid out in rows like IMGEDTR's) */
   } else if (ov.type === 'shape') {
-    if (!['arrow', 'xmark', 'check'].includes(ov.shapeType)) {
-      bar.appendChild(label('fill'));
-      bar.appendChild(clr(ov.fillColor || '#4488ff', v => { ov.fillColor = v; updateShapeInDom(ov); }));
-      const fop = inp('number', Math.round((ov.fillOpacity ?? 0.3) * 100), '46px', v => { ov.fillOpacity = parseInt(v) / 100; updateShapeInDom(ov); });
-      fop.min = 0; fop.max = 100; fop.setAttribute('aria-label', 'Fill opacity');
-      bar.appendChild(fop);
-      bar.appendChild(toggleBtn('∅', 'No fill', ov.noFill, v => { ov.noFill = v; updateShapeInDom(ov); }));
-      bar.appendChild(sep());
+    upgradeShape(ov, state.pageWpt, state.pageHpt);
+    const def = shapeDef(ov);
+    const mark = ['xmark', 'check'].includes(def.key);
+    const redraw = () => updateShapeInDom(ov);
+
+    // Which shape: swap it for another, keeping its box (not for the grading marks).
+    if (!mark) {
+      const kinds = SHAPES.filter((d) => !d.hidden).map((d) => [d.key, d.label]);
+      const pick = sel(kinds, def.key, (v) => {
+        ov.shapeType = v;
+        const pre = SHAPE_BY_KEY[v].preset;
+        if (pre) { ov.fillColor = pre.fill; ov.strokeColor = pre.stroke; ov.fillOpacity = 1; ov.noFill = false; }
+        redraw(); buildContextBar(ov);           // rows change with the shape (corners, fill...)
+      });
+      pick.setAttribute('aria-label', 'Shape');
+      bar.appendChild(row('Shape', pick));
+      // "Make regular": every side the same length, keeping the width and the middle.
+      if (def.aspect) {
+        bar.appendChild(row('', btn('Make regular', 'Make every side the same length (Shift does this while you draw or resize)', () => {
+          snapshot();
+          const cw = pageW(), ch = pageH();
+          const wPx = ov.fracW * cw, cy = (ov.fracTop + ov.fracH / 2) * ch;
+          const hPx = wPx / def.aspect;
+          ov.fracH = Math.min(1, hPx / ch);
+          ov.fracTop = Math.max(0, Math.min(1 - ov.fracH, cy / ch - ov.fracH / 2));
+          refreshOverlays();
+        }, 'wide')));
+      }
     }
-    bar.appendChild(label('stroke'));
-    bar.appendChild(clr(ov.strokeColor || '#2244cc', v => { ov.strokeColor = v; updateShapeInDom(ov); }));
-    const sw = inp('number', ov.strokeWidth ?? 2, '42px', v => { ov.strokeWidth = parseInt(v) || 1; updateShapeInDom(ov); });
-    sw.min = 0; sw.max = 30; sw.setAttribute('aria-label', 'Stroke width');
-    bar.appendChild(sw);
+
+    // The outline (for marks and the arrow, that is the whole thing).
+    bar.appendChild(row(mark || def.strokeOnly ? 'Colour' : 'Outline',
+      swatches(ov.strokeColor || '#2244cc', (v) => { ov.strokeColor = v; redraw(); })));
+    bar.appendChild(row('Thickness', range(0, mark ? 24 : 20, 0.5, ov.lineWidth ?? 1.5, ' pt',
+      (v) => { ov.lineWidth = v; redraw(); })));
+
+    // The fill (a line never has one).
+    if (!def.strokeOnly) {
+      const fillOn = document.createElement('input');
+      fillOn.type = 'checkbox';
+      fillOn.checked = !ov.noFill;
+      fillOn.setAttribute('aria-label', 'Fill');
+      fillOn.addEventListener('change', () => { snapshotOnce(); ov.noFill = !fillOn.checked; redraw(); buildContextBar(ov); });
+      bar.appendChild(row('Fill', fillOn));
+      if (!ov.noFill) {
+        bar.appendChild(row('Fill colour', swatches(ov.fillColor || '#4488ff', (v) => { ov.fillColor = v; redraw(); })));
+        bar.appendChild(row('Fill opacity', range(0, 100, 1, Math.round((ov.fillOpacity ?? 0.3) * 100), '%',
+          (v) => { ov.fillOpacity = v / 100; redraw(); })));
+      }
+    }
+
+    // Rounded corners: a setting of the one rectangle, not a separate shape.
+    if (def.key === 'rect') {
+      bar.appendChild(row('Corners', range(0, 72, 1, ov.radius || 0, ' pt', (v) => { ov.radius = v; redraw(); })));
+    }
+
+    // Mirror it (handy for arrows, speech bubbles and right triangles).
+    if (!mark) {
+      const flips = document.createElement('div');
+      flips.className = 'insp-btns';
+      flips.appendChild(toggleBtn(iconHtml('flipH'), 'Flip across (mirror left to right)', ov.flipX, (v) => { ov.flipX = v; redraw(); }));
+      flips.appendChild(toggleBtn(iconHtml('flipV'), 'Flip down (mirror top to bottom)', ov.flipY, (v) => { ov.flipY = v; redraw(); }));
+      flips.querySelectorAll('button').forEach((b) => b.setAttribute('aria-label', b.title));
+      bar.appendChild(row('Flip', flips));
+    }
 
   /* ═══════ HIGHLIGHT overlay ═══════ */
   } else if (ov.type === 'highlight') {
@@ -5325,96 +5857,9 @@ async function downloadPdf() {
           altTextCount++;
         }
 
-      /* ── Shape ── */
+      /* ── Shape ── (1.14: one routine for every shape, the same one the preview uses) */
       } else if (ov.type === 'shape') {
-        const fill   = parseHex(ov.fillColor   || '#4488ff');
-        const stroke = parseHex(ov.strokeColor || '#2244cc');
-        const sw     = (ov.strokeWidth ?? 2) * 0.75; // screen px → approx pts
-
-        if (ov.shapeType === 'rect') {
-          page.drawRectangle({
-            x: pdfX, y: pdfYBot, width: pdfW, height: pdfH,
-            color: ov.noFill ? undefined : PDFLib.rgb(...fill),
-            opacity: ov.noFill ? 0 : (ov.fillOpacity ?? 0.3),
-            borderColor: PDFLib.rgb(...stroke), borderWidth: sw,
-          });
-
-        } else if (ov.shapeType === 'rrect') {
-          /*
-           * pdf-lib's drawRectangle doesn't support border-radius, so we
-           * construct a rounded-rect SVG path and use drawSvgPath instead.
-           * Coordinates are in PDF space (origin bottom-left, Y upward).
-           */
-          const r   = Math.min(pdfW, pdfH) * 0.14; // ~14% radius
-          const path = [
-            `M ${pdfX+r} ${pdfYTop}`,
-            `L ${pdfX+pdfW-r} ${pdfYTop}`,
-            `Q ${pdfX+pdfW} ${pdfYTop} ${pdfX+pdfW} ${pdfYTop-r}`,
-            `L ${pdfX+pdfW} ${pdfYBot+r}`,
-            `Q ${pdfX+pdfW} ${pdfYBot} ${pdfX+pdfW-r} ${pdfYBot}`,
-            `L ${pdfX+r} ${pdfYBot}`,
-            `Q ${pdfX} ${pdfYBot} ${pdfX} ${pdfYBot+r}`,
-            `L ${pdfX} ${pdfYTop-r}`,
-            `Q ${pdfX} ${pdfYTop} ${pdfX+r} ${pdfYTop}`,
-            `Z`,
-          ].join(' ');
-          page.drawSvgPath(path, {
-            x: 0, y: 0,
-            color: ov.noFill ? undefined : PDFLib.rgb(...fill),
-            opacity: ov.noFill ? 0 : (ov.fillOpacity ?? 0.3),
-            borderColor: PDFLib.rgb(...stroke), borderWidth: sw,
-          });
-
-        } else if (ov.shapeType === 'oval') {
-          page.drawEllipse({
-            x: pdfX + pdfW / 2, y: pdfYBot + pdfH / 2,
-            xScale: pdfW / 2, yScale: pdfH / 2,
-            color: ov.noFill ? undefined : PDFLib.rgb(...fill),
-            opacity: ov.noFill ? 0 : (ov.fillOpacity ?? 0.3),
-            borderColor: PDFLib.rgb(...stroke), borderWidth: sw,
-          });
-
-        } else if (ov.shapeType === 'arrow') {
-          /*
-           * Arrow: horizontal shaft + filled arrowhead triangle.
-           * Shaft from left-center to ~78% of width.
-           * Arrowhead from there to the right edge.
-           * PDF coords: Y increases upward, origin bottom-left.
-           */
-          const cy      = pdfYBot + pdfH / 2;   // vertical center
-          const shaftEnd = pdfX + pdfW * 0.76;   // where shaft ends / arrowhead begins
-          const headHalf = pdfH * 0.40;           // half-height of arrowhead triangle
-          const strokeColor = PDFLib.rgb(...stroke);
-          // Shaft
-          page.drawLine({
-            start: { x: pdfX + sw, y: cy },
-            end:   { x: shaftEnd, y: cy },
-            thickness: sw * 1.5,
-            color: strokeColor,
-          });
-          // Arrowhead as SVG path (triangle)
-          const headPath = `M ${pdfX+pdfW} ${cy} L ${shaftEnd} ${cy+headHalf} L ${shaftEnd} ${cy-headHalf} Z`;
-          page.drawSvgPath(headPath, { x: 0, y: 0, color: strokeColor });
-
-        } else if (ov.shapeType === 'xmark' || ov.shapeType === 'check') {
-          /*
-           * Both grading marks are defined in the same 0-100 square space as
-           * the on-screen SVG (see buildShapeSvg) so the two always match.
-           * v() maps a point in that space into this overlay's PDF-space
-           * rectangle: SVG y grows downward, PDF y grows upward, so the
-           * vertical axis is flipped from the top edge (pdfYTop) rather
-           * than the bottom.
-           */
-          const v = (vx, vy) => `${pdfX + (vx / 100) * pdfW} ${pdfYTop - (vy / 100) * pdfH}`;
-          const path = ov.shapeType === 'xmark'
-            ? `M ${v(15, 15)} L ${v(85, 85)} M ${v(85, 15)} L ${v(15, 85)}`
-            : `M ${v(18, 52)} L ${v(42, 76)} L ${v(84, 22)}`;
-          page.drawSvgPath(path, {
-            x: 0, y: 0,
-            borderColor: PDFLib.rgb(...stroke),
-            borderWidth: sw * 1.8, // matches the 1.8x stroke weight used on screen
-          });
-        }
+        drawShapeToPdf(page, ov, pgW, pgH);
 
       /* ── Highlight ── */
       } else if (ov.type === 'highlight') {
@@ -5440,18 +5885,22 @@ async function downloadPdf() {
          * PDF Y-axis goes UP, so pdfYTop is the TOP edge.
          */
         const cornerSz  = Math.min(pdfW, pdfH) * 0.14;
+        // drawSvgPath reads y DOWNWARD from the y it is given (the SVG way),
+        // so with y = the page height we can use top-down page points:
+        // the note's top edge is fracTop * page height from the top. (1.14:
+        // these were bottom-up before, which put the fold off the page.)
         const cx = pdfX + pdfW;              // right edge x
-        const cy = pdfYTop;                  // top edge y (Y increases upward in PDF)
+        const cy = ov.fracTop * pgH;         // top edge, measured from the page's top
         // Shadow: a hair larger, drawn first so the white flap covers its centre
         const shadowSz = cornerSz * 1.18;
         page.drawSvgPath(
-          `M ${cx-shadowSz} ${cy} L ${cx} ${cy} L ${cx} ${cy-shadowSz} Z`,
-          { x: 0, y: 0, color: PDFLib.rgb(0,0,0), opacity: 0.18 }
+          `M ${cx-shadowSz} ${cy} L ${cx} ${cy} L ${cx} ${cy+shadowSz} Z`,
+          { x: 0, y: pgH, color: PDFLib.rgb(0,0,0), opacity: 0.18 }
         );
         // White flap: masks the corner, simulating the folded-back page
         page.drawSvgPath(
-          `M ${cx-cornerSz} ${cy} L ${cx} ${cy} L ${cx} ${cy-cornerSz} Z`,
-          { x: 0, y: 0, color: PDFLib.rgb(1,1,1) }
+          `M ${cx-cornerSz} ${cy} L ${cx} ${cy} L ${cx} ${cy+cornerSz} Z`,
+          { x: 0, y: pgH, color: PDFLib.rgb(1,1,1) }
         );
         /*
          * Text uses the same padding (STICKY_PAD), line spacing and measured
@@ -5814,14 +6263,13 @@ function setActiveTool(id) {
 
 /** Update the shape button's icon to reflect the current shape type */
 function updateShapeBtn() {
-  // 24x24 line drawings, the same style as every other icon (see ICONS).
-  const svgMap = {
-    rect:   '<rect x="3" y="5" width="18" height="14" rx="1"/>',
-    rrect:  '<rect x="3" y="5" width="18" height="14" rx="5"/>',
-    oval:   '<ellipse cx="12" cy="12" rx="9" ry="7.5"/>',
-    arrow:  '<path d="M4 12h15"/><path d="m13 6 6 6-6 6"/>',
-  };
-  dom.shapeIcon.innerHTML = svgMap[state.currentShapeType] || svgMap.rect;
+  // The Shapes button shows the shape it will draw next (1.14), with that
+  // shape's name in its tooltip and label.
+  const def = SHAPE_BY_KEY[state.currentShapeType] || SHAPE_BY_KEY.rect;
+  dom.shapeIcon.outerHTML = shapeIconSvg(def.key, 9).replace('class="icon shape-pic"', 'class="icon shape-pic" id="shape-icon"');
+  dom.shapeIcon = document.getElementById('shape-icon');
+  dom.toolShape.dataset.tip = 'Shapes: ' + def.label;
+  dom.toolShape.setAttribute('aria-label', 'Shapes: ' + def.label + '. Opens the shape picker');
 }
 
 /** Update the field button's icon to reflect the current field type */
@@ -5868,9 +6316,28 @@ function closeAllMenus() {
 ══════════════════════════════════════════ */
 
 /* ── File upload ── */
-dom.dropZone.addEventListener('click', () => dom.fileInput.click());
-dom.dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dom.fileInput.click(); } });
-dom.fileInput.addEventListener('change', e => { if (e.target.files[0]) loadPdf(e.target.files[0]); dom.fileInput.value = ''; });
+/**
+ * Show the "choose a PDF" picker. `then` says what to do once the chosen PDF
+ * has opened: nothing (null), or 'sign' to go straight to the signature
+ * panel (the splash's "Sign a PDF", 1.14). Every Open button goes through
+ * here, so a picker someone cancelled can never leave a stale 'sign' behind.
+ */
+function openPdfPicker(then = null) {
+  state.afterOpen = then;
+  dom.fileInput.click();
+}
+dom.dropZone.addEventListener('click', () => openPdfPicker());
+dom.dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPdfPicker(); } });
+dom.fileInput.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  const then = state.afterOpen;
+  state.afterOpen = null;
+  dom.fileInput.value = '';
+  if (!file) return;
+  await loadPdf(file);
+  // Opened from "Sign a PDF": the signature panel comes up straight away.
+  if (then === 'sign' && state.pdfJsDoc && state.fileName === file.name) dom.toolSignature.click();
+});
 dom.dropZone.addEventListener('dragover', e => { e.preventDefault(); dom.dropZone.classList.add('dragover'); });
 dom.dropZone.addEventListener('dragleave', () => dom.dropZone.classList.remove('dragover'));
 dom.dropZone.addEventListener('drop', e => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) loadPdf(e.dataTransfer.files[0]); });
@@ -5948,13 +6415,13 @@ dom.toolXmark.addEventListener('click', () => {
   if (!state.pdfJsDoc) { toast('Load a PDF first.', 'err'); return; }
   setActiveTool('tool-xmark');
   closeAllMenus();
-  beginPlacement('shape', { shapeType: 'xmark', strokeColor: '#dc2626', strokeWidth: 6, noFill: true });
+  beginPlacement('shape', { shapeType: 'xmark', strokeColor: '#dc2626', lineWidth: 8, noFill: true });
 });
 dom.toolCheck.addEventListener('click', () => {
   if (!state.pdfJsDoc) { toast('Load a PDF first.', 'err'); return; }
   setActiveTool('tool-check');
   closeAllMenus();
-  beginPlacement('shape', { shapeType: 'check', strokeColor: '#16a34a', strokeWidth: 6, noFill: true });
+  beginPlacement('shape', { shapeType: 'check', strokeColor: '#16a34a', lineWidth: 8, noFill: true });
 });
 
 /* ── Today's date ──
@@ -5978,26 +6445,75 @@ function todayISO() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/* ── Shape tool: click opens the shape-type dropdown ── */
+/* ── Shapes panel (1.14) ──
+   The Shapes button opens a panel of every shape (the same as IMGEDTR's).
+   Picking one arms it: click the page to drop it at its usual size, or drag
+   to draw it (Shift keeps its proportions). */
+const SHAPE_COLUMNS = 4;
+function buildShapesPanel() {
+  const pop = dom.shapeMenu;
+  pop.replaceChildren();
+  let grid = null, group = '';
+  for (const sh of SHAPES) {
+    if (sh.hidden) continue;                     // the grading marks have their own tools
+    if (sh.group !== group) {
+      group = sh.group;
+      const h = document.createElement('h2');
+      h.textContent = group;
+      pop.append(h);
+      grid = document.createElement('div');
+      grid.className = 'shape-grid';
+      grid.setAttribute('role', 'group');
+      grid.setAttribute('aria-label', group);
+      pop.append(grid);
+    }
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'shape-btn';
+    b.dataset.key = sh.key;
+    b.dataset.tip = sh.label;
+    b.setAttribute('aria-label', sh.label);
+    b.setAttribute('aria-pressed', String(sh.key === state.currentShapeType));
+    b.innerHTML = shapeIconSvg(sh.key);        // a fixed drawing from SHAPES, never outside data
+    b.addEventListener('click', () => pickShape(sh.key));
+    grid.append(b);
+  }
+}
+/** Use a shape from the panel: remember it, show it on the button, arm it. */
+function pickShape(key) {
+  if (!SHAPE_BY_KEY[key]) return;
+  state.currentShapeType = key;
+  updateShapeBtn();
+  closeAllMenus();
+  dom.toolShape.focus();                         // keyboard users land back on the Shapes button
+  setActiveTool('tool-shape');
+  beginPlacement('shape', { shapeType: key });
+}
 dom.toolShape.addEventListener('click', e => {
   e.stopPropagation();
   if (dom.shapeMenu.classList.contains('open')) { closeAllMenus(); return; }
   if (!state.pdfJsDoc) { toast('Load a PDF first.', 'err'); return; }
+  buildShapesPanel();
   openMenu(dom.shapeMenu, dom.toolShape, null);
   dom.toolShape.setAttribute('aria-expanded', 'true');
+  // Start on the current shape, so Enter alone re-arms it.
+  (dom.shapeMenu.querySelector('[aria-pressed="true"]') || dom.shapeMenu.querySelector('.shape-btn')).focus();
 });
-
-/* ── Shape submenu items ── */
-dom.shapeMenu.querySelectorAll('.fm-item').forEach(item => {
-  item.addEventListener('click', () => {
-    state.currentShapeType = item.dataset.shape;
-    updateShapeBtn();
-    dom.shapeMenu.querySelectorAll('.fm-item').forEach(i => i.classList.remove('current'));
-    item.classList.add('current');
-    closeAllMenus();
-    setActiveTool('tool-shape');
-    beginPlacement('shape', { shapeType: state.currentShapeType });
-  });
+// Keyboard: arrows move around the grid (Up/Down a row), Home/End, Escape closes.
+dom.shapeMenu.addEventListener('keydown', e => {
+  const btns = [...dom.shapeMenu.querySelectorAll('.shape-btn')];
+  const i = btns.indexOf(document.activeElement);
+  let next = null;
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeAllMenus(); dom.toolShape.focus(); return; }
+  if (e.key === 'ArrowRight') next = i + 1;
+  else if (e.key === 'ArrowLeft') next = i - 1;
+  else if (e.key === 'ArrowDown') next = i + SHAPE_COLUMNS;
+  else if (e.key === 'ArrowUp') next = i - SHAPE_COLUMNS;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = btns.length - 1;
+  if (next === null) return;
+  e.preventDefault(); e.stopPropagation();       // do not let arrows nudge or change page
+  btns[Math.max(0, Math.min(btns.length - 1, next))].focus();
 });
 
 /* ── Image tool ── */
@@ -7573,7 +8089,7 @@ function suiteFeaturesCard(features, appId) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.13';
+const APP_VERSION = '1.14';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -7630,6 +8146,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.14', date: '2026-10-11', notes: [
+    'Sign a PDF, straight from the splash: pick the PDF and the signature panel opens.',
+    'IMGEDTR\'s Shapes panel: 23 shapes in three groups (basic shapes, symbols, callouts and awards), with their usual colours. Shift keeps a shape\'s proportions while you draw or resize it.',
+    'One rectangle: rounded corners are a Corners slider in the Inspector now, not a separate shape. The Inspector also swaps a shape for another, flips it, makes it regular, and sets its outline, thickness and fill with IMGEDTR\'s colour swatches.',
+    'Fixed: red Xs, checkmarks, rounded rectangles, arrowheads and the folded corner of sticky notes were missing from downloaded PDFs. They all show up now, and every shape in the download matches the screen exactly.'
+  ] },
   { version: '1.13', date: '2026-10-11', notes: [
     'A new look, the same as IMGEDTR: a taller top bar with icon buttons, IMGEDTR\'s icons throughout the tool rail, the same greys, and the device\'s own font (so no font is downloaded).',
     'Zoom like IMGEDTR: zoom out, the zoom level (press it for 100%), zoom in and fit, plus Ctrl + scroll, a trackpad pinch, and Ctrl with + - 0 1. A PDF now opens at its page width (up to 150%), so a phone shows the whole width.',
@@ -7790,7 +8312,11 @@ async function startUp() {
     heroAlt: APP_HERO_ALT,
     actions: [
       { icon: 'open', label: 'Open a PDF', detail: 'Fill it in, sign it, mark it up or rearrange its pages', primary: true,
-        run: () => dom.fileInput.click() },
+        run: () => openPdfPicker() },
+      // Signing is one of the most common reasons to open a PDF, so it has
+      // its own way in (1.14): pick the PDF, and the signature panel opens.
+      { icon: ICONS.signature, label: 'Sign a PDF', detail: 'Open a PDF and add your signature: draw it or type it',
+        run: () => openPdfPicker('sign') },
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
     hint: 'You can also drop a PDF anywhere in this window.'
@@ -7800,7 +8326,7 @@ async function startUp() {
 setTimeout(startUp, 'launchQueue' in window ? 250 : 0);
 
 /* ── Layout (1.5): the Open button, the Inspector button, the tool rail ── */
-document.getElementById('btn-open').addEventListener('click', () => dom.fileInput.click());
+document.getElementById('btn-open').addEventListener('click', () => openPdfPicker());
 
 const inspector = document.getElementById('inspector');
 const btnInspector = document.getElementById('btn-inspector');
@@ -7890,7 +8416,7 @@ document.addEventListener('keydown', e => {
     if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomStep(-1); return; }
     if (e.key === '0') { e.preventDefault(); zoomToFit(); return; }
     if (e.key === '1') { e.preventDefault(); setZoom(1); return; }
-    if (e.key === 'o' || e.key === 'O') { e.preventDefault(); dom.fileInput.click(); return; }
+    if (e.key === 'o' || e.key === 'O') { e.preventDefault(); openPdfPicker(); return; }
   }
 
   // Ctrl/Cmd + Z → undo
