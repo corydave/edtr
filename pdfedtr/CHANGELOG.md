@@ -17,6 +17,29 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.19 - 2026-10-11 - A fresh tour and splash picture, spotlight fixes
+
+- **Features tour refreshed** (Help > Features, and the splash's "See what
+  PDFEDTR can do" card): seven cards - Sign a PDF, Turn any PDF into a form,
+  Mark it up, Spotlight and step numbers, Redact for real, Rearrange / turn /
+  merge pages, and Save it, keep editing. Four new animations; the signature,
+  form and pages animations are kept, with updated words. All are fixed SVG in
+  `APP_FEATURES`, checked in light and dark mode.
+- **New splash picture** (`APP_HERO`, 1120 x 630 WebP, about 32 KB): the 1.19
+  interface filling in a made-up workshop sign-up form - ticked checkboxes, a
+  picked radio button, a sticky note, a highlight, a signature and a date, with
+  the Inspector open. No real people or data.
+- **Spotlight spots start as circles** (Dave's call: a circle stretches into an
+  oval easily, the reverse is hard). The default spot is a 150 pt circle; the
+  Inspector's Spot list is Circle, Oval, Rounded rectangle; a circle stays round
+  when resized and when drawn (it takes the longer side of the box you drag, kept
+  centred); the shape last picked is used for the next spot.
+- **Fixed: a second spotlight didn't show until it was moved or resized.** The
+  page's dim layer is drawn by its first spot, which now repaints as soon as
+  another spot is placed.
+- **"Add a spot"** places the new spot beside the selected one (or below it when
+  there's no room), not 10 pt away.
+
 ## 1.18 - 2026-10-11 - Project files, radio buttons, a better spotlight
 
 - **Project files (.pdfedtr).** Save project (a new top-bar button beside Open,
