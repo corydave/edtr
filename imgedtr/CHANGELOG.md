@@ -2,6 +2,13 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.16.0 - 2026-10-10 - A tour of the features
+
+- **Features, a new first tab in Help:** an animated tour of five of IMGEDTR's favorite features - Hide private info, Spotlight one row, Numbered click steps, Show where to click and Magic wand: fill and recolor - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion.
+- **? or F1 and the Help button now open Help on Features.** Keyboard shortcuts is one tab over.
+- **The splash has a "See what IMGEDTR can do" card** that opens the same tour over the splash.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `renderSuiteFeatures`, `suiteFeaturesOpen`, `suiteFeaturesCard` and their styles). The drawings are inline SVG with SVG's own animation tags, so they work offline and straight off a disk.
+
 ## 1.15.0 - 2026-10-07 - Make a headshot
 
 - **New: Make a headshot**, a guided screen for profile photos. Start it from the splash ("Make a headshot") or the start screen ("Headshot"), and pick a photo (iPhone HEIC photos work too).
