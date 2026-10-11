@@ -5,6 +5,12 @@ All notable changes to SNDEDTR. Newest first.
 The version number lives in two places and both must move together on a
 release: `APP_VERSION` in `index.html` and `CACHE_VERSION` in `sw.js`.
 
+## 0.10.1 - 2026-10-11 - The source, front and center
+
+- **The top bar is the family's standard 52px tall**, and Inspector headings and labels match IMGEDTR's (headings 12px bold capitals with .08em spacing, labels 13px).
+- **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `suiteSourceBox()`, drawn by `renderSuiteCredits()`).
+
 ## 0.10.0 - 2026-10-10 - A new splash
 
 - **A picture of SNDEDTR in use across the top of the splash** - the same picture as on edtrapps.com, built into the app (as a data: URI), so it shows offline too. With it, the small icon beside the name goes, since the picture already shows it.
