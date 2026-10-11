@@ -1,5 +1,11 @@
 # DSKEDTR changelog
 
+## 0.41.2 - 2026-10-11
+
+- **The top bar is the family's standard 52px tall**, and Inspector headings and labels match IMGEDTR's (headings 12px bold capitals with .08em spacing, labels 13px).
+- **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `suiteSourceBox()`, drawn by `renderSuiteCredits()`).
+
 ## 0.41.1 - 2026-10-11
 
 - **The staging area has no edge any more.** Before, the grey around the
