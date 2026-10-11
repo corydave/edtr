@@ -17,6 +17,48 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.16 - 2026-10-11 - Teacher tools, real redaction, scrolling pages
+
+The fourth of five releases bringing PDFEDTR up to IMGEDTR.
+
+- **Teacher tools, the same as IMGEDTR's,** in a new group on the tool rail:
+  - **Step numbers** (N): circles that count up by themselves across the whole
+    PDF (page by page, then in the order placed) and renumber when one is
+    deleted. Numbering 1, 2, 3 / A, B, C / a, b, c / i, ii, iii (one style for
+    all of them), colour, number colour and a white ring. A click centres one
+    on the spot.
+  - **Cursor stamps** (C): IMGEDTR's 13 vector cursors (arrow, link hand, open
+    and closed hand, I-beam, move, four resize arrows, crosshair, not allowed,
+    click burst). The tip lands where you click; colour and outline in the
+    Inspector.
+  - **Spotlight**: dims the page everywhere except one oval or rounded
+    rectangle (drag it round the part to keep bright). Dim amount and colour,
+    and an optional ring. It dims the page only - your marks stay bright, on
+    screen and in the PDF.
+  - **Magnifier** (M): click what to magnify (or drag round it) and a round or
+    rounded-rectangle callout shows it 1.5x to 6x bigger, joined by a line to a
+    dashed ring round the spot. Drag the ring (or tab to it and use the arrow
+    keys) to change what is magnified. In the PDF the magnified area is drawn
+    afresh at about 288 dpi, not copied from the screen.
+- **Redact that really removes.** A box over text in a PDF only hides it; the
+  text is still in the file. So on download, every page with a redaction is
+  drawn by pdf.js as a 200 dpi picture, the boxes are burned in, and the page
+  is replaced by that picture alone: no text, links or hidden layers are left
+  on it. The page's form fields are taken out first (the ones PDFEDTR knows are
+  written back on top, with everything else you placed). The finished file is
+  then read back, and nothing is downloaded if a redacted page has any text
+  you did not add yourself. A magnifier never shows what a redaction hides.
+  Pages without redactions are untouched. The trade-off (explained the first
+  time you pick the tool, and in the Inspector): a redacted page's own text can
+  no longer be selected or searched.
+- **Scroll from page to page.** Over the filmstrip, the mouse wheel goes to the
+  next or previous page (sideways scrolling still slides the strip). Over the
+  page, keep scrolling past its bottom edge to go to the next page, or up past
+  the top for the previous one (new Settings switch, on by default). Trackpad
+  scrolling is added up into proper steps, with a short pause after each page
+  turn so one flick doesn't fly through the whole PDF.
+- **Keep tool after placing** now covers steps, cursors and redactions too.
+
 ## 1.15 - 2026-10-11 - Mobile first, and DSKEDTR's filmstrip
 
 The third of five releases bringing PDFEDTR up to IMGEDTR.

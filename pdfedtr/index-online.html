@@ -1753,6 +1753,26 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       border-radius: 4px; border: 1px solid currentColor; opacity: .85; white-space: nowrap; }
 
     /* ═══════════════════════════════════════════════════
+       TEACHER TOOLS (1.16)
+    ═══════════════════════════════════════════════════ */
+    .ov-teach-svg { width: 100%; height: 100%; display: block; overflow: visible; pointer-events: none; }
+    /* A spotlight's dim layer and a magnifier's lines reach out over the
+       whole page, BEHIND everything else you placed (z-index -1 inside the
+       overlay layer), and never catch clicks. */
+    .ov-spot-dim, .ov-mag-lines { position: absolute; z-index: -1; pointer-events: none; overflow: visible; }
+    .ov-mag-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+    .ov-mag-frame { position: absolute; inset: 0; box-sizing: border-box; pointer-events: none; }
+    /* The magnifier's grip: an invisible button over the dashed ring. */
+    .ov-mag-grip { position: absolute; padding: 0; background: transparent; border: 0; cursor: move; touch-action: none; }
+    .ov-mag-grip:hover, .ov-mag-grip:focus-visible { background: rgba(0, 70, 173, .08); }
+    .ov-mag-grip:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+    .ov-redact { width: 100%; height: 100%; }
+    .insp-note { font-size: 13px; color: var(--text); font-family: var(--font-ui); }
+    #inspector #context-bar .insp-help { flex-basis: 100%; margin: 4px 0 0; font-size: 12.5px; line-height: 1.45;
+      color: var(--text-mid); font-family: var(--font-ui); }
+
+    /* ═══════════════════════════════════════════════════
        PHONE LAYOUT (1.15) - mobile first, the same as IMGEDTR:
        three rows below the top bar - the page (with the
        filmstrip under it), the Inspector as a sheet with a
@@ -2014,6 +2034,16 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 
     <div class="tb-sep" aria-hidden="true"></div>
 
+    <!-- Teacher tools (1.16), the same as IMGEDTR's: numbered steps, a cursor
+         to show where to click, a spotlight, a magnifier, and real redaction. -->
+    <button class="tb-btn" id="tool-step"      data-tip="Step number (counts up by itself)" data-keys="N" aria-pressed="false" aria-label="Step number tool"><span data-icon="step"></span></button>
+    <button class="tb-btn" id="tool-cursor"    data-tip="Cursor: show where to click" data-keys="C" aria-pressed="false" aria-label="Cursor stamp tool"><span data-icon="cursorClick"></span></button>
+    <button class="tb-btn" id="tool-spotlight" data-tip="Spotlight: dim all but one spot" aria-pressed="false" aria-label="Spotlight tool"><span data-icon="spotlight"></span></button>
+    <button class="tb-btn" id="tool-magnifier" data-tip="Magnifier: zoom in on one spot" data-keys="M" aria-pressed="false" aria-label="Magnifier tool"><span data-icon="magnifier"></span></button>
+    <button class="tb-btn" id="tool-redact"    data-tip="Redact: remove for good" aria-pressed="false" aria-label="Redact tool"><span data-icon="redact"></span></button>
+
+    <div class="tb-sep" aria-hidden="true"></div>
+
     <!-- Form fields: add a new field, or fill in the ones the PDF already has -->
     <button class="tb-btn tb-btn-drop" id="tool-field" data-tip="Form field: pick a kind" aria-pressed="false" aria-haspopup="menu" aria-expanded="false" aria-label="Field tool - click to choose field type">
       <svg class="icon" id="field-icon" viewBox="0 0 24 24" aria-hidden="true"></svg>
@@ -2194,6 +2224,10 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
         <tr><td><kbd>T</kbd></td><td>Add text</td></tr>
         <tr><td><kbd>S</kbd></td><td>Add a sticky note</td></tr>
         <tr><td><kbd>D</kbd></td><td>Add today's date</td></tr>
+        <tr><td><kbd>N</kbd></td><td>Step number (they count up by themselves)</td></tr>
+        <tr><td><kbd>C</kbd></td><td>Cursor stamp</td></tr>
+        <tr><td><kbd>M</kbd></td><td>Magnifier</td></tr>
+        <tr><td>Scroll over the page thumbnails</td><td>Next / previous page (scrolling past the bottom of a page does too - see Settings)</td></tr>
         <tr><td><kbd>Enter</kbd></td><td>With a tool picked, place it in the middle of the page (no mouse needed)</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Step back one level: stop editing, then deselect, then back to the Select tool</td></tr>
         <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd></td><td>Something selected: nudge it 1 pt (hold <kbd>Shift</kbd> for 10 pt). Nothing selected: previous / next page</td></tr>
@@ -2277,6 +2311,11 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
         <input type="checkbox" id="set-snap" aria-describedby="set-snap-hint">
       </div>
       <p class="hint" id="set-snap-hint">While you move things, they line up with the page's edges and middle and with each other, and a guide line shows the match. Hold Alt (Option on a Mac) while dragging to move freely.</p>
+      <div class="field">
+        <label for="set-scrollpages">Scroll to the next page</label>
+        <input type="checkbox" id="set-scrollpages" aria-describedby="set-scrollpages-hint">
+      </div>
+      <p class="hint" id="set-scrollpages-hint">On: keep scrolling down past the bottom of a page to go to the next one (and up past the top for the one before). Scrolling over the page thumbnails always goes from page to page.</p>
       <div class="field">
         <label for="set-keep">Keep tool after placing</label>
         <input type="checkbox" id="set-keep" aria-describedby="set-keep-hint">
@@ -2370,6 +2409,12 @@ const ICONS = {
   fileDown:    '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
   trash:       '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   more:        '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  // Teacher tools (1.16) - IMGEDTR's drawings.
+  step:        '<circle cx="12" cy="12" r="9"/><path d="M10.5 9 12.5 7.5V16.5"/><path d="M10.5 16.5h4"/>',
+  cursorClick: '<path d="M14 4.1 12 6"/><path d="m5.1 8-2.9-.8"/><path d="m6 12-1.9 2"/><path d="M7.2 2.2 8 5.1"/><path d="M9.04 9.61a.5.5 0 0 1 .65-.65l10.9 4.5a.5.5 0 0 1-.06.94l-4.2 1.13a2 2 0 0 0-1.43 1.43l-1.13 4.2a.5.5 0 0 1-.94.06z"/>',
+  spotlight:   '<rect x="2" y="4" width="20" height="16" rx="2" stroke-dasharray="2 2.2"/><circle cx="12" cy="12" r="4.5"/>',
+  magnifier:   '<circle cx="10" cy="10" r="7"/><path d="m21 21-6-6"/><path d="M7 10h6M10 7v6"/>',
+  redact:      '<rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M6 10h8M6 14h12" stroke-width="3"/>',
   flipH:       '<path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 20v2"/><path d="M12 14v2"/><path d="M12 8v2"/><path d="M12 2v2"/>',
   flipV:       '<path d="m17 3-5 5-5-5h10"/><path d="m17 21-5-5-5 5h10"/><path d="M4 12H2"/><path d="M10 12H8"/><path d="M16 12h-2"/><path d="M22 12h-2"/>',
   help:        '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
@@ -2424,6 +2469,7 @@ const SETTINGS_DEFAULTS = {
   keepTool: false,     // after placing a mark, shape, highlight or field, keep the tool
   openZoom: 'fit',     // how big a PDF opens: 'fit' (page width, at most 150%), '1', '1.5'
   sheet: 1 / 3,        // phones: where the top of the Inspector sheet sits, as a share of the screen (1.15)
+  scrollPages: true,   // scrolling past the end of a page goes to the next one (1.16)
 };
 const settings = loadSettings();
 
@@ -2437,6 +2483,7 @@ function loadSettings() {
     if (typeof saved.keepTool === 'boolean') out.keepTool = saved.keepTool;
     if (['fit', '1', '1.5'].includes(saved.openZoom)) out.openZoom = saved.openZoom;
     if (typeof saved.sheet === 'number' && saved.sheet > 0.1 && saved.sheet < 0.95) out.sheet = saved.sheet;
+    if (typeof saved.scrollPages === 'boolean') out.scrollPages = saved.scrollPages;
   } else {
     // First run of 1.13: carry over the theme the old toggle saved.
     try {
@@ -3690,9 +3737,10 @@ function buildOverlayEl(ov, cw, ch) {
   el.className = 'ov-item'
     + (isSel ? ' sel' : '')
     + (isSel && state.editingLive && isEditable(ov) ? ' editing' : '');
+  el.classList.add('ov-type-' + ov.type);   // lets the styles tell the kinds apart (spotlight sits lowest)
   el.dataset.id = ov.id;
   el.tabIndex = 0;
-  el.setAttribute('aria-label', `${ov.type} element`);
+  el.setAttribute('aria-label', `${TYPE_LABELS[ov.type] || ov.type} element`);
 
   el.style.left   = (ov.fracLeft * cw) + 'px';
   el.style.top    = (ov.fracTop  * ch) + 'px';
@@ -3718,6 +3766,21 @@ function buildOverlayEl(ov, cw, ch) {
 
   } else if (ov.type === 'shape') {
     el.appendChild(buildShapeSvg(ov));
+
+  /* ── Teacher tools (1.16) ── */
+  } else if (ov.type === 'step') {
+    el.appendChild(buildStepSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale));
+  } else if (ov.type === 'cursor') {
+    el.appendChild(buildCursorSvg(ov, ov.fracW * cw, ov.fracH * ch));
+  } else if (ov.type === 'spotlight') {
+    el.appendChild(buildSpotlightSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale, cw, ch));
+  } else if (ov.type === 'magnifier') {
+    buildMagnifierEl(el, ov, cw, ch);
+  } else if (ov.type === 'redact') {
+    const box = document.createElement('div');
+    box.className = 'ov-redact';
+    box.style.background = ov.fillColor || '#000000';
+    el.appendChild(box);
 
   } else if (ov.type === 'highlight') {
     // Semi-transparent coloured rectangle — no border needed, ov-item handles selection
@@ -4445,6 +4508,545 @@ function shapeIconSvg(key, strokeWidth = 7) {
     (s.detail ? `<path d="${s.detail}" fill="currentColor" stroke="none"/>` : '') + '</svg>';
 }
 
+/* ══════════════════════════════════════════
+   TEACHER TOOLS (1.16) - the same tools as IMGEDTR
+   ─────────────────────────────────────────
+   Five new kinds of overlay:
+     step       numbered circles (1, 2, 3...) that count up by themselves
+                across the whole PDF, and renumber when one is deleted
+     cursor     a mouse pointer, hand, I-beam... to show where to click
+     spotlight  dims the page everywhere except one spot (an oval or a
+                rounded rectangle) - the overlay's box IS that spot
+     magnifier  a zoomed-in callout of one small area of the page, with a
+                dashed ring round the area and a line joining the two
+     redact     a solid box that really removes what is under it: every
+                page with a redaction is flattened into a picture when you
+                download (see REDACTION further down)
+   Each is drawn on screen as an <svg> and written into the PDF from the
+   same numbers, the same way as the shapes.
+══════════════════════════════════════════ */
+
+/* ── A path engine helper: any "affine" change (stretch, turn, move) ──
+   mapPath() (in SHAPES) can only stretch and move. Cursors are built from
+   rounded rectangles turned at angles, so they need the full version:
+   each point (x, y) becomes (a*x + c*y + e, b*x + d*y + f).               */
+function affinePath(d, [a, b, c, dd, e, f]) {
+  const r = (v) => (Math.round(v * 100) / 100).toString();
+  return plainPath(d).map(([cmd, ...n]) => {
+    if (cmd === 'Z') return 'Z';
+    const pts = [];
+    for (let i = 0; i < n.length; i += 2) pts.push(r(a * n[i] + c * n[i + 1] + e) + ' ' + r(b * n[i] + dd * n[i + 1] + f));
+    return cmd + pts.join(' ');
+  }).join('');
+}
+/** A turn of `deg` degrees (clockwise on screen) around the point (px, py), as a matrix. */
+function turnAbout(deg, px, py) {
+  const t = deg * Math.PI / 180, cos = Math.cos(t), sin = Math.sin(t);
+  return [cos, sin, -sin, cos, px - cos * px + sin * py, py - sin * px - cos * py];
+}
+
+/* ── Step markers ── */
+const STEP_STYLES = [['123', '1, 2, 3'], ['ABC', 'A, B, C'], ['abc', 'a, b, c'], ['roman', 'i, ii, iii']];
+/** The label for step number n in a numbering style. */
+function stepLabel(n, style) {
+  if (style === 'ABC' || style === 'abc') {
+    let s = '', k = n;
+    while (k > 0) { k--; s = String.fromCharCode(65 + (k % 26)) + s; k = Math.floor(k / 26); }
+    return style === 'abc' ? s.toLowerCase() : s;
+  }
+  if (style === 'roman') {
+    const R = [[1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'], [100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']];
+    let s = '', k = n;
+    for (const [v, t] of R) while (k >= v) { s += t; k -= v; }
+    return s;
+  }
+  return String(n);
+}
+/**
+ * A step's number: 1 + how many steps come before it, page by page (and,
+ * on one page, in the order they were placed). Worked out every time it is
+ * drawn, so deleting step 2 makes the old step 3 a 2 by itself.
+ */
+function stepNumberOf(ov) {
+  let n = 1;
+  for (const o of state.overlays) {
+    if (o === ov || o.type !== 'step') continue;
+    if (o.pageDisplayIndex < ov.pageDisplayIndex) n++;
+    else if (o.pageDisplayIndex === ov.pageDisplayIndex && state.overlays.indexOf(o) < state.overlays.indexOf(ov)) n++;
+  }
+  return n;
+}
+/** The label size for a step label in a circle of radius r (smaller for longer labels). */
+function stepFontSize(label, r) { return r * (label.length > 2 ? 0.72 : label.length > 1 ? 0.9 : 1.08); }
+
+/* ── Cursor stamps ──
+   Simple vector cursors on a 32 x 32 grid (the same drawings as IMGEDTR).
+   Each is drawn twice: a thick outline in the outline colour first, then
+   the fill on top, which leaves a clean edge round the whole silhouette. */
+const CURSOR_KINDS = {
+  pointer:    { label: 'Arrow pointer', hot: [7, 3] },
+  hand:       { label: 'Link hand', hot: [14.7, 2.5] },
+  grab:       { label: 'Open hand (grab)', hot: [16, 16] },
+  grabbing:   { label: 'Closed hand (grabbing)', hot: [16, 16] },
+  ibeam:      { label: 'Text I-beam', hot: [16, 16] },
+  move:       { label: 'Move', hot: [16, 16] },
+  ew:         { label: 'Resize left-right', hot: [16, 16] },
+  ns:         { label: 'Resize up-down', hot: [16, 16] },
+  nwse:       { label: 'Resize diagonal \\', hot: [16, 16] },
+  nesw:       { label: 'Resize diagonal /', hot: [16, 16] },
+  crosshair:  { label: 'Crosshair', hot: [16, 16] },
+  notallowed: { label: 'Not allowed', hot: [16, 16] },
+  click:      { label: 'Click burst', hot: [16, 16] },
+};
+/** A rounded rectangle, optionally turned by deg around (px, py), as a path. */
+function rrD(x, y, w, h, r, deg = 0, px = 0, py = 0) {
+  const d = roundRectPathD(x, y, w, h, r);
+  return deg ? affinePath(d, turnAbout(deg, px, py)) : d;
+}
+const cursorPathCache = {};
+/** A cursor's drawing on the 32 x 32 grid, as one SVG path. */
+function cursorPathD(kind) {
+  if (cursorPathCache[kind]) return cursorPathCache[kind];
+  let d = '';
+  switch (kind) {
+    case 'pointer': d = 'M7 3L7 25.5L12.2 20.6L15.6 28.6L19.4 27L16 19L23.2 19Z'; break;
+    case 'hand':
+      d = rrD(12.4, 2.5, 4.6, 16, 2.3) + rrD(16.8, 9.5, 4.4, 10, 2.2) + rrD(21, 11, 4.4, 9, 2.2) +
+          rrD(8.6, 14.5, 16.8, 14, 5) + affinePath(rrD(-2.2, -6, 4.4, 11, 2.2), [...turnAbout(-42, 0, 0).slice(0, 4), 9, 20]);
+      break;
+    case 'grab':
+      d = rrD(8.2, 6, 4.2, 13, 2.1) + rrD(12.6, 3.5, 4.2, 14, 2.1) + rrD(17, 4.5, 4.2, 13, 2.1) + rrD(21.4, 7.5, 4.2, 11, 2.1) +
+          rrD(7.6, 13, 18.2, 15.5, 5.5) + affinePath(rrD(-2.1, -6.5, 4.2, 11, 2.1), [...turnAbout(-50, 0, 0).slice(0, 4), 8, 19.5]);
+      break;
+    case 'grabbing':
+      d = rrD(8.2, 9.5, 4.2, 7, 2.1) + rrD(12.6, 8.5, 4.2, 7, 2.1) + rrD(17, 8.5, 4.2, 7, 2.1) + rrD(21.4, 9.5, 4.2, 7, 2.1) +
+          rrD(7.6, 12, 18.2, 16.5, 5.5) + affinePath(rrD(-2, -4.5, 4, 7, 2), [...turnAbout(-70, 0, 0).slice(0, 4), 9, 17.5]);
+      break;
+    case 'ibeam': d = rrD(10.5, 3, 11, 2.8, 1.4) + rrD(14.6, 4, 2.8, 24, 1.2) + rrD(10.5, 26.2, 11, 2.8, 1.4); break;
+    case 'move':
+      d = rrD(14.6, 6.5, 2.8, 19, 0) + rrD(6.5, 14.6, 19, 2.8, 0) +
+          // ringPath makes every piece go the same way round, so where the
+          // arrowheads overlap the bars they stay filled (not cut out).
+          ringPath([[16, 1.5], [10.5, 8], [21.5, 8]]) + ringPath([[16, 30.5], [10.5, 24], [21.5, 24]]) +
+          ringPath([[1.5, 16], [8, 10.5], [8, 21.5]]) + ringPath([[30.5, 16], [24, 10.5], [24, 21.5]]);
+      break;
+    case 'ew': case 'ns': case 'nwse': case 'nesw': {
+      // One left-right double arrow; the others are the same shape turned.
+      const base = rrD(7, 14.5, 18, 3, 0) + ringPath([[1.5, 16], [8.5, 9.5], [8.5, 22.5]]) + ringPath([[30.5, 16], [23.5, 9.5], [23.5, 22.5]]);
+      const turn = { ew: 0, ns: 90, nwse: 45, nesw: -45 }[kind];
+      d = turn ? affinePath(base, turnAbout(turn, 16, 16)) : base;
+      break;
+    }
+    case 'crosshair':
+      d = rrD(14.8, 2, 2.4, 11, 1.2) + rrD(14.8, 19, 2.4, 11, 1.2) + rrD(2, 14.8, 11, 2.4, 1.2) + rrD(19, 14.8, 11, 2.4, 1.2) + circlePath(16, 16, 2);
+      break;
+    case 'notallowed':
+      // A ring (the inner circle goes the other way, which makes the hole) and a slash.
+      d = circlePath(16, 16, 12.5) + circlePath(16, 16, 8.5, true) + rrD(6, 14.2, 20, 3.6, 1.8, 45, 16, 16);
+      break;
+    case 'click':
+      for (let k = 0; k < 8; k++) d += rrD(14.5, 2, 3, 7, 1.5, k * 45, 16, 16);   // eight rays
+      d += circlePath(16, 16, 3.5);
+      break;
+  }
+  return (cursorPathCache[kind] = d);
+}
+
+/* ── Building the on-screen pictures ──
+   Each returns an <svg> sized to the overlay's box right now (W x H screen
+   pixels); u = screen pixels per point. */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs) {
+  const n = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+  return n;
+}
+function teachSvg(W, H) {
+  return svgEl('svg', { class: 'ov-teach-svg', viewBox: `0 0 ${W} ${H}`, 'aria-hidden': 'true' });
+}
+
+function buildStepSvg(ov, W, H, u) {
+  const svg = teachSvg(W, H);
+  const r = Math.min(W, H) / 2, cx = W / 2, cy = H / 2;
+  // A white ring round the disc (on by default) keeps it readable on any background.
+  if (ov.ring !== false) svg.appendChild(svgEl('circle', { cx, cy, r, fill: '#ffffff' }));
+  svg.appendChild(svgEl('circle', { cx, cy, r: ov.ring !== false ? r * 0.86 : r, fill: ov.fillColor || '#d4400b' }));
+  const label = stepLabel(stepNumberOf(ov), ov.numbering);
+  const size = stepFontSize(label, r * (ov.ring !== false ? 0.86 : 1));
+  const t = svgEl('text', { x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central',
+    'font-family': 'Helvetica, Arial, sans-serif', 'font-weight': 700, 'font-size': size, fill: ov.textColor || '#ffffff' });
+  t.textContent = label;                           // textContent: never parsed as markup
+  svg.appendChild(t);
+  return svg;
+}
+
+function buildCursorSvg(ov, W, H) {
+  const svg = teachSvg(W, H);
+  const d = affinePath(cursorPathD(ov.kind || 'pointer'), [W / 32, 0, 0, H / 32, 0, 0]);
+  const k = W / 32;
+  svg.appendChild(svgEl('path', { d, fill: 'none', stroke: ov.outlineColor || '#ffffff', 'stroke-width': 3 * k, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+  svg.appendChild(svgEl('path', { d, fill: ov.fillColor || '#0046ad' }));
+  return svg;
+}
+
+/** The spot's outline as a path in a box of W x H at (x, y): an oval, or a rounded rectangle. */
+function spotHoleD(ov, x, y, W, H, u, hole = false) {
+  if (ov.holeShape === 'rect') {
+    const d = roundRectPathD(x, y, W, H, (ov.radius ?? 12) * u);
+    return hole ? reversePath(d) : d;
+  }
+  // An oval: a circle stretched to the box (as two arcs, made into curves).
+  return mapPath(circlePath(50, 50, 50, hole), W / 100, H / 100, x, y);
+}
+/** The same outline, drawn the other way round (so it cuts a hole in a fill). */
+function reversePath(d) {
+  // Only used for one closed outline of M / L / C commands (a rounded rectangle).
+  const segs = plainPath(d);
+  const pts = []; let cur = null;
+  const out = [];
+  for (const [c, ...a] of segs) {
+    if (c === 'M') cur = [a[0], a[1]];
+    else if (c === 'L') { pts.push({ c: 'L', from: cur, to: [a[0], a[1]] }); cur = [a[0], a[1]]; }
+    else if (c === 'C') { pts.push({ c: 'C', from: cur, c1: [a[0], a[1]], c2: [a[2], a[3]], to: [a[4], a[5]] }); cur = [a[4], a[5]]; }
+  }
+  if (!pts.length) return d;
+  const f = (p) => p[0] + ' ' + p[1];
+  out.push('M' + f(pts[pts.length - 1].to));
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const s = pts[i];
+    out.push(s.c === 'L' ? 'L' + f(s.from) : 'C' + f(s.c2) + ' ' + f(s.c1) + ' ' + f(s.from));
+  }
+  return out.join('') + 'Z';
+}
+
+/**
+ * The spotlight: a dim layer over the WHOLE page with the overlay's box
+ * cut out of it. The overlay element is just the spot (so it moves and
+ * resizes like anything else); the dim layer is drawn round it, reaching
+ * out to the page's edges, and lets clicks pass through to the page.
+ */
+function buildSpotlightSvg(ov, W, H, u, cw, ch) {
+  const ox = ov.fracLeft * cw, oy = ov.fracTop * ch;
+  const svg = svgEl('svg', { class: 'ov-spot-dim', viewBox: `0 0 ${cw} ${ch}`, 'aria-hidden': 'true' });
+  svg.style.left = (-ox) + 'px'; svg.style.top = (-oy) + 'px';
+  svg.style.width = cw + 'px'; svg.style.height = ch + 'px';
+  const d = `M0 0H${cw}V${ch}H0Z` + spotHoleD(ov, ox, oy, W, H, u, true);
+  svg.appendChild(svgEl('path', { d, fill: ov.dimColor || '#000000', 'fill-opacity': ov.dim ?? 0.5 }));
+  // A thin ring round the spot, if asked for.
+  if (ov.ring) svg.appendChild(svgEl('path', { d: spotHoleD(ov, ox, oy, W, H, u), fill: 'none', stroke: ov.ringColor || '#facc15', 'stroke-width': 2 * u }));
+  return svg;
+}
+
+/**
+ * The magnifier. The overlay's box is the round (or rectangular) callout;
+ * ov.sx, ov.sy is the middle of the area it magnifies (as fractions of the
+ * page) and ov.zoom how much bigger it shows it. The area's ring and the
+ * joining line are drawn outside the box, and the ring can be dragged.
+ */
+function magnifierSpot(ov, cw, ch) {
+  const W = ov.fracW * cw, H = ov.fracH * ch, z = ov.zoom || 2;
+  const sw = W / z, sh = H / z;
+  return { x: ov.sx * cw - sw / 2, y: ov.sy * ch - sh / 2, w: sw, h: sh };
+}
+/** The point on an oval (or rounded box) edge facing another point, for the joining line. */
+function edgeToward(cx, cy, rx, ry, tx, ty) {
+  const a = Math.atan2(ty - cy, tx - cx);
+  return { x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) };
+}
+function buildMagnifierEl(el, ov, cw, ch) {
+  const W = ov.fracW * cw, H = ov.fracH * ch, u = state.scale;
+  const round = ov.magShape !== 'rect';
+  const border = (ov.borderWidth ?? 3) * u;
+  // 1. The zoomed picture: copied from the page as drawn on screen, with any
+  //    redaction boxes painted over it first (a magnifier must never show
+  //    what a redaction hides).
+  const cv = document.createElement('canvas');
+  cv.className = 'ov-mag-canvas';
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.width = Math.max(1, Math.round(W * dpr)); cv.height = Math.max(1, Math.round(H * dpr));
+  cv.style.borderRadius = round ? '50%' : ((ov.radius ?? 12) * u) + 'px';
+  const g = cv.getContext('2d');
+  const spot = magnifierSpot(ov, cw, ch);
+  const k = dom.pageCanvas.width / cw;               // canvas pixels per screen pixel
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height);
+  g.drawImage(dom.pageCanvas, spot.x * k, spot.y * k, spot.w * k, spot.h * k, 0, 0, cv.width, cv.height);
+  paintRedactions(g, ov.pageDisplayIndex, (fx) => (fx * cw - spot.x) / spot.w * cv.width, (fy) => (fy * ch - spot.y) / spot.h * cv.height, cv.width / spot.w * cw, cv.height / spot.h * ch);
+  el.appendChild(cv);
+  // 2. The border, the area's ring and the joining line, in one page-sized
+  //    svg behind the callout (clicks pass through it).
+  const ox = ov.fracLeft * cw, oy = ov.fracTop * ch;
+  const svg = svgEl('svg', { class: 'ov-mag-lines', viewBox: `0 0 ${cw} ${ch}`, 'aria-hidden': 'true' });
+  svg.style.left = (-ox) + 'px'; svg.style.top = (-oy) + 'px';
+  svg.style.width = cw + 'px'; svg.style.height = ch + 'px';
+  const col = ov.borderColor || '#0046ad';
+  const ring = round ? mapPath(circlePath(50, 50, 50), spot.w / 100, spot.h / 100, spot.x, spot.y)
+                     : roundRectPathD(spot.x, spot.y, spot.w, spot.h, (ov.radius ?? 12) * u / (ov.zoom || 2));
+  if (ov.leader !== false) {
+    const scx = spot.x + spot.w / 2, scy = spot.y + spot.h / 2, bcx = ox + W / 2, bcy = oy + H / 2;
+    const p1 = edgeToward(scx, scy, spot.w / 2, spot.h / 2, bcx, bcy), p2 = edgeToward(bcx, bcy, W / 2, H / 2, scx, scy);
+    svg.appendChild(svgEl('line', { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, stroke: col, 'stroke-width': Math.max(1, border / 2) }));
+  }
+  svg.appendChild(svgEl('path', { d: ring, fill: 'none', stroke: col, 'stroke-width': Math.max(1, border / 2), 'stroke-dasharray': `${4 * u} ${3 * u}` }));
+  el.appendChild(svg);
+  // 3. The callout's own border, on top of the picture.
+  const frame = document.createElement('div');
+  frame.className = 'ov-mag-frame';
+  frame.style.borderRadius = cv.style.borderRadius;
+  frame.style.border = border + 'px solid ' + col;
+  el.appendChild(frame);
+  // 4. A grip on the area's ring: drag it to choose what is magnified.
+  const grip = document.createElement('button');
+  grip.type = 'button';
+  grip.className = 'ov-mag-grip';
+  grip.setAttribute('aria-label', 'Drag to choose the area to magnify. Arrow keys move it.');
+  grip.dataset.tip = 'Drag to choose what is magnified';
+  Object.assign(grip.style, { left: (spot.x - ox) + 'px', top: (spot.y - oy) + 'px', width: spot.w + 'px', height: spot.h + 'px',
+                              borderRadius: round ? '50%' : '4px' });
+  grip.addEventListener('pointerdown', (e) => {
+    if (e.button > 0 || !e.isPrimary) return;
+    e.preventDefault(); e.stopPropagation();
+    if (state.selectedId !== ov.id) selectOverlay(ov.id, el);
+    snapshot();
+    const sx0 = ov.sx, sy0 = ov.sy, x0 = e.clientX, y0 = e.clientY;
+    const move = (e2) => {
+      ov.sx = Math.max(0, Math.min(1, sx0 + (e2.clientX - x0) / cw));
+      ov.sy = Math.max(0, Math.min(1, sy0 + (e2.clientY - y0) / ch));
+      refreshOneOverlay(ov);
+    };
+    const up = () => { document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+  });
+  grip.addEventListener('keydown', (e) => {
+    const step = (e.shiftKey ? 10 : 1) * state.scale;
+    const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+    const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+    if (!dx && !dy) return;
+    e.preventDefault(); e.stopPropagation();
+    snapshotOnce();
+    ov.sx = Math.max(0, Math.min(1, ov.sx + dx / cw));
+    ov.sy = Math.max(0, Math.min(1, ov.sy + dy / ch));
+    refreshOneOverlay(ov);
+    const again = dom.overlayEl.querySelector(`[data-id="${ov.id}"] .ov-mag-grip`);
+    if (again) again.focus();
+  });
+  el.appendChild(grip);
+}
+
+/**
+ * Paint the redaction boxes of page slot `slot` onto a 2D canvas. X / Y
+ * map page fractions to canvas pixels; sx / sy are canvas pixels per page
+ * fraction (for widths and heights). Used by the magnifier (screen and
+ * download) and by the flattening of redacted pages.
+ */
+function paintRedactions(g, slot, X, Y, sx, sy) {
+  for (const r of state.overlays) {
+    if (r.type !== 'redact' || r.pageDisplayIndex !== slot) continue;
+    g.fillStyle = r.fillColor || '#000000';
+    g.fillRect(X(r.fracLeft), Y(r.fracTop), r.fracW * sx, r.fracH * sy);
+  }
+}
+
+/**
+ * Redraw a teacher tool's picture inside its element, in place - used
+ * while it is being moved or resized (the element itself must stay, as
+ * the drag is holding on to it). The spotlight's dim layer and the
+ * magnifier's picture and lines depend on where the box is, too.
+ */
+const TEACH_TYPES = ['step', 'cursor', 'spotlight', 'magnifier'];
+function redrawTeach(el, ov) {
+  if (!TEACH_TYPES.includes(ov.type)) return;
+  const cw = pageW(), ch = pageH();
+  el.querySelectorAll('.ov-teach-svg, .ov-spot-dim, .ov-mag-canvas, .ov-mag-lines, .ov-mag-frame, .ov-mag-grip').forEach((n) => n.remove());
+  const holder = document.createDocumentFragment();
+  if (ov.type === 'step') holder.appendChild(buildStepSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale));
+  else if (ov.type === 'cursor') holder.appendChild(buildCursorSvg(ov, ov.fracW * cw, ov.fracH * ch));
+  else if (ov.type === 'spotlight') holder.appendChild(buildSpotlightSvg(ov, ov.fracW * cw, ov.fracH * ch, state.scale, cw, ch));
+  else if (ov.type === 'magnifier') { const tmp = document.createElement('div'); buildMagnifierEl(tmp, ov, cw, ch); holder.append(...tmp.childNodes); }
+  el.insertBefore(holder, el.firstChild);
+}
+
+/** Redraw just one overlay in place (keeps it selected). */
+function refreshOneOverlay(ov) {
+  const old = dom.overlayEl.querySelector(`[data-id="${ov.id}"]`);
+  if (!old) return;
+  const fresh = buildOverlayEl(ov, pageW(), pageH());
+  old.replaceWith(fresh);
+}
+
+/* ── Writing them into the PDF ──
+   pgW / pgH: the page as it looks, in points (see pageView). The callers
+   have already set up the "as it looks" drawing space. y is measured up
+   from the bottom in pdf-lib, so top-down positions are turned round here. */
+function drawStepToPdf(page, ov, pgW, pgH, fonts) {
+  const W = ov.fracW * pgW, H = ov.fracH * pgH;
+  const r = Math.min(W, H) / 2;
+  const cx = ov.fracLeft * pgW + W / 2, cy = pgH - (ov.fracTop * pgH + H / 2);
+  if (ov.ring !== false) page.drawEllipse({ x: cx, y: cy, xScale: r, yScale: r, color: PDFLib.rgb(1, 1, 1) });
+  const rr = ov.ring !== false ? r * 0.86 : r;
+  page.drawEllipse({ x: cx, y: cy, xScale: rr, yScale: rr, color: PDFLib.rgb(...parseHex(ov.fillColor || '#d4400b')) });
+  const label = stepLabel(stepNumberOf(ov), ov.numbering);
+  const size = stepFontSize(label, rr);
+  const font = fonts['HelveticaBold'];
+  const w = font.widthOfTextAtSize(label, size);
+  // Centre the label: across by its width, down by the font's cap height.
+  page.drawText(label, { x: cx - w / 2, y: cy - font.heightAtSize(size, { descender: false }) / 2, size, font,
+                         color: PDFLib.rgb(...parseHex(ov.textColor || '#ffffff')) });
+}
+
+function drawCursorToPdf(page, ov, pgW, pgH) {
+  const W = ov.fracW * pgW, H = ov.fracH * pgH, k = W / 32;
+  const d = affinePath(cursorPathD(ov.kind || 'pointer'), [W / 32, 0, 0, H / 32, ov.fracLeft * pgW, ov.fracTop * pgH]);
+  page.pushOperators(PDFLib.pushGraphicsState(), PDFLib.setLineJoin(PDFLib.LineJoinStyle.Round));
+  page.drawSvgPath(d, { x: 0, y: pgH, borderColor: PDFLib.rgb(...parseHex(ov.outlineColor || '#ffffff')), borderWidth: 3 * k,
+                        borderLineCap: PDFLib.LineCapStyle.Round });
+  page.drawSvgPath(d, { x: 0, y: pgH, color: PDFLib.rgb(...parseHex(ov.fillColor || '#0046ad')) });
+  page.pushOperators(PDFLib.popGraphicsState());
+}
+
+function drawSpotlightToPdf(page, ov, pgW, pgH) {
+  const W = ov.fracW * pgW, H = ov.fracH * pgH, ox = ov.fracLeft * pgW, oy = ov.fracTop * pgH;
+  const d = `M0 0H${pgW}V${pgH}H0Z` + spotHoleD(ov, ox, oy, W, H, 1, true);
+  page.drawSvgPath(d, { x: 0, y: pgH, color: PDFLib.rgb(...parseHex(ov.dimColor || '#000000')), opacity: ov.dim ?? 0.5 });
+  if (ov.ring) page.drawSvgPath(spotHoleD(ov, ox, oy, W, H, 1), { x: 0, y: pgH, borderColor: PDFLib.rgb(...parseHex(ov.ringColor || '#facc15')), borderWidth: 2 });
+}
+
+/**
+ * The magnifier in the PDF: pdf.js draws the magnified area of the page
+ * afresh at print quality (not a copy of the screen), redactions are
+ * painted over it, it is cut to the callout's shape, and embedded as a
+ * picture, with the border, ring and line drawn as real lines.
+ */
+async function drawMagnifierToPdf(outDoc, page, ov, pgW, pgH) {
+  const W = ov.fracW * pgW, H = ov.fracH * pgH, ox = ov.fracLeft * pgW, oy = ov.fracTop * pgH;
+  const z = ov.zoom || 2, round = ov.magShape !== 'rect';
+  const spot = { w: W / z, h: H / z }; spot.x = ov.sx * pgW - spot.w / 2; spot.y = ov.sy * pgH - spot.h / 2;
+  const PX = 4;                                       // picture pixels per point of the callout (about 288 dpi)
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, Math.round(W * PX)); cv.height = Math.max(1, Math.round(H * PX));
+  const g = cv.getContext('2d');
+  const jsPage = await state.pdfJsDoc.getPage(state.pageOrder[ov.pageDisplayIndex] + 1);
+  const scale = z * PX;                              // pixels per point of the PAGE
+  const vp = jsPage.getViewport({ scale, rotation: normRot(jsPage.rotate + (state.pageRots[ov.pageDisplayIndex] || 0)),
+                                  offsetX: -spot.x * scale, offsetY: -spot.y * scale });
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height);
+  await jsPage.render({ canvasContext: g, viewport: vp }).promise;
+  paintRedactions(g, ov.pageDisplayIndex, (fx) => (fx * pgW - spot.x) * scale, (fy) => (fy * pgH - spot.y) * scale, pgW * scale, pgH * scale);
+  // Cut it to the callout's shape (transparent outside), then embed it.
+  const out = document.createElement('canvas');
+  out.width = cv.width; out.height = cv.height;
+  const o = out.getContext('2d');
+  o.beginPath();
+  if (round) o.ellipse(out.width / 2, out.height / 2, out.width / 2, out.height / 2, 0, 0, Math.PI * 2);
+  else o.roundRect(0, 0, out.width, out.height, (ov.radius ?? 12) * PX);
+  o.clip();
+  o.drawImage(cv, 0, 0);
+  const png = await new Promise((res) => out.toBlob(res, 'image/png'));
+  const img = await outDoc.embedPng(new Uint8Array(await png.arrayBuffer()));
+  const col = PDFLib.rgb(...parseHex(ov.borderColor || '#0046ad'));
+  const bw = ov.borderWidth ?? 3;
+  // Line and ring first, so the callout sits on top of the line's end.
+  if (ov.leader !== false) {
+    const scx = spot.x + spot.w / 2, scy = spot.y + spot.h / 2, bcx = ox + W / 2, bcy = oy + H / 2;
+    const p1 = edgeToward(scx, scy, spot.w / 2, spot.h / 2, bcx, bcy), p2 = edgeToward(bcx, bcy, W / 2, H / 2, scx, scy);
+    page.drawLine({ start: { x: p1.x, y: pgH - p1.y }, end: { x: p2.x, y: pgH - p2.y }, thickness: Math.max(0.75, bw / 2), color: col });
+  }
+  const ring = round ? mapPath(circlePath(50, 50, 50), spot.w / 100, spot.h / 100, spot.x, spot.y)
+                     : roundRectPathD(spot.x, spot.y, spot.w, spot.h, (ov.radius ?? 12) / z);
+  page.drawSvgPath(ring, { x: 0, y: pgH, borderColor: col, borderWidth: Math.max(0.75, bw / 2), borderDashArray: [4, 3] });
+  page.drawImage(img, { x: ox, y: pgH - oy - H, width: W, height: H });
+  const frame = round ? mapPath(circlePath(50, 50, 50), (W - bw) / 100, (H - bw) / 100, ox + bw / 2, oy + bw / 2)
+                      : roundRectPathD(ox + bw / 2, oy + bw / 2, W - bw, H - bw, (ov.radius ?? 12));
+  if (bw > 0) page.drawSvgPath(frame, { x: 0, y: pgH, borderColor: col, borderWidth: bw });
+}
+
+/* ══════════════════════════════════════════
+   REDACTION (1.16)
+   ─────────────────────────────────────────
+   A black box drawn over text in a PDF hides it on screen, but the text is
+   still in the file: anyone can select it and copy it out from under the
+   box. So on download, every page with a redaction is FLATTENED:
+     1. pdf.js draws the page as a picture at 200 dpi (form fields are left
+        out of the picture - they are written back as fields afterwards),
+     2. the redaction boxes are painted onto that picture,
+     3. the page in the new PDF is replaced by a page holding only that
+        picture: no text, no links, no hidden layers - nothing is left
+        under the box, or anywhere else on that page.
+   Everything else you placed on the page (text, notes, marks, fields) is
+   then added on top as usual. After the file is built it is read back,
+   and the download is stopped if a flattened page still has any text that
+   you did not add yourself.
+   The trade-off: a flattened page's own text can no longer be selected or
+   searched. Pages without a redaction are not touched.
+══════════════════════════════════════════ */
+const REDACT_DPI = 200;
+
+/** Is this widget annotation on this page? (Compares the page's annotation list.) */
+function widgetOnPage(outDoc, page, widget) {
+  const annots = page.node.Annots();
+  if (!annots) return false;
+  for (let i = 0; i < annots.size(); i++) {
+    try { if (outDoc.context.lookup(annots.get(i)) === widget.dict) return true; } catch { /* skip */ }
+  }
+  return false;
+}
+
+/** Flatten page slot `slot` (page number k in outDoc) into a picture with its redactions burned in. */
+async function flattenRedactedPage(outDoc, outForm, k, slot) {
+  const old = outDoc.getPage(k);
+  // Fields whose widgets sit on this page come out first: their values are
+  // text too, and the ones PDFEDTR knows about are written back afterwards.
+  for (const field of outForm.getFields()) {
+    let here = false;
+    try { here = field.acroField.getWidgets().some((w) => widgetOnPage(outDoc, old, w)); } catch { here = false; }
+    if (here) { try { outForm.removeField(field); } catch (e) { console.warn('Could not remove a field from a redacted page', e); } }
+  }
+  const jsPage = await state.pdfJsDoc.getPage(state.pageOrder[slot] + 1);
+  const scale = REDACT_DPI / 72;
+  const vp = slotViewport(jsPage, slot, scale);
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+  const g = cv.getContext('2d');
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height);
+  // ENABLE_FORMS: draw comments and other annotations, but not form fields.
+  await jsPage.render({ canvasContext: g, viewport: vp, annotationMode: pdfjsLib.AnnotationMode.ENABLE_FORMS }).promise;
+  paintRedactions(g, slot, (fx) => fx * cv.width, (fy) => fy * cv.height, cv.width, cv.height);
+  const png = await new Promise((res) => cv.toBlob(res, 'image/png'));
+  const img = await outDoc.embedPng(new Uint8Array(await png.arrayBuffer()));
+  // The new page is the size of the page AS IT LOOKS, and is not turned:
+  // the picture already shows it the right way up.
+  const wPt = vp.width / scale, hPt = vp.height / scale;
+  const fresh = outDoc.insertPage(k, [wPt, hPt]);
+  fresh.drawImage(img, { x: 0, y: 0, width: wPt, height: hPt });
+  outDoc.removePage(k + 1);
+}
+
+/**
+ * Read the built PDF back and make sure each flattened page has no text
+ * except what was added on top of it on purpose. Returns the page numbers
+ * (1-based) that failed - an empty list means all is well.
+ */
+async function checkRedactedPages(bytes, outPages, allowedBySlot) {
+  const doc = await pdfjsLib.getDocument({ data: bytes.slice(0), isEvalSupported: false }).promise;
+  const bad = [];
+  try {
+    for (const { k, slot } of outPages) {
+      const page = await doc.getPage(k + 1);
+      const text = await page.getTextContent();
+      const allowed = allowedBySlot.get(slot) || '';
+      // Squash spaces and case so wrapping and spacing in the PDF don't matter.
+      const norm = (s) => s.replace(/\s+/g, '').toLowerCase();
+      const ok = norm(allowed);
+      for (const item of text.items) {
+        const t = norm(item.str || '');
+        if (t && !ok.includes(t)) { bad.push(k + 1); break; }
+      }
+    }
+  } finally { doc.destroy(); }
+  return bad;
+}
+
+
 /** Update the SVG element inside an existing shape overlay in the DOM */
 function updateShapeInDom(ov) {
   const el = dom.overlayEl.querySelector(`[data-id="${ov.id}"]`);
@@ -4657,6 +5259,7 @@ function wireMove(el, ov, rzHandle) {
       el.style.left = (ov.fracLeft * cw) + 'px';
       el.style.top  = (ov.fracTop  * ch) + 'px';
       renderGuideLines(snap.hGuides, snap.vGuides, cw, ch);
+      if (ov.type === 'spotlight' || ov.type === 'magnifier') redrawTeach(el, ov);   // their pictures depend on where they are
       if (state.selectedId === ov.id) positionContextBar(el);
     };
     const up = () => {
@@ -4713,7 +5316,7 @@ function wireMove(el, ov, rzHandle) {
           ov.fracH = newFracH;
           ov.fracW = Math.max(0.04, (newFracH * ch * aspect) / cw);
         }
-      } else if (ov.type === 'checkbox') {
+      } else if (ov.type === 'checkbox' || ov.type === 'step' || ov.type === 'cursor' || (ov.type === 'magnifier' && ov.magShape !== 'rect')) {
         /*
          * Checkbox widgets are square in a PDF, so keep the overlay square
          * too — otherwise the box you drew and the box you get would differ.
@@ -4746,6 +5349,7 @@ function wireMove(el, ov, rzHandle) {
       // A shape's outline is drawn for its exact size (so corners stay round
       // and the thickness stays true), so redraw it as it grows.
       if (ov.type === 'shape') updateShapeInDom(ov);
+      redrawTeach(el, ov);                         // teacher tools are drawn for their size too (1.16)
       if (state.selectedId === ov.id) positionContextBar(el);
     };
     const up = () => { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', up); };
@@ -4760,6 +5364,8 @@ function removeOverlay(id) {
   if (state.selectedId === id) hideContextBar();
   const el = dom.overlayEl.querySelector(`[data-id="${id}"]`);
   if (el) el.remove();
+  // Deleting a step renumbers the ones after it (1.16).
+  if (el && el.classList.contains('ov-type-step')) refreshOverlays();
 }
 
 /* ══════════════════════════════════════════
@@ -4847,6 +5453,11 @@ const DEFAULT_SIZES = {
 
 /** Work out which entry of DEFAULT_SIZES applies to a tool + its options. */
 function defaultSizeFor(type, extra = {}) {
+  /* Teacher tools (1.16): sizes in points, so they look the same on any page. */
+  const PT = { step: [26, 26], cursor: [36, 36], magnifier: [110, 110], spotlight: [220, 90], redact: [160, 16] };
+  if (PT[type] && state.pageWpt && state.pageHpt) {
+    return { w: PT[type][0] / state.pageWpt, h: PT[type][1] / state.pageHpt };
+  }
   /* Shapes from the Shapes panel (1.14): their usual proportions, about a
      fifth of the page wide, worked out through screen pixels so a square
      really is square on the page. The rectangle keeps its old size. */
@@ -4983,6 +5594,36 @@ function createOverlay(type, extra = {}, rect) {
     ov.textColor = '#333333';
     ov.fontSize  = 13;
 
+  /* Teacher tools (1.16): their usual look. */
+  } else if (type === 'step') {
+    ov.fillColor = extra.fillColor ?? state.lastStepColor ?? '#d4400b';
+    ov.textColor = '#ffffff';
+    ov.ring      = true;
+    ov.numbering = state.lastStepNumbering || '123';
+  } else if (type === 'cursor') {
+    ov.kind         = extra.kind || state.lastCursorKind || 'pointer';
+    ov.fillColor    = '#0046ad';
+    ov.outlineColor = '#ffffff';
+  } else if (type === 'spotlight') {
+    ov.holeShape = 'ellipse';
+    ov.radius    = 12;
+    ov.dim       = 0.5;
+    ov.dimColor  = '#000000';
+    ov.ring      = false;
+    ov.ringColor = '#facc15';
+  } else if (type === 'magnifier') {
+    ov.zoom        = 2;
+    ov.magShape    = 'circle';
+    ov.radius      = 12;
+    ov.borderColor = '#0046ad';
+    ov.borderWidth = 3;
+    ov.leader      = true;
+    // What it magnifies starts where you clicked (or the middle of the box you drew).
+    ov.sx = extra.sx ?? (rect.fracLeft + rect.fracW / 2);
+    ov.sy = extra.sy ?? (rect.fracTop + rect.fracH / 2);
+  } else if (type === 'redact') {
+    ov.fillColor = '#000000';
+
   } else {
     // field types
     state.fieldCounter++;
@@ -5008,8 +5649,9 @@ function createOverlay(type, extra = {}, rect) {
   // A PDF checkbox widget is always square, so the overlay is too.
   // Grading-mark stamps (X / checkmark) look wrong if stretched, so they
   // get the same treatment.
-  if (ov.type === 'checkbox' || (ov.type === 'shape' && ['xmark', 'check'].includes(ov.shapeType))) {
-    squareUpOverlay(ov, cw, ch);
+  if (ov.type === 'checkbox' || (ov.type === 'shape' && ['xmark', 'check'].includes(ov.shapeType)) ||
+      ov.type === 'step' || ov.type === 'cursor' || (ov.type === 'magnifier' && ov.magShape === 'circle')) {
+    squareUpOverlay(ov, cw, ch);                   // steps, cursors and round magnifiers are square too (1.16)
   }
 
   // Centre-placed elements are centred using their FINAL size.
@@ -5025,8 +5667,10 @@ function createOverlay(type, extra = {}, rect) {
   ov.fracTop  = Math.max(0, Math.min(1 - ov.fracH, ov.fracTop));
 
   state.overlays.push(ov);
-  const el = buildOverlayEl(ov, cw, ch);
-  dom.overlayEl.appendChild(el);
+  // A new step can change the numbers of the steps after it: redraw them all.
+  if (ov.type === 'step') refreshOverlays();
+  const el = dom.overlayEl.querySelector(`[data-id="${ov.id}"]`) || buildOverlayEl(ov, cw, ch);
+  if (!el.isConnected) dom.overlayEl.appendChild(el);
 
   // Select it so a bar appears immediately.
   selectOverlay(ov.id, el);
@@ -5064,6 +5708,11 @@ const PLACEMENT_LABELS = {
   checkbox:  'checkbox',
   dropdown:  'dropdown',
   image:     'signature',
+  step:      'step number',
+  cursor:    'cursor',
+  spotlight: 'spotlight (drag round the part to keep bright)',
+  magnifier: 'magnifier (click what to magnify)',
+  redact:    'redaction (drag over what to remove)',
 };
 
 /**
@@ -5124,7 +5773,8 @@ function handlePlacementPointerDown(e) {
   if (!state.pendingPlacement || e.button !== 0) return;
   e.preventDefault();
 
-  const { type, extra } = state.pendingPlacement;
+  const { type } = state.pendingPlacement;
+  let { extra } = state.pendingPlacement;          // a magnifier adds where it looks (1.16)
   const cw = pageW();
   const ch = pageH();
   const start = eventToCanvasPoint(e);
@@ -5166,7 +5816,16 @@ function handlePlacementPointerDown(e) {
     const dragged = w >= CLICK_VS_DRAG_PX && h >= CLICK_VS_DRAG_PX;
 
     let rect;
-    if (dragged) {
+    if (dragged && type === 'magnifier') {
+      // A magnifier dragged out: the box drawn is the AREA to magnify, and
+      // the callout (twice its size) goes beside it (1.16).
+      const sx = (Math.min(start.x, current.x) + w / 2) / cw, sy = (Math.min(start.y, current.y) + h / 2) / ch;
+      extra = { ...extra, sx, sy };
+      const side = Math.max(w, h) * 2;
+      const right = Math.min(start.x, current.x) + w + 20;
+      const left = right + side > cw ? Math.min(start.x, current.x) - 20 - side : right;
+      rect = { fracLeft: left / cw, fracTop: Math.max(0, sy * ch - side / 2) / ch, fracW: side / cw, fracH: side / ch };
+    } else if (dragged) {
       // Use the rectangle the user drew.
       rect = {
         fracLeft: Math.min(start.x, current.x) / cw,
@@ -5174,6 +5833,22 @@ function handlePlacementPointerDown(e) {
         fracW:    w / cw,
         fracH:    h / ch,
       };
+    } else if (type === 'step' || type === 'cursor' || type === 'magnifier') {
+      /* Teacher tools (1.16): a step is centred on the click, a cursor's tip
+         lands on it, and a magnifier magnifies the spot clicked, with its
+         callout up and to the right of it. */
+      const sz = defaultSizeFor(type, extra);
+      const cx = start.x / cw, cy = start.y / ch;
+      if (type === 'step') rect = { fracLeft: cx - sz.w / 2, fracTop: cy - sz.h / 2, fracW: sz.w, fracH: sz.h };
+      else if (type === 'cursor') {
+        const hot = CURSOR_KINDS[extra.kind || state.lastCursorKind || 'pointer'].hot;
+        rect = { fracLeft: cx - hot[0] / 32 * sz.w, fracTop: cy - hot[1] / 32 * sz.h, fracW: sz.w, fracH: sz.h };
+      } else {
+        extra = { ...extra, sx: cx, sy: cy };
+        const offX = 70 / state.pageWpt, offY = 70 / state.pageHpt;     // up and to the right, about an inch
+        const left = cx + offX + sz.w / 2 > 1 ? cx - offX - sz.w * 1.5 : cx + offX - sz.w / 2;
+        rect = { fracLeft: left, fracTop: Math.max(0, cy - offY - sz.h / 2), fracW: sz.w, fracH: sz.h };
+      }
     } else {
       // A plain click: default size, positioned at the click point.
       const sz = defaultSizeFor(type, extra);
@@ -5194,7 +5869,7 @@ function handlePlacementPointerDown(e) {
     // and form fields can stay armed, so a whole page can be marked quickly.
     // Text, notes, dates and pictures always go back to Select, because the
     // next thing you want to do is type in them or adjust them.
-    const again = settings.keepTool && ['shape', 'highlight', 'field'].includes(type)
+    const again = settings.keepTool && ['shape', 'highlight', 'field', 'step', 'cursor', 'redact'].includes(type)
       ? { type, extra, tool: state.activeTool } : null;
     cancelPlacement();
     createOverlay(type, extra, rect);
@@ -5228,6 +5903,7 @@ const TYPE_LABELS = {
   text: 'Text', sticky: 'Note', image: 'Image', shape: 'Shape',
   highlight: 'Highlight', textfield: 'Text field', checkbox: 'Checkbox',
   dropdown: 'Dropdown',
+  step: 'Step', cursor: 'Cursor', spotlight: 'Spotlight', magnifier: 'Magnifier', redact: 'Redaction',
 };
 
 /** The name shown in the object bar. Form fields use their real PDF name. */
@@ -5379,6 +6055,7 @@ function nudgeSelected(dxPt, dyPt) {
 
   el.style.left = (ov.fracLeft * cw) + 'px';
   el.style.top  = (ov.fracTop  * ch) + 'px';
+  redrawTeach(el, ov);                             // a spotlight's dim layer moves with it (1.16)
   positionContextBar(el);
 }
 
@@ -5473,6 +6150,7 @@ function wireBarDrag(gripEl, ov) {
       el.style.left = (ov.fracLeft * cw) + 'px';
       el.style.top  = (ov.fracTop  * ch) + 'px';
       renderGuideLines(snap.hGuides, snap.vGuides, cw, ch);
+      if (ov.type === 'spotlight' || ov.type === 'magnifier') redrawTeach(el, ov);   // their pictures depend on where they are
       positionContextBar(el);
     };
     const up = () => {
@@ -5745,6 +6423,74 @@ function buildContextBar(ov) {
       flips.querySelectorAll('button').forEach((b) => b.setAttribute('aria-label', b.title));
       bar.appendChild(row('Flip', flips));
     }
+
+  /* ═══════ TEACHER TOOLS (1.16) ═══════ */
+  } else if (ov.type === 'step') {
+    const redraw = () => refreshOverlays();       // every step's number can change
+    bar.appendChild(row('Number', (() => { const n = document.createElement('span'); n.className = 'insp-note';
+      n.textContent = stepLabel(stepNumberOf(ov), ov.numbering) + ' (counts up by itself)'; return n; })()));
+    const numbering = sel(STEP_STYLES, ov.numbering || '123', (v) => {
+      // One numbering style for all the steps, so the sequence reads as one.
+      state.overlays.forEach((o) => { if (o.type === 'step') o.numbering = v; });
+      state.lastStepNumbering = v; redraw(); buildContextBar(ov);
+    });
+    numbering.setAttribute('aria-label', 'Numbering style');
+    bar.appendChild(row('Numbering', numbering));
+    bar.appendChild(row('Colour', swatches(ov.fillColor || '#d4400b', (v) => { ov.fillColor = v; state.lastStepColor = v; refreshOneOverlay(ov); })));
+    bar.appendChild(row('Number colour', swatches(ov.textColor || '#ffffff', (v) => { ov.textColor = v; refreshOneOverlay(ov); })));
+    const ring = document.createElement('input');
+    ring.type = 'checkbox'; ring.checked = ov.ring !== false; ring.setAttribute('aria-label', 'White ring');
+    ring.addEventListener('change', () => { snapshotOnce(); ov.ring = ring.checked; refreshOneOverlay(ov); });
+    bar.appendChild(row('White ring', ring));
+
+  } else if (ov.type === 'cursor') {
+    const kinds = sel(Object.entries(CURSOR_KINDS).map(([k, c]) => [k, c.label]), ov.kind || 'pointer', (v) => {
+      ov.kind = v; state.lastCursorKind = v; refreshOneOverlay(ov);
+    });
+    kinds.setAttribute('aria-label', 'Cursor');
+    bar.appendChild(row('Cursor', kinds));
+    bar.appendChild(row('Colour', swatches(ov.fillColor || '#0046ad', (v) => { ov.fillColor = v; refreshOneOverlay(ov); })));
+    bar.appendChild(row('Outline', swatches(ov.outlineColor || '#ffffff', (v) => { ov.outlineColor = v; refreshOneOverlay(ov); })));
+
+  } else if (ov.type === 'spotlight') {
+    const shape = sel([['ellipse', 'Oval'], ['rect', 'Rounded rectangle']], ov.holeShape || 'ellipse', (v) => { ov.holeShape = v; refreshOneOverlay(ov); buildContextBar(ov); });
+    shape.setAttribute('aria-label', 'Spot shape');
+    bar.appendChild(row('Spot', shape));
+    if (ov.holeShape === 'rect') bar.appendChild(row('Corners', range(0, 48, 1, ov.radius ?? 12, ' pt', (v) => { ov.radius = v; refreshOneOverlay(ov); })));
+    bar.appendChild(row('Dim', range(10, 90, 1, Math.round((ov.dim ?? 0.5) * 100), '%', (v) => { ov.dim = v / 100; refreshOneOverlay(ov); })));
+    bar.appendChild(row('Dim colour', swatches(ov.dimColor || '#000000', (v) => { ov.dimColor = v; refreshOneOverlay(ov); })));
+    const ring = document.createElement('input');
+    ring.type = 'checkbox'; ring.checked = !!ov.ring; ring.setAttribute('aria-label', 'Ring round the spot');
+    ring.addEventListener('change', () => { snapshotOnce(); ov.ring = ring.checked; refreshOneOverlay(ov); buildContextBar(ov); });
+    bar.appendChild(row('Ring', ring));
+    if (ov.ring) bar.appendChild(row('Ring colour', swatches(ov.ringColor || '#facc15', (v) => { ov.ringColor = v; refreshOneOverlay(ov); })));
+
+  } else if (ov.type === 'magnifier') {
+    const shape = sel([['circle', 'Circle'], ['rect', 'Rounded rectangle']], ov.magShape || 'circle', (v) => {
+      ov.magShape = v;
+      if (v === 'circle') squareUpOverlay(ov, pageW(), pageH());
+      refreshOneOverlay(ov); buildContextBar(ov);
+    });
+    shape.setAttribute('aria-label', 'Magnifier shape');
+    bar.appendChild(row('Shape', shape));
+    bar.appendChild(row('Zoom', range(1.5, 6, 0.5, ov.zoom || 2, '×', (v) => { ov.zoom = v; refreshOneOverlay(ov); })));
+    bar.appendChild(row('Border', swatches(ov.borderColor || '#0046ad', (v) => { ov.borderColor = v; refreshOneOverlay(ov); })));
+    bar.appendChild(row('Thickness', range(0, 8, 0.5, ov.borderWidth ?? 3, ' pt', (v) => { ov.borderWidth = v; refreshOneOverlay(ov); })));
+    const lead = document.createElement('input');
+    lead.type = 'checkbox'; lead.checked = ov.leader !== false; lead.setAttribute('aria-label', 'Line to the spot');
+    lead.addEventListener('change', () => { snapshotOnce(); ov.leader = lead.checked; refreshOneOverlay(ov); });
+    bar.appendChild(row('Line to spot', lead));
+    const tip = document.createElement('p');
+    tip.className = 'insp-help';
+    tip.textContent = 'Drag the dashed ring (or tab to it and use the arrow keys) to choose what is magnified.';
+    bar.appendChild(tip);
+
+  } else if (ov.type === 'redact') {
+    bar.appendChild(row('Colour', swatches(ov.fillColor || '#000000', (v) => { ov.fillColor = v; refreshOneOverlay(ov); })));
+    const tip = document.createElement('p');
+    tip.className = 'insp-help';
+    tip.textContent = 'When you download, this page becomes a picture with the box burned in, so nothing is left under it - and the file is checked before it is saved. The page\'s own text can then no longer be selected or searched.';
+    bar.appendChild(tip);
 
   /* ═══════ HIGHLIGHT overlay ═══════ */
   } else if (ov.type === 'highlight') {
@@ -6213,10 +6959,27 @@ async function downloadPdf(opts = {}) {
       outForm.getFields().map(f => { try { return f.getName(); } catch { return ''; } }).filter(Boolean)
     );
 
+    /* ── Redaction (1.16): flatten every page that has one ──
+       Done before anything is added on top, so what you placed on the page
+       (text, marks, fields) stays real and editable over the picture. */
+    const redactedOut = [];                        // [{ k, slot }] pages that became pictures
+    for (const slot of slots) {
+      if (!state.overlays.some(o => o.type === 'redact' && o.pageDisplayIndex === slot)) continue;
+      setLoading(true, 'REDACTING PAGE ' + (slot + 1) + '…');
+      await flattenRedactedPage(outDoc, outForm, outIndexOf.get(slot), slot);
+      redactedOut.push({ k: outIndexOf.get(slot), slot });
+    }
+    if (redactedOut.length) setLoading(true, 'BUILDING PDF…');
+
     let fieldEmbedErrors = 0; // counts any field registration or placement failures
     let altTextCount     = 0; // how many images carried an accessible description
 
-    for (const ov of state.overlays) {
+    /* Spotlights go first, so their dimming sits UNDER everything else you
+       placed (the page dims, your marks stay bright). Redactions are already
+       burned into their pages. (1.16) */
+    const exportOrder = [...state.overlays.filter(o => o.type === 'spotlight'),
+                         ...state.overlays.filter(o => o.type !== 'spotlight' && o.type !== 'redact')];
+    for (const ov of exportOrder) {
       if (!outIndexOf.has(ov.pageDisplayIndex)) continue;      // its page is not in this file
       const page = outDoc.getPage(outIndexOf.get(ov.pageDisplayIndex));
       /*
@@ -6365,6 +7128,16 @@ async function downloadPdf(opts = {}) {
       /* ── Shape ── (1.14: one routine for every shape, the same one the preview uses) */
       } else if (ov.type === 'shape') {
         drawShapeToPdf(page, ov, pgW, pgH);
+
+      /* ── Teacher tools (1.16) ── */
+      } else if (ov.type === 'step') {
+        drawStepToPdf(page, ov, pgW, pgH, fonts);
+      } else if (ov.type === 'cursor') {
+        drawCursorToPdf(page, ov, pgW, pgH);
+      } else if (ov.type === 'spotlight') {
+        drawSpotlightToPdf(page, ov, pgW, pgH);
+      } else if (ov.type === 'magnifier') {
+        await drawMagnifierToPdf(outDoc, page, ov, pgW, pgH);
 
       /* ── Highlight ── */
       } else if (ov.type === 'highlight') {
@@ -6563,6 +7336,25 @@ async function downloadPdf(opts = {}) {
 
     /* ── Save & download ── */
     const bytes = await outDoc.save();
+
+    /* ── Check the redacted pages (1.16) ──
+       Read the finished file back: a flattened page may only have text that
+       you added on top of it yourself (a text box, a note, a field). If
+       anything else turns up, nothing is downloaded. */
+    if (redactedOut.length) {
+      setLoading(true, 'CHECKING REDACTIONS…');
+      const allowed = new Map();
+      for (const { slot } of redactedOut) {
+        allowed.set(slot, state.overlays.filter(o => o.pageDisplayIndex === slot)
+          .map(o => [o.content, o.defaultValue, (o.options || []).join(' '), o.type === 'step' ? stepLabel(stepNumberOf(o), o.numbering) : '']
+            .filter(Boolean).join(' ')).join(' '));
+      }
+      const bad = await checkRedactedPages(bytes, redactedOut, allowed);
+      if (bad.length) {
+        toast('Nothing was downloaded: page ' + bad.join(', ') + ' still had text after redacting, so it was not safe to save. Please try again.', 'err');
+        return;
+      }
+    }
     const url   = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
     // A separate PDF of some pages is named after them, so it does not replace the whole edited file.
     const fileName = Array.isArray(opts.pages)
@@ -6580,6 +7372,8 @@ async function downloadPdf(opts = {}) {
     const missingAlt = state.overlays.filter(o => o.type === 'image' && !(o.alt || '').trim()).length;
     if (fieldEmbedErrors > 0) {
       toast(`Downloaded, but ${fieldEmbedErrors} field${fieldEmbedErrors > 1 ? 's' : ''} could not be embedded - see the browser console.`, 'err');
+    } else if (redactedOut.length) {
+      toast(`Downloaded. ${redactedOut.length === 1 ? '1 redacted page was' : redactedOut.length + ' redacted pages were'} turned into a picture and checked: nothing is left under the boxes.`);
     } else if (missingAlt > 0) {
       toast(`Downloaded. ${missingAlt} image${missingAlt > 1 ? 's have' : ' has'} no alt text - add a description if it carries meaning.`);
     } else if (altTextCount > 0) {
@@ -6768,7 +7562,8 @@ function uniqueFieldName(form, usedNames, preferred) {
 function setActiveTool(id) {
   state.activeTool = id;   // remembered for Settings > Keep tool after placing
   [dom.toolSelect, dom.toolText, dom.toolHighlight, dom.toolShape, dom.toolImage,
-   dom.toolField, dom.toolXmark, dom.toolCheck, dom.toolSticky, dom.toolDate, dom.toolSignature].forEach(b => {
+   dom.toolField, dom.toolXmark, dom.toolCheck, dom.toolSticky, dom.toolDate, dom.toolSignature,
+   ...document.querySelectorAll('#tool-step, #tool-cursor, #tool-spotlight, #tool-magnifier, #tool-redact')].forEach(b => {
     if (!b) return;
     b.classList.toggle('active', b.id === id);
     b.setAttribute('aria-pressed', String(b.id === id));
@@ -6901,6 +7696,23 @@ dom.toolCheck.addEventListener('click', () => {
   setActiveTool('tool-check');
   closeAllMenus();
   beginPlacement('shape', { shapeType: 'check', strokeColor: '#16a34a', lineWidth: 8, noFill: true });
+});
+
+/* ── Teacher tools (1.16) ──
+   Each arms its tool; click the page to place it, or drag to size it. */
+[['tool-step', 'step'], ['tool-cursor', 'cursor'], ['tool-spotlight', 'spotlight'],
+ ['tool-magnifier', 'magnifier'], ['tool-redact', 'redact']].forEach(([id, type]) => {
+  document.getElementById(id).addEventListener('click', () => {
+    if (!state.pdfJsDoc) { toast('Load a PDF first.', 'err'); return; }
+    setActiveTool(id);
+    closeAllMenus();
+    beginPlacement(type, {});
+    // The first redaction in a session explains what it does to the page.
+    if (type === 'redact' && !state.redactExplained) {
+      state.redactExplained = true;
+      toast('Redact removes for good: when you download, each page with a redaction becomes a picture, so nothing is left under the box (that page\'s text can no longer be selected or searched).');
+    }
+  });
 });
 
 /* ── Today's date ──
@@ -8567,7 +9379,7 @@ function suiteFeaturesCard(features, appId) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.15';
+const APP_VERSION = '1.16';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -8624,6 +9436,11 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.16', date: '2026-10-11', notes: [
+    'IMGEDTR\'s teacher tools: step numbers that count up by themselves (and renumber when one is deleted), cursor stamps to show where to click, a spotlight that dims everything but one spot, and a magnifier that zooms in on one spot.',
+    'Redact that really removes: each page with a redaction becomes a picture when you download, with the box burned in, so nothing is left under it. The finished file is checked before it is saved.',
+    'Scroll from page to page: the mouse wheel over the page thumbnails goes to the next or previous page, and scrolling on past the bottom of a page goes to the next one (Settings can turn that off).'
+  ] },
   { version: '1.15', date: '2026-10-11', notes: [
     'A new filmstrip, the same as DSKEDTR\'s: + adds a blank page and Insert a PDF adds another PDF, both after the page showing. Tap or click a page and the page pill opens above it: move left or right, turn left or right, duplicate, copy, cut, paste, save as a separate PDF, and delete. Ctrl+click or Shift+click picks several pages, and the pill acts on all of them. Right-click a page for the same actions.',
     'Turn pages. A turned page downloads turned, with its text and links untouched, and everything you placed on it stays where you put it and the right way up.',
@@ -9148,6 +9965,12 @@ document.addEventListener('keydown', e => {
   if (e.key === 't' || e.key === 'T') { if (state.pdfJsDoc) dom.toolText.click(); }
   if (e.key === 's' || e.key === 'S') { if (state.pdfJsDoc) dom.toolSticky.click(); }
   if (e.key === 'd' || e.key === 'D') { if (state.pdfJsDoc) dom.toolDate.click(); }
+  // Teacher tools (1.16): N step, C cursor, M magnifier (Ctrl+C is copy, not this).
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && state.pdfJsDoc) {
+    if (e.key === 'n' || e.key === 'N') document.getElementById('tool-step').click();
+    if (e.key === 'c' || e.key === 'C') document.getElementById('tool-cursor').click();
+    if (e.key === 'm' || e.key === 'M') document.getElementById('tool-magnifier').click();
+  }
 
   /*
    * Arrow keys do one of two jobs.
@@ -9444,6 +10267,57 @@ const applyTheme = (function initTheme() {
   });
   return apply;
 }());
+/* ── Scrolling from page to page (1.16) ──
+   1. Over the filmstrip, the mouse wheel (or two fingers up and down on a
+      trackpad) goes to the next or previous page. Sideways scrolling still
+      slides the strip.
+   2. Over the page, scrolling on past its bottom edge goes to the next page
+      (and up past the top, to the one before) - Settings can turn this off.
+   Trackpads send many tiny scroll steps, so they are added up until they
+   come to a real "notch", and a short pause after each page change stops
+   one long flick from flying through the whole PDF. */
+(() => {
+  let filmSum = 0, filmLast = 0;
+  dom.sidebar.addEventListener('wheel', (e) => {
+    if (!state.pdfJsDoc || e.ctrlKey || e.metaKey) return;
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;      // sideways: slide the strip as usual
+    e.preventDefault();
+    const now = performance.now();
+    if (now - filmLast > 400) filmSum = 0;                     // a fresh scroll starts from zero
+    filmLast = now;
+    filmSum += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    if (Math.abs(filmSum) < 50) return;
+    const step = filmSum > 0 ? 1 : -1;
+    filmSum = 0;
+    navigatePage(step).then(() => { if (!dom.pagePill.hidden) closePagePill(); });
+  }, { passive: false });
+
+  let pushSum = 0, pushLast = 0, coolUntil = 0;
+  dom.canvasArea.addEventListener('wheel', (e) => {
+    if (!settings.scrollPages || !state.pdfJsDoc || e.ctrlKey || e.metaKey) return;
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    const a = dom.canvasArea, now = performance.now();
+    const atBottom = a.scrollTop + a.clientHeight >= a.scrollHeight - 2;
+    const atTop = a.scrollTop <= 1;
+    const down = e.deltaY > 0;
+    if (!(down ? atBottom : atTop)) { pushSum = 0; return; }   // still room to scroll this page
+    if (now < coolUntil) { e.preventDefault(); return; }       // just turned a page: let the flick settle
+    if (now - pushLast > 300) pushSum = 0;
+    pushLast = now;
+    pushSum += Math.abs(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY);
+    // A short "push" past the edge before turning, so reaching the bottom by itself does not flip.
+    if (pushSum < 140) return;
+    const next = state.currentPage + (down ? 1 : -1);
+    if (next < 0 || next >= state.pageOrder.length) return;
+    e.preventDefault();
+    pushSum = 0; coolUntil = now + 450;
+    navigatePage(down ? 1 : -1).then(() => {
+      // Arrive at the top of the next page, or the bottom of the previous one.
+      a.scrollTop = down ? 0 : a.scrollHeight;
+    });
+  }, { passive: false });
+})();
+
 /* ══════════════════════════════════════════
    SETTINGS DIALOG (1.13)
    ─────────────────────────────────────────
@@ -9456,6 +10330,7 @@ const applyTheme = (function initTheme() {
   const zoom  = document.getElementById('set-zoom');
   const snap  = document.getElementById('set-snap');
   const keep  = document.getElementById('set-keep');
+  const pages = document.getElementById('set-scrollpages');
 
   /** Show the current settings in the controls. */
   function fill() {
@@ -9463,6 +10338,7 @@ const applyTheme = (function initTheme() {
     zoom.value   = settings.openZoom;
     snap.checked = settings.snap;
     keep.checked = settings.keepTool;
+    pages.checked = settings.scrollPages;
   }
 
   document.getElementById('btn-settings').addEventListener('click', () => {
@@ -9487,6 +10363,7 @@ const applyTheme = (function initTheme() {
   });
   snap.addEventListener('change', () => { settings.snap = snap.checked; saveSettings(); });
   keep.addEventListener('change', () => { settings.keepTool = keep.checked; saveSettings(); });
+  pages.addEventListener('change', () => { settings.scrollPages = pages.checked; saveSettings(); });
 }());
 
 /* ══════════════════════════════════════════
