@@ -12,6 +12,13 @@ refreshes the page inside it, and Check for updates compares the server's
 Releases before 3.4 went out without notes. Rather than guess at them, this
 file starts at 3.4.
 
+## 3.28 - 2026-10-10 - A tour of the features
+
+- **Features, a new first tab in Help:** an animated tour of five of VIDEDTR's favorite features - Blur private information, Multitrack timeline, Split a clip, Effects and transitions and Spotlight and magnifier - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion.
+- **? or F1 and the Help button now open Help on Features.** Keyboard shortcuts is one tab over.
+- **The splash has a "See what VIDEDTR can do" card** that opens the same tour over the splash.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `renderSuiteFeatures`, `suiteFeaturesOpen`, `suiteFeaturesCard` and their styles). The drawings are inline SVG with SVG's own animation tags, so they work offline and straight off a disk.
+
 ## 3.27 - 2026-10-09 - .videdtr project files, with the media inside
 
 - **Projects save as `.videdtr`, with the media inside.** Save project (the disk button, Ctrl+S, or Export > Project file) writes one file holding the edit and every media file in the pool, byte for byte. Open it on any computer and everything is there, with no relinking. Built-in sound effects are left out, because VIDEDTR makes them again.
