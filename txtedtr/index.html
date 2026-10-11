@@ -224,7 +224,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 10px;
+  min-height: 52px;          /* the family's top bar height (IMGEDTR's 52px) */
+  padding: 0 10px;
   background: var(--bg-chrome);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
@@ -600,6 +601,19 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 .suite-links { display: inline-block; margin-top: 4px; }
 .suite-links a { color: inherit; font-weight: 600; }
 
+.suite-source { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 18px; padding: 14px 16px;
+  border-radius: 12px; border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent); }
+.suite-source-words { flex: 1 1 260px; margin: 0; font-size: 13.5px; line-height: 1.5; }
+/* The button: the text colour as its fill, so it is the strongest thing in the tab in light and dark mode. */
+.suite-source-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 10px;
+  background: var(--suite-fg, CanvasText); color: var(--suite-bg, Canvas); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.suite-source-btn:hover { filter: brightness(1.15); }
+.suite-source-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-source-btn:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { .suite-source-btn:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-source-btn:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-source-btn:focus-visible { outline-color: #0046ad; }
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 
 /* Colours the shared block uses: TXTEDTR's own panels and text, and its
@@ -2090,7 +2104,7 @@ body.dragging .editor-area { outline: 3px dashed var(--accent); outline-offset: 
 
 /* Shown in the About tab, and used as the service worker's cache version -
    so bumping this one number is also how you retire the old offline copy. */
-const APP_VERSION = "1.20";
+const APP_VERSION = "1.21";
 
 /* Every keyboard shortcut, in one table. This is the single source for three
    things: the rows in the Keyboard shortcuts panel, the checkbox that turns
@@ -2181,6 +2195,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: "1.21", changes: [
+    ["changed", "The top bar is now the family's standard 52px tall, and Inspector headings and labels match IMGEDTR (12px bold capitals, 13px labels)."],
+    ["changed", "About now starts with a \"View the source on GitHub\" button: every app is free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in and works offline."]
+  ] },
   { version: "1.20", changes: [
     ["changed", "The \"no file open\" screen and About now link to edtrapps.com, home of every app in the family, and to the source on GitHub (free and open source, MIT license)."]
   ] },
@@ -7546,6 +7564,36 @@ function renderSuiteCredits(container) {
   const links = suiteEl('p', 'suite-credits-links');
   links.append(suiteLinksLine());
   container.append(made, by, row, links);
+
+  // The source code, front and centre: a box with a clear GitHub button at
+  // the TOP of the About tab (the credits themselves sit lower down), so
+  // nobody has to hunt for it. Falls back to the top of the credits when
+  // the credits are not inside a tab panel.
+  const source = suiteSourceBox();
+  const pane = container.closest('[role="tabpanel"]');
+  const old = pane && pane.querySelector(':scope > .suite-source');
+  if (old) old.remove();                                  // drawn before: replace it
+  if (pane) pane.prepend(source); else container.prepend(source);
+}
+
+/* "Free and open source" with a big "View the source on GitHub" button. */
+function suiteSourceBox() {
+  const box = suiteEl('section', 'suite-source');
+  box.setAttribute('aria-label', 'Source code');
+  const words = suiteEl('p', 'suite-source-words');
+  words.append(suiteEl('strong', '', 'Free and open source. '),
+    'Every line of this app is on GitHub under the ' + SUITE_LINKS.license + ' license: read how it works, use it, change it, share it. ' +
+    'It runs in your browser, keeps your files on your device, needs no sign-in and works offline.');
+  const btn = suiteLink(SUITE_LINKS.source.url, '', 'suite-source-btn');
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  // The GitHub mark (Lucide's line version) - a fixed drawing, not data.
+  icon.innerHTML = '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>';
+  btn.append(icon, document.createTextNode('View the source on GitHub'), suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  box.append(btn, words);
+  return box;
 }
 
 /* The one-line version, for the foot of the splash screen. */
@@ -8782,6 +8830,8 @@ function start() {
     .addEventListener("click", enableAllShortcuts);
   document.getElementById("about-version").textContent = APP_VERSION;
   renderSuiteApps(document.getElementById("suite-apps"), "txtedtr");
+  // About opens with a "View the source on GitHub" button (suiteSourceBox, shared SUITE block).
+  document.getElementById("pane-about").prepend(suiteSourceBox());
   renderSuiteFeatures(document.getElementById("suite-features"), APP_FEATURES);   // Help > Features: the animated tour
   const brandButton = document.getElementById("btn-brand");
   if (brandButton) brandButton.addEventListener("click", openMoreApps);   // absent if the icon failed to load

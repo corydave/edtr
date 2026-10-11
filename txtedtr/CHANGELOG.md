@@ -18,6 +18,14 @@ never had.
 
 ---
 
+## 1.21
+
+**Changed** - the source, front and center.
+
+- **The top bar is the family's standard 52px tall**, and Inspector headings and labels match IMGEDTR's (headings 12px bold capitals with .08em spacing, labels 13px).
+- **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `suiteSourceBox()`, drawn by `renderSuiteCredits()`).
+
 ## 1.20
 
 **Changed** - links to edtrapps.com and GitHub.
