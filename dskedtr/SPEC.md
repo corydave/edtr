@@ -1235,6 +1235,26 @@ pasting works into other documents and other DSKEDTR tabs.
   linked story crashed (the overflowing story's last box wasn't found):
   `restore` now rebuilds the lookups (`reindex`) before redrawing.
 
+## The sample newsletter (0.42.0)
+
+Dave: "add a few more pages to the sample newsletter. Let's show off the
+multi-page capabilities." `sampleDocument()` now has four Letter pages,
+all on Master A (footer rule and "Page # of #"). Pages 1 and 2 are as
+before (masthead, main story s1 flowing f1 > f2 > f4, sidebar, lunch menu,
+the drawn concert picture, an empty ellipse frame). Page 3: a tinted band
+with "Around the School"; the garden feature s6 in two columns (f11, f12,
+contNext) continuing to page 4 (f16, contPrev); a bulleted checklist
+(roles `body|•|0`) in a grouped tinted sidebar; "After-school clubs" with
+table t1 (header row, banded; cells c1... with stories sc1...) and a note.
+Page 4: the end of the feature, a grouped boxed book fair notice, a
+numbered list (`body|1.|0`), the costume parade and picture retakes items,
+and contact details in a band under a rule. Nothing overflows, and the
+checker reports only the empty frame's tip. Tests written for the old two
+pages trim the sample back to two after loading it.
+
+The Reading order tool's icon is an open book with an arrow under it (the
+old three joined dots read as Share).
+
 ## Missing fonts and Google Fonts (0.35.0)
 
 - **Missing fonts.** A font a document names but DSKEDTR doesn't have

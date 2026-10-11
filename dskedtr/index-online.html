@@ -1142,7 +1142,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <input type="file" id="pictureInput" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp" multiple hidden>
     <hr>
     <button class="icon-btn" data-tool="order" aria-pressed="false" aria-label="Reading order" title="Reading order: click items in the order they should be read (N)">
-      <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="12" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.6 7.3l6.8 3.4M15.4 13.3l-6.8 3.4"/></svg>
+      <!-- An open book, with an arrow under it: "read in this order" (0.42.0; the three dots joined by lines looked like Share). -->
+      <svg viewBox="0 0 24 24"><path d="M12 6C10.4 4.6 8.2 4 4 4v10.5c4.2 0 6.4.6 8 2 1.6-1.4 3.8-2 8-2V4c-4.2 0-6.4.6-8 2z"/><path d="M12 6v10.5"/><path d="M5 21h13.5M16 18.5l2.5 2.5-2.5 2.5"/></svg>
     </button>
   </nav>
 
@@ -2227,7 +2228,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.41.2';
+const APP_VERSION = '0.42.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -3030,6 +3031,67 @@ function sampleDocument() {
     ['body', 'Fridays · Pizza and fruit', [['Fridays', { b: true }]]],
     ['caption', 'Menus can change. The cafeteria can answer questions about ingredients.']
   ];
+  // Pages 3 and 4 (0.42.0): a feature that runs from page 3 on to page 4, a
+  // bulleted checklist, a table of clubs, a numbered list and a back page.
+  const around = [['h2', 'Around the School']];
+  const garden = [
+    ['h2', 'A Garden Grows Behind the Library'],
+    ['caption', 'By the Green Team, grades four and five'],
+    ['body', 'What started as a patch of bare ground behind the library is now a garden with six raised beds, a rain barrel and a bench made from an old picnic table. The Green Team, a group of fourth and fifth graders who meet on Wednesday afternoons, planned every part of it.'],
+    ['body', 'The students began last spring by measuring the space and drawing maps on graph paper. They learned which plants like full sun and which prefer shade, and they voted on what to grow. Tomatoes and pumpkins won easily. Kale squeaked through by two votes.', [['two votes', { i: true }]]],
+    ['body', 'Building the beds took three Saturdays and a lot of help. Parents cut the boards, a local hardware store donated soil, and our custodians found a way to run a hose from the side of the building. Each class now has a bed of its own to plant and care for.'],
+    ['body', 'The garden has become a classroom, too. Second graders count seeds and measure how fast the bean plants climb. Third graders keep a weather log on a chart by the gate. The kindergarten classes visit on Fridays to look for worms, which they report are doing very well.'],
+    ['body', 'This fall the Green Team harvested more than forty pounds of vegetables. Some went home with families, some went to the cafeteria for a salad bar day, and the rest went to the food pantry on Mill Street.'],
+    ['body', 'Next spring the team hopes to add a bed of native flowers for bees and butterflies, with a small sign for each plant, written and painted by students. If you have seeds, garden tools or an afternoon to spare, the Green Team would love to hear from you.'],
+    ['body', 'The garden is open to families after school until 5 p.m. Please stay on the paths, and feel free to pick a cherry tomato or two.']
+  ];
+  const checklist = [
+    ['h2', 'Field trip checklist'],
+    ['caption', 'Science Center, November 6'],
+    ['body|•|0', 'A signed permission slip', [['signed', { b: true }]]],
+    ['body|•|0', 'A packed lunch in a bag with your name on it'],
+    ['body|•|0', 'A water bottle'],
+    ['body|•|0', 'Comfortable shoes for walking'],
+    ['body|•|0', 'A jacket (some exhibits are outdoors)'],
+    ['caption', 'Buses leave at 8:45 a.m. and are back by 2:30 p.m.']
+  ];
+  const clubsHead = [['h2', 'After-school clubs']];
+  const clubsNote = [['caption', 'Clubs meet from 3:15 to 4:30 p.m. and every club is free. Sign up at the front office.']];
+  const clubs = [
+    ['Club', 'Day', 'Room', 'Grades'],
+    ['Chess club', 'Monday', 'Library', '2 to 5'],
+    ['Art studio', 'Tuesday', 'Room 12', 'K to 5'],
+    ['Green Team', 'Wednesday', 'The garden', '4 and 5'],
+    ['Coding club', 'Thursday', 'Computer lab', '3 to 5'],
+    ['Running club', 'Friday', 'The track', '3 to 5']
+  ];
+  const fair = [
+    ['h2', 'Book Fair, October 20 to 24'],
+    ['body', 'The library turns into a bookstore for a week. Every book sold earns free books for our classrooms.'],
+    ['body', 'Open before school from 8:15, after school until 4:30, and on both family conference evenings.'],
+    ['caption', 'Can’t make it? Ask about gift certificates at the front office.']
+  ];
+  const help = [
+    ['h2', 'Ways to help this month'],
+    ['body|1.|0', 'Read with a student in the morning reading club'],
+    ['body|1.|0', 'Help set up or pack up the book fair'],
+    ['body|1.|0', 'Give seeds or garden tools to the Green Team'],
+    ['body|1.|0', 'Volunteer at the costume parade on October 31']
+  ];
+  const parade = [
+    ['h2', 'Costume parade, October 31'],
+    ['body', 'Students may wear costumes to school on the 31st. Please keep them simple: no masks that cover the face, and nothing too hard to walk or sit in. The parade goes around the field at 2 p.m., and families are welcome to watch from the blacktop.']
+  ];
+  const retakes = [
+    ['h2', 'Picture day retakes'],
+    ['body', 'Retakes are on November 12. Send back the photo packet with your child if you would like a new picture taken.']
+  ];
+  const contact = [
+    ['h2', 'Contact us'],
+    ['body', 'Lakeside Elementary · 120 Lakeside Drive · 555-0142', [['Lakeside Elementary', { b: true }]]],
+    ['body', 'The front office is open from 7:45 a.m. to 4 p.m. on school days.'],
+    ['caption', 'The Lakeside Ledger is written by students, staff and families. Story ideas are always welcome.']
+  ];
   // A paragraph's optional third entry formats words in it: [[words, format], ...] (section 4b).
   const story = (id, paras, frames) => {
     const sp = storyParts(paras);                    // (section 17)
@@ -3037,6 +3099,16 @@ function sampleDocument() {
     if (sp.runs.length) s.runs = sp.runs;
     return s;
   };
+  // The clubs table: each cell is a little text box of its own, with its own story (ids c1, c2... and sc1, sc2...).
+  const cellStories = {};
+  const clubTable = { id: 't1', type: 'table', name: 'After-school clubs', x: 54, y: 538, w: 504, h: 1, cols: [150, 110, 140, 104], rows: clubs.map(() => 0), cells: [],
+    header: true, banded: true, headerFill: '#d1fae5', bandFill: '#f1f5f9', fill: null, stroke: '#475569', strokeWidth: 0.75, pad: 4 };
+  let cellNo = 0;
+  clubTable.cells = clubs.map((row) => row.map((words) => {
+    const n = ++cellNo, cid = 'c' + n, sid = 'sc' + n;
+    cellStories[sid] = story(sid, [['body', words]], [cid]);
+    return { id: cid, type: 'text', story: sid, cellOf: 't1', x: 54, y: 538, w: 1, h: 1, inset: 4 };
+  }));
   return {
     title: 'The Lakeside Ledger, October 2026',
     lang: 'en',
@@ -3047,9 +3119,20 @@ function sampleDocument() {
       s1: story('s1', main, ['f1', 'f2', 'f4']),    // the main story continues on page 2
       s2: story('s2', side, ['f3']),
       s3: story('s3', lunch, ['f5']),
-      s4: story('s4', footer, ['f9'])                // on Master A: every page's footer
+      s4: story('s4', footer, ['f9']),               // on Master A: every page's footer
+      s5: story('s5', around, ['f10']),
+      s6: story('s6', garden, ['f11', 'f12', 'f16']), // the garden story runs on from page 3 to page 4
+      s7: story('s7', checklist, ['f14']),
+      s8: story('s8', clubsHead, ['f13']),
+      s9: story('s9', clubsNote, ['f15']),
+      s10: story('s10', fair, ['f17']),
+      s11: story('s11', help, ['f18']),
+      s12: story('s12', retakes, ['f20']),
+      s13: story('s13', contact, ['f19']),
+      s14: story('s14', parade, ['f21']),
+      ...cellStories
     },
-    groups: { g1: { id: 'g1', name: 'Sidebar' } },
+    groups: { g1: { id: 'g1', name: 'Sidebar' }, g2: { id: 'g2', name: 'Checklist' }, g3: { id: 'g3', name: 'Book fair' } },
     pages: [
       { id: 'p1', master: 'm1', readingOrder: [], readingOrderAuto: true, objects: [
         // inset = the gap between a text box's edge and its text
@@ -3070,6 +3153,32 @@ function sampleDocument() {
         // An empty frame: a placeholder that never prints, waiting for a photo.
         { id: 'pic2', type: 'picture', name: 'Book fair photo (to come)', frameShape: 'ellipse', x: 64, y: 380, w: 136, h: 136,
           image: null, s: 1, ox: 0, oy: 0, fit: 'fill', stroke: '#065f46', strokeWidth: 2, decorative: false, alt: '' }
+      ] },
+      // Page 3: a band across the top, the garden feature in two columns (it goes on to page 4),
+      // a bulleted checklist in a tinted sidebar, and a table of the after-school clubs.
+      { id: 'p3', master: 'm1', readingOrder: [], readingOrderAuto: true, objects: [
+        { id: 'd10', type: 'rect', name: 'Band behind the section title', x: 54, y: 54, w: 504, h: 40, fill: tint(LAKESIDE.pale, 0.45), stroke: null, strokeWidth: 0, decorative: true, alt: '' },
+        { id: 'f10', type: 'text', story: 's5', x: 62, y: 60, w: 488, h: 30, inset: 3 },
+        { id: 'f11', type: 'text', story: 's6', x: 54, y: 110, w: 156, h: 380, inset: 3 },
+        { id: 'f12', type: 'text', story: 's6', x: 228, y: 110, w: 156, h: 380, inset: 3, contNext: true },
+        { id: 'd11', type: 'rect', name: 'Checklist background', x: 402, y: 110, w: 156, h: 380, fill: tint(LAKESIDE.pale, 0.45), stroke: null, strokeWidth: 0, decorative: true, alt: '', group: 'g2' },
+        { id: 'f14', type: 'text', story: 's7', x: 402, y: 110, w: 156, h: 380, inset: 10, group: 'g2' },
+        { id: 'f13', type: 'text', story: 's8', x: 54, y: 506, w: 504, h: 28, inset: 3 },
+        clubTable,
+        { id: 'f15', type: 'text', story: 's9', x: 54, y: 672, w: 504, h: 34, inset: 3 }
+      ] },
+      // Page 4, the back page: the rest of the garden feature, a boxed notice, a
+      // numbered list, a short item and the school's details in a band.
+      { id: 'p4', master: 'm1', readingOrder: [], readingOrderAuto: true, objects: [
+        { id: 'f16', type: 'text', story: 's6', x: 54, y: 54, w: 156, h: 214, inset: 3, contPrev: true },
+        { id: 'd12', type: 'rect', name: 'Book fair box', x: 228, y: 54, w: 330, h: 160, fill: tint(LAKESIDE.pale, 0.45), stroke: '#065f46', strokeWidth: 1.5, decorative: true, alt: '', group: 'g3' },
+        { id: 'f17', type: 'text', story: 's10', x: 228, y: 54, w: 330, h: 160, inset: 12, group: 'g3' },
+        { id: 'f18', type: 'text', story: 's11', x: 228, y: 232, w: 330, h: 112, inset: 3 },
+        { id: 'f21', type: 'text', story: 's14', x: 228, y: 362, w: 330, h: 150, inset: 3 },
+        { id: 'f20', type: 'text', story: 's12', x: 54, y: 286, w: 156, h: 150, inset: 3 },
+        { id: 'd13', type: 'line', name: 'Rule above the contact details', x1: 54, y1: 600, x2: 558, y2: 600, stroke: '#065f46', strokeWidth: 3, decorative: true, alt: '' },
+        { id: 'd14', type: 'rect', name: 'Band behind the contact details', x: 54, y: 612, w: 504, h: 112, fill: tint(LAKESIDE.pale, 0.45), stroke: null, strokeWidth: 0, decorative: true, alt: '' },
+        { id: 'f19', type: 'text', story: 's13', x: 54, y: 612, w: 504, h: 112, inset: 12 }
       ] }
     ],
     // Master A: a thin rule and a footer with the page number, behind both pages.
@@ -17053,7 +17162,7 @@ async function loadSample() {
   updateInspector();
   savedState = docState();                         // the sample, untouched, is nothing to lose
   backup.markSafe();
-  announce('The sample newsletter, The Lakeside Ledger: two pages.');
+  announce('The sample newsletter, The Lakeside Ledger: four pages.');
 }
 
 /* ---------- Saving a project ---------- */
@@ -21435,9 +21544,14 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.42.0", date: "2026-10-11", title: "", notes: [
+    "The sample newsletter has four pages. Page 3, \"Around the School\", has a feature story that runs on to page 4 (with its \"Continued on page 4\" and \"Continued from page 3\" lines), a bulleted field trip checklist in a tinted sidebar, and a table of after-school clubs. Page 4, the back page, has the end of that story, a boxed book fair notice, a numbered list of ways to help, two short items and the school's contact details in a band. Every page uses Master A, so the footer counts \"Page 3 of 4\" by itself. Try Two pages side by side, All pages, or ticking Booklet in the View menu.",
+    "A new Reading order icon: an open book with an arrow under it (\"read in this order\"). The old one, three joined dots, looked like Share."
+  ] },
   { version: "0.41.2", date: "2026-10-11", title: "", notes: [
-    "About now starts with a \"View the source on GitHub\" button: every app is free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in and works offline.",
-    "The top bar is now the family's standard 52px tall, and Inspector headings and labels match IMGEDTR (12px bold capitals, 13px labels)."
+    "The top bar is the family's standard 52px tall, and Inspector headings and labels match IMGEDTR's (headings 12px bold capitals with .08em spacing, labels 13px).",
+    "About starts with a \"View the source on GitHub\" button (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.",
+    "The shared SUITE block was pasted in again from _edtr-suite (new: suiteSourceBox(), drawn by renderSuiteCredits())."
   ] },
   { version: "0.41.1", date: "2026-10-11", title: "", notes: [
     "The staging area has no edge any more. Before, the grey around the page stopped a fixed way out, so a shape dragged further was cut off, and the grey past that point only looked like staging area. Now all the grey you can see is staging area, and it grows to fit anything you put out there (with room to spare), so you can always scroll to it. The page stays exactly where it is while it grows or shrinks."
