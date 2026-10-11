@@ -533,6 +533,52 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 .suite-feat-art .fx-stop-hi  { stop-color: #fff; }
 .suite-feat-art .fx-stop-ink { stop-color: var(--fx-fg); }
 
+/* ---- The splash, 2026-10-11: a picture on top, cards with icons ---------- */
+/* With a picture the splash is wider, and the picture runs edge to edge. */
+.suite-splash.has-hero { width: min(760px, 94vw); padding-top: 0; }
+.suite-splash-hero { position: relative; margin: 0 -24px 16px; aspect-ratio: 16 / 5.8; overflow: hidden;
+  border-radius: 13px 13px 0 0; background: var(--suite-accent, #0046ad); }
+.suite-splash-hero img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; display: block; }
+/* The close button sits on the picture: a solid circle, so it reads on any colour. */
+.suite-splash-hero .suite-splash-x { position: absolute; top: 10px; right: 10px; float: none; margin: 0;
+  background: rgba(255, 255, 255, .92); color: #111; border: 0; border-radius: 999px; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); }
+.suite-splash-hero .suite-splash-x:hover { background: #fff; }
+.suite-splash.has-hero .suite-splash-head { margin-bottom: 14px; }
+
+/* The cards: an icon, then the words. Big enough to tap; one column on a phone. */
+.suite-splash-choice { flex-direction: row; align-items: flex-start; gap: 12px; }
+.suite-splash-choice-words { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.suite-splash-choice-icon { flex: none; width: 28px; height: 28px; margin-top: 1px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--suite-accent, #0046ad); }
+/* In dark mode the app colour is too dark for a line on a dark card: lift it toward the text colour. */
+.suite-splash-choice-icon { color: color-mix(in oklab, var(--suite-accent, #0046ad) 70%, var(--suite-fg, currentColor)); }
+.suite-splash-choice.is-primary .suite-splash-choice-icon { color: #fff; }
+/* Solid parts of a drawing (the front sheet of the templates fan) take the card's own colour. */
+.suite-splash-choice-icon .suite-ico-solid { fill: var(--suite-bg, Canvas); }
+.suite-splash-choice:not(.is-primary) .suite-splash-choice-icon .suite-ico-solid {
+  fill: color-mix(in srgb, var(--suite-fg, CanvasText) 5%, var(--suite-bg, Canvas)); }
+.suite-splash-choice.is-primary .suite-splash-choice-icon .suite-ico-solid { fill: var(--suite-accent, #0046ad); }
+@media (max-width: 520px) {
+  .suite-splash.has-hero { padding-left: 16px; padding-right: 16px; }
+  .suite-splash-hero { margin: 0 -16px 14px; aspect-ratio: 16 / 7.5; }
+  .suite-splash-actions { grid-template-columns: 1fr; }
+  .suite-splash-choice { padding: 10px 12px; }
+}
+
+/* Picking up a backup: a slim, quiet row - there when needed, never in the way. */
+.suite-splash-resume { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; width: 100%; margin: 8px 0 0;
+  padding: 6px 8px; min-height: 36px; border: 0; border-radius: 8px; background: none; color: inherit;
+  font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; opacity: .85; }
+.suite-splash-resume:hover { background: color-mix(in srgb, currentColor 8%, transparent); opacity: 1; }
+.suite-splash-resume svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.suite-splash-resume-label { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.suite-splash-resume-detail { opacity: .8; }
+
+/* The links under the credits: edtrapps.com and the source on GitHub. */
+.suite-links { display: inline-block; margin-top: 4px; }
+.suite-links a { color: inherit; font-weight: 600; }
+
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 
   /* Sticky, so the X is reachable from anywhere in a long dialog rather than
@@ -2154,12 +2200,18 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 
 /* Bump this on every upload. It is shown in About, and if a service worker is
    ever added it is what rotates the cache - the same ritual as TXTEDTR. */
-const APP_VERSION = '1.21.0';
+const APP_VERSION = '1.22.0';
 
 /* Short changelog for the help panel's Changelog tab, newest first. The long
    form is CHANGELOG.md beside this file - a new release goes in both. Releases
    before 1.18.0 went out without notes, so they are not listed rather than
    guessed at (README.md describes how things work as of 1.17.0). */
+/* The picture across the top of the splash: the app's icon beside a screenshot
+   of it in use (the same picture as on edtrapps.com), as a data: URI so it
+   shows offline and straight off a disk. About 24 KB. */
+const APP_HERO = 'data:image/webp;base64,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';
+const APP_HERO_ALT = "SCRNCSTR's icon beside a lesson slide being recorded, with a round webcam bubble in the corner.";
+
 /* ---- Features: the animated tour (Help > Features, and the card on the splash) ----
    SCRNCSTR's favorite features, drawn and animated by renderSuiteFeatures in the
    shared SUITE block. Each one has a title, a sentence or two, a description of the
@@ -2206,6 +2258,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.22.0', date: '2026-10-10', notes: [
+    'A new splash: a picture of SCRNCSTR in use across the top, a picture on each way to begin, and a smaller, quieter "Pick up where you left off". The splash and About now link to edtrapps.com, home of every app in the family, and to the source on GitHub (free and open source, MIT license).'
+  ] },
   { version: '1.21.0', date: '2026-10-10', notes: [
     'New Features tab, first in Help (? or F1 or the Help button): an animated tour of five favorite features. The splash has a "See what SCRNCSTR can do" card that opens the same tour.'
   ] },
@@ -5383,6 +5438,23 @@ const SUITE_CREDITS = {
   ]
 };
 const SUITE_LOGOS = { flxaihub: '', flcc: '' };
+/* Where the family lives: the home page with every app, and the source code
+   (free and open source, MIT license). Shown under the credits everywhere. */
+const SUITE_LINKS = {
+  site: { url: 'https://edtrapps.com/', name: 'edtrapps.com' },
+  source: { url: 'https://github.com/corydave/edtr', name: 'GitHub' },
+  license: 'MIT'
+};
+/* "All the apps at edtrapps.com · Free and open source on GitHub (MIT license)" */
+function suiteLinksLine() {
+  const span = suiteEl('span', 'suite-links');
+  const site = suiteLink(SUITE_LINKS.site.url, SUITE_LINKS.site.name);
+  site.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  const src = suiteLink(SUITE_LINKS.source.url, SUITE_LINKS.source.name);
+  src.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  span.append('All the apps at ', site, ' · Free and open source on ', src, ' (' + SUITE_LINKS.license + ' license)');
+  return span;
+}
 
 /* A small helper: make an element, set its class and text in one go.
    Used everywhere below so the building code stays short and readable. */
@@ -5458,7 +5530,9 @@ function renderSuiteCredits(container) {
     link.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
     row.append(link);
   }
-  container.append(made, by, row);
+  const links = suiteEl('p', 'suite-credits-links');
+  links.append(suiteLinksLine());
+  container.append(made, by, row, links);
 }
 
 /* The one-line version, for the foot of the splash screen. */
@@ -5471,6 +5545,7 @@ function suiteCreditsLine() {
     a.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
     line.append(a);
   });
+  line.append(document.createElement('br'), suiteLinksLine());
   return line;
 }
 
@@ -5497,6 +5572,9 @@ function suiteWhen(ms) {
      appId:   'imgedtr',
      actions: [ { label, detail, run, primary } ... ],   // the app's ways to begin
      resume:  { detail, run } or null,                  // only when a backup exists
+     hero:    APP_HERO,                                 // optional: a data: URI picture of the app in use, across the top
+     heroAlt: 'TXTEDTR editing a web page ...',         // optional: words for that picture
+     (each action can also have  icon: 'open'  - a name from SUITE_ACTION_ICONS - or its own SVG drawing)
      hint:    'You can also drop an image anywhere.',   // optional
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
@@ -5509,9 +5587,34 @@ function suiteWhen(ms) {
    app launched WITH a file never sits behind a splash. */
 let suiteSplashDialog = null;
 
+/* Pictures for the splash's cards (24 x 24, drawn with lines like every
+   other icon in the family). An app names one with `icon: 'open'`, or
+   passes its own drawing. 'open' is the one everybody knows: a folder
+   opening. */
+const SUITE_ACTION_ICONS = {
+  open:     '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+  new:      '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 12v6"/><path d="M9 15h6"/>',
+  paste:    '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/>',
+  size:     '<path d="M22 6H2"/><path d="M22 18H2"/><path d="M6 2v20"/><path d="M18 2v20"/>',
+  record:   '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  audio:    '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  media:    '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M17 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/>',
+  screen:   '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>',
+  headshot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.7"/>',
+  sample:   '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+  cube:     '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  shapes3d: '<path d="M3 10.5 8 8l5 2.5v6L8 19l-5-2.5z"/><path d="M3 10.5 8 13l5-2.5"/><path d="M8 13v6"/><ellipse cx="17.5" cy="6" rx="3.5" ry="1.5"/><path d="M14 6v9a3.5 1.5 0 0 0 7 0V6"/>',
+  pen:      '<path d="M15.7 15.7a1 1 0 0 0 .2-1.1L14 10.4a1 1 0 0 1 .2-1.1l2-2a2 2 0 0 1 2.8 0l1.7 1.7a2 2 0 0 1 0 2.8l-2 2a1 1 0 0 1-1.1.2l-4.2-1.9a1 1 0 0 0-1.1.2"/><path d="M14.2 9.3 4 19.5V22h2.5l10.2-10.2"/><circle cx="2.5" cy="21.5" r=".5"/>',
+  // Three publications fanned out - a flyer, a newsletter and a card - for templates.
+  templates:'<rect x="3" y="6" width="9" height="13" rx="1.5" transform="rotate(-20 7.5 19)" class="suite-ico-solid"/>'
+          + '<rect x="12" y="6" width="9" height="13" rx="1.5" transform="rotate(20 16.5 19)" class="suite-ico-solid"/>'
+          + '<rect x="7" y="3" width="10" height="15" rx="1.5" class="suite-ico-solid"/><path d="M10 7h4"/><path d="M10 10.5h4"/><path d="M10 14h2"/>',
+  resume:   '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>'
+};
+
 function suiteSplash(opts) {
   const app = SUITE_APPS.find((a) => a.id === opts.appId);
-  const dlg = suiteEl('dialog', 'suite-splash');
+  const dlg = suiteEl('dialog', 'suite-splash' + (opts.hero ? ' has-hero' : ''));
   dlg.setAttribute('aria-labelledby', 'suite-splash-title');
 
   const close = suiteEl('button', 'suite-splash-x', '×');
@@ -5519,38 +5622,77 @@ function suiteSplash(opts) {
   close.setAttribute('aria-label', 'Close and go to an empty ' + app.name);
   close.addEventListener('click', () => suiteSplashClose());
 
-  // Header: this app's tile, name and one-line description.
+  // The picture at the top: the app's own icon beside a screenshot of it in
+  // use (the same picture as on edtrapps.com). It is a data: URI inside the
+  // app, so it shows offline and straight off a disk. Without one, the
+  // splash falls back to the small icon tile beside the name.
+  if (opts.hero) {
+    const hero = suiteEl('div', 'suite-splash-hero');
+    const img = document.createElement('img');
+    img.src = opts.hero;
+    img.alt = opts.heroAlt || (app.name + ' in use');
+    img.decoding = 'async';
+    hero.append(img, close);
+    dlg.append(hero);
+  } else {
+    dlg.append(close);
+  }
+
+  // Header: the app's name and one-line description (and its icon tile,
+  // only when there is no picture - the picture already shows the icon).
   const head = suiteEl('div', 'suite-splash-head');
   const title = suiteEl('h2', '', app.name);
   title.id = 'suite-splash-title';
   const words = suiteEl('div');
   words.append(title, suiteEl('p', 'suite-splash-blurb', app.blurb));
-  head.append(suiteTile(app), words);
+  if (!opts.hero) head.append(suiteTile(app));
+  head.append(words);
+  dlg.append(head);
 
-  // The ways to begin. Resume comes first when there is something to resume.
+  // The ways to begin, as cards with a picture each. `icon` is a name from
+  // SUITE_ACTION_ICONS ('open', 'new', 'paste'...) or an app's own drawing
+  // (24 x 24 SVG markup, fixed text in the app's code - never data).
   const actions = suiteEl('div', 'suite-splash-actions');
-  const choices = [];
-  if (opts.resume) {
-    choices.push({ label: 'Pick up where you left off', detail: opts.resume.detail,
-      run: opts.resume.run, primary: true, resume: true });
-  }
-  for (const a of opts.actions) choices.push(opts.resume ? { ...a, primary: false } : a);
-  for (const c of choices) {
-    const b = suiteEl('button', 'suite-splash-choice' + (c.primary ? ' is-primary' : '') + (c.resume ? ' is-resume' : ''));
+  for (const c of opts.actions) {
+    const b = suiteEl('button', 'suite-splash-choice' + (c.primary ? ' is-primary' : ''));
     b.type = 'button';
-    b.append(suiteEl('span', 'suite-splash-choice-label', c.label));
-    if (c.detail) b.append(suiteEl('span', 'suite-splash-choice-detail', c.detail));
+    const art = SUITE_ACTION_ICONS[c.icon] || c.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (see above)
+      b.append(icon);
+    }
+    const text = suiteEl('span', 'suite-splash-choice-words');
+    text.append(suiteEl('span', 'suite-splash-choice-label', c.label));
+    if (c.detail) text.append(suiteEl('span', 'suite-splash-choice-detail', c.detail));
+    b.append(text);
     b.addEventListener('click', () => { suiteSplashClose(); c.run(); });
     actions.append(b);
   }
+  dlg.append(actions);
 
-  dlg.append(close, head, actions);
+  // Picking up a crash backup: offered, but small and quiet - a slim row
+  // under the cards, since it is rarely needed. (Only shown when the last
+  // session ended without saving or exporting.)
+  if (opts.resume) {
+    const r = suiteEl('button', 'suite-splash-resume');
+    r.type = 'button';
+    const icon = suiteFeatButton('', '', '').querySelector('svg');
+    icon.innerHTML = SUITE_ACTION_ICONS.resume;
+    r.append(icon, suiteEl('span', 'suite-splash-resume-label', 'Pick up where you left off'),
+             suiteEl('span', 'suite-splash-resume-detail', opts.resume.detail));
+    r.addEventListener('click', () => { suiteSplashClose(); opts.resume.run(); });
+    dlg.append(r);
+  }
+
   if (opts.hint) dlg.append(suiteEl('p', 'suite-splash-hint', opts.hint));
   // The animated tour of the app's favorite features, when the app has one.
   if (opts.features && opts.features.length) dlg.append(suiteFeaturesCard(opts.features, opts.appId));
 
-  // The rest of the family, as a row of small cards, then the credits, then
-  // the version (with the update check) and the Install choice.
+  // The rest of the family, as a row of small cards, then the credits and
+  // the links (edtrapps.com, the source on GitHub), then the version (with
+  // the update check) and the Install choice.
   const foot = suiteSplashFoot({ version: opts.version || (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''),
                                  check: opts.checkUpdate, name: app.name });
   dlg.append(suiteFamilyRow(opts.appId), suiteCreditsLine(), foot);
@@ -5562,8 +5704,8 @@ function suiteSplash(opts) {
   document.body.append(dlg);
   suiteSplashDialog = dlg;
   dlg.showModal();
-  // Focus the first choice, so Enter does the obvious thing straight away.
-  const first = actions.querySelector('button');
+  // Focus the main choice, so Enter does the obvious thing straight away.
+  const first = actions.querySelector('.is-primary') || actions.querySelector('button');
   if (first) first.focus();
   return dlg;
 }
@@ -6874,8 +7016,10 @@ function init() {
   suiteSplash({
     appId: 'scrncstr',
     features: APP_FEATURES,
+    hero: APP_HERO,
+    heroAlt: APP_HERO_ALT,
     actions: [
-      { label: 'Set up a recording', detail: 'Pick screen, camera and microphone, then record', primary: true,
+      { icon: 'screen', label: 'Set up a recording', detail: 'Pick screen, camera and microphone, then record', primary: true,
         run: () => { const first = document.querySelector('#stageSetup summary, #stageSetup input, #stageSetup button'); if (first) first.focus(); } },
     ],
   });
