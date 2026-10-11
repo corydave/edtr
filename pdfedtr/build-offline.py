@@ -1,156 +1,142 @@
 #!/usr/bin/env python3
 """
-build-offline.py — turn the CDN version of PDFEDTR into a single,
-fully self-contained file that runs with no network connection at all.
+build-offline.py - make index.html, the ONE-FILE edition of PDFEDTR.
 
-It makes exactly three substitutions in the source HTML:
+    python3 build-offline.py
 
-  1. The two CDN <script src> tags  -> the library source, inlined.
-  2. The Google Fonts <link>        -> @font-face rules with base64 woff2.
-  3. The pdf.js workerSrc CDN URL   -> a Blob URL built from inlined source.
+Run it from anywhere; it always works in its own folder. It needs only
+Python 3 - nothing to install.
 
-The icon block in index.html (built by build-icons.py) rides along untouched:
-its icons are data: URIs. Its manifest link points at manifest.webmanifest,
-which a file opened from disk simply ignores.
+The two editions (the same arrangement as VCTREDTR):
 
-Everything else in the file is left byte-for-byte alone, so the two
-versions never drift apart in behaviour.
+  index-online.html  THE SOURCE. Edit this one. It loads its two PDF
+                     libraries from jsDelivr, each pinned to one version
+                     and locked with an "integrity" fingerprint.
+  index.html         MADE BY THIS SCRIPT. Never edit it by hand - the next
+                     build replaces it. It is the file pdfedtr.app serves,
+                     and the same file works from a USB stick or a
+                     double-click on a computer that has never been online.
+
+What the script does, step by step:
+  1. Reads index-online.html.
+  2. Swaps the two jsDelivr <script> tags for the library code itself,
+     taken from vendor/. Before it does, it checks each file's fingerprint
+     (SHA-384) against the one in index-online.html, so both editions run
+     byte-for-byte the same library code. A file that does not match stops
+     the build with a message saying where to get the right one.
+  3. Puts the pdf.js "worker" (the part that reads PDFs in the background)
+     inside the page as inert text, and points pdf.js at a blob: address
+     made from that text, so no download is needed.
+  4. Tightens the security rules (Content-Security-Policy): this edition
+     loads nothing from any other address, so jsDelivr is taken out.
+  5. Writes index.html beside it.
+
+Updating a library later: put the new file in vendor/, change the version
+and fingerprint in index-online.html's <script> tag (and the worker
+address), then run this script.
 """
-
 import base64
+import hashlib
 import pathlib
 import re
 import sys
 
-HERE = pathlib.Path('/home/claude')
-VENDOR = HERE / 'vendor' / 'node_modules'
-
-SRC = HERE / 'index.html'
-OUT = HERE / 'pdf-offline.html'
-
-
-def read_text(p):
-    return pathlib.Path(p).read_text(encoding='utf-8')
+HERE = pathlib.Path(__file__).resolve().parent   # this script's own folder
+SRC = HERE / 'index-online.html'                 # the source (edit this)
+OUT = HERE / 'index.html'                        # the one-file edition (made here)
+VENDOR = HERE / 'vendor'                         # the exact library files
 
 
-def b64_file(p):
-    return base64.b64encode(pathlib.Path(p).read_bytes()).decode('ascii')
+def fail(msg):
+    """Stop the build with a plain message (and a non-zero exit code)."""
+    print('build-offline.py: ' + msg, file=sys.stderr)
+    sys.exit(1)
 
 
-def main():
-    html = read_text(SRC)
-
-    # ── Load the vendored libraries (from npm, so versions are pinned) ──
-    pdfjs = read_text(VENDOR / 'pdfjs-dist/build/pdf.min.js')
-    pdfjs_worker = read_text(VENDOR / 'pdfjs-dist/build/pdf.worker.min.js')
-    pdflib = read_text(VENDOR / 'pdf-lib/dist/pdf-lib.min.js')
-
-    # Safety check: a literal "</script" anywhere in the source would close
-    # the tag early and corrupt the page. Verified absent, but assert it so a
-    # future library bump can't silently break the build.
-    for name, body in (('pdf.js', pdfjs), ('pdf.worker', pdfjs_worker), ('pdf-lib', pdflib)):
-        if '</script' in body.lower():
-            sys.exit(f'ERROR: {name} contains a literal </script — cannot inline as-is.')
-
-    # ── 1 & 3. Replace the two CDN script tags ──
-    # The worker goes into a script tag with a non-JavaScript `type`, which
-    # tells the browser to parse it as inert data rather than run it. The app
-    # then reads its text back out and wraps it in a Blob URL, which is what
-    # pdf.js actually wants for workerSrc.
-    script_block = (
-        '  <!--\n'
-        '    OFFLINE BUILD — pdf.js and pdf-lib are inlined below rather than\n'
-        '    loaded from a CDN, so this file works with no network at all.\n'
-        '    Versions are pinned: pdf.js 3.11.174, pdf-lib 1.17.1 (both from npm).\n'
-        '  -->\n'
-        '  <script>\n' + pdfjs + '\n  </script>\n'
-        '  <script>\n' + pdflib + '\n  </script>\n'
-        '  <!-- pdf.js worker source, held as inert text (type is not JavaScript,\n'
-        '       so the browser will not execute it here). main.js turns this into\n'
-        '       a Blob URL and hands that to pdf.js as its worker. -->\n'
-        '  <script id="pdfjs-worker-src" type="text/plain">\n' + pdfjs_worker + '\n  </script>\n'
-    )
-
-    old_scripts = re.compile(
-        r'  <!--\n    PDF\.js.*?'
-        r'<script src="https://cdn\.jsdelivr\.net/npm/pdf-lib@1\.17\.1/dist/pdf-lib\.min\.js"></script>\n',
-        re.DOTALL,
-    )
-    html, n = old_scripts.subn(lambda m: script_block, html)
-    assert n == 1, f'expected 1 CDN script block, replaced {n}'
-
-    # ── 2. Replace the Google Fonts stylesheet with inlined faces ──
-    faces = [
-        ('IBM Plex Sans', 300, 'ibm-plex-sans/files/ibm-plex-sans-latin-300-normal.woff2'),
-        ('IBM Plex Sans', 400, 'ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2'),
-        ('IBM Plex Sans', 500, 'ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2'),
-        ('IBM Plex Sans', 600, 'ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2'),
-        ('IBM Plex Mono', 400, 'ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2'),
-        ('IBM Plex Mono', 600, 'ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff2'),
-    ]
-    css_parts = [
-        '  <!--\n'
-        '    OFFLINE BUILD — IBM Plex is embedded below as base64 woff2 instead of\n'
-        '    being fetched from Google Fonts. Latin subset only, and only the\n'
-        '    weights this UI actually uses, to keep the file from bloating.\n'
-        '  -->\n'
-        '  <style>\n'
-    ]
-    for family, weight, rel in faces:
-        data = b64_file(VENDOR / '@fontsource' / rel)
-        css_parts.append(
-            f'    @font-face {{\n'
-            f'      font-family: "{family}";\n'
-            f'      font-style: normal;\n'
-            f'      font-weight: {weight};\n'
-            f'      font-display: swap;\n'
-            f'      src: url(data:font/woff2;base64,{data}) format("woff2");\n'
-            f'    }}\n'
-        )
-    css_parts.append('  </style>\n')
-    font_css = ''.join(css_parts)
-
-    old_font_link = re.compile(
-        r'  <link href="https://fonts\.googleapis\.com/css2\?[^"]*" rel="stylesheet" />\n'
-    )
-    html, n = old_font_link.subn(lambda m: font_css, html)
-    assert n == 1, f'expected 1 Google Fonts link, replaced {n}'
-
-    # ── 3 (cont). Point pdf.js at a Blob URL built from the inlined worker ──
-    old_worker = (
-        "/* ── Configure PDF.js worker ── */\n"
-        "pdfjsLib.GlobalWorkerOptions.workerSrc =\n"
-        "  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';"
-    )
-    new_worker = """/* ── Configure PDF.js worker (offline build) ──
-   pdf.js runs its heavy parsing on a Web Worker, and it needs a URL to load
-   that worker from — normally a CDN address. With no network that's not an
-   option, so instead the worker's entire source is sitting inert in a
-   <script type="text/plain"> tag at the top of this file. Reading that text
-   back out and wrapping it in a Blob gives us a real, local URL
-   (blob:...) that behaves exactly like a hosted .js file would.        */
-pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(
-  new Blob(
-    [document.getElementById('pdfjs-worker-src').textContent],
-    { type: 'text/javascript' }
-  )
-);"""
-    assert old_worker in html, 'workerSrc block not found'
-    html = html.replace(old_worker, new_worker, 1)
-
-    # ── 4. Icons / manifest: nothing to do ──
-    # The icon block in index.html is made of data: URIs (see build-icons.py),
-    # so it needs no rewriting here - it is carried through verbatim and works
-    # offline as-is. (Its manifest link is ignored off a disk.) Sanity-check that it
-    # is actually present, so a future edit to index.html cannot quietly ship
-    # an offline build with no icon.
-    assert 'APP-ICON-BLOCK-START' in html, 'icon/manifest block missing from index.html'
-    assert 'rel="manifest"' in html, 'manifest link missing from index.html'
-
-    pathlib.Path(OUT).write_text(html, encoding='utf-8')
-    size = pathlib.Path(OUT).stat().st_size
-    print(f'Wrote {OUT} — {size:,} bytes ({size/1024/1024:.2f} MB)')
+def sri(data):
+    """The browser's "integrity" fingerprint of some bytes: sha384-<base64>."""
+    return 'sha384-' + base64.b64encode(hashlib.sha384(data).digest()).decode()
 
 
-if __name__ == '__main__':
-    main()
+def inline_js(code):
+    """Library code, ready to sit between <script> and </script>."""
+    text = code.decode('utf-8')
+    # Leave out the "source map" pointer: there is no map file beside the page.
+    text = re.sub(r'//# sourceMappingURL=\S+\s*$', '', text)
+    # A literal "</script" inside the code would end the <script> element early.
+    if '</script' in text.lower():
+        text = re.sub(r'</(script)', r'<\\/\1', text, flags=re.I)
+    return text
+
+
+def take_library(page, url_pattern, vendor_name, nice_name):
+    """Find the <script src=...> tag for one library, check the vendor copy's
+    fingerprint against the tag's, and return (page with the code inlined, code)."""
+    tag = re.search(r'<script src="(' + url_pattern + r')"\s+integrity="(sha384-[^"]+)"[^>]*></script>', page)
+    if not tag:
+        fail('could not find the ' + nice_name + ' <script> tag in index-online.html')
+    path = VENDOR / vendor_name
+    if not path.exists():
+        fail('vendor/' + vendor_name + ' is missing. Download it from ' + tag.group(1))
+    data = path.read_bytes()
+    if sri(data) != tag.group(2):
+        fail('vendor/' + vendor_name + ' is not the file index-online.html expects. '
+             'Download that exact file from ' + tag.group(1))
+    block = ('<!-- ' + nice_name + ', built in by build-offline.py (from vendor/' + vendor_name + ') -->\n'
+             '  <script>\n' + inline_js(data) + '\n  </script>')
+    return page[:tag.start()] + block + page[tag.end():]
+
+
+if not SRC.exists():
+    fail('index-online.html is missing. It is the source this script builds index.html from.')
+page = SRC.read_text(encoding='utf-8')
+
+# ---- 2. The two libraries: swap each jsDelivr tag for the code itself ----
+page = take_library(page, r'https://cdn\.jsdelivr\.net/npm/pdfjs-dist@[\d.]+/build/pdf\.min\.js',
+                    'pdf.min.js', 'PDF.js')
+page = take_library(page, r'https://cdn\.jsdelivr\.net/npm/pdf-lib@[\d.]+/dist/pdf-lib\.min\.js',
+                    'pdf-lib.min.js', 'pdf-lib')
+
+# ---- 3. The pdf.js worker: inert text in the page, then a blob: address ----
+worker = (VENDOR / 'pdf.worker.min.js')
+if not worker.exists():
+    fail('vendor/pdf.worker.min.js is missing (from the same pdfjs-dist version as pdf.min.js).')
+worker_code = inline_js(worker.read_bytes())
+# A <script> whose type is not JavaScript is never run: the browser just keeps its text.
+worker_tag = ('\n  <!-- The pdf.js worker\'s code, kept as inert text (its type is not\n'
+              '       JavaScript, so the browser does not run it here). The app turns it\n'
+              '       into a blob: address and hands that to pdf.js. -->\n'
+              '  <script id="pdfjs-worker-src" type="text/plain">\n' + worker_code + '\n  </script>\n')
+page, n = re.subn(r'(</head>)', lambda m: worker_tag + m.group(1), page, count=1)
+if n != 1:
+    fail('could not find </head> in index-online.html')
+
+old_worker = re.search(r"pdfjsLib\.GlobalWorkerOptions\.workerSrc =\s*'https://cdn\.jsdelivr\.net/npm/pdfjs-dist@[\d.]+/build/pdf\.worker\.min\.js';", page)
+if not old_worker:
+    fail('could not find the pdf.js workerSrc line in index-online.html')
+new_worker = ("// One-file edition: the worker's code is inside this page (see\n"
+              "// #pdfjs-worker-src near the top). Wrapping that text in a Blob gives a real,\n"
+              "// local address (blob:...) that works exactly like a hosted .js file.\n"
+              "pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(\n"
+              "  new Blob([document.getElementById('pdfjs-worker-src').textContent], { type: 'text/javascript' })\n"
+              ");")
+page = page[:old_worker.start()] + new_worker + page[old_worker.end():]
+
+# ---- 4. Security rules: nothing loads from jsDelivr in this edition ----
+csp = re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]+)"', page)
+if not csp:
+    fail('could not find the Content-Security-Policy in index-online.html')
+tight = csp.group(1).replace(' https://cdn.jsdelivr.net', '')
+page = page[:csp.start(1)] + tight + page[csp.end(1):]
+if 'jsdelivr' in tight:
+    fail('the security rules still mention jsDelivr after tightening')
+
+# Sanity checks, so a future edit cannot quietly ship a broken one-file edition.
+if 'cdn.jsdelivr.net/npm/' in re.sub(r'<script id="pdfjs-worker-src".*?</script>', '', page, flags=re.S):
+    fail('a jsDelivr address is still left in the page')
+if 'APP-ICON-BLOCK-START' not in page:
+    fail('the icon block (from build-icons.py) is missing from index-online.html')
+
+OUT.write_text(page, encoding='utf-8')
+size = OUT.stat().st_size
+print('Wrote ' + OUT.name + ' - {:,} bytes ({:.2f} MB)'.format(size, size / 1024 / 1024))

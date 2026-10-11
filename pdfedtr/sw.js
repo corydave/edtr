@@ -4,9 +4,12 @@
 
    What it keeps (in this browser only - nothing is ever sent anywhere):
      - the app itself: index.html, the manifest and the icons
-     - the two PDF libraries index.html loads from a CDN (PDF.js and
-       pdf-lib), and the web fonts. Their addresses contain an exact version
-       number, so a stored copy can never go stale.
+     - index.html is the one-file edition, with both PDF libraries inside
+       it, so it needs nothing else. The libraries' jsDelivr addresses are
+       kept here too, for index-online.html (the source edition). Those
+       addresses contain an exact version number, so a stored copy can
+       never go stale. (1.13: the app uses the device's own fonts now, so
+       there are no web fonts to keep.)
 
    How updates reach you:
      - The PAGE is "network first": with a network, every launch loads the
@@ -25,11 +28,11 @@ const APP_FILES = ['./', './index.html', './manifest.webmanifest',
                    './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 // The outside files the app uses. Stored the first time they load.
-const LIBRARY_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+const LIBRARY_HOSTS = ['cdn.jsdelivr.net'];
 // ...and the two libraries, fetched up front so the first offline launch works.
 const LIBRARIES = [
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+  'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js',
   'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js'
 ];
 

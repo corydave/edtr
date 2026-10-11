@@ -4,13 +4,66 @@ Newest first. The short form of each entry also lives in the `CHANGELOG`
 table inside `index.html` (shown in Help > Changelog), so the tab still works
 offline and opened straight off a disk. A new release goes in both.
 
-The version lives in one place - `APP_VERSION` in `index.html` - which fills in
-the badge beside the wordmark and the help panel. After editing `index.html`,
-run `build-offline.py` to regenerate `pdf-offline.html`; never hand-edit the
-offline file.
+The version lives in one place - `APP_VERSION` in `index-online.html` - which
+fills in the badge beside the wordmark and the help panel.
+
+**Two editions (since 1.13, the same as VCTREDTR):** edit `index-online.html`
+(the source; it loads pdf.js and pdf-lib from jsDelivr, pinned and locked with
+integrity fingerprints), then run `python3 build-offline.py` in this folder to
+make `index.html`, the one-file edition that pdfedtr.app serves and that also
+runs straight off a disk. Never hand-edit `index.html`. The library files the
+build puts inside it live in `vendor/`.
 
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
+
+## 1.13 - 2026-10-11 - IMGEDTR's look, zoom and Settings
+
+The first of five releases bringing PDFEDTR up to IMGEDTR.
+
+- **IMGEDTR's top bar.** 52px tall (now the family standard), the bold wordmark
+  with the version in a pill, and icon buttons in groups: Open and Add pages,
+  Undo and Redo, the four zoom controls, then **Download** in the app's colour.
+  Inspector, Theme, Help and the new Settings sit at the right-hand end, in the
+  family order. The old "browser-only - no uploads" label is gone from the bar;
+  the security rules below now enforce it, and About says so.
+- **IMGEDTR's icons.** Every tool in the rail uses the same 24x24 line icons as
+  IMGEDTR, in 40px buttons, with the chosen tool filled in plum. The red X and
+  green checkmark keep their colours so they are easy to spot.
+- **IMGEDTR's greys, and the device's own font.** The panels, workspace and
+  text colours match IMGEDTR (quiet labels now pass contrast checks), and the
+  app uses the system font, so nothing is fetched from Google Fonts any more.
+- **Zoom like IMGEDTR.** Zoom out, the zoom level (press it for 100%), zoom in,
+  and fit to the page width. Ctrl/Cmd + scroll and a trackpad pinch zoom around
+  the pointer; Ctrl/Cmd with `+` `-` `0` `1` work from the keyboard. The zoom
+  select box is gone.
+- **Opens at the page width** (at most 150%) by default, so a phone shows the
+  whole width of the page instead of a cut-off 150%. Settings can change it.
+- **Sharp pages on Retina screens and phones.** The page is drawn at the
+  screen's real pixel density (up to 3x, capped at about 16 million pixels so a
+  big zoom cannot run a phone out of memory).
+- **Settings** (the cog): Theme (Match my device, Light, Dark), Open PDFs at,
+  Snap to guides, and Keep tool after placing (red X, checkmark, highlight,
+  shape and form field stay armed for the next one). Kept in this browser;
+  every value is checked when read back. The old theme choice carries over.
+- **Snapping** was already there; it can now be switched off in Settings, and
+  holding **Alt** (Option) while dragging moves freely for that one drag.
+- **Tooltips** like IMGEDTR's on every rail tool and top-bar button, with the
+  shortcut in a key cap: after a short pause on hover, at once on keyboard
+  focus, never on touch. Buttons also announce their shortcuts to screen readers.
+- **Ctrl+O opens a PDF.** It was listed in the old tooltip but never wired up.
+- **Security first.** A Content-Security-Policy: the page cannot send data to
+  any server (`connect-src 'self'`), runs no plug-ins or frames, and loads code
+  only from itself (plus jsDelivr in the source edition). pdf.js and pdf-lib now
+  come from jsDelivr's npm mirror with SRI fingerprints, so a changed file is
+  refused; pdf.js runs with `isEvalSupported: false`.
+- **The build works again.** `build-offline.py` had hard-coded paths into an old
+  Claude session. It now runs from its own folder, reads `index-online.html`,
+  checks the `vendor/` files against the fingerprints, and writes `index.html`
+  (the folder had already switched to this arrangement; the docs had not).
+- The thumbnail page numbers sit on a light strip now (the old dark strip was
+  hard to read with the new greys).
+- `sw.js`: the library addresses point at jsDelivr; the font hosts are gone.
 
 ## 1.12 - 2026-10-10 - A new splash
 
