@@ -2,6 +2,13 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.14.0 - 2026-10-10 - A tour of the features
+
+- **Features, a new first tab in Help:** an animated tour of five of VCTREDTR's favorite features - Merge Shapes, Five ways to merge, Perfect shapes that tile, Curved text and See the SVG code - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion.
+- **? or F1 and the Help button now open Help on Features.** Keyboard shortcuts is one tab over.
+- **The splash has a "See what VCTREDTR can do" card** that opens the same tour over the splash.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `renderSuiteFeatures`, `suiteFeaturesOpen`, `suiteFeaturesCard` and their styles). The drawings are inline SVG with SVG's own animation tags, so they work offline and straight off a disk.
+
 ## 0.13.0 - 2026-10-07 - Shape tools, symbols, more artboards and mesh fills
 
 - **Resize from the middle with Ctrl (Cmd on a Mac).** Hold it while dragging a corner or side handle and every side moves in or out at the same rate, not just the one you hold (Alt still does the same). On a Mac, where Ctrl+click can arrive as a right-click, the drag still works. Listed under "While dragging" in Help > Shortcuts.
