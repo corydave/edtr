@@ -838,6 +838,120 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   .suite-splash[open] { animation: suite-pop .16s ease-out; }
   @keyframes suite-pop { from { opacity: 0; transform: translateY(6px); } }
 }
+/* ---- Features: the animated tour (renderSuiteFeatures and friends) ------
+   Colours come from the app's --suite-fg (text) and --suite-accent (its own
+   colour), so every drawing follows light and dark mode. The accent is mixed
+   a little toward the text colour: darker in light mode, lighter in dark
+   mode, so it always stands out from the background. */
+.suite-feats { display: flex; flex-direction: column; gap: 10px; max-width: 640px; margin: 0 auto; }
+.suite-feat-stage {
+  --fx-fg: var(--suite-fg, currentColor);
+  --fx-acc: color-mix(in oklab, var(--suite-accent, #0046ad) 68%, var(--fx-fg));
+  --fx-pop: color-mix(in oklab, #e8590c 80%, var(--fx-fg));          /* a warm second colour */
+  --fx-ok:  color-mix(in oklab, #2f9e44 78%, var(--fx-fg));          /* "done", "fixed" */
+  color: var(--fx-fg);
+  aspect-ratio: 16 / 10; width: 100%; border-radius: 12px; overflow: hidden;
+  background: color-mix(in srgb, currentColor 5%, var(--suite-bg, Canvas));
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.suite-feat-art { display: block; width: 100%; height: 100%; }
+.suite-feat-words { min-height: 4.6em; }                 /* the controls stay put as the text changes length */
+.suite-feat-title { margin: 2px 0 4px; font-size: 16px; }
+.suite-feat-text { margin: 0; font-size: 14px; line-height: 1.5; opacity: .88; }
+.suite-feat-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.suite-feat-step, .suite-feat-pause {
+  flex: none; width: 40px; height: 40px; border-radius: 999px; padding: 0; cursor: pointer;
+  display: inline-grid; place-items: center; color: inherit; font: inherit;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+.suite-feat-step:hover, .suite-feat-pause:hover { background: color-mix(in srgb, currentColor 13%, transparent); }
+.suite-feat-step svg, .suite-feat-pause svg { width: 20px; height: 20px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feat-pause svg path[d^="M7 4"] { fill: currentColor; }     /* the play triangle is solid */
+.suite-feat-dots { display: flex; gap: 2px; flex: 1; justify-content: center; }
+/* Each dot is a 32px target (easy to tap) with a small round mark inside. */
+.suite-feat-dot { width: 32px; height: 32px; padding: 0; border: 0; background: none; cursor: pointer;
+  display: inline-grid; place-items: center; border-radius: 999px; }
+.suite-feat-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid currentColor; opacity: .55; box-sizing: border-box; }
+.suite-feat-dot[aria-current="true"]::after { background: var(--suite-accent, #0046ad); border-color: var(--suite-accent, #0046ad);
+  opacity: 1; width: 22px; border-radius: 6px; }
+.suite-feat-count { font-size: 12.5px; opacity: .75; min-width: 3.6em; text-align: center; }
+.suite-feats button:focus-visible, .suite-feats-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { .suite-feats button:focus-visible, .suite-feats-card:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-feats button:focus-visible, :root[data-theme="dark"] .suite-feats-card:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-feats button:focus-visible, :root[data-theme="light"] .suite-feats-card:focus-visible { outline-color: #0046ad; }
+@media (max-width: 420px) { .suite-feat-count { display: none; } }   /* the dots already say where you are */
+
+/* The tour as its own dialog (from the splash card). */
+.suite-feats-dlg {
+  background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 14px; padding: 18px 20px 14px; margin: auto;
+  width: min(620px, 94vw); max-width: 94vw; max-height: 94vh; overflow: auto;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .35); font: inherit; font-size: 14px; line-height: 1.45;
+}
+.suite-feats-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+.suite-feats-dlg h2 { margin: 0 0 12px; font-size: 18px; }
+.suite-feats-dlg .suite-splash-x:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+
+/* The card that opens it: as wide as its row, with a sparkle. */
+.suite-feats-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 10px 0 0; padding: 10px 14px;
+  min-height: 48px; border-radius: 10px; cursor: pointer; text-align: left; font: inherit; color: inherit;
+  background: color-mix(in srgb, var(--suite-accent, #0046ad) 9%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--suite-accent, #0046ad) 55%, currentColor);
+}
+.suite-feats-card:hover { background: color-mix(in srgb, var(--suite-accent, #0046ad) 16%, transparent); }
+.suite-feats-card-icon { flex: none; width: 26px; height: 26px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feats-card-words { display: flex; flex-direction: column; gap: 2px; }
+
+/* The drawings' own colour classes (used inside each APP_FEATURES picture).
+   Tints use color-mix, so `opacity` stays free for the animations. */
+/* Text size and weight are set here on the drawing itself (inherited), so a
+   drawing's own font-size attributes still win where it needs bigger words. */
+.suite-feat-art { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px; font-weight: 600; }
+.suite-feat-art .fx-ink   { fill: var(--fx-fg); }
+.suite-feat-art .fx-paper { fill: var(--suite-bg, Canvas); }
+.suite-feat-art .fx-soft  { fill: color-mix(in srgb, var(--fx-fg) 9%, transparent); }
+.suite-feat-art .fx-mute  { fill: color-mix(in srgb, var(--fx-fg) 26%, transparent); }
+.suite-feat-art .fx-acc   { fill: var(--fx-acc); }
+.suite-feat-art .fx-acc-soft { fill: color-mix(in srgb, var(--fx-acc) 22%, transparent); }
+.suite-feat-art .fx-pop   { fill: var(--fx-pop); }
+.suite-feat-art .fx-pop-soft { fill: color-mix(in srgb, var(--fx-pop) 25%, transparent); }
+.suite-feat-art .fx-ok    { fill: var(--fx-ok); }
+.suite-feat-art .fx-accbtn { fill: var(--suite-accent, #0046ad); }   /* the app colour itself: white text on it is 7:1 */
+.suite-feat-art .fx-white { fill: #fff; }
+.suite-feat-art .fx-line, .suite-feat-art .fx-line-acc, .suite-feat-art .fx-line-pop,
+.suite-feat-art .fx-line-mute, .suite-feat-art .fx-line-ok {
+  fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feat-art .fx-line      { stroke: var(--fx-fg); }
+.suite-feat-art .fx-line-acc  { stroke: var(--fx-acc); }
+.suite-feat-art .fx-line-pop  { stroke: var(--fx-pop); }
+.suite-feat-art .fx-line-ok   { stroke: var(--fx-ok); }
+.suite-feat-art .fx-line-white { fill: none; stroke: #fff; stroke-width: 4; }
+.suite-feat-art .fx-line-mute { stroke: color-mix(in srgb, var(--fx-fg) 30%, transparent); }
+.suite-feat-art .fx-edge  { stroke: color-mix(in srgb, var(--fx-fg) 28%, transparent); stroke-width: 1.5; }
+.suite-feat-art .fx-t     { fill: var(--fx-fg); }
+.suite-feat-art .fx-t-acc { fill: var(--fx-acc); }
+.suite-feat-art .fx-t-pop { fill: var(--fx-pop); }
+.suite-feat-art .fx-t-ok  { fill: var(--fx-ok); }
+.suite-feat-art .fx-t-mute { fill: color-mix(in srgb, var(--fx-fg) 55%, transparent); }
+.suite-feat-art .fx-t-w   { fill: #fff; }
+.suite-feat-art .fx-mono  { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 500; }
+.suite-feat-art .fx-hl    { fill: color-mix(in srgb, #fcc419 60%, transparent); }   /* highlighter yellow */
+.suite-feat-art .fx-dim   { fill: #000; fill-opacity: .55; }                          /* dims, in either theme */
+.suite-feat-art .fx-dash  { stroke-dasharray: 5 4; }
+.suite-feat-art .fx-thin  { stroke-width: 1.5; }
+.suite-feat-art .fx-thick { stroke-width: 4; }
+.suite-feat-art .fx-stop-acc { stop-color: var(--fx-acc); }
+.suite-feat-art .fx-stop-pop { stop-color: var(--fx-pop); }
+.suite-feat-art .fx-stop-ok  { stop-color: var(--fx-ok); }
+.suite-feat-art .fx-stop-hi  { stop-color: #fff; }
+.suite-feat-art .fx-stop-ink { stop-color: var(--fx-fg); }
+
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 </style>
 </head>
@@ -899,7 +1013,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       <button class="icon-btn" id="btnInstall" hidden title="Install 3DEDTR as an app: its own window, and it works offline" aria-label="Install 3DEDTR as an app"><span data-icon="install"></span></button>
       <button class="icon-btn" id="btnInspector" title="Inspector: scene list and properties" aria-label="Inspector" aria-pressed="true" aria-controls="sidePanel"><span data-icon="inspector"></span></button>
       <button class="icon-btn" id="btnTheme" title="Switch to dark mode" aria-label="Switch to dark mode"><span data-icon="moon"></span></button>
-      <button class="icon-btn" id="btnInfo" title="Help: shortcuts, about, changelog, more apps (?)" aria-label="Help"><span data-icon="help"></span></button>
+      <button class="icon-btn" id="btnInfo" title="Help: features, shortcuts, about, changelog, more apps (?)" aria-label="Help"><span data-icon="help"></span></button>
       <button class="icon-btn" id="btnSettings" title="Settings" aria-label="Settings"><span data-icon="settings"></span></button>
     </div>
   </div>
@@ -1309,14 +1423,19 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   <div class="dlg-head"><h2 id="dlgInfoTitle">3DEDTR</h2>
     <button class="icon-btn" id="infoClose" aria-label="Close"><span data-icon="x"></span></button></div>
   <div class="tabs" role="tablist" aria-label="Help sections" id="infoTabs">
-    <button role="tab" id="tabShortcuts" aria-controls="paneShortcuts" aria-selected="true">Keyboard shortcuts</button>
+    <button role="tab" id="tabFeatures" aria-controls="paneFeatures" aria-selected="true">Features</button>
+    <button role="tab" id="tabShortcuts" aria-controls="paneShortcuts" aria-selected="false" tabindex="-1">Keyboard shortcuts</button>
     <button role="tab" id="tabGuide" aria-controls="paneGuide" aria-selected="false" tabindex="-1">Getting started</button>
     <button role="tab" id="tabAbout" aria-controls="paneAbout" aria-selected="false" tabindex="-1">About</button>
     <button role="tab" id="tabChangelog" aria-controls="paneChangelog" aria-selected="false" tabindex="-1">Changelog</button>
     <button role="tab" id="tabApps" aria-controls="paneApps" aria-selected="false" tabindex="-1">More apps</button>
   </div>
   <div class="dlg-body">
-    <div role="tabpanel" tabindex="0" id="paneShortcuts" aria-labelledby="tabShortcuts">
+    <div role="tabpanel" tabindex="0" id="paneFeatures" aria-labelledby="tabFeatures">
+      <!-- The animated tour: APP_FEATURES, drawn by renderSuiteFeatures (shared SUITE block). -->
+      <div id="suiteFeatures"></div>
+    </div>
+    <div role="tabpanel" tabindex="0" id="paneShortcuts" aria-labelledby="tabShortcuts" hidden>
       <p class="hint" style="margin-bottom:8px">On a Mac, Ctrl means Cmd. Single keys can be turned off in Settings.</p>
       <table class="shortcut-table"><tbody id="shortcutRows"></tbody></table>
     </div>
@@ -1374,10 +1493,58 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.17.0';
+const APP_VERSION = '0.18.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
+/* ---- Features: the animated tour (Help > Features, and the card on the splash) ----
+   3DEDTR's favorite features, drawn and animated by renderSuiteFeatures in the
+   shared SUITE block. Each one has a title, a sentence or two, a description of the
+   animation for screen readers (alt), the best still moment in seconds (still,
+   shown when the device asks for less motion), and the drawing itself (art): a
+   small SVG whose colours come from the block's fx-* classes. Edit freely; keep
+   the drawings to fixed text written here (never anything from a file or a person). */
+const APP_FEATURES = [
+  {
+    title: "Cut shapes to build",
+    text: "Make cups, rings and keyrings by cutting one shape out of another with a single click.",
+    alt: "A smaller cylinder is lowered into a bigger one; Subtract is pressed and the small one disappears, leaving a hollow cup.",
+    still: 6.0,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" class="fx-soft"/><path d="M-40 200L60 130" class="fx-line-mute fx-thin"/><path d="M0 200L100 130" class="fx-line-mute fx-thin"/><path d="M40 200L140 130" class="fx-line-mute fx-thin"/><path d="M80 200L180 130" class="fx-line-mute fx-thin"/><path d="M120 200L220 130" class="fx-line-mute fx-thin"/><path d="M160 200L260 130" class="fx-line-mute fx-thin"/><path d="M200 200L300 130" class="fx-line-mute fx-thin"/><path d="M240 200L340 130" class="fx-line-mute fx-thin"/><path d="M280 200L380 130" class="fx-line-mute fx-thin"/><path d="M320 200L420 130" class="fx-line-mute fx-thin"/><path d="M0 140H320" class="fx-line-mute fx-thin"/><path d="M0 156H320" class="fx-line-mute fx-thin"/><path d="M0 172H320" class="fx-line-mute fx-thin"/><path d="M0 188H320" class="fx-line-mute fx-thin"/><path d="M106 70V150A54 16 0 0 0 214 150V70Z" class="fx-acc fx-edge"/><ellipse cx="160" cy="70" rx="54" ry="16" class="fx-acc-soft fx-edge"/><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.46;0.5;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><ellipse cx="160" cy="70" rx="44" ry="12" class="fx-ink"/><path d="M116 70A44 12 0 0 1 204 70" class="fx-acc-soft"/></g><g><animateTransform attributeName="transform" type="translate" values="0 -70;0 -70;0 0;0 0;0 0;0 0" keyTimes="0;0.1;0.35;0.45;0.5;1" dur="8s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.45;0.5;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><path d="M116 54V134A44 12 0 0 0 204 134V54Z" class="fx-pop-soft fx-line-pop fx-thin fx-dash"/><ellipse cx="160" cy="54" rx="44" ry="12" class="fx-pop-soft fx-line-pop fx-thin fx-dash"/></g><rect x="20" y="20" width="96" height="24" rx="12" class="fx-paper fx-edge"/><text x="68" y="36" class="fx-t" font-size="11" text-anchor="middle">Subtract</text><circle cx="68" cy="32" r="0" class="fx-line-acc"><animate attributeName="r" values="0;0;20;20" keyTimes="0;0.44;0.52;1" dur="8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.439;0.44;0.52;1" dur="8s" repeatCount="indefinite"/></circle><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.52;0.56;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><rect x="214" y="160" width="84" height="22" rx="11" class="fx-paper fx-edge"/><text x="256" y="175" class="fx-t-ok" font-size="10" text-anchor="middle">A hollow cup</text></g></svg>'
+  },
+  {
+    title: "Build from simple shapes",
+    text: "Stack ready-made shapes into a model, then move or resize any piece by dragging, or by typing exact millimeters.",
+    alt: "A box, then a cylinder, then a cone drop into place one on top of another to build a little rocket, and a measurement in millimeters appears.",
+    still: 6.0,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" class="fx-soft"/><path d="M-40 200L60 130" class="fx-line-mute fx-thin"/><path d="M0 200L100 130" class="fx-line-mute fx-thin"/><path d="M40 200L140 130" class="fx-line-mute fx-thin"/><path d="M80 200L180 130" class="fx-line-mute fx-thin"/><path d="M120 200L220 130" class="fx-line-mute fx-thin"/><path d="M160 200L260 130" class="fx-line-mute fx-thin"/><path d="M200 200L300 130" class="fx-line-mute fx-thin"/><path d="M240 200L340 130" class="fx-line-mute fx-thin"/><path d="M280 200L380 130" class="fx-line-mute fx-thin"/><path d="M320 200L420 130" class="fx-line-mute fx-thin"/><path d="M0 140H320" class="fx-line-mute fx-thin"/><path d="M0 156H320" class="fx-line-mute fx-thin"/><path d="M0 172H320" class="fx-line-mute fx-thin"/><path d="M0 188H320" class="fx-line-mute fx-thin"/><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.04;0.05;0.92;0.93;1" dur="8s" repeatCount="indefinite"/><g><animateTransform attributeName="transform" type="translate" values="0 -120;0 -120;0 4;0 0;0 0" keyTimes="0;0.05;0.15;0.18;1" dur="8s" repeatCount="indefinite"/><path d="M120 140L160 156L200 140V116L160 100L120 116Z" class="fx-acc-soft fx-edge"/><path d="M120 116L160 132L200 116L160 100Z" class="fx-acc fx-edge"/><path d="M160 132V156" class="fx-edge"/></g></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.24;0.25;0.92;0.93;1" dur="8s" repeatCount="indefinite"/><g><animateTransform attributeName="transform" type="translate" values="0 -140;0 -140;0 4;0 0;0 0" keyTimes="0;0.25;0.35;0.38;1" dur="8s" repeatCount="indefinite"/><path d="M136 80V116A24 9 0 0 0 184 116V80Z" class="fx-pop fx-edge"/><ellipse cx="160" cy="80" rx="24" ry="9" class="fx-pop-soft fx-edge"/></g></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.44;0.45;0.92;0.93;1" dur="8s" repeatCount="indefinite"/><g><animateTransform attributeName="transform" type="translate" values="0 -160;0 -160;0 4;0 0;0 0" keyTimes="0;0.45;0.55;0.58;1" dur="8s" repeatCount="indefinite"/><path d="M136 80A24 9 0 0 0 184 80L160 34Z" class="fx-ok fx-edge"/></g></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.58;0.62;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><rect x="206" y="40" width="92" height="44" rx="8" class="fx-paper fx-edge"/><text x="214" y="58" class="fx-t-mute" font-size="9">Height</text><text x="214" y="76" class="fx-t" font-size="13">24.0 mm</text></g></svg>'
+  },
+  {
+    title: "Ready for 3D printing",
+    text: "Export a model as an STL file for the school’s 3D printer, and the app checks that it will print cleanly first.",
+    alt: "A 3D printer nozzle sweeps back and forth, building a part layer by layer, and a label confirms the STL file is watertight.",
+    still: 6.2,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><defs><clipPath id="tdp1"><rect x="90" width="140" y="150" height="0"><animate attributeName="y" values="150;150;70;70;150;150" keyTimes="0;0.08;0.62;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><animate attributeName="height" values="0;0;80;80;0;0" keyTimes="0;0.08;0.62;0.93;0.97;1" dur="8s" repeatCount="indefinite"/></rect></clipPath></defs><rect width="320" height="200" class="fx-soft"/><rect x="60" y="20" width="200" height="150" rx="10" class="fx-paper fx-edge"/><rect x="76" y="150" width="168" height="8" rx="2" class="fx-mute"/><line x1="70" y1="40" x2="250" y2="40" class="fx-line-mute fx-thick"/><g clip-path="url(#tdp1)"><rect x="128" y="142" width="64" height="7" rx="1" class="fx-acc"/><rect x="126" y="134" width="68" height="7" rx="1" class="fx-acc"/><rect x="124" y="126" width="72" height="7" rx="1" class="fx-acc"/><rect x="122" y="118" width="76" height="7" rx="1" class="fx-acc"/><rect x="120" y="110" width="80" height="7" rx="1" class="fx-acc"/><rect x="122" y="102" width="76" height="7" rx="1" class="fx-acc"/><rect x="124" y="94" width="72" height="7" rx="1" class="fx-acc"/><rect x="126" y="86" width="68" height="7" rx="1" class="fx-acc"/><rect x="128" y="78" width="64" height="7" rx="1" class="fx-acc"/><rect x="130" y="70" width="60" height="7" rx="1" class="fx-acc"/></g><g><animate attributeName="opacity" values="1;1;0;0;1;1" keyTimes="0;0.64;0.66;0.95;0.97;1" dur="8s" repeatCount="indefinite"/><g><animateTransform attributeName="transform" type="translate" values="120 150;120 150;200 146;120 142;120 138;200 134;200 130;120 126;120 122;200 118;200 114;120 110;120 106;200 102;200 98;120 94;120 90;200 86;200 82;120 78;120 74;200 70;160 70;120 70" keyTimes="0;0.08;0.107;0.134;0.161;0.188;0.215;0.242;0.269;0.296;0.323;0.35;0.377;0.404;0.431;0.458;0.485;0.512;0.539;0.566;0.593;0.62;0.93;1" dur="8s" repeatCount="indefinite"/><path d="M-10 -26H10V-12L4 -4H-4L-10 -12Z" class="fx-ink"/><line x1="0" y1="-48" x2="0" y2="-26" class="fx-line fx-thick"/></g></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.62;0.66;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><rect x="96" y="176" width="128" height="20" rx="10" class="fx-paper fx-edge"/><path d="M108 186l3 3 6-6" class="fx-line-ok fx-thin"/><text x="166" y="190" class="fx-t-ok" font-size="10" text-anchor="middle">STL - watertight</text></g></svg>'
+  },
+  {
+    title: "Symmetry",
+    text: "Edit one piece and every mirrored or repeated copy follows - change one point of a six-sided star and all six change together.",
+    alt: "One point of a six-sided star is dragged outward and back; all six points of the star stretch and shrink together.",
+    still: 3.6,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><defs><path id="tds1" d="M160 100L143.0 70.6L160 60.0L177.0 70.6Z"><animate attributeName="d" values="M160 100L143.0 70.6L160 60.0L177.0 70.6Z;M160 100L143.0 70.6L160 60.0L177.0 70.6Z;M160 100L143.0 70.6L160 22.0L177.0 70.6Z;M160 100L143.0 70.6L160 22.0L177.0 70.6Z;M160 100L143.0 70.6L160 48.0L177.0 70.6Z;M160 100L143.0 70.6L160 48.0L177.0 70.6Z;M160 100L143.0 70.6L160 60.0L177.0 70.6Z" keyTimes="0;0.15;0.4;0.6;0.8;0.92;1" dur="8s" repeatCount="indefinite"/></path></defs><rect width="320" height="200" class="fx-soft"/><use href="#tds1" transform="rotate(60 160 100)" class="fx-acc-soft fx-edge"/><use href="#tds1" transform="rotate(120 160 100)" class="fx-acc-soft fx-edge"/><use href="#tds1" transform="rotate(180 160 100)" class="fx-acc-soft fx-edge"/><use href="#tds1" transform="rotate(240 160 100)" class="fx-acc-soft fx-edge"/><use href="#tds1" transform="rotate(300 160 100)" class="fx-acc-soft fx-edge"/><use href="#tds1" class="fx-acc fx-edge"/><circle cx="160" r="5" class="fx-pop"><animate attributeName="cy" values="60;60;22;22;48;48;60" keyTimes="0;0.15;0.4;0.6;0.8;0.92;1" dur="8s" repeatCount="indefinite"/></circle><g><animateTransform attributeName="transform" type="translate" values="164 64;164 64;164 26;164 26;164 52;164 52;164 64" keyTimes="0;0.15;0.4;0.6;0.8;0.92;1" dur="8s" repeatCount="indefinite"/><g><path d="M0 0L0 17L4.5 13L7.5 20L10.5 18.6L7.6 11.8L13 11.8Z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></g></g><rect x="20" y="20" width="96" height="40" rx="8" class="fx-paper fx-edge"/><text x="30" y="37" class="fx-t-mute" font-size="9">Symmetry</text><text x="30" y="52" class="fx-t" font-size="11">Around Y, 6</text></svg>'
+  },
+  {
+    title: "Colors and finishes",
+    text: "One click on a swatch or a finish like Glossy or Metal changes how any part looks.",
+    alt: "A ball changes color and finish in turn - matte, satin, glossy and metal - as a selection ring moves across the color swatches.",
+    still: 0.8,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><defs><radialGradient id="tdcacc" cx="38%" cy="34%" r="70%"><stop offset="0" class="fx-stop-hi"/><stop offset=".35" class="fx-stop-acc"/><stop offset="1" class="fx-stop-acc" stop-opacity=".75"/></radialGradient><radialGradient id="tdcpop" cx="38%" cy="34%" r="70%"><stop offset="0" class="fx-stop-hi"/><stop offset=".35" class="fx-stop-pop"/><stop offset="1" class="fx-stop-pop" stop-opacity=".75"/></radialGradient><radialGradient id="tdcok" cx="38%" cy="34%" r="70%"><stop offset="0" class="fx-stop-hi"/><stop offset=".35" class="fx-stop-ok"/><stop offset="1" class="fx-stop-ok" stop-opacity=".75"/></radialGradient><radialGradient id="tdcm" cx="38%" cy="34%" r="70%"><stop offset="0" class="fx-stop-hi"/><stop offset=".3" class="fx-stop-ink" stop-opacity=".45"/><stop offset=".62" class="fx-stop-hi" stop-opacity=".85"/><stop offset="1" class="fx-stop-ink" stop-opacity=".7"/></radialGradient></defs><rect width="320" height="200" class="fx-soft"/><path d="M-40 200L60 130" class="fx-line-mute fx-thin"/><path d="M0 200L100 130" class="fx-line-mute fx-thin"/><path d="M40 200L140 130" class="fx-line-mute fx-thin"/><path d="M80 200L180 130" class="fx-line-mute fx-thin"/><path d="M120 200L220 130" class="fx-line-mute fx-thin"/><path d="M160 200L260 130" class="fx-line-mute fx-thin"/><path d="M200 200L300 130" class="fx-line-mute fx-thin"/><path d="M240 200L340 130" class="fx-line-mute fx-thin"/><path d="M280 200L380 130" class="fx-line-mute fx-thin"/><path d="M320 200L420 130" class="fx-line-mute fx-thin"/><path d="M0 140H320" class="fx-line-mute fx-thin"/><path d="M0 156H320" class="fx-line-mute fx-thin"/><path d="M0 172H320" class="fx-line-mute fx-thin"/><path d="M0 188H320" class="fx-line-mute fx-thin"/><ellipse cx="130" cy="152" rx="46" ry="10" class="fx-mute"/><g opacity="0"><animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.23;0.25;0.98;1" dur="9s" repeatCount="indefinite"/><circle cx="130" cy="104" r="46" fill="url(#tdcacc)"/><text x="250" y="160" class="fx-t" font-size="13" text-anchor="middle">Matte</text></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.23;0.25;0.48;0.5;1" dur="9s" repeatCount="indefinite"/><circle cx="130" cy="104" r="46" fill="url(#tdcpop)"/><text x="250" y="160" class="fx-t" font-size="13" text-anchor="middle">Satin</text></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.48;0.5;0.73;0.75;1" dur="9s" repeatCount="indefinite"/><circle cx="130" cy="104" r="46" fill="url(#tdcok)"/><text x="250" y="160" class="fx-t" font-size="13" text-anchor="middle">Glossy</text></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.73;0.75;0.98;1" dur="9s" repeatCount="indefinite"/><circle cx="130" cy="104" r="46" fill="url(#tdcm)"/><text x="250" y="160" class="fx-t" font-size="13" text-anchor="middle">Metal</text></g><rect x="214" y="56" width="28" height="28" rx="6" class="fx-acc fx-edge"/><rect x="250" y="56" width="28" height="28" rx="6" class="fx-pop fx-edge"/><rect x="214" y="92" width="28" height="28" rx="6" class="fx-ok fx-edge"/><rect x="250" y="92" width="28" height="28" rx="6" class="fx-mute fx-edge"/><g><animateTransform attributeName="transform" type="translate" values="214 56;214 56;250 56;250 56;214 92;214 92;250 92;250 92;214 56" keyTimes="0;0.23;0.25;0.48;0.5;0.73;0.75;0.98;1" dur="9s" repeatCount="indefinite"/><rect x="-4" y="-4" width="36" height="36" rx="9" class="fx-line"/></g></svg>'
+  }
+];
+
 const CHANGELOG = [
+  { version: '0.18.0', date: '2026-10-10', notes: [
+    'New Features tab, first in Help (? or F1 or the Help button): an animated tour of five favorite features. The splash has a "See what 3DEDTR can do" card that opens the same tour.'
+  ] },
   { version: '0.17.0', date: '2026-10-08', notes: [
     'Symmetry, in the Inspector\'s Symmetry, shrink, wall and smooth section. Mirror (across X, Y and/or Z) keeps one half and mirrors it; Around keeps one slice and repeats it round an axis - 6 copies for a hexagon, 8 for a flower. Edit the piece\'s points (Tab) and every copy changes too; points on a cut stay on it, so the copies always meet. Off keeps the whole shape as it looks.',
     'Pattern, On a surface: scatter copies of an object over another one\'s surface (sprinkles on icing), each standing up from where it lands, with a random twist, sizes that vary, a lift, kept apart, and a shuffle number for a different scatter. Only where it faces up, if you like.',
@@ -1574,6 +1741,7 @@ const CHANGELOG = [
      - draws the "More apps" tab of the help panel (renderSuiteApps)
      - the credits in the About tab (renderSuiteCredits)
      - the splash screen shown at start-up (suiteSplash)
+     - the animated Features tour (renderSuiteFeatures, suiteFeaturesOpen, suiteFeaturesCard)
      - crash backups and the backup icon (SuiteBackup, suiteBackupBadge)
      - installing the app (SuiteInstall) and checking for updates (SuiteUpdate)
 
@@ -1965,6 +2133,7 @@ function suiteWhen(ms) {
      actions: [ { label, detail, run, primary } ... ],   // the app's ways to begin
      resume:  { detail, run } or null,                  // only when a backup exists
      hint:    'You can also drop an image anywhere.',   // optional
+     features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
    })
@@ -2012,6 +2181,8 @@ function suiteSplash(opts) {
 
   dlg.append(close, head, actions);
   if (opts.hint) dlg.append(suiteEl('p', 'suite-splash-hint', opts.hint));
+  // The animated tour of the app's favorite features, when the app has one.
+  if (opts.features && opts.features.length) dlg.append(suiteFeaturesCard(opts.features, opts.appId));
 
   // The rest of the family, as a row of small cards, then the credits, then
   // the version (with the update check) and the Install choice.
@@ -2527,6 +2698,265 @@ function suiteBackupDialog(opts) {
   document.body.append(dlg);
   dlg.showModal();
   restore.focus();
+}
+
+/* ---- v4 + Features: a short, animated tour of an app's favorite features ----
+   Every app keeps its own list, APP_FEATURES, near its CHANGELOG:
+
+     const APP_FEATURES = [
+       { title: 'Merge Shapes',                       // a few words
+         text:  'Pick overlapping shapes, then ...',  // one or two sentences
+         alt:   'A square and a circle slide ...',    // what the animation shows, for screen readers
+         still: 4,                                    // seconds into the loop that make the best still picture
+         art:   '<svg viewBox="0 0 320 200">...</svg>' }
+     ];
+
+   The block draws them three ways, all with the same slider:
+     renderSuiteFeatures(el, APP_FEATURES)      the Features tab of the help panel
+     suiteFeaturesOpen(APP_FEATURES, appId)     a dialog of its own (the splash card opens this)
+     suiteFeaturesCard(APP_FEATURES, appId)     a big button that opens that dialog
+                                                (suiteSplash adds one by itself when it is given
+                                                `features`; TXTEDTR puts one on its empty pane)
+
+   The pictures are small SVG drawings that move with SVG's own animation
+   tags (<animate>, <animateTransform>), so they need no files, work offline
+   and straight off a disk, and stay sharp at any size. Their colours come
+   from classes (fx-ink, fx-acc ...) styled in the block's CSS from the app's
+   --suite-fg and --suite-accent, so every drawing follows light and dark mode
+   and takes on the app's own colour.
+
+   Safety: the drawings are fixed text written into each app's own code -
+   never anything a person typed or a file brought in - and they are read
+   with DOMParser as SVG (not dropped in with innerHTML). Titles and
+   descriptions go in with textContent.
+
+   Motion: the animation can be paused with a button (it loops forever, and
+   anything that moves for more than five seconds needs a way to stop it).
+   With "reduce motion" switched on in the device's settings, each drawing
+   starts paused on its best still frame. A drawing scrolled out of sight or
+   on a hidden tab stops, so it never costs anything in the background. */
+
+/* Turn one fixed SVG string into an element, or null if it will not parse.
+   Ids inside the drawing (clip paths, gradients ...) get a number added, so
+   two copies on one page - the help tab and the splash's tour, say - never
+   borrow each other's clip paths. */
+let suiteFeatureArtCount = 0;
+function suiteFeatureArt(svgText) {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  const svg = doc.documentElement;
+  if (!svg || svg.nodeName !== 'svg' || doc.querySelector('parsererror')) return null;
+  const tag = '-' + (++suiteFeatureArtCount);
+  const ids = new Set();
+  for (const el of svg.querySelectorAll('[id]')) { ids.add(el.id); el.id += tag; }
+  if (ids.size) {
+    for (const el of svg.querySelectorAll('*')) {
+      for (const attr of [...el.attributes]) {
+        // url(#name) in clip-path, fill, mask ...; #name in href.
+        const v = attr.value.replace(/url\(#([\w-]+)\)/g, (m, id) => ids.has(id) ? 'url(#' + id + tag + ')' : m);
+        const w = /href$/.test(attr.name) && v[0] === '#' && ids.has(v.slice(1)) ? v + tag : v;
+        if (w !== attr.value) el.setAttribute(attr.name, w);
+      }
+    }
+  }
+  return document.importNode(svg, true);
+}
+
+/* True when the person has asked their device for less motion. */
+function suiteWantsLessMotion() {
+  return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+/* Draw the slider into `container`. Returns { show(i), destroy() }. */
+function renderSuiteFeatures(container, features, opts = {}) {
+  if (container.suiteFeatures) container.suiteFeatures.destroy();   // drawn before: start again
+  container.replaceChildren();
+  if (!features || !features.length) return { show() {}, destroy() {} };
+
+  const uid = 'sf' + Math.random().toString(36).slice(2, 8);         // unique ids on this page
+  let index = 0;
+  let paused = suiteWantsLessMotion();      // paused by the person (or by their settings)
+  let offscreen = false;                    // stopped because nobody can see it
+  let svg = null;                           // the drawing on show
+
+  // The carousel pattern: a labelled region holding one slide at a time.
+  const root = suiteEl('section', 'suite-feats');
+  root.setAttribute('aria-roledescription', 'carousel');
+  root.setAttribute('aria-label', opts.label || 'Features');
+
+  const slide = suiteEl('div', 'suite-feat-slide');
+  slide.setAttribute('role', 'group');
+  slide.setAttribute('aria-roledescription', 'slide');
+  const stage = suiteEl('div', 'suite-feat-stage');
+  const words = suiteEl('div', 'suite-feat-words');
+  const title = suiteEl('h3', 'suite-feat-title');
+  title.id = uid + '-title';
+  const text = suiteEl('p', 'suite-feat-text');
+  words.append(title, text);
+  slide.append(stage, words);
+
+  // Controls: back, one dot per feature, "2 of 5", pause, next.
+  const nav = suiteEl('div', 'suite-feat-nav');
+  const prev = suiteFeatButton('suite-feat-step', 'Previous feature', '<path d="m15 18-6-6 6-6"/>');
+  const next = suiteFeatButton('suite-feat-step', 'Next feature', '<path d="m9 18 6-6-6-6"/>');
+  const dots = suiteEl('div', 'suite-feat-dots');
+  const dotButtons = features.map((f, i) => {
+    const d = suiteEl('button', 'suite-feat-dot');
+    d.type = 'button';
+    d.setAttribute('aria-label', 'Feature ' + (i + 1) + ': ' + f.title);
+    d.addEventListener('click', () => show(i, true));
+    dots.append(d);
+    return d;
+  });
+  const count = suiteEl('span', 'suite-feat-count');
+  const pause = suiteFeatButton('suite-feat-pause', '', '');
+  nav.append(prev, dots, count, pause, next);
+
+  // A quiet announcement of the new title when someone changes slide
+  // (kept separate, so nothing is read out when the slider first appears).
+  const live = suiteEl('p', 'suite-sr');
+  live.setAttribute('aria-live', 'polite');
+
+  root.append(slide, nav, live);
+  container.append(root);
+
+  prev.addEventListener('click', () => show(index - 1, true));
+  next.addEventListener('click', () => show(index + 1, true));
+  pause.addEventListener('click', () => { paused = !paused; applyMotion(); });
+
+  // Left/Right anywhere in the slider move between features; Home/End jump.
+  root.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    let to = null;
+    if (e.key === 'ArrowLeft') to = index - 1;
+    else if (e.key === 'ArrowRight') to = index + 1;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = features.length - 1;
+    if (to === null) return;
+    e.preventDefault();
+    e.stopPropagation();                       // keep the app's own arrow-key shortcuts out of it
+    show(to, true);
+  });
+
+  // Play only while it can be seen (not on a hidden tab, not scrolled away).
+  let watcher = null;
+  if ('IntersectionObserver' in window) {
+    watcher = new IntersectionObserver((entries) => {
+      offscreen = !entries.some((en) => en.isIntersecting);
+      applyMotion();
+    });
+    watcher.observe(stage);
+  }
+
+  // Start or stop the drawing, and keep the pause button's words in step.
+  function applyMotion() {
+    const label = paused ? 'Play animation' : 'Pause animation';
+    pause.setAttribute('aria-label', label);
+    pause.title = label;
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.querySelector('svg').innerHTML = paused
+      ? '<path d="M7 4v16l13-8z"/>'                                   // play (a fixed icon, not data)
+      : '<path d="M8 4v16"/><path d="M16 4v16"/>';                    // pause
+    if (!svg || !svg.pauseAnimations) return;
+    if (paused || offscreen) svg.pauseAnimations(); else svg.unpauseAnimations();
+  }
+
+  function show(i, announce) {
+    index = (i + features.length) % features.length;               // wraps round at both ends
+    const f = features[index];
+    title.textContent = f.title;
+    text.textContent = f.text;
+    slide.setAttribute('aria-label', (index + 1) + ' of ' + features.length + ': ' + f.title);
+    count.textContent = (index + 1) + ' of ' + features.length;
+    dotButtons.forEach((d, n) => d.setAttribute('aria-current', String(n === index)));
+
+    stage.replaceChildren();
+    svg = suiteFeatureArt(f.art || '');
+    if (svg) {
+      svg.classList.add('suite-feat-art');
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', f.alt || f.title);
+      svg.setAttribute('focusable', 'false');
+      stage.append(svg);
+      // A paused drawing shows its best frame rather than its first.
+      if (paused && svg.setCurrentTime) { svg.pauseAnimations(); svg.setCurrentTime(f.still || 0); }
+    }
+    applyMotion();
+    if (announce) live.textContent = 'Feature ' + (index + 1) + ' of ' + features.length + ': ' + f.title;
+  }
+
+  function destroy() {
+    if (watcher) watcher.disconnect();
+    container.suiteFeatures = null;
+  }
+
+  show(opts.start || 0, false);
+  const api = { show: (i) => show(i, true), destroy };
+  container.suiteFeatures = api;
+  return api;
+}
+
+/* A small round icon button for the slider (the icon is fixed, never data). */
+function suiteFeatButton(className, label, iconPaths) {
+  const b = suiteEl('button', className);
+  b.type = 'button';
+  if (label) { b.setAttribute('aria-label', label); b.title = label; }
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = iconPaths;
+  b.append(icon);
+  return b;
+}
+
+/* The tour in a dialog of its own, over whatever is on screen (the splash,
+   say). Closing it puts focus back where it was. */
+function suiteFeaturesOpen(features, appId) {
+  const app = SUITE_APPS.find((a) => a.id === appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-feats-dlg');
+  const h = suiteEl('h2', '', 'What ' + app.name + ' can do');
+  h.id = 'suite-feats-dlg-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the tour');
+  const body = suiteEl('div');
+  dlg.append(close, h, body);
+  document.body.append(dlg);
+  const slider = renderSuiteFeatures(body, features, { label: app.name + ' features' });
+
+  function finish() {
+    slider.destroy();
+    dlg.close();
+    dlg.remove();
+    if (back && back.isConnected && back.focus) back.focus();
+  }
+  close.addEventListener('click', finish);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); });   // Escape
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) finish(); });  // a click on the dimmed backdrop
+  dlg.showModal();
+  const first = dlg.querySelector('.suite-feat-step:last-of-type');            // "Next" is the likely first press
+  if (first) first.focus();
+  return dlg;
+}
+
+/* A wide card - "See what PDFEDTR can do" - that opens the tour. */
+function suiteFeaturesCard(features, appId) {
+  const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
+  const b = suiteEl('button', 'suite-feats-card');
+  b.type = 'button';
+  const icon = suiteFeatButton('', '', '').querySelector('svg');   // borrow the icon maker
+  // Sparkles (Lucide): "something worth seeing".
+  icon.innerHTML = '<path d="M9.94 15.5a2 2 0 0 0-1.44-1.44l-6.13-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>';
+  icon.classList.add('suite-feats-card-icon');
+  const words = suiteEl('span', 'suite-feats-card-words');
+  words.append(suiteEl('span', 'suite-splash-choice-label', 'See what ' + app.name + ' can do'),
+               suiteEl('span', 'suite-splash-choice-detail',
+                       'A quick, animated tour of ' + features.length + ' favorite features'));
+  b.append(icon, words);
+  b.addEventListener('click', () => suiteFeaturesOpen(features, appId));
+  return b;
 }
 
 /* SUITE BLOCK v4 - END ================================================== */
@@ -14196,7 +14626,7 @@ $('dlgOutline').addEventListener('close', () => {
 
 /* ---- Help panel ---- */
 let selectInfoTab = null;
-function openHelp(tabId = 'tabShortcuts') {
+function openHelp(tabId = 'tabFeatures') {
   suiteSplashClose();
   const dlg = $('dlgInfo');
   if (!dlg.open) dlg.showModal();
@@ -14333,6 +14763,7 @@ async function startUp() {
   if (objects.length) return;                    // a file already arrived: skip the splash
   suiteSplash({
     appId: '3dedtr',
+    features: APP_FEATURES,
     actions: [
       { label: 'New scene', detail: 'An empty grid, ready for shapes', run: () => $('stage').focus(), primary: true },
       { label: 'Try the example', detail: 'A box and a cylinder, ready to subtract', run: loadExample },
@@ -14505,6 +14936,7 @@ async function init() {
   $('app').classList.toggle('panel-hidden', !settings.inspector);
   $('btnInspector').setAttribute('aria-pressed', String(settings.inspector));
   renderSuiteApps($('suiteApps'), '3dedtr');
+  renderSuiteFeatures($('suiteFeatures'), APP_FEATURES);   // Help > Features: the animated tour
   renderSuiteCredits($('suiteCredits'));
   renderChangelog();
   renderShortcuts();

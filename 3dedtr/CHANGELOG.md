@@ -1,5 +1,12 @@
 # 3DEDTR changelog
 
+## 0.18.0 - 2026-10-10 - A tour of the features
+
+- **Features, a new first tab in Help:** an animated tour of five of 3DEDTR's favorite features - Cut shapes to build, Build from simple shapes, Ready for 3D printing, Symmetry and Colors and finishes - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion.
+- **? or F1 and the Help button now open Help on Features.** Keyboard shortcuts is one tab over.
+- **The splash has a "See what 3DEDTR can do" card** that opens the same tour over the splash.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `renderSuiteFeatures`, `suiteFeaturesOpen`, `suiteFeaturesCard` and their styles). The drawings are inline SVG with SVG's own animation tags, so they work offline and straight off a disk.
+
 ## 0.17.0 - 2026-10-08 - Symmetry, scatter, and Bevel, Knife and Linked
 
 - **Symmetry** (the Inspector section is now *Symmetry, shrink, wall and smooth*): **Mirror** across X, Y and/or Z, or **Around** an axis with 2-64 copies (6 by default, round Y). The object keeps one piece - a half, a quarter, a slice - and the rest is made from copies of it through the object's own centre point. Edit the piece's points and every copy follows: one side of a hexagon, and all six change. Points on a cut stay on it as they move (Blender's Clipping), and for Around a point on one cut drags its partner on the other, so the copies always meet and the whole stays closed. Changing the number of copies or the mirrors re-cuts the whole; if the shape wasn't that symmetric (a 6-pointed star cut for 4 copies), it says how many edges are left open. **Off** keeps the whole shape as it looks now. Turning it on makes a shape a mesh (Undo brings the shape back). Saved in projects (`mods.sym`).
