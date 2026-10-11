@@ -1601,30 +1601,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     }
     #inspector #fields-panel[hidden] { display: none; }
 
-    /* Phones and narrow windows: tools along the bottom, the Inspector
-       becomes a drawer that slides in from the right (as in IMGEDTR). */
-    @media (max-width: 820px) {
-      header { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
-      .h-zoom span { display: none; }
-      .app-body, .app-body.insp-hidden { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 56px; }
-      .toolbar.rail {
-        grid-row: 2; flex-direction: row; justify-content: flex-start;
-        overflow-x: auto; overflow-y: hidden; padding: 0 8px;
-        border-right: 0; border-top: 1px solid var(--border);
-      }
-      .rail .tb-sep { width: 1px; height: 28px; margin: 0 4px; }
-      .rail .tb-btn-drop .tb-chevron { transform: rotate(180deg); right: 2px; top: 3px; bottom: auto; }  /* menus open upward */
-      .canvas-col { grid-row: 1; }
-      #sidebar.filmstrip { height: 118px; }
-      .filmstrip .page-thumb { width: 70px; }
-      .filmstrip .sb-head { width: 56px; }
-      #inspector {
-        position: fixed; top: var(--header-h); right: 0; bottom: 56px; width: min(320px, 92vw); z-index: 60;
-        transform: translateX(105%); transition: transform 0.2s; box-shadow: -8px 0 28px rgba(0, 0, 0, 0.3);
-      }
-      #inspector.open { transform: none; }
-      .app-body.insp-hidden #inspector { display: block; }
-    }
+    /* (Phones and narrow windows: see PHONE LAYOUT (1.15) at the end of the styles.) */
     /* A dot on the Inspector button when something is selected but the
        Inspector is not on screen to show it (phones, or switched off). */
     #btn-inspector { position: relative; }
@@ -1632,6 +1609,66 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       content: ""; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px;
       border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 2px var(--panel);
     }
+
+    /* ═══════════════════════════════════════════════════
+       FILMSTRIP (1.15) - DSKEDTR's: + and Insert a PDF on
+       the left, then the pages with their numbers under
+       them, and the page pill floating above the page
+       you clicked.
+    ═══════════════════════════════════════════════════ */
+    #sidebar.filmstrip {
+      position: relative; overflow: visible;           /* the pill floats above it */
+      height: auto; flex: none; display: flex; flex-direction: row; align-items: stretch; gap: 8px;
+      padding: 6px 8px; background: var(--panel); border-top: 1px solid var(--border); border-right: 0;
+    }
+    .film-tools { display: flex; flex-direction: column; justify-content: center; gap: 4px; flex: none; }
+    .film-tools .icon-btn { width: 36px; height: 34px; min-width: 0; padding: 0; }
+    #sidebar.filmstrip #page-list {
+      flex: 1; min-width: 0; display: flex; flex-direction: row; align-items: flex-end; gap: 10px;
+      overflow-x: auto; overflow-y: hidden; padding: 4px; scrollbar-width: thin;
+    }
+    #sidebar .page-thumb {
+      flex: none; width: auto; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 4px; border-radius: 8px; border: 2px solid transparent; background: transparent;
+      overflow: visible; cursor: pointer; user-select: none; -webkit-user-select: none; transform: none;
+    }
+    #sidebar .page-thumb:hover { border-color: var(--border); transform: none; }
+    #sidebar .page-thumb canvas { height: 84px; width: auto !important; display: block; background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+    #sidebar .page-thumb .thumb-label {
+      position: static; background: none; border: 0; padding: 0; color: var(--text-mid);
+      font-family: var(--font-ui); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+      display: inline-flex; align-items: center; gap: 3px;
+    }
+    /* The page showing: the app colour; picked pages get a tinted fill. */
+    #sidebar .page-thumb.active { border-color: var(--amber); box-shadow: none; }
+    #sidebar .page-thumb.active .thumb-label { color: var(--amber); }
+    #sidebar .page-thumb[aria-selected="true"] { background: var(--amber-glow); }
+    /* Several pages picked: a tick by each picked page's number, not just a colour. */
+    #page-list.many .page-thumb[aria-selected="true"] { border-color: var(--amber); }
+    #page-list.many .page-thumb[aria-selected="true"] .thumb-label::before { content: "\2713"; }
+    #sidebar .page-thumb:focus-visible { outline: 3px solid var(--amber); outline-offset: 1px; }
+    #sidebar .page-thumb.drag-over { border-color: var(--blue); border-style: dashed; }
+
+    /* The page pill: a rounded bar of icon buttons above the page clicked. */
+    .page-pill {
+      position: absolute; bottom: calc(100% + 6px); z-index: 40;
+      display: flex; align-items: center; gap: 2px; padding: 4px 6px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+      box-shadow: 0 6px 22px rgba(0,0,0,.18); max-width: calc(100% - 8px); overflow-x: auto; scrollbar-width: none;
+    }
+    .page-pill[hidden] { display: none; }
+    .page-pill button {
+      width: 36px; height: 34px; flex: none; display: grid; place-items: center; padding: 0;
+      background: transparent; border: 0; border-radius: 8px; color: var(--text); cursor: pointer;
+    }
+    .page-pill button:hover { background: var(--surface); }
+    .page-pill button:focus-visible { outline: 3px solid var(--amber); outline-offset: -1px; }
+    .page-pill button svg.icon { width: 20px; height: 20px; }
+    .page-pill button.danger { color: var(--red); }
+    .page-pill button[aria-disabled="true"] { opacity: .35; cursor: default; }
+    .page-pill button[aria-disabled="true"]:hover { background: transparent; }
+    .pill-sep { width: 1px; height: 22px; background: var(--border); margin: 0 3px; flex: none; }
 
     /* ═══════════════════════════════════════════════════
        SHAPES PANEL (1.14) - IMGEDTR's: headed groups of
@@ -1714,6 +1751,85 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       box-shadow: 0 4px 16px rgba(0,0,0,.18); max-width: min(360px, 92vw); white-space: normal; }
     .tip kbd { font: inherit; font-size: 11.5px; font-weight: 600; margin-left: 8px; padding: 1px 5px;
       border-radius: 4px; border: 1px solid currentColor; opacity: .85; white-space: nowrap; }
+
+    /* ═══════════════════════════════════════════════════
+       PHONE LAYOUT (1.15) - mobile first, the same as IMGEDTR:
+       three rows below the top bar - the page (with the
+       filmstrip under it), the Inspector as a sheet with a
+       grab handle, and the tool rail along the bottom.
+    ═══════════════════════════════════════════════════ */
+    /* The grab handle at the top of the sheet. Hidden on wider screens
+       (display: none, so it cannot be tabbed to there either). */
+    .sheet-handle { display: none; flex: none; height: 28px; align-items: center; justify-content: center;
+      position: sticky; top: 0; z-index: 2; background: var(--panel); border-bottom: 1px solid var(--border-soft);
+      cursor: ns-resize; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .sheet-handle .grip { width: 44px; height: 5px; border-radius: 3px; background: var(--text-mid); opacity: .7; pointer-events: none; }
+    .sheet-handle:hover .grip, .sheet-handle.dragging .grip { opacity: 1; }
+    .sheet-handle:focus-visible { outline: 3px solid var(--amber); outline-offset: -3px; }
+    #btn-more { display: none; }                    /* phones only */
+    .more-menu { min-width: 200px; }
+    .floating-menu .fm-item[hidden] { display: none; }
+    .more-menu .fm-item { gap: 10px; font-size: 14px; padding: 9px 12px; color: var(--text); }
+    .more-menu .fm-item svg.icon { width: 18px; height: 18px; opacity: 1; }
+    /* The page area: one finger scrolls, two fingers zoom (handled by the
+       app, so the browser does not zoom the whole screen). */
+    #canvas-area { touch-action: pan-x pan-y; }
+    /* Things on the page can be dragged with a finger (pointer events), so
+       the browser must not scroll the page instead while you do. */
+    .ov-item, .ov-resize, .ov-rotate { touch-action: none; }
+    /* Fingers need bigger handles than a mouse does. */
+    /* They sit just OUTSIDE the box, so even a small mark (a red X at a
+       low zoom) can still be dragged by its middle. */
+    @media (pointer: coarse) {
+      .ov-resize { width: 22px; height: 22px; bottom: -24px; right: -24px; border-radius: 50%;
+        border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+      .ov-del { width: 26px; height: 26px; top: -30px; right: -30px; font-size: 15px; }
+      .ov-rotate { width: 22px; height: 22px; margin-left: -11px; top: -38px; }
+      .ov-rotate::before { height: 16px; }
+    }
+
+    @media (max-width: 820px) {
+      /* Rows: page | sheet (29px closed: just its handle; --sheet-h open) | rail. */
+      .app-body, .app-body.insp-hidden { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 29px 56px; }
+      .app-body.sheet-open { grid-template-rows: minmax(0, 1fr) var(--sheet-h, calc(100dvh / 3 - 56px)) 56px; }
+      .canvas-col { grid-row: 1; grid-column: 1; }
+      #inspector, .app-body.insp-hidden #inspector {
+        display: flex; flex-direction: column; grid-row: 2; grid-column: 1; position: static; transform: none;
+        width: auto; border-left: 0; border-top: 1px solid var(--border); overflow-y: auto; overscroll-behavior: contain;
+        box-shadow: 0 -4px 12px rgba(0,0,0,.08); }
+      #inspector:not(.open) { overflow: hidden; }
+      #inspector:not(.open) > :not(.sheet-handle) { display: none; }
+      .sheet-handle { display: flex; }
+      .toolbar.rail {
+        grid-row: 3; grid-column: 1; flex-direction: row; justify-content: flex-start;
+        overflow-x: auto; overflow-y: hidden; padding: 0 8px; border-right: 0; border-top: 1px solid var(--border);
+      }
+      .rail .tb-sep { width: 1px; height: 28px; margin: 0 4px; }
+      .rail .tb-btn-drop .tb-chevron { transform: rotate(180deg); right: 2px; top: 3px; bottom: auto; }  /* menus open upward */
+
+      /* The top bar: just the logo, then what is used most. The rest is in More. */
+      header.topbar { padding: 0 4px; gap: 2px; }
+      .wordmark { margin: 0 4px 0 2px; font-size: 0; gap: 0; }          /* the logo alone */
+      .wordmark .version-badge { display: none; }
+      .topbar-scroll { overflow: visible; }
+      #btn-zoom-out, #btn-zoom-100, #btn-zoom-in, #theme-toggle, #btn-help, #btn-settings, #btn-install { display: none; }
+      #btn-more { display: inline-flex; }
+      .h-sep { margin: 0 2px; }
+      #btn-download { padding: 0 10px; font-size: 0; gap: 0; }         /* the icon alone */
+      #btn-download svg.icon { width: 20px; height: 20px; }
+
+      /* A smaller filmstrip, so the page gets the room. */
+      #sidebar.filmstrip { padding: 4px 6px; gap: 6px; }
+      .film-tools .icon-btn { width: 34px; height: 30px; }
+      #sidebar .page-thumb { padding: 2px; }
+      #sidebar .page-thumb canvas { height: 56px; }
+      #sidebar .page-thumb .thumb-label { font-size: 11px; }
+      .page-pill { padding: 3px 4px; gap: 0; }
+      .page-pill button { width: 31px; height: 34px; }
+      .pill-sep { margin: 0 2px; }
+      #canvas-area { padding: 12px; }
+      #toast { bottom: calc(var(--sheet-h, 29px) + 70px); }
+    }
   </style>
 </head>
 <body>
@@ -1727,39 +1843,18 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 <!-- ══════════ TOAST ══════════ -->
 <div id="toast" role="alert" aria-live="polite"></div>
 
-<!-- ══════════ ADD PAGES MENU ══════════ -->
-<!--
-  Shown when user clicks the "Add +" button.
-  User picks a position, then an action.
--->
-<div class="floating-menu" id="add-menu" role="dialog" aria-label="Add pages">
-  <span class="am-label">Insert position</span>
-  <div class="am-toggle" role="group" aria-label="Where to insert">
-    <button class="am-tog active" id="add-pos-after" aria-pressed="true">
-      After<br>current
-    </button>
-    <button class="am-tog" id="add-pos-end" aria-pressed="false">
-      At<br>end
-    </button>
-  </div>
-  <div class="am-divider"></div>
-  <button class="fm-item" id="add-blank-btn" role="menuitem">
-    <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4">
-      <rect x="1" y="1" width="11" height="11" rx="1"/>
-      <line x1="6.5" y1="4" x2="6.5" y2="9"/>
-      <line x1="4" y1="6.5" x2="9" y2="6.5"/>
-    </svg>
-    Blank page
-  </button>
-  <button class="fm-item" id="add-import-btn" role="menuitem">
-    <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4">
-      <path d="M2 2h6l3 3v8H2V2z"/>
-      <path d="M8 2v3h3" stroke-width="1.1" opacity="0.7"/>
-      <line x1="4.5" y1="8" x2="8.5" y2="8"/>
-      <polyline points="6.5,6 8.5,8 6.5,10" fill="none"/>
-    </svg>
-    Import PDF…
-  </button>
+<!-- ══════════ MORE MENU (phones, 1.15) ══════════
+     Each item presses the matching top-bar button (which is hidden on a
+     phone), so the two can never do different things. -->
+<div class="floating-menu more-menu" id="more-menu" role="menu" aria-label="More">
+  <button class="fm-item" role="menuitem" data-for="btn-zoom-in"><span data-icon="zoomIn"></span> Zoom in</button>
+  <button class="fm-item" role="menuitem" data-for="btn-zoom-out"><span data-icon="zoomOut"></span> Zoom out</button>
+  <button class="fm-item" role="menuitem" data-for="btn-zoom-100"><span data-icon="fit"></span> Zoom to 100%</button>
+  <div class="am-divider" role="separator"></div>
+  <button class="fm-item" role="menuitem" data-for="theme-toggle" id="more-theme"><span data-icon="moon"></span> <span class="more-theme-label">Dark mode</span></button>
+  <button class="fm-item" role="menuitem" data-for="btn-help"><span data-icon="help"></span> Help</button>
+  <button class="fm-item" role="menuitem" data-for="btn-settings"><span data-icon="settings"></span> Settings</button>
+  <button class="fm-item" role="menuitem" data-for="btn-install" id="more-install" hidden><span data-icon="install"></span> Install PDFEDTR</button>
 </div>
 
 <!-- ══════════ HIGHLIGHT COLOUR MENU ══════════ -->
@@ -1830,7 +1925,6 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   <div class="topbar-scroll">
     <div class="h-group" role="group" aria-label="File">
       <button class="icon-btn" id="btn-open" data-tip="Open a PDF" data-keys="Ctrl+O" aria-label="Open a PDF"><span data-icon="folder"></span></button>
-      <button class="icon-btn" id="btn-add" disabled aria-haspopup="dialog" data-tip="Add pages: a blank page or another PDF" aria-label="Add pages"><span data-icon="filePlus"></span></button>
     </div>
     <div class="h-sep" aria-hidden="true"></div>
     <div class="h-group" role="group" aria-label="Undo and redo">
@@ -1863,6 +1957,9 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
       </button>
       <button class="icon-btn" id="btn-help" data-tip="Help: features, shortcuts, about, changelog, more apps" data-keys="?" aria-label="Help"><span data-icon="help"></span></button>
       <button class="icon-btn" id="btn-settings" data-tip="Settings" aria-label="Settings" aria-haspopup="dialog"><span data-icon="settings"></span></button>
+      <!-- Phones only (1.15): the buttons that do not fit (zoom, theme, help,
+           settings, install) are in this menu, so nothing scrolls off screen. -->
+      <button class="icon-btn" id="btn-more" data-tip="More: zoom, theme, help, settings" aria-label="More" aria-haspopup="menu" aria-expanded="false" aria-controls="more-menu"><span data-icon="more"></span></button>
     </div>
   </div>
 </header>
@@ -1928,23 +2025,34 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 
   <!-- Middle: the page, with the page thumbnails as a filmstrip underneath -->
   <div class="canvas-col">
-  <!-- Filmstrip: page thumbnails (was a column on the left) -->
+  <!-- FILMSTRIP (1.15): the pages along the bottom, the same as DSKEDTR's.
+       Left: + (a blank page after this one) and Insert a PDF. Then the
+       pages. Click or tap a page and the page pill opens above it. -->
   <aside id="sidebar" class="filmstrip" aria-label="Pages">
-    <div class="sb-head">
-      <span>Pages <span id="page-count">0</span></span>
-      <button class="sb-sel-btn" id="btn-select-pages" data-tip="Select pages" aria-pressed="false" aria-label="Toggle page selection mode" disabled>
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4">
-          <rect x="1" y="1" width="12" height="12" rx="1.5"/>
-          <polyline points="3.5,7 5.5,9.5 10,4.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
+    <div class="film-tools" role="group" aria-label="Add pages">
+      <button class="icon-btn" id="btn-add-blank" disabled data-tip="Add a blank page after this one" aria-label="Add a blank page after this one"><span data-icon="plus"></span></button>
+      <button class="icon-btn" id="btn-insert-pdf" disabled data-tip="Insert another PDF after this page" aria-label="Insert another PDF after this page"><span data-icon="fileInsert"></span></button>
     </div>
-    <div id="page-list" role="list" aria-label="PDF pages - drag to reorder"></div>
-    <!-- Action bar: appears when pages are selected in select-mode -->
-    <div class="sel-action-bar" id="sel-action-bar" hidden role="toolbar" aria-label="Selection actions">
-      <span class="sel-count" id="sel-count">0 pages</span>
-      <button class="btn-sel-del" id="btn-delete-selected" aria-label="Delete selected pages">Delete</button>
+    <div id="page-list" role="listbox" aria-label="Pages" aria-orientation="horizontal" aria-multiselectable="true" aria-describedby="film-help"></div>
+    <!-- The page pill: opens above a page when it is clicked or tapped (or
+         when the keyboard comes into the filmstrip). Everything in it acts
+         on the picked pages: one, or several (Ctrl+click, Shift+click). -->
+    <div class="page-pill" id="page-pill" role="toolbar" aria-label="Page actions" hidden>
+      <button type="button" data-pact="left"      data-tip="Move left"  data-keys="Alt+Left"  aria-label="Move left"><span data-icon="chevLeft"></span></button>
+      <button type="button" data-pact="right"     data-tip="Move right" data-keys="Alt+Right" aria-label="Move right"><span data-icon="chevRight"></span></button>
+      <span class="pill-sep" aria-hidden="true"></span>
+      <button type="button" data-pact="rotl"      data-tip="Turn left"  data-keys="Shift+R"   aria-label="Turn left"><span data-icon="rotateCcw"></span></button>
+      <button type="button" data-pact="rotr"      data-tip="Turn right" data-keys="R"         aria-label="Turn right"><span data-icon="rotateCw"></span></button>
+      <span class="pill-sep" aria-hidden="true"></span>
+      <button type="button" data-pact="duplicate" data-tip="Duplicate"  data-keys="Ctrl+D"    aria-label="Duplicate"><span data-icon="duplicate"></span></button>
+      <button type="button" data-pact="copy"      data-tip="Copy"       data-keys="Ctrl+C"    aria-label="Copy"><span data-icon="copy"></span></button>
+      <button type="button" data-pact="cut"       data-tip="Cut"        data-keys="Ctrl+X"    aria-label="Cut"><span data-icon="scissors"></span></button>
+      <button type="button" data-pact="paste"     data-tip="Paste after this page" data-keys="Ctrl+V" aria-label="Paste after this page"><span data-icon="paste"></span></button>
+      <span class="pill-sep" aria-hidden="true"></span>
+      <button type="button" data-pact="save"      data-tip="Save as a separate PDF" aria-label="Save as a separate PDF"><span data-icon="fileDown"></span></button>
+      <button type="button" data-pact="delete" class="danger" data-tip="Delete" data-keys="Delete" aria-label="Delete"><span data-icon="trash"></span></button>
     </div>
+    <span id="film-help" class="sr-only">Left and Right go between pages, Enter shows one. Shift with Left or Right picks several; Ctrl+Space picks or unpicks one. Alt with Left or Right moves the picked pages, R turns them, Delete removes them. Tab goes on to the page actions.</span>
   </aside>
 
   <!-- Center: canvas -->
@@ -1980,6 +2088,13 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   <!-- Right: the INSPECTOR. The settings for whatever is selected on the page
        (these used to float next to it), and the radio-button fields. -->
   <aside id="inspector" aria-label="Inspector">
+    <!-- Phones (1.15): the Inspector is a sheet along the bottom, the same as
+         IMGEDTR's. Drag this handle up or down (or use the arrow keys on it)
+         to share the screen with the page; a tap opens or closes the sheet.
+         Hidden on wider screens. -->
+    <div class="sheet-handle" id="sheet-handle" role="separator" tabindex="0" aria-orientation="horizontal"
+         aria-label="Inspector height" aria-controls="inspector" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"
+         data-tip="Drag to make the Inspector taller or shorter; tap to open or close it"><span class="grip"></span></div>
     <section class="insp-section" aria-labelledby="insp-props-title">
       <h2 class="insp-title" id="insp-props-title">Properties</h2>
       <div id="context-bar" hidden role="toolbar" aria-label="Element properties"></div>
@@ -2083,7 +2198,12 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
         <tr><td><kbd>Esc</kbd></td><td>Step back one level: stop editing, then deselect, then back to the Select tool</td></tr>
         <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd></td><td>Something selected: nudge it 1 pt (hold <kbd>Shift</kbd> for 10 pt). Nothing selected: previous / next page</td></tr>
         <tr><td><kbd>Delete</kbd></td><td>Remove the selected element</td></tr>
-        <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd> in the filmstrip</td><td>Move between page thumbnails. Hold <kbd>Alt</kbd> to move the page itself</td></tr>
+        <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd> in the filmstrip</td><td>Go between pages (<kbd>Shift</kbd> picks several as you go). Hold <kbd>Alt</kbd> to move the picked pages</td></tr>
+        <tr><td><kbd>R</kbd> / <kbd>Shift</kbd>+<kbd>R</kbd> in the filmstrip</td><td>Turn the picked pages right / left</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd> in the filmstrip</td><td>Duplicate the picked pages</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd> in the filmstrip</td><td>Copy, cut, or paste pages (pasted pages go after the page showing)</td></tr>
+        <tr><td><kbd>Delete</kbd> in the filmstrip</td><td>Delete the picked pages (Undo brings them back)</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+click / <kbd>Shift</kbd>+click a page</td><td>Pick several pages; the page pill acts on all of them</td></tr>
         <tr><td><kbd>&uarr;</kbd> <kbd>&darr;</kbd> in the tool rail</td><td>Move between tools</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></td><td>Copy, cut, paste the selected element</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
@@ -2104,7 +2224,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   <div class="help-pane" role="tabpanel" id="hpane-about" aria-labelledby="htab-about" hidden>
     <p><strong>PDFEDTR</strong> <span id="about-ver"></span> edits PDFs entirely in your browser:
       add text, sticky notes, dates, highlights, shapes, form fields and signatures,
-      and reorder, add or delete pages.</p>
+      and move, turn, duplicate, add or delete pages.</p>
     <p><strong>Private by design.</strong> The PDF you open is read into this tab and never
       uploaded. There is no server, no account and no analytics. Downloading writes the
       edited file straight to your computer.</p>
@@ -2236,6 +2356,20 @@ const ICONS = {
   inspector:   '<path d="M5 20v-8M5 8V4M12 20v-5M12 11V4M19 20v-3M19 13V4M3 12h4M10 15h4M17 17h4"/>',
   sun:         '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   moon:        '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  // Pages (1.15): the filmstrip's buttons and the page pill.
+  plus:        '<path d="M12 5v14M5 12h14"/>',
+  fileInsert:  '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 14h8"/><path d="m13 11 3 3-3 3"/>',
+  chevLeft:    '<path d="m15 18-6-6 6-6"/>',
+  chevRight:   '<path d="m9 18 6-6-6-6"/>',
+  rotateCw:    '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+  rotateCcw:   '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  duplicate:   '<line x1="15" y1="12" x2="15" y2="18"/><line x1="12" y1="15" x2="18" y2="15"/><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  copy:        '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  scissors:    '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88"/><path d="M14.47 14.48 20 20"/><path d="M8.12 8.12 12 12"/>',
+  paste:       '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  fileDown:    '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
+  trash:       '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  more:        '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
   flipH:       '<path d="m3 7 5 5-5 5V7"/><path d="m21 7-5 5 5 5V7"/><path d="M12 20v2"/><path d="M12 14v2"/><path d="M12 8v2"/><path d="M12 2v2"/>',
   flipV:       '<path d="m17 3-5 5-5-5h10"/><path d="m17 21-5-5-5 5h10"/><path d="M4 12H2"/><path d="M10 12H8"/><path d="M16 12h-2"/><path d="M22 12h-2"/>',
   help:        '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
@@ -2289,6 +2423,7 @@ const SETTINGS_DEFAULTS = {
   snap: true,          // line things up with the page and each other while dragging
   keepTool: false,     // after placing a mark, shape, highlight or field, keep the tool
   openZoom: 'fit',     // how big a PDF opens: 'fit' (page width, at most 150%), '1', '1.5'
+  sheet: 1 / 3,        // phones: where the top of the Inspector sheet sits, as a share of the screen (1.15)
 };
 const settings = loadSettings();
 
@@ -2301,6 +2436,7 @@ function loadSettings() {
     if (typeof saved.snap === 'boolean') out.snap = saved.snap;
     if (typeof saved.keepTool === 'boolean') out.keepTool = saved.keepTool;
     if (['fit', '1', '1.5'].includes(saved.openZoom)) out.openZoom = saved.openZoom;
+    if (typeof saved.sheet === 'number' && saved.sheet > 0.1 && saved.sheet < 0.95) out.sheet = saved.sheet;
   } else {
     // First run of 1.13: carry over the theme the old toggle saved.
     try {
@@ -2379,9 +2515,11 @@ const state = {
 
   nameCounter: 0, // gives each new object a default name like "Text 3"
 
-  // Page multi-selection
-  pageSelectionMode: false,    // are thumbnails in select-mode?
-  selectedPages:     new Set(), // set of display indices currently selected
+  // Pages (1.15): each page's extra turn, the pages picked in the filmstrip,
+  // and copied pages waiting to be pasted.
+  pageRots:          [],        // degrees clockwise, one per page slot (see PAGES)
+  pageClipboard:     null,      // [{ src, rot, overlays }] from Copy / Cut
+  selectedPages:     new Set(), // set of display indices currently picked
   lastClickedPage:   null,      // for shift+click range selection
 };
 
@@ -2399,20 +2537,12 @@ const dom = {
   guideLines:   document.getElementById('guide-lines'),
   sidebar:           document.getElementById('sidebar'),
   pageList:          document.getElementById('page-list'),
-  btnSelectPages:    document.getElementById('btn-select-pages'),
-  selActionBar:      document.getElementById('sel-action-bar'),
-  selCount:          document.getElementById('sel-count'),
-  btnDeleteSelected: document.getElementById('btn-delete-selected'),
-  pageCount:    document.getElementById('page-count'),
   btnUndo:      document.getElementById('btn-undo'),
   btnRedo:      document.getElementById('btn-redo'),
-  btnAdd:       document.getElementById('btn-add'),
+  btnAddBlank:  document.getElementById('btn-add-blank'),
+  btnInsertPdf: document.getElementById('btn-insert-pdf'),
+  pagePill:     document.getElementById('page-pill'),
   btnDownload:  document.getElementById('btn-download'),
-  addMenu:      document.getElementById('add-menu'),
-  addPosAfter:  document.getElementById('add-pos-after'),
-  addPosEnd:    document.getElementById('add-pos-end'),
-  addBlankBtn:  document.getElementById('add-blank-btn'),
-  addImportBtn: document.getElementById('add-import-btn'),
   importInput:  document.getElementById('import-input'),
   contextBar:   document.getElementById('context-bar'),
   fieldsPanel:  document.getElementById('fields-panel'),
@@ -2694,88 +2824,6 @@ async function navigatePage(delta) {
   if (thumb) thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-/** Enter or exit multi-page selection mode. Exiting clears the selection. */
-function togglePageSelectionMode() {
-  state.pageSelectionMode = !state.pageSelectionMode;
-  if (!state.pageSelectionMode) {
-    state.selectedPages.clear();
-    state.lastClickedPage = null;
-  } else {
-    state.lastClickedPage = state.currentPage;
-  }
-  dom.sidebar.classList.toggle('select-mode', state.pageSelectionMode);
-  dom.btnSelectPages.classList.toggle('active', state.pageSelectionMode);
-  dom.btnSelectPages.setAttribute('aria-pressed', String(state.pageSelectionMode));
-  updatePageSelectionUI();
-}
-
-/**
- * Handle a thumbnail click in selection mode.
- * Plain click toggles; Shift+click selects the range from lastClickedPage.
- */
-function handlePageSelectClick(idx, shiftKey) {
-  if (shiftKey && state.lastClickedPage !== null) {
-    const lo = Math.min(state.lastClickedPage, idx);
-    const hi = Math.max(state.lastClickedPage, idx);
-    for (let i = lo; i <= hi; i++) state.selectedPages.add(i);
-  } else {
-    if (state.selectedPages.has(idx)) state.selectedPages.delete(idx);
-    else                               state.selectedPages.add(idx);
-  }
-  state.lastClickedPage = idx;
-  updatePageSelectionUI();
-  // Also navigate to the clicked page so the canvas updates
-  selectPage(idx);
-}
-
-/** Sync checkboxes, highlight borders, and the action bar to current selection state. */
-function updatePageSelectionUI() {
-  const count = state.selectedPages.size;
-  document.querySelectorAll('.page-thumb').forEach((thumb, i) => {
-    const cb = thumb.querySelector('.thumb-cb');
-    if (cb) cb.checked = state.selectedPages.has(i);
-    thumb.classList.toggle('page-sel', state.selectedPages.has(i));
-  });
-  dom.selCount.textContent = `${count} page${count !== 1 ? 's' : ''} selected`;
-  dom.selActionBar.hidden  = !(state.pageSelectionMode && count > 0);
-}
-
-/** Delete all currently selected pages and their overlays. */
-async function deleteSelectedPages() {
-  const count = state.selectedPages.size;
-  if (count === 0) return;
-  if (count === state.pageOrder.length) { toast('Cannot delete all pages.', 'err'); return; }
-  if (!confirm(`Delete ${count} selected page${count !== 1 ? 's' : ''}?`)) return;
-  snapshot();
-
-  // Build a mapping from old display index → new display index
-  const oldToNew = {};
-  let newIdx = 0;
-  for (let i = 0; i < state.pageOrder.length; i++) {
-    if (!state.selectedPages.has(i)) oldToNew[i] = newIdx++;
-  }
-
-  // Remove selected pages from the order
-  state.pageOrder = state.pageOrder.filter((_, i) => !state.selectedPages.has(i));
-
-  // Remove/remap overlays
-  state.overlays = state.overlays
-    .filter(o  => !state.selectedPages.has(o.pageDisplayIndex))
-    .map(o     => ({ ...o, pageDisplayIndex: oldToNew[o.pageDisplayIndex] ?? 0 }));
-
-  state.currentPage = Math.min(state.currentPage, state.pageOrder.length - 1);
-  state.selectedPages.clear();
-  state.pageSelectionMode = false;
-  dom.sidebar.classList.remove('select-mode');
-  dom.btnSelectPages.classList.remove('active');
-  dom.btnSelectPages.setAttribute('aria-pressed', 'false');
-
-  await renderAllThumbnails();
-  await renderCurrentPage();
-  updatePageSelectionUI();
-  toast(`Deleted ${count} page${count !== 1 ? 's' : ''}.`);
-}
-
 /* ══════════════════════════════════════════
    UNDO / REDO HISTORY
    ─────────────────────────────────────────
@@ -2805,6 +2853,7 @@ function snapshot() {
   history.past.push({
     overlays:    JSON.parse(JSON.stringify(state.overlays)),
     pageOrder:   [...state.pageOrder],
+    pageRots:    [...state.pageRots],     // each page's turn (1.15)
     currentPage: state.currentPage,
   });
   if (history.past.length > history.MAX) history.past.shift();
@@ -2832,6 +2881,7 @@ function undo() {
   history.future.push({
     overlays:    JSON.parse(JSON.stringify(state.overlays)),
     pageOrder:   [...state.pageOrder],
+    pageRots:    [...state.pageRots],     // each page's turn (1.15)
     currentPage: state.currentPage,
   });
   // Restore the previous state
@@ -2845,6 +2895,7 @@ function redo() {
   history.past.push({
     overlays:    JSON.parse(JSON.stringify(state.overlays)),
     pageOrder:   [...state.pageOrder],
+    pageRots:    [...state.pageRots],     // each page's turn (1.15)
     currentPage: state.currentPage,
   });
   // Restore the redo state
@@ -2856,7 +2907,10 @@ function redo() {
 async function applyHistorySnapshot(snap) {
   state.overlays    = snap.overlays;
   state.pageOrder   = snap.pageOrder;
+  state.pageRots    = snap.pageRots || snap.pageOrder.map(() => 0);
   state.currentPage = Math.min(snap.currentPage, state.pageOrder.length - 1);
+  setPicked([state.currentPage]);
+  closePagePill();
   state.selectedId  = null;
   state.hasSnapshotForCurrentEdit = false;
   hideContextBar();
@@ -2958,8 +3012,12 @@ function importExistingFormFields() {
         console.log(`Widget ${wi}: pageIndexOf() = ${pageIdx}`);
         if (pageIdx < 0) { console.log('SKIPPED — could not find which page this widget is on.'); return; }
 
-        const { width: pgW, height: pgH } = pages[pageIdx].getSize();
-        const rect = widget.getRectangle();
+        // Measured on the page as it looks (1.15): on a page the PDF shows
+        // turned, the widget's box is turned back into "as it looks" first.
+        const view = pageView(pages[pageIdx]);
+        const pgW = view.w, pgH = view.h;
+        const raw = widget.getRectangle();
+        const rect = raw && pageRectToView(view, raw);
         console.log('Widget rect (PDF points):', rect, '| page size:', pgW, 'x', pgH);
         if (!rect || !pgW || !pgH) { console.log('SKIPPED — missing rect or page size.'); return; }
 
@@ -3018,6 +3076,9 @@ async function loadPdf(file) {
     state.pdfLibDoc  = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
     const n          = state.pdfLibDoc.getPageCount();
     state.pageOrder  = Array.from({ length: n }, (_, i) => i);
+    state.pageRots   = state.pageOrder.map(() => 0);   // nothing turned yet (1.15)
+    state.selectedPages = new Set([0]);
+    state.pageClipboard = null;                         // copied pages belong to the PDF they came from
     state.overlays   = [];
     state.fieldValues = {};
     state.currentPage = 0;
@@ -3043,8 +3104,8 @@ async function loadPdf(file) {
     hideContextBar();
 
     dom.btnDownload.disabled     = false;
-    dom.btnAdd.disabled          = false;
-    dom.btnSelectPages.disabled  = false;
+    dom.btnAddBlank.disabled     = false;
+    dom.btnInsertPdf.disabled    = false;
     toast(`Loaded: ${file.name} (${n} page${n !== 1 ? 's' : ''})`);
   } catch (e) {
     console.error(e);
@@ -3062,94 +3123,95 @@ async function loadPdfJs(bytes) {
    THUMBNAILS
 ══════════════════════════════════════════ */
 async function renderAllThumbnails() {
-  dom.pageList.innerHTML = '';
-  dom.pageCount.textContent = state.pageOrder.length;
-  for (let i = 0; i < state.pageOrder.length; i++) {
-    dom.pageList.appendChild(await buildThumb(i));
-  }
+  // If the keyboard was in the filmstrip, keep it there after the rebuild.
+  const hadFocus = dom.pageList.contains(document.activeElement);
+  // Build every thumbnail first, then swap them in at once (no flicker, and a
+  // second rebuild that starts meanwhile cannot leave a half-filled strip).
+  const build = (state.thumbBuild = (state.thumbBuild || 0) + 1);
+  const thumbs = [];
+  for (let i = 0; i < state.pageOrder.length; i++) thumbs.push(await buildThumb(i));
+  if (build !== state.thumbBuild) return;          // a newer rebuild has taken over
+  dom.pageList.replaceChildren(...thumbs);
+  updateThumbStates();
+  if (hadFocus) { const t = dom.pageList.querySelector(`[data-idx="${state.currentPage}"]`); if (t) t.focus({ preventScroll: true }); }
 }
 
+/**
+ * One page in the filmstrip (1.15, the DSKEDTR look): a small picture of
+ * the page (turned the way it is turned) with its number underneath. It is
+ * an "option" in a listbox, so screen readers hear "Page 3, selected".
+ * Only the page showing is in the Tab order; arrow keys move between pages.
+ */
 async function buildThumb(idx) {
   const page     = await state.pdfJsDoc.getPage(state.pageOrder[idx] + 1);
-  const viewport = page.getViewport({ scale: 0.22 });
+  const rotation = normRot(page.rotate + (state.pageRots[idx] || 0));
+  const viewport = page.getViewport({ scale: 0.22, rotation });
 
   const div = document.createElement('div');
-  div.className = 'page-thumb' + (idx === state.currentPage ? ' active' : '');
-  div.setAttribute('role', 'listitem');
+  div.className = 'page-thumb';
+  div.setAttribute('role', 'option');
   div.setAttribute('draggable', 'true');
   div.dataset.idx = idx;
-  div.tabIndex = 0;
-  div.setAttribute('aria-label', `Page ${idx + 1}`);
+  div.tabIndex = -1;
+  div.setAttribute('aria-label', `Page ${idx + 1}` + (state.pageRots[idx] ? `, turned ${state.pageRots[idx]} degrees` : ''));
 
+  // The picture, drawn a little sharper than its size for high-density screens.
+  const ratio = Math.min(window.devicePixelRatio || 1, 2);
   const cv  = document.createElement('canvas');
-  cv.width  = viewport.width;
-  cv.height = viewport.height;
+  cv.width  = Math.round(viewport.width * ratio);
+  cv.height = Math.round(viewport.height * ratio);
+  cv.style.width = viewport.width + 'px';
   cv.setAttribute('aria-hidden', 'true');
-  await page.render({ canvasContext: cv.getContext('2d'), viewport }).promise;
+  await page.render({ canvasContext: cv.getContext('2d'), viewport,
+                      transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : null }).promise;
 
+  // The page number under the picture. A tick shows next to it when several
+  // pages are picked (so the choice is not shown by colour alone).
   const lbl = document.createElement('div');
   lbl.className = 'thumb-label';
   lbl.textContent = idx + 1;
 
-  const del = document.createElement('button');
-  del.className = 'thumb-del';
-  del.textContent = '×';
-  del.setAttribute('aria-label', `Delete page ${idx + 1}`);
-  del.addEventListener('click', e => { e.stopPropagation(); deletePage(idx); });
+  div.append(cv, lbl);
 
-  div.appendChild(cv); div.appendChild(lbl); div.appendChild(del);
-
-  // Checkbox for multi-select mode — always in DOM, shown/hidden by CSS
-  const cbWrap = document.createElement('div');
-  cbWrap.className = 'thumb-check-wrap';
-  cbWrap.setAttribute('aria-hidden', 'true');
-  const cb = document.createElement('input');
-  cb.type = 'checkbox'; cb.className = 'thumb-cb';
-  cb.checked = state.selectedPages.has(idx);
-  cb.setAttribute('aria-label', `Select page ${idx + 1}`);
-  cb.addEventListener('click',  e => {
-    e.stopPropagation(); // always prevent bubble to thumbnail div
-    if (e.shiftKey) {
-      // Range-select via the same handler the thumbnail uses, so behaviour
-      // is identical whether the user Shift+clicks the checkbox or the image.
-      e.preventDefault();              // don't toggle the checkbox directly
-      handlePageSelectClick(idx, true); // range select will sync the checkbox state
+  /* Click or tap:
+       plain       show this page, pick just it, and open the page pill
+       Ctrl / Cmd  add this page to the pick, or take it out
+       Shift       pick every page from the last one clicked to this one */
+  div.addEventListener('click', async e => {
+    if (e.shiftKey && state.lastClickedPage != null) {
+      const lo = Math.min(state.lastClickedPage, idx), hi = Math.max(state.lastClickedPage, idx);
+      state.selectedPages = new Set(Array.from({ length: hi - lo + 1 }, (_, k) => lo + k));
+    } else if (e.ctrlKey || e.metaKey) {
+      if (state.selectedPages.has(idx) && state.selectedPages.size > 1) state.selectedPages.delete(idx);
+      else state.selectedPages.add(idx);
+      state.lastClickedPage = idx;
+    } else {
+      setPicked([idx]);
     }
-    // Non-shift clicks: let the browser toggle the checkbox; 'change' fires next.
+    if (!e.ctrlKey && !e.metaKey || state.selectedPages.has(idx)) {
+      if (idx !== state.currentPage) await selectPage(idx, false);
+    }
+    updateThumbStates();
+    openPagePill(idx);
   });
-  cb.addEventListener('change', () => {
-    if (cb.checked) state.selectedPages.add(idx);
-    else             state.selectedPages.delete(idx);
-    state.lastClickedPage = idx;
-    updatePageSelectionUI();
+  // Right-click (or a long press) opens the same page actions.
+  div.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (!state.selectedPages.has(idx)) { setPicked([idx]); selectPage(idx, false).then(updateThumbStates); }
+    openPagePill(idx);
+    const first = dom.pagePill.querySelector('button:not([aria-disabled="true"])');
+    if (first) first.focus();
   });
-  cbWrap.appendChild(cb);
-  div.appendChild(cbWrap);
 
-  // Click: navigate in normal mode; select/range-select in selection mode
-  div.addEventListener('click', e => {
-    if (e.target === cb) return; // checkbox already handled
-    if (state.pageSelectionMode) handlePageSelectClick(idx, e.shiftKey);
-    else selectPage(idx);
-  });
-  div.addEventListener('keydown', async e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectPage(idx); return; }
-    // Left/Right step through the filmstrip; with Alt held they MOVE this page
-    // (the keyboard version of dragging a thumbnail). stopPropagation keeps
-    // the app-wide arrow keys (next/previous page) out of it.
-    const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-    if (!step) return;
-    e.preventDefault(); e.stopPropagation();
-    const to = idx + step;
-    if (to < 0 || to >= state.pageOrder.length) return;
-    if (e.altKey) { await reorderPage(idx, to); toast('Moved page ' + (idx + 1) + ' to position ' + (to + 1) + '.'); }
-    const target = dom.pageList.querySelector('[data-idx="' + to + '"]');
-    if (target) target.focus();
-  });
+  div.addEventListener('keydown', e => filmKeydown(e, idx));
+
+  /* Drag and drop with a mouse moves a page (the pill's Move buttons, and
+     Alt + arrow keys, do the same without dragging). */
   div.addEventListener('dragstart', e => {
     e.dataTransfer.setData('text/plain', String(idx));
     e.dataTransfer.effectAllowed = 'move';
     div.classList.add('dragging');
+    closePagePill();
   });
   div.addEventListener('dragend', () => div.classList.remove('dragging'));
   div.addEventListener('dragover', e => { e.preventDefault(); div.classList.add('drag-over'); });
@@ -3157,20 +3219,184 @@ async function buildThumb(idx) {
   div.addEventListener('drop', async e => {
     e.preventDefault(); div.classList.remove('drag-over');
     const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
-    if (from !== idx) await reorderPage(from, idx);
+    if (Number.isInteger(from) && from !== idx) await reorderPage(from, idx);
   });
   return div;
 }
 
+/** Show which page is on screen and which are picked, without redrawing the pictures. */
+function updateThumbStates() {
+  const many = state.selectedPages.size > 1;
+  dom.pageList.classList.toggle('many', many);
+  dom.pageList.querySelectorAll('.page-thumb').forEach((el) => {
+    const i = Number(el.dataset.idx);
+    const picked = state.selectedPages.has(i);
+    el.classList.toggle('active', i === state.currentPage);
+    el.setAttribute('aria-selected', String(picked));
+    el.tabIndex = i === state.currentPage ? 0 : -1;    // one Tab stop for the whole strip
+  });
+}
+
+/* Keyboard in the filmstrip. Which keys are ours is decided straight away
+   (before anything slow happens), so the app-wide keys - next page, nudge,
+   copy an element - never act on the same key press as well. */
+const FILM_KEYS = ['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', ' ', 'Delete', 'Backspace', 'Escape'];
+async function filmKeydown(e, idx) {
+  const count = state.pageOrder.length;
+  const mod = e.ctrlKey || e.metaKey;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const ours = FILM_KEYS.includes(e.key) || (k === 'r' && !mod) || (mod && ['d', 'c', 'x', 'v'].includes(k));
+  if (!ours) return;
+  e.preventDefault(); e.stopPropagation();
+  const focusThumb = (i) => { const t = dom.pageList.querySelector(`[data-idx="${i}"]`); if (t) { t.focus(); t.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } };
+  const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+  if (step && e.altKey) {                          // move the picked pages
+    if (!state.selectedPages.has(idx)) setPicked([idx]);
+    await movePages(step);
+    focusThumb(state.currentPage);
+  } else if (step) {                               // go to the next page (Shift: and add it to the pick)
+    const to = Math.max(0, Math.min(count - 1, idx + step));
+    if (e.shiftKey) { state.selectedPages.add(idx); state.selectedPages.add(to); state.lastClickedPage = to; }
+    else setPicked([to]);
+    await selectPage(to, false);
+    updateThumbStates(); focusThumb(to); openPagePill(to);
+  } else if (e.key === 'Home' || e.key === 'End') {
+    const to = e.key === 'Home' ? 0 : count - 1;
+    setPicked([to]); await selectPage(to, false); updateThumbStates(); focusThumb(to); openPagePill(to);
+  } else if (e.key === ' ' && mod) {               // Ctrl+Space: pick or unpick this page
+    if (state.selectedPages.has(idx) && state.selectedPages.size > 1) state.selectedPages.delete(idx); else state.selectedPages.add(idx);
+    updateThumbStates(); openPagePill(idx);
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    setPicked([idx]); await selectPage(idx, false); updateThumbStates(); openPagePill(idx);
+  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    await deletePages(); focusThumb(state.currentPage);
+  } else if (k === 'r') {
+    await rotatePages(e.shiftKey ? -1 : 1); focusThumb(state.currentPage);
+  } else if (k === 'd') {
+    await duplicatePages(); focusThumb(state.currentPage);
+  } else if (k === 'c') {
+    copyPages();
+  } else if (k === 'x') {
+    await cutPages(); focusThumb(state.currentPage);
+  } else if (k === 'v') {
+    await pastePages(); focusThumb(state.currentPage);
+  } else if (e.key === 'Escape') {
+    closePagePill();
+  }
+}
+
+/* ── The page pill (1.15) ──
+   A small bar of page actions that floats just above the page you clicked,
+   the same as DSKEDTR's. A greyed button (aria-disabled) cannot act right
+   now: the first page cannot move left, Paste needs something copied, and
+   the last page cannot be deleted. */
+let pillFor = null;                                // which page the pill sits over
+let pillHold = false;                              // true while focus goes back to a page after Escape
+function openPagePill(idx) {
+  const thumb = dom.pageList.querySelector(`[data-idx="${idx}"]`);
+  if (!thumb) return;
+  pillFor = idx;
+  dom.pagePill.hidden = false;
+  updatePagePill();
+  positionPagePill();
+}
+function closePagePill() { dom.pagePill.hidden = true; pillFor = null; }
+/** Centre the pill above its page, kept inside the filmstrip's width. */
+function positionPagePill() {
+  if (dom.pagePill.hidden || pillFor == null) return;
+  const thumb = dom.pageList.querySelector(`[data-idx="${pillFor}"]`);
+  if (!thumb) { closePagePill(); return; }
+  const strip = dom.sidebar.getBoundingClientRect(), t = thumb.getBoundingClientRect();
+  const w = dom.pagePill.offsetWidth;
+  const left = Math.max(4, Math.min(strip.width - w - 4, t.left - strip.left + t.width / 2 - w / 2));
+  dom.pagePill.style.left = left + 'px';
+}
+/** Grey out what cannot be done, and say how many pages each button acts on. */
+function updatePagePill() {
+  if (dom.pagePill.hidden) return;
+  const list = pickedPages(), n = list.length, count = state.pageOrder.length;
+  const what = n === 1 ? 'this page' : `these ${n} pages`;
+  const set = (act, enabled, label) => {
+    const b = dom.pagePill.querySelector(`[data-pact="${act}"]`);
+    b.setAttribute('aria-disabled', String(!enabled));
+    if (label) { b.setAttribute('aria-label', label); b.dataset.tip = label; }
+  };
+  set('left', list[0] > 0, 'Move ' + what + ' left');
+  set('right', list[n - 1] < count - 1, 'Move ' + what + ' right');
+  set('rotl', true, 'Turn ' + what + ' left');
+  set('rotr', true, 'Turn ' + what + ' right');
+  set('duplicate', true, 'Duplicate ' + what);
+  set('copy', true, 'Copy ' + what);
+  set('cut', n < count, 'Cut ' + what);
+  set('paste', !!(state.pageClipboard && state.pageClipboard.length), 'Paste after page ' + (state.currentPage + 1));
+  set('save', true, 'Save ' + what + ' as a separate PDF');
+  set('delete', n < count, 'Delete ' + what);
+}
+dom.pagePill.addEventListener('click', async e => {
+  const b = e.target.closest('button[data-pact]');
+  if (!b || b.getAttribute('aria-disabled') === 'true') return;
+  const act = b.dataset.pact;
+  if (act === 'left') await movePages(-1);
+  else if (act === 'right') await movePages(1);
+  else if (act === 'rotl') await rotatePages(-1);
+  else if (act === 'rotr') await rotatePages(1);
+  else if (act === 'duplicate') await duplicatePages();
+  else if (act === 'copy') copyPages();
+  else if (act === 'cut') await cutPages();
+  else if (act === 'paste') await pastePages();
+  else if (act === 'save') await downloadPdf({ pages: pickedPages() });
+  else if (act === 'delete') await deletePages();
+  // Keep the keyboard on the same button when it is still there.
+  const again = dom.pagePill.hidden ? null : dom.pagePill.querySelector(`[data-pact="${act}"]`);
+  if (again && document.activeElement === document.body) again.focus();
+});
+// Arrow keys move between the pill's buttons; Escape goes back to the page.
+dom.pagePill.addEventListener('keydown', e => {
+  const btns = [...dom.pagePill.querySelectorAll('button')];
+  const i = btns.indexOf(document.activeElement);
+  let next = null;
+  if (e.key === 'ArrowRight') next = (i + 1) % btns.length;
+  else if (e.key === 'ArrowLeft') next = (i - 1 + btns.length) % btns.length;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = btns.length - 1;
+  else if (e.key === 'Escape') {
+    e.preventDefault(); e.stopPropagation();
+    const t = dom.pageList.querySelector(`[data-idx="${pillFor ?? state.currentPage}"]`);
+    closePagePill();
+    pillHold = true; if (t) t.focus(); pillHold = false;   // back to the page, without reopening the pill
+    return;
+  } else return;
+  e.preventDefault(); e.stopPropagation();
+  btns[next].focus();
+});
+// The keyboard arriving in the filmstrip opens the pill over the page showing.
+dom.pageList.addEventListener('focusin', e => {
+  const t = e.target.closest('.page-thumb');
+  if (t && t.matches(':focus-visible') && !pillHold) openPagePill(Number(t.dataset.idx));
+});
+// A press anywhere outside the filmstrip closes the pill.
+document.addEventListener('pointerdown', e => {
+  if (!dom.pagePill.hidden && !e.target.closest('#sidebar')) closePagePill();
+}, true);
+// The strip scrolls sideways: keep the pill over its page.
+dom.pageList.addEventListener('scroll', positionPagePill, { passive: true });
+window.addEventListener('resize', positionPagePill);
+
 /* ══════════════════════════════════════════
    PAGE DISPLAY
 ══════════════════════════════════════════ */
-async function selectPage(idx) {
+/** Show page idx. pickIt = true (the usual) also makes it the only picked page. */
+async function selectPage(idx, pickIt = true) {
   state.currentPage = idx;
+  if (pickIt) setPicked([idx]);
   await renderCurrentPage();
-  document.querySelectorAll('.page-thumb').forEach((el, i) =>
-    el.classList.toggle('active', i === idx)
-  );
+  updateThumbStates();
+  if (!dom.pagePill.hidden && pickIt) closePagePill();
+}
+
+/** The pdf.js viewport for page slot idx at a zoom, turned the way the slot is turned (1.15). */
+function slotViewport(page, idx, scale) {
+  return page.getViewport({ scale, rotation: normRot(page.rotate + (state.pageRots[idx] || 0)) });
 }
 
 /* The page's size on screen, in CSS pixels. Every overlay is placed in
@@ -3181,7 +3407,7 @@ function pageH() { return state.pageCssH || 0; }
 async function renderCurrentPage() {
   if (!state.pdfJsDoc) return;
   const page     = await state.pdfJsDoc.getPage(state.pageOrder[state.currentPage] + 1);
-  const viewport = page.getViewport({ scale: state.scale });
+  const viewport = slotViewport(page, state.currentPage, state.scale);   // turned, if the page is (1.15)
   /* Sharp on high-density screens (Retina, phones): the canvas holds
      devicePixelRatio times as many pixels as it takes up on screen, and pdf.js
      draws into it at that size. Capped at 3x, and kept under ~16 million
@@ -3199,11 +3425,19 @@ async function renderCurrentPage() {
   dom.pageCanvas.height = Math.round(viewport.height * ratio);
   dom.pageCanvas.style.width  = viewport.width  + 'px';
   dom.pageCanvas.style.height = viewport.height + 'px';
-  await page.render({
+  /* Only one drawing at a time on the page canvas (1.15): if one is still
+     going (a quick zoom, a page turned twice in a row), stop it first -
+     pdf.js refuses to draw on a canvas that is already being drawn on. */
+  if (state.renderTask) { state.renderTask.cancel(); try { await state.renderTask.promise; } catch { /* cancelled */ } }
+  const task = page.render({
     canvasContext: dom.pageCanvas.getContext('2d'),
     viewport,
     transform: ratio !== 1 ? [ratio, 0, 0, ratio, 0, 0] : null,   // draw at device pixels
-  }).promise;
+  });
+  state.renderTask = task;
+  try { await task.promise; }
+  catch (err) { if (err && err.name === 'RenderingCancelledException') return; throw err; }
+  finally { if (state.renderTask === task) state.renderTask = null; }
   refreshOverlays();
   if (state.selectedId) {
     const el = dom.overlayEl.querySelector(`[data-id="${state.selectedId}"]`);
@@ -3212,31 +3446,222 @@ async function renderCurrentPage() {
 }
 
 /* ══════════════════════════════════════════
-   PAGE MANAGEMENT
+   PAGES (1.15)
+   ─────────────────────────────────────────
+   The document is a row of page "slots". Slot i shows:
+     state.pageOrder[i]  which page of the PDF (pdf-lib / pdf.js page index)
+     state.pageRots[i]   how far it is turned, on top of the PDF's own
+                         turn: 0, 90, 180 or 270 degrees clockwise
+   Each slot also owns the things placed on it (overlays whose
+   pageDisplayIndex is i). Two slots may show the same PDF page - that is
+   what Duplicate makes - each with its own turn and its own overlays.
+
+   Every change to the pages (move, delete, duplicate, paste, add, rotate)
+   goes through applyPageLayout(), so the three lists can never fall out
+   of step.
 ══════════════════════════════════════════ */
-async function deletePage(idx) {
-  if (state.pageOrder.length <= 1) { toast('Cannot delete the only page.', 'err'); return; }
-  if (!confirm(`Delete page ${idx + 1}?`)) return;
-  snapshot(); // capture state before deletion so it can be undone
-  state.pageOrder.splice(idx, 1);
-  state.overlays = state.overlays
-    .filter(o => o.pageDisplayIndex !== idx)
-    .map(o => ({ ...o, pageDisplayIndex: o.pageDisplayIndex > idx ? o.pageDisplayIndex - 1 : o.pageDisplayIndex }));
-  if (state.currentPage >= state.pageOrder.length) state.currentPage = state.pageOrder.length - 1;
-  await renderAllThumbnails();
-  await renderCurrentPage();
-  toast('Page deleted.');
+
+/** A page's turn as a tidy 0 / 90 / 180 / 270. */
+function normRot(deg) { return ((Math.round((deg || 0) / 90) * 90) % 360 + 360) % 360; }
+
+/** How far slot i is turned in all: the PDF's own turn plus ours. */
+function slotRotation(i) {
+  const page = state.pdfLibDoc.getPage(state.pageOrder[i]);
+  return normRot(page.getRotation().angle + (state.pageRots[i] || 0));
+}
+/** Slot i's size in points as it looks (width and height swap when it is turned on its side). */
+function slotViewSize(i) {
+  const { width, height } = state.pdfLibDoc.getPage(state.pageOrder[i]).getSize();
+  return slotRotation(i) % 180 ? { w: height, h: width } : { w: width, h: height };
 }
 
-async function reorderPage(from, to) {
-  snapshot(); // capture order before the drag-drop reorder
-  const [moved] = state.pageOrder.splice(from, 1);
-  state.pageOrder.splice(to, 0, moved);
-  if (state.currentPage === from) state.currentPage = to;
-  else if (from < state.currentPage && to >= state.currentPage) state.currentPage--;
-  else if (from > state.currentPage && to <= state.currentPage) state.currentPage++;
+/**
+ * Rebuild the pages from a layout: one entry per slot, in the new order.
+ *   { from: i }              an existing slot (its overlays come with it;
+ *                            if the same slot is listed again, the extra
+ *                            copies get copies of its overlays)
+ *   { from: i, rot: 90 }     the same, with a new turn
+ *   { src: n, rot: 0, overlays: [...] }   a new slot showing PDF page n,
+ *                            with these overlays (copies are made)
+ * Slots left out are deleted, with their overlays.
+ * Returns the new index of each old slot (its first appearance), or -1.
+ */
+function applyPageLayout(layout) {
+  const oldOrder = state.pageOrder, oldRots = state.pageRots;
+  const newOrder = [], newRots = [], newOverlays = [];
+  const firstSeen = new Array(oldOrder.length).fill(-1);
+  layout.forEach((entry, newIdx) => {
+    if (entry.from != null) {
+      const i = entry.from;
+      newOrder.push(oldOrder[i]);
+      newRots.push(normRot(entry.rot ?? oldRots[i] ?? 0));
+      const copying = firstSeen[i] !== -1;          // seen before: this is a duplicate
+      if (!copying) firstSeen[i] = newIdx;
+      for (const ov of state.overlays) {
+        if (ov.pageDisplayIndex !== i) continue;
+        newOverlays.push(copying ? { ...JSON.parse(JSON.stringify(ov)), id: uid(), name: undefined, pageDisplayIndex: newIdx }
+                                 : { ...ov, pageDisplayIndex: newIdx });
+      }
+    } else {
+      newOrder.push(entry.src);
+      newRots.push(normRot(entry.rot || 0));
+      for (const ov of entry.overlays || []) {
+        newOverlays.push({ ...JSON.parse(JSON.stringify(ov)), id: uid(), pageDisplayIndex: newIdx });
+      }
+    }
+  });
+  // A copied form field needs its own name in the PDF, so drop the old one
+  // (a fresh unique name is made on download); copied names get renumbered.
+  const seenNames = new Set();
+  for (const ov of newOverlays) {
+    if (ov.fieldName) { if (seenNames.has(ov.fieldName)) delete ov.fieldName; else seenNames.add(ov.fieldName); }
+    if (!ov.name && !['textfield', 'checkbox', 'dropdown'].includes(ov.type)) {
+      state.nameCounter++;
+      ov.name = `${TYPE_LABELS[ov.type] || 'Object'} ${state.nameCounter}`;
+    }
+  }
+  state.pageOrder = newOrder;
+  state.pageRots  = newRots;
+  state.overlays  = newOverlays;
+  state.selectedId = null;
+  return firstSeen;
+}
+
+/** The slots currently picked in the filmstrip, in page order (at least the page showing). */
+function pickedPages() {
+  const list = [...state.selectedPages].filter((i) => i >= 0 && i < state.pageOrder.length).sort((a, b) => a - b);
+  return list.length ? list : [state.currentPage];
+}
+/** Pick exactly these slots. */
+function setPicked(list) {
+  state.selectedPages = new Set(list);
+  state.lastClickedPage = list.length ? list[list.length - 1] : null;
+}
+
+/** After a page change: redraw the filmstrip and the page, and keep the pill in place. */
+async function afterPageChange(goTo, picked) {
+  state.currentPage = Math.max(0, Math.min(state.pageOrder.length - 1, goTo));
+  setPicked(picked || [state.currentPage]);
+  hideContextBar();
   await renderAllThumbnails();
   await renderCurrentPage();
+  backup.touch();
+}
+
+/** Delete the picked pages (or the one given), with their overlays. Keeps at least one page. */
+async function deletePages(list = pickedPages()) {
+  if (list.length >= state.pageOrder.length) { toast('A PDF needs at least one page, so the last page stays.', 'err'); return; }
+  snapshot();
+  const gone = new Set(list);
+  const layout = state.pageOrder.map((_, i) => ({ from: i })).filter((e) => !gone.has(e.from));
+  applyPageLayout(layout);
+  await afterPageChange(Math.min(list[0], state.pageOrder.length - 1));
+  closePagePill();
+  toast(list.length === 1 ? 'Page deleted. Undo (Ctrl+Z) brings it back.' : `${list.length} pages deleted. Undo (Ctrl+Z) brings them back.`);
+}
+/** Kept for older callers: delete one page. */
+async function deletePage(idx) { return deletePages([idx]); }
+
+/** Move the picked pages one place left (-1) or right (+1), as a block. */
+async function movePages(step, list = pickedPages()) {
+  const first = list[0], last = list[list.length - 1];
+  if (step < 0 && first === 0) return;
+  if (step > 0 && last === state.pageOrder.length - 1) return;
+  snapshot();
+  const idx = state.pageOrder.map((_, i) => i);
+  const block = idx.filter((i) => list.includes(i));
+  const rest = idx.filter((i) => !list.includes(i));
+  // Where the block goes among the other pages: one place further along.
+  const before = rest.filter((i) => i < first).length + step;
+  const order = [...rest.slice(0, before), ...block, ...rest.slice(before)];
+  const map = applyPageLayout(order.map((i) => ({ from: i })));
+  await afterPageChange(map[state.currentPage] ?? 0, list.map((i) => map[i]));
+  openPagePill(state.currentPage);
+}
+/** Drag and drop in the filmstrip: put page `from` where page `to` is. */
+async function reorderPage(from, to) {
+  if (from === to) return;
+  snapshot();
+  const order = state.pageOrder.map((_, i) => i);
+  order.splice(to, 0, order.splice(from, 1)[0]);
+  const map = applyPageLayout(order.map((i) => ({ from: i })));
+  await afterPageChange(map[state.currentPage] ?? 0, [map[from]]);
+}
+
+/** Turn the picked pages 90 degrees: +1 clockwise, -1 the other way. Overlays turn with them. */
+async function rotatePages(dir, list = pickedPages()) {
+  snapshot();
+  const turn = dir > 0 ? 90 : -90;
+  const pickedSet = new Set(list);
+  // Each overlay moves with its spot on the paper (its middle turns with
+  // the page), but keeps its size and stays upright, so a text box is still
+  // a readable line of text after the turn. Overlays are placed as fractions
+  // of the page as it looks, so the fractions are worked out again for the
+  // turned page, whose width and height have swapped.
+  for (const ov of state.overlays) {
+    if (!pickedSet.has(ov.pageDisplayIndex)) continue;
+    const { w: vw, h: vh } = slotViewSize(ov.pageDisplayIndex);   // before the turn
+    const r = vw / vh;
+    const cx = ov.fracLeft + ov.fracW / 2, cy = ov.fracTop + ov.fracH / 2;
+    const ncx = dir > 0 ? 1 - cy : cy, ncy = dir > 0 ? cx : 1 - cx;
+    ov.fracW = Math.min(1, ov.fracW * r);     // same width in points, on a page now vh wide
+    ov.fracH = Math.min(1, ov.fracH / r);
+    ov.fracLeft = Math.max(0, Math.min(1 - ov.fracW, ncx - ov.fracW / 2));
+    ov.fracTop  = Math.max(0, Math.min(1 - ov.fracH, ncy - ov.fracH / 2));
+  }
+  applyPageLayout(state.pageOrder.map((_, i) => ({ from: i, rot: pickedSet.has(i) ? (state.pageRots[i] || 0) + turn : state.pageRots[i] })));
+  await afterPageChange(state.currentPage, list);
+  openPagePill(state.currentPage);
+  toast((list.length === 1 ? 'Page' : list.length + ' pages') + ' turned ' + (dir > 0 ? 'right.' : 'left.'));
+}
+
+/** Copies of the picked pages (with everything on them), right after the last one. */
+async function duplicatePages(list = pickedPages()) {
+  snapshot();
+  const last = list[list.length - 1];
+  const layout = [];
+  state.pageOrder.forEach((_, i) => {
+    layout.push({ from: i });
+    if (i === last) list.forEach((j) => layout.push({ from: j }));
+  });
+  applyPageLayout(layout);
+  const firstCopy = last + 1;
+  await afterPageChange(firstCopy, list.map((_, k) => firstCopy + k));
+  openPagePill(state.currentPage);
+  toast(list.length === 1 ? 'Page duplicated.' : `${list.length} pages duplicated.`);
+}
+
+/* Copy, cut and paste pages. The page clipboard lives in this tab only and
+   holds which PDF pages, their turns and copies of their overlays - so it
+   only pastes into the same PDF (opening another PDF empties it). */
+function copyPages(list = pickedPages()) {
+  state.pageClipboard = list.map((i) => ({
+    src: state.pageOrder[i],
+    rot: state.pageRots[i] || 0,
+    overlays: JSON.parse(JSON.stringify(state.overlays.filter((o) => o.pageDisplayIndex === i))),
+  }));
+  updatePagePill();
+  toast(list.length === 1 ? 'Page copied. Paste puts it after the page you pick.' : `${list.length} pages copied.`);
+}
+async function cutPages(list = pickedPages()) {
+  if (list.length >= state.pageOrder.length) { toast('A PDF needs at least one page, so you cannot cut them all. Copy them instead.', 'err'); return; }
+  copyPages(list);
+  await deletePages(list);
+  toast(list.length === 1 ? 'Page cut. Pick a page and Paste to put it after it.' : `${list.length} pages cut.`);
+}
+async function pastePages(after = state.currentPage) {
+  const clip = state.pageClipboard;
+  if (!clip || !clip.length) { toast('Nothing to paste yet. Copy or cut a page first.', 'err'); return; }
+  snapshot();
+  const layout = [];
+  state.pageOrder.forEach((_, i) => {
+    layout.push({ from: i });
+    if (i === after) clip.forEach((c) => layout.push({ src: c.src, rot: c.rot, overlays: c.overlays }));
+  });
+  applyPageLayout(layout);
+  await afterPageChange(after + 1, clip.map((_, k) => after + 1 + k));
+  openPagePill(state.currentPage);
+  toast(clip.length === 1 ? 'Page pasted.' : `${clip.length} pages pasted.`);
 }
 
 /* ══════════════════════════════════════════
@@ -3287,7 +3712,7 @@ function buildOverlayEl(ov, cw, ch) {
     applyTextStyles(ta, ov, cw, ch);
     ta.addEventListener('input', () => { snapshotOnce(); ov.content = ta.value; });
     // Clicking inside textarea selects the overlay without starting a drag
-    ta.addEventListener('mousedown', e => e.stopPropagation());
+    ta.addEventListener('pointerdown', e => e.stopPropagation());
     bg.appendChild(ta);
     el.appendChild(bg);
 
@@ -3332,7 +3757,7 @@ function buildOverlayEl(ov, cw, ch) {
     applyStickyTextStyles(ta, ov);
     ta.setAttribute('aria-label', 'Sticky note text');
     ta.addEventListener('input', () => { snapshotOnce(); ov.content = ta.value; });
-    ta.addEventListener('mousedown', e => e.stopPropagation());
+    ta.addEventListener('pointerdown', e => e.stopPropagation());
     wrap.appendChild(ta);
     el.appendChild(wrap);
 
@@ -3364,7 +3789,7 @@ function buildOverlayEl(ov, cw, ch) {
       inp.style.padding  = '0 ' + fieldPad + 'px';
       inp.setAttribute('aria-label', ov.fieldName || 'Text field');
       inp.addEventListener('input',     () => { snapshotOnce(); ov.defaultValue = inp.value; });
-      inp.addEventListener('mousedown', e  => { selectOverlay(ov.id); e.stopPropagation(); });
+      inp.addEventListener('pointerdown', e  => { selectOverlay(ov.id); e.stopPropagation(); });
       el.appendChild(inp);
 
     } else if (ov.type === 'checkbox') {
@@ -3381,7 +3806,7 @@ function buildOverlayEl(ov, cw, ch) {
       cb.setAttribute('aria-label', ov.fieldName || 'Checkbox');
       cb.title = ov.fieldName || 'Checkbox';
       cb.addEventListener('change',    () => { snapshotOnce(); ov.defaultChecked = cb.checked; });
-      cb.addEventListener('mousedown', e  => { selectOverlay(ov.id); e.stopPropagation(); });
+      cb.addEventListener('pointerdown', e  => { selectOverlay(ov.id); e.stopPropagation(); });
       el.appendChild(cb);
 
     } else if (ov.type === 'dropdown') {
@@ -3405,7 +3830,7 @@ function buildOverlayEl(ov, cw, ch) {
         sel.appendChild(ph);
       }
       sel.addEventListener('change',    () => { snapshotOnce(); ov.defaultValue = sel.value; });
-      sel.addEventListener('mousedown', e  => { selectOverlay(ov.id); e.stopPropagation(); });
+      sel.addEventListener('pointerdown', e  => { selectOverlay(ov.id); e.stopPropagation(); });
       el.appendChild(sel);
     }
   }
@@ -3439,7 +3864,7 @@ function buildOverlayEl(ov, cw, ch) {
      Only selects. Turning the contents live is handled on mouse-UP inside
      wireMove, so that a click-and-drag on an already-selected text box
      still moves it instead of dropping a caret into it. */
-  el.addEventListener('mousedown', e => {
+  el.addEventListener('pointerdown', e => {
     if (e.target === del || e.target === rz) return;
     if (state.selectedId !== ov.id) selectOverlay(ov.id, el);
   });
@@ -3531,19 +3956,19 @@ function wireRotate(knob, ov, el) {
     applyImageStyles(el, el.querySelector('.ov-img'), ov);
   };
 
-  knob.addEventListener('mousedown', e => {
+  knob.addEventListener('pointerdown', e => {
     e.preventDefault(); e.stopPropagation();
     snapshot();
     const onMove = e2 => applyAngle(e2.clientX, e2.clientY, e2.shiftKey);
     const up = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', up);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', up);
       // Rebuild the bar so its rotation readout catches up. Its position is
       // deliberately left alone - see the note on updateImageInDom.
       if (state.selectedId === ov.id && state.selectMode === 'format') buildContextBar(ov);
     };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', up);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', up);
   });
 
   /* Keyboard: the knob is a real button, so arrows turn it 5° at a time. */
@@ -4201,8 +4626,12 @@ function clearGuideLines() {
   dom.guideLines.innerHTML = '';
 }
 
+/* 1.15: moving, resizing and turning use pointer events (not mouse events),
+   so they work the same with a mouse, a pen or a finger. */
 function wireMove(el, ov, rzHandle) {
-  el.addEventListener('mousedown', e => {
+  el.addEventListener('pointerdown', e => {
+    // Only the main button, and only the first finger (a second finger is a pinch).
+    if (e.button > 0 || !e.isPrimary) return;
     if (e.target.classList.contains('ov-del') ||
         e.target.classList.contains('ov-resize') ||
         e.target.classList.contains('ov-rotate') ||
@@ -4232,8 +4661,8 @@ function wireMove(el, ov, rzHandle) {
     };
     const up = () => {
       clearGuideLines();
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', up);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', up);
 
       /*
        * A click that never became a drag, on an object that was already
@@ -4246,11 +4675,11 @@ function wireMove(el, ov, rzHandle) {
         enterFormatMode(ov, true);
       }
     };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', up);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', up);
   });
 
-  rzHandle.addEventListener('mousedown', e => {
+  rzHandle.addEventListener('pointerdown', e => {
     e.preventDefault(); e.stopPropagation();
     snapshot(); // snapshot BEFORE resize so original size is restorable
     const sx = e.clientX, sy = e.clientY;
@@ -4319,9 +4748,9 @@ function wireMove(el, ov, rzHandle) {
       if (ov.type === 'shape') updateShapeInDom(ov);
       if (state.selectedId === ov.id) positionContextBar(el);
     };
-    const up = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', up); };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', up);
+    const up = () => { document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', up); };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', up);
   });
 }
 
@@ -5025,7 +5454,7 @@ function buildObjectBar(ov) {
  * guide lines as dragging the object itself.
  */
 function wireBarDrag(gripEl, ov) {
-  gripEl.addEventListener('mousedown', e => {
+  gripEl.addEventListener('pointerdown', e => {
     e.preventDefault();
     const el = dom.overlayEl.querySelector(`[data-id="${ov.id}"]`);
     if (!el) return;
@@ -5048,11 +5477,11 @@ function wireBarDrag(gripEl, ov) {
     };
     const up = () => {
       clearGuideLines();
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', up);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', up);
     };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', up);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', up);
   });
 }
 
@@ -5598,24 +6027,24 @@ async function addBlankPage(position) {
   snapshot();
   setLoading(true, 'ADDING PAGE…');
   try {
-    // Match the dimensions of the currently viewed page
-    const refPage  = state.pdfLibDoc.getPage(state.pageOrder[state.currentPage]);
-    const { width, height } = refPage.getSize();
+    // The same size, and the same way up, as the page showing: a blank page
+    // after a sideways page is sideways too (1.15).
+    const { w, h } = slotViewSize(state.currentPage);
 
     // pdf-lib appends the blank page at the end of pdfLibDoc
-    state.pdfLibDoc.addPage([width, height]);
+    state.pdfLibDoc.addPage([w, h]);
     const newIdx = state.pdfLibDoc.getPageCount() - 1; // always the last internal index
 
-    // Splice into pageOrder at the user-chosen position
+    // Put it into the row of pages at the chosen place (applyPageLayout keeps
+    // the pages, their turns and their overlays in step).
     const at = insertionIndex(position);
-    state.pageOrder.splice(at, 0, newIdx);
+    const layout = state.pageOrder.map((_, i) => ({ from: i }));
+    layout.splice(at, 0, { src: newIdx, rot: 0 });
+    applyPageLayout(layout);
 
     // Reload PDF.js from updated bytes so the renderer sees the new page
     await loadPdfJs(await state.pdfLibDoc.save());
-    await renderAllThumbnails();
-
-    // Navigate to the new page
-    await selectPage(at);
+    await afterPageChange(at);
     toast(`Blank page added ${position === 'after' ? 'after current page' : 'at end'}.`);
   } catch (e) {
     console.error(e); toast('Could not add blank page.', 'err');
@@ -5642,15 +6071,15 @@ async function importPdf(file, position) {
     // Build the array of new internal indices
     const newIndices = copied.map((_, i) => startIdx + i);
 
-    // Insert them into pageOrder at the chosen position
+    // Insert them into the row of pages at the chosen position
     const at = insertionIndex(position);
-    state.pageOrder.splice(at, 0, ...newIndices);
+    const layout = state.pageOrder.map((_, i) => ({ from: i }));
+    layout.splice(at, 0, ...newIndices.map((n) => ({ src: n, rot: 0 })));
+    applyPageLayout(layout);
 
     await loadPdfJs(await state.pdfLibDoc.save());
-    await renderAllThumbnails();
-
-    // Jump to the first newly-imported page
-    await selectPage(at);
+    // Jump to the first newly-imported page, with all of them picked
+    await afterPageChange(at, newIndices.map((_, k) => at + k));
     toast(`Imported ${copied.length} page${copied.length !== 1 ? 's' : ''} from "${file.name}" ${position === 'after' ? 'after current page' : 'at end'}.`);
   } catch (e) {
     console.error(e); toast('Import failed.', 'err');
@@ -5668,15 +6097,83 @@ async function importPdf(file, position) {
    6. Add new form fields (textfield, checkbox, dropdown)
    7. Save → Blob → download (no network, no server)
 ══════════════════════════════════════════ */
-async function downloadPdf() {
+/* ── Turned pages in the download (1.15) ──
+   A PDF page can say "show me turned 90 degrees" (/Rotate). Things placed on
+   it in PDFEDTR are measured on the page as it looks, so before drawing them
+   we work out how "as it looks" lines up with the page's own drawing space. */
+
+/** The page as it looks: its size, its turn, and the matrix from "as it looks" to the page's own space. */
+function pageView(page) {
+  const R = normRot(page.getRotation().angle);
+  const { width: W, height: H } = page.getSize();
+  const mb = page.getMediaBox();              // where the page's own space starts (usually 0, 0)
+  const x0 = mb.x || 0, y0 = mb.y || 0;
+  // u, v = a point on the page as it looks (from its bottom-left corner, y up).
+  //   R 0:   x = u          y = v
+  //   R 90:  x = W - v      y = u        (the page is shown turned clockwise)
+  //   R 180: x = W - u      y = H - v
+  //   R 270: x = v          y = H - u
+  // As a PDF matrix [a b c d e f]: x = a*u + c*v + e, y = b*u + d*v + f.
+  const matrix = R === 90  ? [0, 1, -1, 0, W + x0, y0]
+               : R === 180 ? [-1, 0, 0, -1, W + x0, H + y0]
+               : R === 270 ? [0, -1, 1, 0, x0, H + y0]
+               :             [1, 0, 0, 1, x0, y0];
+  return { rotation: R, matrix, w: R % 180 ? H : W, h: R % 180 ? W : H };
+}
+/** A point as it looks -> the page's own space. */
+function viewToPage(view, u, v) {
+  const [a, b, c, d, e, f] = view.matrix;
+  return { x: a * u + c * v + e, y: b * u + d * v + f };
+}
+/** The other way: a box {x, y, width, height} in the page's own space -> as it looks. */
+function pageRectToView(view, r) {
+  // Undo the matrix: solve x = a*u + c*v + e, y = b*u + d*v + f for u and v.
+  const [a, b, c, d, e, f] = view.matrix, det = a * d - b * c;
+  const back = (x, y) => ({ u: ( d * (x - e) - c * (y - f)) / det, v: (-b * (x - e) + a * (y - f)) / det });
+  const p = [back(r.x, r.y), back(r.x + r.width, r.y + r.height)];
+  const x = Math.min(p[0].u, p[1].u), y = Math.min(p[0].v, p[1].v);
+  return { x, y, width: Math.abs(p[1].u - p[0].u), height: Math.abs(p[1].v - p[0].v) };
+}
+/** A rectangle {x1, y1, x2, y2} as it looks -> the box it covers in the page's own space. */
+function viewRectToPage(view, r) {
+  const p = [viewToPage(view, r.x1, r.y1), viewToPage(view, r.x2, r.y2)];
+  return { x1: Math.min(p[0].x, p[1].x), y1: Math.min(p[0].y, p[1].y), x2: Math.max(p[0].x, p[1].x), y2: Math.max(p[0].y, p[1].y) };
+}
+/**
+ * Where to hand pdf-lib a form field on a turned page. pdf-lib's addToPage
+ * takes a corner, the field's own width and height, and a turn; it then
+ * works out the box on the page from them. This finds the corner that makes
+ * that box land exactly where the field shows on screen.
+ */
+function widgetSpot(view, x, y, w, h) {
+  const box = viewRectToPage(view, { x1: x, y1: y, x2: x + w, y2: y + h });
+  if (view.rotation === 90)  return { x: box.x1 + h, y: box.y1 };
+  if (view.rotation === 180) return { x: box.x1 + w, y: box.y1 + h };
+  if (view.rotation === 270) return { x: box.x1, y: box.y1 + w };
+  return { x: box.x1, y: box.y1 };
+}
+
+/**
+ * Build the edited PDF and download it.
+ * opts.pages (1.15): only these page slots, as a separate PDF (the page
+ * pill's "Save as a separate PDF"); otherwise every page.
+ */
+async function downloadPdf(opts = {}) {
   if (!state.pdfLibDoc) return;
   setLoading(true, 'BUILDING PDF…');
   try {
     const outDoc     = await PDFLib.PDFDocument.create();
     const srcCount   = state.pdfLibDoc.getPageCount();
-    const validOrder = state.pageOrder.filter(i => i < srcCount);
-    const copied     = await outDoc.copyPages(state.pdfLibDoc, validOrder);
+    // Which page slots go into this file, in order (all of them, or the picked ones).
+    const slots      = (Array.isArray(opts.pages) ? opts.pages : state.pageOrder.map((_, i) => i))
+                         .filter(i => state.pageOrder[i] < srcCount);
+    const outIndexOf = new Map(slots.map((slot, k) => [slot, k]));   // slot -> page number in the new file
+    const copied     = await outDoc.copyPages(state.pdfLibDoc, slots.map(i => state.pageOrder[i]));
     copied.forEach(p => outDoc.addPage(p));
+    // Each page keeps its own turn plus any turn added here (1.15). The page
+    // itself is not redrawn - the PDF just says "show this page turned" - so
+    // its text, links and everything else stay exactly as they were.
+    copied.forEach((p, k) => p.setRotation(PDFLib.degrees(normRot(p.getRotation().angle + (state.pageRots[slots[k]] || 0)))));
 
     /* ── Apply existing field values ── */
     const outForm = outDoc.getForm();
@@ -5720,10 +6217,18 @@ async function downloadPdf() {
     let altTextCount     = 0; // how many images carried an accessible description
 
     for (const ov of state.overlays) {
-      const pgIdx = ov.pageDisplayIndex;
-      if (pgIdx < 0 || pgIdx >= outDoc.getPageCount()) continue;
-      const page = outDoc.getPage(pgIdx);
-      const { width: pgW, height: pgH } = page.getSize();
+      if (!outIndexOf.has(ov.pageDisplayIndex)) continue;      // its page is not in this file
+      const page = outDoc.getPage(outIndexOf.get(ov.pageDisplayIndex));
+      /*
+       * Turned pages (1.15). Overlays are placed on the page AS IT LOOKS. For
+       * a page that is turned (by us, or by the PDF itself), "as it looks" is
+       * not the page's own drawing space, so pgW / pgH below are the size as
+       * it looks, and pageViewMatrix() tells the PDF how to carry everything
+       * drawn for this overlay from "as it looks" onto the page itself.
+       */
+      const view = pageView(page);
+      const pgW = view.w, pgH = view.h;
+      page.pushOperators(PDFLib.pushGraphicsState(), PDFLib.concatTransformationMatrix(...view.matrix));
 
       /*
        * Coordinate conversion:
@@ -5850,10 +6355,10 @@ async function downloadPdf() {
 
         // Alt text becomes an accessible description attached to this spot.
         if (ov.alt && ov.alt.trim()) {
-          addAltTextAnnotation(outDoc, page, ov.alt.trim(), {
+          addAltTextAnnotation(outDoc, page, ov.alt.trim(), viewRectToPage(view, {
             x1: drawX - padPt, y1: drawY - padPt,
             x2: drawX + drawW + padPt, y2: drawY + drawH + padPt,
-          });
+          }));
           altTextCount++;
         }
 
@@ -6001,8 +6506,12 @@ async function downloadPdf() {
              * rectangle drawn on screen, with nothing subtracted for a drag
              * handle or wrapper. Colours mirror the .ov-field / .ov-cb styles.
              */
+            // On a turned page, the widget's spot on the page itself, and a turn
+            // for its contents so they read upright (1.15).
+            const spot = widgetSpot(view, pdfX, pdfYBot, Math.max(pdfW, 4), Math.max(pdfH, 4));
             const opts = {
-              x: pdfX, y: pdfYBot,
+              x: spot.x, y: spot.y,
+              rotate: PDFLib.degrees(view.rotation),
               width:  Math.max(pdfW, 4),   // guard against zero/negative size
               height: Math.max(pdfH, 4),
               backgroundColor: PDFLib.rgb(0.898, 0.949, 1.0), // #e5f2ff
@@ -6037,6 +6546,7 @@ async function downloadPdf() {
           }
         }
       }
+      page.pushOperators(PDFLib.popGraphicsState());   // end of this overlay's "as it looks" drawing
     }
 
     /* ── Regenerate field appearances ──
@@ -6054,9 +6564,13 @@ async function downloadPdf() {
     /* ── Save & download ── */
     const bytes = await outDoc.save();
     const url   = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-    const a     = Object.assign(document.createElement('a'), { href: url, download: 'edited.pdf' });
+    // A separate PDF of some pages is named after them, so it does not replace the whole edited file.
+    const fileName = Array.isArray(opts.pages)
+      ? 'pages-' + (slots.length === 1 ? (slots[0] + 1) : (slots[0] + 1) + '-' + (slots[slots.length - 1] + 1)) + '.pdf'
+      : 'edited.pdf';
+    const a     = Object.assign(document.createElement('a'), { href: url, download: fileName });
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    backup.markSafe();             // you have the edited PDF now: no crash backup needed
+    if (!Array.isArray(opts.pages)) backup.markSafe();   // you have the whole edited PDF now: no crash backup needed
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
 
     /*
@@ -6342,52 +6856,17 @@ dom.dropZone.addEventListener('dragover', e => { e.preventDefault(); dom.dropZon
 dom.dropZone.addEventListener('dragleave', () => dom.dropZone.classList.remove('dragover'));
 dom.dropZone.addEventListener('drop', e => { e.preventDefault(); dom.dropZone.classList.remove('dragover'); if (e.dataTransfer.files[0]) loadPdf(e.dataTransfer.files[0]); });
 
-/* ── Add menu ── */
-
-/* Tracks the user-selected insert position: 'after' current page or 'end'. */
-let addPosition = 'after';
-
-function setAddPosition(pos) {
-  addPosition = pos;
-  dom.addPosAfter.classList.toggle('active', pos === 'after');
-  dom.addPosEnd.classList.toggle('active', pos === 'end');
-  dom.addPosAfter.setAttribute('aria-pressed', String(pos === 'after'));
-  dom.addPosEnd.setAttribute('aria-pressed', String(pos === 'end'));
-}
-
-/* Open / close the add menu when the Add button is clicked */
-dom.btnAdd.addEventListener('click', e => {
-  e.stopPropagation();
-  if (dom.addMenu.classList.contains('open')) { closeAllMenus(); return; }
-  const rect = dom.btnAdd.getBoundingClientRect();
-  dom.addMenu.style.right = (window.innerWidth - rect.right) + 'px';
-  dom.addMenu.style.left  = 'auto';
-  dom.addMenu.style.top   = (rect.bottom + 4) + 'px';
-  dom.addMenu.classList.add('open');
-});
-
-/* Position toggle */
-dom.addPosAfter.addEventListener('click', () => setAddPosition('after'));
-dom.addPosEnd.addEventListener('click',   () => setAddPosition('end'));
-
-/* Blank page */
-dom.addBlankBtn.addEventListener('click', () => {
-  dom.addMenu.classList.remove('open');
-  addBlankPage(addPosition);
-});
-
-/* Import PDF */
-dom.addImportBtn.addEventListener('click', () => {
-  dom.addMenu.classList.remove('open');
-  dom.importInput.click();
-});
+/* ── Add pages (1.15): the + and Insert a PDF buttons at the left of the filmstrip ──
+   Both add after the page showing (pick the last page first to add at the end). */
+dom.btnAddBlank.addEventListener('click', () => addBlankPage('after'));
+dom.btnInsertPdf.addEventListener('click', () => dom.importInput.click());
 dom.importInput.addEventListener('change', e => {
-  if (e.target.files[0]) importPdf(e.target.files[0], addPosition);
+  if (e.target.files[0]) importPdf(e.target.files[0], 'after');
   dom.importInput.value = '';
 });
 
 /* ── Download ── */
-dom.btnDownload.addEventListener('click', downloadPdf);
+dom.btnDownload.addEventListener('click', () => downloadPdf());
 
 /* ── Select tool ── */
 dom.toolSelect.addEventListener('click', () => {
@@ -6688,7 +7167,7 @@ function zoomStep(direction) {
 /** The zoom at which the current page's width fills the view. */
 async function fitWidthScale() {
   const page = await state.pdfJsDoc.getPage(state.pageOrder[state.currentPage] + 1);
-  const widthAt100 = page.getViewport({ scale: 1 }).width;
+  const widthAt100 = slotViewport(page, state.currentPage, 1).width;
   const pad = getComputedStyle(dom.canvasArea);
   const room = dom.canvasArea.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight);
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, room / widthAt100));
@@ -6747,7 +7226,6 @@ document.addEventListener('mousedown', e => {
    */
   if (!dom.shapeMenu.contains(e.target) && !dom.toolShape.contains(e.target) &&
       !dom.fieldMenu.contains(e.target) && !dom.toolField.contains(e.target) &&
-      !dom.addMenu.contains(e.target)   && !dom.btnAdd.contains(e.target) &&
       !dom.highlightMenu.contains(e.target) && !dom.toolHighlight.contains(e.target)) {
     closeAllMenus();
   }
@@ -8089,7 +8567,7 @@ function suiteFeaturesCard(features, appId) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.14';
+const APP_VERSION = '1.15';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -8146,6 +8624,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.15', date: '2026-10-11', notes: [
+    'A new filmstrip, the same as DSKEDTR\'s: + adds a blank page and Insert a PDF adds another PDF, both after the page showing. Tap or click a page and the page pill opens above it: move left or right, turn left or right, duplicate, copy, cut, paste, save as a separate PDF, and delete. Ctrl+click or Shift+click picks several pages, and the pill acts on all of them. Right-click a page for the same actions.',
+    'Turn pages. A turned page downloads turned, with its text and links untouched, and everything you placed on it stays where you put it and the right way up.',
+    'Made for phones first: the tool rail along the bottom, the Inspector as a sheet with a grab handle (the same as IMGEDTR), a More menu for zoom, theme, help and settings, two-finger pinch to zoom, and things on the page can be dragged with a finger.',
+    'Fixed: things placed on a PDF that was already turned (a scanned page, for example) landed in the wrong spot in the download.'
+  ] },
   { version: '1.14', date: '2026-10-11', notes: [
     'Sign a PDF, straight from the splash: pick the PDF and the signature panel opens.',
     'IMGEDTR\'s Shapes panel: 23 shapes in three groups (basic shapes, symbols, callouts and awards), with their usual colours. Shift keeps a shape\'s proportions while you draw or resize it.',
@@ -8262,6 +8746,7 @@ const backup = SuiteBackup.session('pdfedtr', async () => {
       name: state.fileName || 'document.pdf',
       overlays: JSON.parse(JSON.stringify(state.overlays)),
       pageOrder: [...state.pageOrder],
+      pageRots: [...state.pageRots],
       fieldValues: JSON.parse(JSON.stringify(state.fieldValues)),
       fieldCounter: state.fieldCounter,
       currentPage: state.currentPage,
@@ -8284,7 +8769,12 @@ async function restoreBackup(found) {
   if (!state.pdfLibDoc) return;                            // loadPdf already said what went wrong
   const count = state.pdfLibDoc.getPageCount();
   state.overlays     = d.overlays;
-  state.pageOrder    = d.pageOrder.filter((i) => Number.isInteger(i) && i >= 0 && i < count);
+  // Keep only page numbers this PDF really has, each with a tidy turn (1.15).
+  const rots = Array.isArray(d.pageRots) ? d.pageRots : [];
+  const keep = d.pageOrder.map((i, k) => [i, normRot(Number(rots[k]) || 0)])
+                          .filter(([i]) => Number.isInteger(i) && i >= 0 && i < count);
+  state.pageOrder    = keep.map(([i]) => i);
+  state.pageRots     = keep.map(([, r]) => r);
   state.fieldValues  = d.fieldValues || {};
   state.fieldCounter = Number.isInteger(d.fieldCounter) ? d.fieldCounter : 0;
   state.currentPage  = Math.min(Math.max(0, d.currentPage | 0), Math.max(0, state.pageOrder.length - 1));
@@ -8330,30 +8820,223 @@ document.getElementById('btn-open').addEventListener('click', () => openPdfPicke
 
 const inspector = document.getElementById('inspector');
 const btnInspector = document.getElementById('btn-inspector');
-const narrow = () => window.matchMedia('(max-width: 820px)').matches;
+/* ══════════════════════════════════════════
+   THE PHONE LAYOUT (1.15)
+   ─────────────────────────────────────────
+   Below 820px wide, the same as IMGEDTR: the page (with the filmstrip
+   under it) on top, the Inspector as a sheet below it, and the tool rail
+   along the bottom. The sheet has a grab handle:
+     - drag it up or down to share the screen between the page and the
+       Inspector;
+     - drag it nearly all the way down, or tap it, to close the sheet to
+       just the handle; tap it again (or pull it up) to open it;
+     - from the keyboard it is a "separator": Up and Down change the
+       height, Home closes, End makes it as tall as it goes, Enter or
+       Space opens or closes it.
+   The Inspector button in the top bar opens and closes the same sheet.
+   How tall: settings.sheet is where the TOP of the sheet sits, as a share
+   of the screen measured up from the bottom (saved as a share, not pixels,
+   so it still fits after the phone is turned).
+══════════════════════════════════════════ */
+const PHONE = window.matchMedia('(max-width: 820px)');   // phone layout on or off
+const narrow = () => PHONE.matches;
+const SHEET_HANDLE_PX = 29;       // a closed sheet: the 28px handle plus the sheet's top border
+const SHEET_MIN_PX = 120;         // the shortest an open sheet may be
+const SHEET_PAGE_MIN_PX = 160;    // always leave at least this much page (and filmstrip) showing
+const SHEET_DEFAULT = 1 / 3;      // top of the sheet two thirds of the way down the screen
+const sheetHandle = document.getElementById('sheet-handle');
+const railEl = document.querySelector('.toolbar.rail');
+const appBody = document.querySelector('.app-body');
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/** Is the sheet open? (The "open" class on the Inspector is the one true answer.) */
+const sheetOpen = () => inspector.classList.contains('open');
+const railHeight = () => railEl.offsetHeight;
+/** Sheet height in pixels <-> share of the screen from the sheet's top to the bottom. */
+const sheetShare = (px) => (px + railHeight()) / window.innerHeight;
+const sheetPx = (share) => share * window.innerHeight - railHeight();
+
+/** The shortest and tallest an open sheet may be: the tallest still leaves the top bar and some page in sight. */
+function sheetLimits() {
+  const top = appBody.getBoundingClientRect().top;          // just under the top bar
+  const max = window.innerHeight - top - SHEET_PAGE_MIN_PX - railHeight();
+  return { min: SHEET_MIN_PX, max: Math.max(SHEET_MIN_PX, max) };
+}
+function sheetHeight() {
+  const { min, max } = sheetLimits();
+  return Math.round(clampN(sheetPx(settings.sheet || SHEET_DEFAULT), min, max));
+}
+/** Size the sheet from settings.sheet, and tell screen readers how tall it is. */
+function applySheet() {
+  if (!narrow()) { document.documentElement.style.removeProperty('--sheet-h'); return; }
+  const h = sheetHeight(), open = sheetOpen();
+  document.documentElement.style.setProperty('--sheet-h', h + 'px');
+  const pct = open ? Math.round(sheetShare(h) * 100) : 0;
+  sheetHandle.setAttribute('aria-valuemax', String(Math.round(sheetShare(sheetLimits().max) * 100)));
+  sheetHandle.setAttribute('aria-valuenow', String(pct));
+  sheetHandle.setAttribute('aria-valuetext', open ? 'Inspector open, ' + pct + ' percent of the screen' : 'Inspector closed');
+  positionPagePill();
+}
+/** Open or close the sheet, keeping the Inspector button in step. */
+function setSheetOpen(open) {
+  inspector.classList.toggle('open', open);
+  appBody.classList.toggle('sheet-open', open);
+  btnInspector.setAttribute('aria-pressed', String(open));
+  applySheet();
+  updateInspectorDot();
+}
+
 btnInspector.addEventListener('click', () => {
   if (narrow()) {
-    // Phone: slide the drawer in or out.
-    const open = inspector.classList.toggle('open');
-    btnInspector.setAttribute('aria-pressed', String(open));
+    setSheetOpen(!sheetOpen());                  // phone: open or close the sheet
   } else {
     // Wide screen: show or hide the column.
-    const hidden = document.querySelector('.app-body').classList.toggle('insp-hidden');
+    const hidden = appBody.classList.toggle('insp-hidden');
     btnInspector.setAttribute('aria-pressed', String(!hidden));
+    updateInspectorDot();
   }
-  updateInspectorDot();
 });
-// On a phone the drawer starts closed, so the button must say so.
-if (narrow()) btnInspector.setAttribute('aria-pressed', 'false');
+
+// The grab handle: dragging, tapping and keys (the same as IMGEDTR's).
+(() => {
+  let d = null;                                  // the drag in progress: { id, y, h, moved, last }
+  sheetHandle.addEventListener('pointerdown', (e) => {
+    if (!narrow() || e.button > 0) return;
+    e.preventDefault();
+    sheetHandle.setPointerCapture(e.pointerId);  // keep getting moves even off the handle
+    sheetHandle.classList.add('dragging');
+    d = { id: e.pointerId, y: e.clientY, h: sheetOpen() ? inspector.offsetHeight : SHEET_HANDLE_PX, moved: false, last: null };
+  });
+  sheetHandle.addEventListener('pointermove', (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const up = d.y - e.clientY;                  // how far the finger has gone up
+    if (Math.abs(up) > 4) d.moved = true;        // a little wobble still counts as a tap
+    if (!d.moved) return;
+    const h = clampN(d.h + up, SHEET_HANDLE_PX, sheetLimits().max);
+    if (!sheetOpen() && h > SHEET_HANDLE_PX + 24) setSheetOpen(true);   // pulled up from closed: open it
+    document.documentElement.style.setProperty('--sheet-h', h + 'px');  // follow the finger exactly
+    d.last = h;
+  });
+  const finish = (e) => {
+    if (!d || e.pointerId !== d.id) return;
+    const drag = d; d = null;
+    sheetHandle.classList.remove('dragging');
+    if (!drag.moved) { setSheetOpen(!sheetOpen()); return; }            // a tap: open or close
+    const h = drag.last ?? drag.h;
+    if (h < SHEET_MIN_PX * 0.75) { if (sheetOpen()) setSheetOpen(false); else applySheet(); return; }   // pushed down: close
+    settings.sheet = sheetShare(Math.max(SHEET_MIN_PX, h));             // remember it
+    saveSettings();
+    applySheet();
+  };
+  sheetHandle.addEventListener('pointerup', finish);
+  sheetHandle.addEventListener('pointercancel', finish);
+  sheetHandle.addEventListener('keydown', (e) => {
+    const { min, max } = sheetLimits(), step = 0.08 * window.innerHeight;
+    const open = sheetOpen(), h = sheetHeight();
+    let next = null;
+    if (e.key === 'ArrowUp') next = open ? h + step : h;
+    else if (e.key === 'ArrowDown') { if (open) { next = h - step; if (next < min) { setSheetOpen(false); next = null; } } }
+    else if (e.key === 'End') next = max;
+    else if (e.key === 'Home') { if (open) setSheetOpen(false); }
+    else if (e.key === 'Enter' || e.key === ' ') setSheetOpen(!open);
+    else return;
+    e.preventDefault(); e.stopPropagation();     // keep the arrows from nudging or changing page
+    if (next === null) return;
+    settings.sheet = sheetShare(clampN(next, min, max));
+    saveSettings();
+    if (!open) setSheetOpen(true); else applySheet();
+  });
+  window.addEventListener('resize', applySheet);
+  // Crossing between the phone and wide layouts: the sheet starts closed on a
+  // phone; on a wide screen the Inspector column shows as before.
+  PHONE.addEventListener('change', () => {
+    if (narrow()) setSheetOpen(false);
+    else { inspector.classList.remove('open'); appBody.classList.remove('sheet-open');
+           btnInspector.setAttribute('aria-pressed', String(!appBody.classList.contains('insp-hidden'))); applySheet(); }
+  });
+  // On a phone the sheet starts closed (just its handle), as in IMGEDTR.
+  if (narrow()) setSheetOpen(false);
+})();
 
 /* The dot on the Inspector button: something is selected, but its settings
    are not on screen. Watches the settings bar appear and disappear. */
 function updateInspectorDot() {
   const offScreen = narrow() ? !inspector.classList.contains('open')
-                             : document.querySelector('.app-body').classList.contains('insp-hidden');
+                             : appBody.classList.contains('insp-hidden');
   btnInspector.classList.toggle('has-selection', !dom.contextBar.hidden && offScreen);
 }
 new MutationObserver(updateInspectorDot).observe(dom.contextBar, { attributes: true, attributeFilter: ['hidden'] });
+
+/* ── The More menu (phones) ── each item presses the real (hidden) button. */
+(() => {
+  const btn = document.getElementById('btn-more'), menu = document.getElementById('more-menu');
+  const open = () => {
+    // Show the right words for the theme item and whether Install is offered.
+    const dark = document.documentElement.classList.contains('dark');
+    menu.querySelector('.more-theme-label').textContent = dark ? 'Light mode' : 'Dark mode';
+    document.getElementById('more-install').hidden = document.getElementById('btn-install').hidden;
+    closeAllMenus();
+    menu.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    const r = btn.getBoundingClientRect(), m = menu.getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(r.right - m.width, window.innerWidth - m.width - 8)) + 'px';
+    menu.style.top = (r.bottom + 4) + 'px';
+    menu.querySelector('.fm-item:not([hidden])').focus();
+  };
+  const close = (focusBack) => {
+    menu.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+    if (focusBack) btn.focus();
+  };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); if (menu.classList.contains('open')) close(true); else open(); });
+  menu.addEventListener('click', (e) => {
+    const item = e.target.closest('[data-for]');
+    if (!item) return;
+    close(false);
+    document.getElementById(item.dataset.for).click();
+  });
+  menu.addEventListener('keydown', (e) => {
+    const items = [...menu.querySelectorAll('.fm-item:not([hidden])')];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); return; }
+    let next = null;
+    if (e.key === 'ArrowDown') next = (i + 1) % items.length;
+    else if (e.key === 'ArrowUp') next = (i - 1 + items.length) % items.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = items.length - 1;
+    if (next === null) return;
+    e.preventDefault(); e.stopPropagation();
+    items[next].focus();
+  });
+  document.addEventListener('pointerdown', (e) => {
+    if (menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)) close(false);
+  }, true);
+})();
+
+/* ── Pinch to zoom (touch screens, 1.15) ──
+   Two fingers on the page zoom around the point between them, through
+   the same setZoom() as the zoom buttons. One finger still scrolls as
+   usual. Touch events (rather than pointer events) are used because the
+   browser keeps sending them while two fingers are down, and calling
+   preventDefault() on them stops the browser zooming the whole app. */
+(() => {
+  let startDist = 0, startScale = 1;
+  const pair = (t) => [t[0], t[1]];
+  const dist = (t) => { const [a, b] = pair(t); return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); };
+  const mid = (t) => { const [a, b] = pair(t); return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }; };
+  dom.canvasArea.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2 && state.pdfJsDoc) { startDist = dist(e.touches); startScale = state.scale; }
+  }, { passive: true });
+  dom.canvasArea.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 2 || !startDist) return;
+    e.preventDefault();                            // ours, not the browser's zoom or scroll
+    const m = mid(e.touches);
+    setZoom(startScale * dist(e.touches) / startDist, m.x, m.y);
+  }, { passive: false });
+  const end = (e) => { if (e.touches.length < 2) startDist = 0; };
+  dom.canvasArea.addEventListener('touchend', end);
+  dom.canvasArea.addEventListener('touchcancel', end);
+})();
 
 /* The rail is one Tab stop's worth of buttons: Up/Down (or Left/Right on a
    phone, where it lies along the bottom) move between them. */
@@ -8488,13 +9171,8 @@ document.addEventListener('keydown', e => {
     return;
   }
 
-  /* Escape exits selection mode */
-  if (e.key === 'Escape' && state.pageSelectionMode) { togglePageSelectionMode(); }
 });
 
-/* ── Page select toggle & delete ── */
-dom.btnSelectPages.addEventListener('click', togglePageSelectionMode);
-dom.btnDeleteSelected.addEventListener('click', deleteSelectedPages);
 
 /* ── Init button and icon states ── */
 updateShapeBtn();

@@ -17,6 +17,62 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.15 - 2026-10-11 - Mobile first, and DSKEDTR's filmstrip
+
+The third of five releases bringing PDFEDTR up to IMGEDTR.
+
+- **DSKEDTR's filmstrip.** Pages along the bottom with their numbers under
+  them. On the left: **+** (a blank page after the page showing, the same size
+  and the same way up) and **Insert a PDF** (all of its pages, after the page
+  showing). The old Add pages button and menu in the top bar are gone (pick
+  the last page first to add at the end), and so is the old "select pages"
+  mode: picking several pages is now built in.
+- **The page pill.** Click or tap a page and a pill opens above it, like
+  DSKEDTR's: Move left, Move right, Turn left, Turn right, Duplicate, Copy,
+  Cut, Paste (after the page showing), Save as a separate PDF, and Delete. A
+  greyed button can't act right now (the first page can't move left, the only
+  page can't be deleted). Right-click a page for the same pill.
+- **Several pages at once.** Ctrl/Cmd+click adds or takes out a page, Shift+click
+  picks a run; picked pages get a tick by their number, and every pill action
+  works on all of them (move as a block, turn, duplicate, copy, cut, save,
+  delete).
+- **Keyboard:** the filmstrip is one Tab stop. Left/Right go between pages
+  (Shift extends the pick), Home/End, Enter shows a page, Ctrl+Space picks one,
+  Alt+Left/Right moves the picked pages, R / Shift+R turns them, Ctrl+D
+  duplicates, Ctrl+C/X/V copies, cuts and pastes pages, Delete deletes them;
+  Tab goes on to the pill (arrow keys between its buttons, Escape back).
+- **Turning pages.** A page's turn is kept beside the page (`state.pageRots`),
+  and the download just tells the PDF to show that page turned (/Rotate), so
+  the page's own text, links and form fields are untouched. Things placed on
+  it are drawn through a matrix from "the page as it looks" to the page's own
+  space, so they land where they show on screen and read upright; form fields
+  get a turn of their own for the same reason. Turning a page moves each
+  overlay with its spot on the paper and keeps it upright and the same size.
+- **Duplicate, copy and paste pages** carry everything on them (form fields
+  get new names in the PDF so they don't clash). Copied pages stay in this tab
+  and paste into the same PDF.
+- **Save as a separate PDF**: just the picked pages, with everything on them,
+  named `pages-3.pdf` or `pages-2-5.pdf`.
+- **Every page change goes through one routine** (`applyPageLayout`), so the
+  pages, their turns and the things on them can never fall out of step. Undo,
+  redo and crash backups all include the turns.
+- **Mobile first, the same layout as IMGEDTR on a phone:** the page and
+  filmstrip on top, the Inspector as a sheet with a grab handle (drag to share
+  the screen, tap to open or close, arrow keys from the keyboard; its height is
+  remembered in Settings as a share of the screen), and the tool rail along the
+  bottom. The top bar keeps Open, Undo, Redo, Fit, Download and the Inspector,
+  with a **More** menu for zoom, theme, help, settings and install, so nothing
+  scrolls off the edge any more.
+- **Touch:** two-finger pinch zooms around your fingers (one finger still
+  scrolls), and things on the page can be dragged, resized and turned with a
+  finger (they used mouse-only events before). On touch screens the handles
+  are bigger and sit just outside the box, so even a small mark can be dragged.
+- **Fixed: things placed on an already-turned PDF** (common with scans) were
+  written to the wrong spot in the download, and that PDF's own form fields came
+  in at the wrong spot on screen. Both now use the page as it looks.
+- Only one drawing of the page runs at a time, so turning or zooming quickly
+  no longer trips a pdf.js error, and the filmstrip rebuilds without flicker.
+
 ## 1.14 - 2026-10-11 - Shapes, and Sign a PDF
 
 The second of five releases bringing PDFEDTR up to IMGEDTR.
