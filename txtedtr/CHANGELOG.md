@@ -18,6 +18,14 @@ never had.
 
 ---
 
+## 1.19
+
+**Added** - a tour of the features.
+
+- **Features, a new first tab in Help** (F1 or the Help button): an animated tour of five of TXTEDTR's favorite features - Live HTML preview, Color-coded code, Smart find and replace, Catches hidden characters and Split view - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion. Keyboard shortcuts is one tab over. (The ? key itself stays a character you type, as before.)
+- **The "no file open" screen ends with a "See what TXTEDTR can do" card**, after the row of apps and the credits, which opens the same tour.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `renderSuiteFeatures`, `suiteFeaturesOpen`, `suiteFeaturesCard` and their styles).
+
 ## 1.18
 
 **Fixed** - the installed app opens again after the move to the new host.
