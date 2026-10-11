@@ -7,6 +7,13 @@ offline and opened straight off a disk. A new release goes in both.
 Releases before 1.18.0 went out without notes. Rather than guess at them, this
 file starts at 1.18.0; `README.md` describes how everything works as of 1.17.0.
 
+## 1.21.0 - 2026-10-10 - A tour of the features
+
+- **Features, a new first tab in Help:** an animated tour of five of SCRNCSTR's favorite features - Place your webcam anywhere, Choose how you record, Live effects while recording, Circle, rounded or square and Your recordings, ready - each with a small looping drawing, a title and a sentence or two. Previous and Next, the dots, or the Left and Right arrow keys move between them; the animation has a pause button, and it starts paused when the device asks for less motion.
+- **? or F1 and the Help button now open Help on Features.** Keyboard shortcuts is one tab over.
+- **The splash has a "See what SCRNCSTR can do" card** that opens the same tour over the splash.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `renderSuiteFeatures`, `suiteFeaturesOpen`, `suiteFeaturesCard` and their styles). The drawings are inline SVG with SVG's own animation tags, so they work offline and straight off a disk.
+
 ## 1.20.4 - 2026-10-07 - DSKEDTR joins the family
 
 - **DSKEDTR joins the family.** More apps and the splash's row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes, with its own icon. The shared SUITE block was pasted in again from `_edtr-suite/suite-block.js`.
