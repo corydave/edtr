@@ -7,6 +7,11 @@ offline and opened straight off a disk. A new release goes in both.
 Releases before 1.18.0 went out without notes. Rather than guess at them, this
 file starts at 1.18.0; `README.md` describes how everything works as of 1.17.0.
 
+## 1.22.1 - 2026-10-11 - The source, front and center
+
+- **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
+- The shared SUITE block was pasted in again from `_edtr-suite` (new: `suiteSourceBox()`, drawn by `renderSuiteCredits()`).
+
 ## 1.22.0 - 2026-10-10 - A new splash
 
 - **A picture of SCRNCSTR in use across the top of the splash** - the same picture as on edtrapps.com, built into the app (as a data: URI), so it shows offline too. With it, the small icon beside the name goes, since the picture already shows it.
