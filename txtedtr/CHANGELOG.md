@@ -18,6 +18,13 @@ never had.
 
 ---
 
+## 1.20
+
+**Changed** - links to edtrapps.com and GitHub.
+
+- Under the credits on the "no file open" screen, and in About: "All the apps at edtrapps.com - Free and open source on GitHub (MIT license)". edtrapps.com is the new home of the whole family; the source is github.com/corydave/edtr, now with an MIT license at its root.
+- The shared SUITE block was pasted in again from `_edtr-suite` (it also carries the other apps' new splash).
+
 ## 1.19
 
 **Added** - a tour of the features.

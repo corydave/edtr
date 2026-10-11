@@ -554,6 +554,52 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 .suite-feat-art .fx-stop-hi  { stop-color: #fff; }
 .suite-feat-art .fx-stop-ink { stop-color: var(--fx-fg); }
 
+/* ---- The splash, 2026-10-11: a picture on top, cards with icons ---------- */
+/* With a picture the splash is wider, and the picture runs edge to edge. */
+.suite-splash.has-hero { width: min(760px, 94vw); padding-top: 0; }
+.suite-splash-hero { position: relative; margin: 0 -24px 16px; aspect-ratio: 16 / 5.8; overflow: hidden;
+  border-radius: 13px 13px 0 0; background: var(--suite-accent, #0046ad); }
+.suite-splash-hero img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; display: block; }
+/* The close button sits on the picture: a solid circle, so it reads on any colour. */
+.suite-splash-hero .suite-splash-x { position: absolute; top: 10px; right: 10px; float: none; margin: 0;
+  background: rgba(255, 255, 255, .92); color: #111; border: 0; border-radius: 999px; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); }
+.suite-splash-hero .suite-splash-x:hover { background: #fff; }
+.suite-splash.has-hero .suite-splash-head { margin-bottom: 14px; }
+
+/* The cards: an icon, then the words. Big enough to tap; one column on a phone. */
+.suite-splash-choice { flex-direction: row; align-items: flex-start; gap: 12px; }
+.suite-splash-choice-words { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.suite-splash-choice-icon { flex: none; width: 28px; height: 28px; margin-top: 1px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--suite-accent, #0046ad); }
+/* In dark mode the app colour is too dark for a line on a dark card: lift it toward the text colour. */
+.suite-splash-choice-icon { color: color-mix(in oklab, var(--suite-accent, #0046ad) 70%, var(--suite-fg, currentColor)); }
+.suite-splash-choice.is-primary .suite-splash-choice-icon { color: #fff; }
+/* Solid parts of a drawing (the front sheet of the templates fan) take the card's own colour. */
+.suite-splash-choice-icon .suite-ico-solid { fill: var(--suite-bg, Canvas); }
+.suite-splash-choice:not(.is-primary) .suite-splash-choice-icon .suite-ico-solid {
+  fill: color-mix(in srgb, var(--suite-fg, CanvasText) 5%, var(--suite-bg, Canvas)); }
+.suite-splash-choice.is-primary .suite-splash-choice-icon .suite-ico-solid { fill: var(--suite-accent, #0046ad); }
+@media (max-width: 520px) {
+  .suite-splash.has-hero { padding-left: 16px; padding-right: 16px; }
+  .suite-splash-hero { margin: 0 -16px 14px; aspect-ratio: 16 / 7.5; }
+  .suite-splash-actions { grid-template-columns: 1fr; }
+  .suite-splash-choice { padding: 10px 12px; }
+}
+
+/* Picking up a backup: a slim, quiet row - there when needed, never in the way. */
+.suite-splash-resume { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; width: 100%; margin: 8px 0 0;
+  padding: 6px 8px; min-height: 36px; border: 0; border-radius: 8px; background: none; color: inherit;
+  font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; opacity: .85; }
+.suite-splash-resume:hover { background: color-mix(in srgb, currentColor 8%, transparent); opacity: 1; }
+.suite-splash-resume svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.suite-splash-resume-label { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.suite-splash-resume-detail { opacity: .8; }
+
+/* The links under the credits: edtrapps.com and the source on GitHub. */
+.suite-links { display: inline-block; margin-top: 4px; }
+.suite-links a { color: inherit; font-weight: 600; }
+
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 
 /* Colours the shared block uses: TXTEDTR's own panels and text, and its
@@ -2044,7 +2090,7 @@ body.dragging .editor-area { outline: 3px dashed var(--accent); outline-offset: 
 
 /* Shown in the About tab, and used as the service worker's cache version -
    so bumping this one number is also how you retire the old offline copy. */
-const APP_VERSION = "1.19";
+const APP_VERSION = "1.20";
 
 /* Every keyboard shortcut, in one table. This is the single source for three
    things: the rows in the Keyboard shortcuts panel, the checkbox that turns
@@ -2135,6 +2181,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: "1.20", changes: [
+    ["changed", "The \"no file open\" screen and About now link to edtrapps.com, home of every app in the family, and to the source on GitHub (free and open source, MIT license)."]
+  ] },
   { version: "1.19", changes: [
     ["added", "Features, a new first tab in Help (F1 or the Help button): an animated tour of five favorite features."],
     ["added", "The \"no file open\" screen ends with a \"See what TXTEDTR can do\" card that opens the same tour."]
@@ -7402,6 +7451,23 @@ const SUITE_CREDITS = {
   ]
 };
 const SUITE_LOGOS = { flxaihub: '', flcc: '' };
+/* Where the family lives: the home page with every app, and the source code
+   (free and open source, MIT license). Shown under the credits everywhere. */
+const SUITE_LINKS = {
+  site: { url: 'https://edtrapps.com/', name: 'edtrapps.com' },
+  source: { url: 'https://github.com/corydave/edtr', name: 'GitHub' },
+  license: 'MIT'
+};
+/* "All the apps at edtrapps.com · Free and open source on GitHub (MIT license)" */
+function suiteLinksLine() {
+  const span = suiteEl('span', 'suite-links');
+  const site = suiteLink(SUITE_LINKS.site.url, SUITE_LINKS.site.name);
+  site.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  const src = suiteLink(SUITE_LINKS.source.url, SUITE_LINKS.source.name);
+  src.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  span.append('All the apps at ', site, ' · Free and open source on ', src, ' (' + SUITE_LINKS.license + ' license)');
+  return span;
+}
 
 /* A small helper: make an element, set its class and text in one go.
    Used everywhere below so the building code stays short and readable. */
@@ -7477,7 +7543,9 @@ function renderSuiteCredits(container) {
     link.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
     row.append(link);
   }
-  container.append(made, by, row);
+  const links = suiteEl('p', 'suite-credits-links');
+  links.append(suiteLinksLine());
+  container.append(made, by, row, links);
 }
 
 /* The one-line version, for the foot of the splash screen. */
@@ -7490,6 +7558,7 @@ function suiteCreditsLine() {
     a.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
     line.append(a);
   });
+  line.append(document.createElement('br'), suiteLinksLine());
   return line;
 }
 
@@ -7516,6 +7585,9 @@ function suiteWhen(ms) {
      appId:   'imgedtr',
      actions: [ { label, detail, run, primary } ... ],   // the app's ways to begin
      resume:  { detail, run } or null,                  // only when a backup exists
+     hero:    APP_HERO,                                 // optional: a data: URI picture of the app in use, across the top
+     heroAlt: 'TXTEDTR editing a web page ...',         // optional: words for that picture
+     (each action can also have  icon: 'open'  - a name from SUITE_ACTION_ICONS - or its own SVG drawing)
      hint:    'You can also drop an image anywhere.',   // optional
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
@@ -7528,9 +7600,34 @@ function suiteWhen(ms) {
    app launched WITH a file never sits behind a splash. */
 let suiteSplashDialog = null;
 
+/* Pictures for the splash's cards (24 x 24, drawn with lines like every
+   other icon in the family). An app names one with `icon: 'open'`, or
+   passes its own drawing. 'open' is the one everybody knows: a folder
+   opening. */
+const SUITE_ACTION_ICONS = {
+  open:     '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+  new:      '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 12v6"/><path d="M9 15h6"/>',
+  paste:    '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/>',
+  size:     '<path d="M22 6H2"/><path d="M22 18H2"/><path d="M6 2v20"/><path d="M18 2v20"/>',
+  record:   '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  audio:    '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  media:    '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M17 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/>',
+  screen:   '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>',
+  headshot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.7"/>',
+  sample:   '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+  cube:     '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  shapes3d: '<path d="M3 10.5 8 8l5 2.5v6L8 19l-5-2.5z"/><path d="M3 10.5 8 13l5-2.5"/><path d="M8 13v6"/><ellipse cx="17.5" cy="6" rx="3.5" ry="1.5"/><path d="M14 6v9a3.5 1.5 0 0 0 7 0V6"/>',
+  pen:      '<path d="M15.7 15.7a1 1 0 0 0 .2-1.1L14 10.4a1 1 0 0 1 .2-1.1l2-2a2 2 0 0 1 2.8 0l1.7 1.7a2 2 0 0 1 0 2.8l-2 2a1 1 0 0 1-1.1.2l-4.2-1.9a1 1 0 0 0-1.1.2"/><path d="M14.2 9.3 4 19.5V22h2.5l10.2-10.2"/><circle cx="2.5" cy="21.5" r=".5"/>',
+  // Three publications fanned out - a flyer, a newsletter and a card - for templates.
+  templates:'<rect x="3" y="6" width="9" height="13" rx="1.5" transform="rotate(-20 7.5 19)" class="suite-ico-solid"/>'
+          + '<rect x="12" y="6" width="9" height="13" rx="1.5" transform="rotate(20 16.5 19)" class="suite-ico-solid"/>'
+          + '<rect x="7" y="3" width="10" height="15" rx="1.5" class="suite-ico-solid"/><path d="M10 7h4"/><path d="M10 10.5h4"/><path d="M10 14h2"/>',
+  resume:   '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>'
+};
+
 function suiteSplash(opts) {
   const app = SUITE_APPS.find((a) => a.id === opts.appId);
-  const dlg = suiteEl('dialog', 'suite-splash');
+  const dlg = suiteEl('dialog', 'suite-splash' + (opts.hero ? ' has-hero' : ''));
   dlg.setAttribute('aria-labelledby', 'suite-splash-title');
 
   const close = suiteEl('button', 'suite-splash-x', '×');
@@ -7538,38 +7635,77 @@ function suiteSplash(opts) {
   close.setAttribute('aria-label', 'Close and go to an empty ' + app.name);
   close.addEventListener('click', () => suiteSplashClose());
 
-  // Header: this app's tile, name and one-line description.
+  // The picture at the top: the app's own icon beside a screenshot of it in
+  // use (the same picture as on edtrapps.com). It is a data: URI inside the
+  // app, so it shows offline and straight off a disk. Without one, the
+  // splash falls back to the small icon tile beside the name.
+  if (opts.hero) {
+    const hero = suiteEl('div', 'suite-splash-hero');
+    const img = document.createElement('img');
+    img.src = opts.hero;
+    img.alt = opts.heroAlt || (app.name + ' in use');
+    img.decoding = 'async';
+    hero.append(img, close);
+    dlg.append(hero);
+  } else {
+    dlg.append(close);
+  }
+
+  // Header: the app's name and one-line description (and its icon tile,
+  // only when there is no picture - the picture already shows the icon).
   const head = suiteEl('div', 'suite-splash-head');
   const title = suiteEl('h2', '', app.name);
   title.id = 'suite-splash-title';
   const words = suiteEl('div');
   words.append(title, suiteEl('p', 'suite-splash-blurb', app.blurb));
-  head.append(suiteTile(app), words);
+  if (!opts.hero) head.append(suiteTile(app));
+  head.append(words);
+  dlg.append(head);
 
-  // The ways to begin. Resume comes first when there is something to resume.
+  // The ways to begin, as cards with a picture each. `icon` is a name from
+  // SUITE_ACTION_ICONS ('open', 'new', 'paste'...) or an app's own drawing
+  // (24 x 24 SVG markup, fixed text in the app's code - never data).
   const actions = suiteEl('div', 'suite-splash-actions');
-  const choices = [];
-  if (opts.resume) {
-    choices.push({ label: 'Pick up where you left off', detail: opts.resume.detail,
-      run: opts.resume.run, primary: true, resume: true });
-  }
-  for (const a of opts.actions) choices.push(opts.resume ? { ...a, primary: false } : a);
-  for (const c of choices) {
-    const b = suiteEl('button', 'suite-splash-choice' + (c.primary ? ' is-primary' : '') + (c.resume ? ' is-resume' : ''));
+  for (const c of opts.actions) {
+    const b = suiteEl('button', 'suite-splash-choice' + (c.primary ? ' is-primary' : ''));
     b.type = 'button';
-    b.append(suiteEl('span', 'suite-splash-choice-label', c.label));
-    if (c.detail) b.append(suiteEl('span', 'suite-splash-choice-detail', c.detail));
+    const art = SUITE_ACTION_ICONS[c.icon] || c.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (see above)
+      b.append(icon);
+    }
+    const text = suiteEl('span', 'suite-splash-choice-words');
+    text.append(suiteEl('span', 'suite-splash-choice-label', c.label));
+    if (c.detail) text.append(suiteEl('span', 'suite-splash-choice-detail', c.detail));
+    b.append(text);
     b.addEventListener('click', () => { suiteSplashClose(); c.run(); });
     actions.append(b);
   }
+  dlg.append(actions);
 
-  dlg.append(close, head, actions);
+  // Picking up a crash backup: offered, but small and quiet - a slim row
+  // under the cards, since it is rarely needed. (Only shown when the last
+  // session ended without saving or exporting.)
+  if (opts.resume) {
+    const r = suiteEl('button', 'suite-splash-resume');
+    r.type = 'button';
+    const icon = suiteFeatButton('', '', '').querySelector('svg');
+    icon.innerHTML = SUITE_ACTION_ICONS.resume;
+    r.append(icon, suiteEl('span', 'suite-splash-resume-label', 'Pick up where you left off'),
+             suiteEl('span', 'suite-splash-resume-detail', opts.resume.detail));
+    r.addEventListener('click', () => { suiteSplashClose(); opts.resume.run(); });
+    dlg.append(r);
+  }
+
   if (opts.hint) dlg.append(suiteEl('p', 'suite-splash-hint', opts.hint));
   // The animated tour of the app's favorite features, when the app has one.
   if (opts.features && opts.features.length) dlg.append(suiteFeaturesCard(opts.features, opts.appId));
 
-  // The rest of the family, as a row of small cards, then the credits, then
-  // the version (with the update check) and the Install choice.
+  // The rest of the family, as a row of small cards, then the credits and
+  // the links (edtrapps.com, the source on GitHub), then the version (with
+  // the update check) and the Install choice.
   const foot = suiteSplashFoot({ version: opts.version || (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''),
                                  check: opts.checkUpdate, name: app.name });
   dlg.append(suiteFamilyRow(opts.appId), suiteCreditsLine(), foot);
@@ -7581,8 +7717,8 @@ function suiteSplash(opts) {
   document.body.append(dlg);
   suiteSplashDialog = dlg;
   dlg.showModal();
-  // Focus the first choice, so Enter does the obvious thing straight away.
-  const first = actions.querySelector('button');
+  // Focus the main choice, so Enter does the obvious thing straight away.
+  const first = actions.querySelector('.is-primary') || actions.querySelector('button');
   if (first) first.focus();
   return dlg;
 }
