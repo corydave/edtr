@@ -554,6 +554,120 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
   .suite-splash[open] { animation: suite-pop .16s ease-out; }
   @keyframes suite-pop { from { opacity: 0; transform: translateY(6px); } }
 }
+/* ---- Features: the animated tour (renderSuiteFeatures and friends) ------
+   Colours come from the app's --suite-fg (text) and --suite-accent (its own
+   colour), so every drawing follows light and dark mode. The accent is mixed
+   a little toward the text colour: darker in light mode, lighter in dark
+   mode, so it always stands out from the background. */
+.suite-feats { display: flex; flex-direction: column; gap: 10px; max-width: 640px; margin: 0 auto; }
+.suite-feat-stage {
+  --fx-fg: var(--suite-fg, currentColor);
+  --fx-acc: color-mix(in oklab, var(--suite-accent, #0046ad) 68%, var(--fx-fg));
+  --fx-pop: color-mix(in oklab, #e8590c 80%, var(--fx-fg));          /* a warm second colour */
+  --fx-ok:  color-mix(in oklab, #2f9e44 78%, var(--fx-fg));          /* "done", "fixed" */
+  color: var(--fx-fg);
+  aspect-ratio: 16 / 10; width: 100%; border-radius: 12px; overflow: hidden;
+  background: color-mix(in srgb, currentColor 5%, var(--suite-bg, Canvas));
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.suite-feat-art { display: block; width: 100%; height: 100%; }
+.suite-feat-words { min-height: 4.6em; }                 /* the controls stay put as the text changes length */
+.suite-feat-title { margin: 2px 0 4px; font-size: 16px; }
+.suite-feat-text { margin: 0; font-size: 14px; line-height: 1.5; opacity: .88; }
+.suite-feat-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.suite-feat-step, .suite-feat-pause {
+  flex: none; width: 40px; height: 40px; border-radius: 999px; padding: 0; cursor: pointer;
+  display: inline-grid; place-items: center; color: inherit; font: inherit;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+.suite-feat-step:hover, .suite-feat-pause:hover { background: color-mix(in srgb, currentColor 13%, transparent); }
+.suite-feat-step svg, .suite-feat-pause svg { width: 20px; height: 20px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feat-pause svg path[d^="M7 4"] { fill: currentColor; }     /* the play triangle is solid */
+.suite-feat-dots { display: flex; gap: 2px; flex: 1; justify-content: center; }
+/* Each dot is a 32px target (easy to tap) with a small round mark inside. */
+.suite-feat-dot { width: 32px; height: 32px; padding: 0; border: 0; background: none; cursor: pointer;
+  display: inline-grid; place-items: center; border-radius: 999px; }
+.suite-feat-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid currentColor; opacity: .55; box-sizing: border-box; }
+.suite-feat-dot[aria-current="true"]::after { background: var(--suite-accent, #0046ad); border-color: var(--suite-accent, #0046ad);
+  opacity: 1; width: 22px; border-radius: 6px; }
+.suite-feat-count { font-size: 12.5px; opacity: .75; min-width: 3.6em; text-align: center; }
+.suite-feats button:focus-visible, .suite-feats-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { .suite-feats button:focus-visible, .suite-feats-card:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-feats button:focus-visible, :root[data-theme="dark"] .suite-feats-card:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-feats button:focus-visible, :root[data-theme="light"] .suite-feats-card:focus-visible { outline-color: #0046ad; }
+@media (max-width: 420px) { .suite-feat-count { display: none; } }   /* the dots already say where you are */
+
+/* The tour as its own dialog (from the splash card). */
+.suite-feats-dlg {
+  background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 14px; padding: 18px 20px 14px; margin: auto;
+  width: min(620px, 94vw); max-width: 94vw; max-height: 94vh; overflow: auto;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .35); font: inherit; font-size: 14px; line-height: 1.45;
+}
+.suite-feats-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+.suite-feats-dlg h2 { margin: 0 0 12px; font-size: 18px; }
+.suite-feats-dlg .suite-splash-x:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+
+/* The card that opens it: as wide as its row, with a sparkle. */
+.suite-feats-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 10px 0 0; padding: 10px 14px;
+  min-height: 48px; border-radius: 10px; cursor: pointer; text-align: left; font: inherit; color: inherit;
+  background: color-mix(in srgb, var(--suite-accent, #0046ad) 9%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--suite-accent, #0046ad) 55%, currentColor);
+}
+.suite-feats-card:hover { background: color-mix(in srgb, var(--suite-accent, #0046ad) 16%, transparent); }
+.suite-feats-card-icon { flex: none; width: 26px; height: 26px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feats-card-words { display: flex; flex-direction: column; gap: 2px; }
+
+/* The drawings' own colour classes (used inside each APP_FEATURES picture).
+   Tints use color-mix, so `opacity` stays free for the animations. */
+/* Text size and weight are set here on the drawing itself (inherited), so a
+   drawing's own font-size attributes still win where it needs bigger words. */
+.suite-feat-art { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px; font-weight: 600; }
+.suite-feat-art .fx-ink   { fill: var(--fx-fg); }
+.suite-feat-art .fx-paper { fill: var(--suite-bg, Canvas); }
+.suite-feat-art .fx-soft  { fill: color-mix(in srgb, var(--fx-fg) 9%, transparent); }
+.suite-feat-art .fx-mute  { fill: color-mix(in srgb, var(--fx-fg) 26%, transparent); }
+.suite-feat-art .fx-acc   { fill: var(--fx-acc); }
+.suite-feat-art .fx-acc-soft { fill: color-mix(in srgb, var(--fx-acc) 22%, transparent); }
+.suite-feat-art .fx-pop   { fill: var(--fx-pop); }
+.suite-feat-art .fx-pop-soft { fill: color-mix(in srgb, var(--fx-pop) 25%, transparent); }
+.suite-feat-art .fx-ok    { fill: var(--fx-ok); }
+.suite-feat-art .fx-accbtn { fill: var(--suite-accent, #0046ad); }   /* the app colour itself: white text on it is 7:1 */
+.suite-feat-art .fx-white { fill: #fff; }
+.suite-feat-art .fx-line, .suite-feat-art .fx-line-acc, .suite-feat-art .fx-line-pop,
+.suite-feat-art .fx-line-mute, .suite-feat-art .fx-line-ok {
+  fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feat-art .fx-line      { stroke: var(--fx-fg); }
+.suite-feat-art .fx-line-acc  { stroke: var(--fx-acc); }
+.suite-feat-art .fx-line-pop  { stroke: var(--fx-pop); }
+.suite-feat-art .fx-line-ok   { stroke: var(--fx-ok); }
+.suite-feat-art .fx-line-white { fill: none; stroke: #fff; stroke-width: 4; }
+.suite-feat-art .fx-line-mute { stroke: color-mix(in srgb, var(--fx-fg) 30%, transparent); }
+.suite-feat-art .fx-edge  { stroke: color-mix(in srgb, var(--fx-fg) 28%, transparent); stroke-width: 1.5; }
+.suite-feat-art .fx-t     { fill: var(--fx-fg); }
+.suite-feat-art .fx-t-acc { fill: var(--fx-acc); }
+.suite-feat-art .fx-t-pop { fill: var(--fx-pop); }
+.suite-feat-art .fx-t-ok  { fill: var(--fx-ok); }
+.suite-feat-art .fx-t-mute { fill: color-mix(in srgb, var(--fx-fg) 55%, transparent); }
+.suite-feat-art .fx-t-w   { fill: #fff; }
+.suite-feat-art .fx-mono  { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 500; }
+.suite-feat-art .fx-hl    { fill: color-mix(in srgb, #fcc419 60%, transparent); }   /* highlighter yellow */
+.suite-feat-art .fx-dim   { fill: #000; fill-opacity: .55; }                          /* dims, in either theme */
+.suite-feat-art .fx-dash  { stroke-dasharray: 5 4; }
+.suite-feat-art .fx-thin  { stroke-width: 1.5; }
+.suite-feat-art .fx-thick { stroke-width: 4; }
+.suite-feat-art .fx-stop-acc { stop-color: var(--fx-acc); }
+.suite-feat-art .fx-stop-pop { stop-color: var(--fx-pop); }
+.suite-feat-art .fx-stop-ok  { stop-color: var(--fx-ok); }
+.suite-feat-art .fx-stop-hi  { stop-color: #fff; }
+.suite-feat-art .fx-stop-ink { stop-color: var(--fx-fg); }
+
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 
     /* Smooth color transitions on mode switch */
@@ -1725,7 +1839,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     <svg id="theme-icon-sun" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
   </button>
 
-  <button class="btn btn-ghost theme-toggle" id="btn-help" title="Help: shortcuts, about, changelog, more apps (?)" aria-label="Help">
+  <button class="btn btn-ghost theme-toggle" id="btn-help" title="Help: features, shortcuts, about, changelog, more apps (?)" aria-label="Help">
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
   </button>
 
@@ -1988,13 +2102,18 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
     <button class="btn btn-ghost help-x" data-close aria-label="Close">&times;</button>
   </div>
   <div class="help-tabs" role="tablist" aria-label="Help sections">
-    <button role="tab" id="htab-keys" aria-controls="hpane-keys" aria-selected="true">Keyboard shortcuts</button>
+    <button role="tab" id="htab-features" aria-controls="hpane-features" aria-selected="true">Features</button>
+    <button role="tab" id="htab-keys" aria-controls="hpane-keys" aria-selected="false" tabindex="-1">Keyboard shortcuts</button>
     <button role="tab" id="htab-about" aria-controls="hpane-about" aria-selected="false" tabindex="-1">About</button>
     <button role="tab" id="htab-log" aria-controls="hpane-log" aria-selected="false" tabindex="-1">Changelog</button>
     <button role="tab" id="htab-apps" aria-controls="hpane-apps" aria-selected="false" tabindex="-1">More apps</button>
   </div>
 
-  <div class="help-pane" role="tabpanel" id="hpane-keys" aria-labelledby="htab-keys">
+  <div class="help-pane" role="tabpanel" id="hpane-features" aria-labelledby="htab-features">
+    <!-- The animated tour: APP_FEATURES, drawn by renderSuiteFeatures (shared SUITE block). -->
+    <div id="suite-features"></div>
+  </div>
+  <div class="help-pane" role="tabpanel" id="hpane-keys" aria-labelledby="htab-keys" hidden>
     <table class="help-keys">
       <caption class="sr-only">Keyboard shortcuts</caption>
       <tbody>
@@ -5927,6 +6046,7 @@ dom.btnRedo.addEventListener('click', redo);
      - draws the "More apps" tab of the help panel (renderSuiteApps)
      - the credits in the About tab (renderSuiteCredits)
      - the splash screen shown at start-up (suiteSplash)
+     - the animated Features tour (renderSuiteFeatures, suiteFeaturesOpen, suiteFeaturesCard)
      - crash backups and the backup icon (SuiteBackup, suiteBackupBadge)
      - installing the app (SuiteInstall) and checking for updates (SuiteUpdate)
 
@@ -6318,6 +6438,7 @@ function suiteWhen(ms) {
      actions: [ { label, detail, run, primary } ... ],   // the app's ways to begin
      resume:  { detail, run } or null,                  // only when a backup exists
      hint:    'You can also drop an image anywhere.',   // optional
+     features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
    })
@@ -6365,6 +6486,8 @@ function suiteSplash(opts) {
 
   dlg.append(close, head, actions);
   if (opts.hint) dlg.append(suiteEl('p', 'suite-splash-hint', opts.hint));
+  // The animated tour of the app's favorite features, when the app has one.
+  if (opts.features && opts.features.length) dlg.append(suiteFeaturesCard(opts.features, opts.appId));
 
   // The rest of the family, as a row of small cards, then the credits, then
   // the version (with the update check) and the Install choice.
@@ -6882,6 +7005,265 @@ function suiteBackupDialog(opts) {
   restore.focus();
 }
 
+/* ---- v4 + Features: a short, animated tour of an app's favorite features ----
+   Every app keeps its own list, APP_FEATURES, near its CHANGELOG:
+
+     const APP_FEATURES = [
+       { title: 'Merge Shapes',                       // a few words
+         text:  'Pick overlapping shapes, then ...',  // one or two sentences
+         alt:   'A square and a circle slide ...',    // what the animation shows, for screen readers
+         still: 4,                                    // seconds into the loop that make the best still picture
+         art:   '<svg viewBox="0 0 320 200">...</svg>' }
+     ];
+
+   The block draws them three ways, all with the same slider:
+     renderSuiteFeatures(el, APP_FEATURES)      the Features tab of the help panel
+     suiteFeaturesOpen(APP_FEATURES, appId)     a dialog of its own (the splash card opens this)
+     suiteFeaturesCard(APP_FEATURES, appId)     a big button that opens that dialog
+                                                (suiteSplash adds one by itself when it is given
+                                                `features`; TXTEDTR puts one on its empty pane)
+
+   The pictures are small SVG drawings that move with SVG's own animation
+   tags (<animate>, <animateTransform>), so they need no files, work offline
+   and straight off a disk, and stay sharp at any size. Their colours come
+   from classes (fx-ink, fx-acc ...) styled in the block's CSS from the app's
+   --suite-fg and --suite-accent, so every drawing follows light and dark mode
+   and takes on the app's own colour.
+
+   Safety: the drawings are fixed text written into each app's own code -
+   never anything a person typed or a file brought in - and they are read
+   with DOMParser as SVG (not dropped in with innerHTML). Titles and
+   descriptions go in with textContent.
+
+   Motion: the animation can be paused with a button (it loops forever, and
+   anything that moves for more than five seconds needs a way to stop it).
+   With "reduce motion" switched on in the device's settings, each drawing
+   starts paused on its best still frame. A drawing scrolled out of sight or
+   on a hidden tab stops, so it never costs anything in the background. */
+
+/* Turn one fixed SVG string into an element, or null if it will not parse.
+   Ids inside the drawing (clip paths, gradients ...) get a number added, so
+   two copies on one page - the help tab and the splash's tour, say - never
+   borrow each other's clip paths. */
+let suiteFeatureArtCount = 0;
+function suiteFeatureArt(svgText) {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  const svg = doc.documentElement;
+  if (!svg || svg.nodeName !== 'svg' || doc.querySelector('parsererror')) return null;
+  const tag = '-' + (++suiteFeatureArtCount);
+  const ids = new Set();
+  for (const el of svg.querySelectorAll('[id]')) { ids.add(el.id); el.id += tag; }
+  if (ids.size) {
+    for (const el of svg.querySelectorAll('*')) {
+      for (const attr of [...el.attributes]) {
+        // url(#name) in clip-path, fill, mask ...; #name in href.
+        const v = attr.value.replace(/url\(#([\w-]+)\)/g, (m, id) => ids.has(id) ? 'url(#' + id + tag + ')' : m);
+        const w = /href$/.test(attr.name) && v[0] === '#' && ids.has(v.slice(1)) ? v + tag : v;
+        if (w !== attr.value) el.setAttribute(attr.name, w);
+      }
+    }
+  }
+  return document.importNode(svg, true);
+}
+
+/* True when the person has asked their device for less motion. */
+function suiteWantsLessMotion() {
+  return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+/* Draw the slider into `container`. Returns { show(i), destroy() }. */
+function renderSuiteFeatures(container, features, opts = {}) {
+  if (container.suiteFeatures) container.suiteFeatures.destroy();   // drawn before: start again
+  container.replaceChildren();
+  if (!features || !features.length) return { show() {}, destroy() {} };
+
+  const uid = 'sf' + Math.random().toString(36).slice(2, 8);         // unique ids on this page
+  let index = 0;
+  let paused = suiteWantsLessMotion();      // paused by the person (or by their settings)
+  let offscreen = false;                    // stopped because nobody can see it
+  let svg = null;                           // the drawing on show
+
+  // The carousel pattern: a labelled region holding one slide at a time.
+  const root = suiteEl('section', 'suite-feats');
+  root.setAttribute('aria-roledescription', 'carousel');
+  root.setAttribute('aria-label', opts.label || 'Features');
+
+  const slide = suiteEl('div', 'suite-feat-slide');
+  slide.setAttribute('role', 'group');
+  slide.setAttribute('aria-roledescription', 'slide');
+  const stage = suiteEl('div', 'suite-feat-stage');
+  const words = suiteEl('div', 'suite-feat-words');
+  const title = suiteEl('h3', 'suite-feat-title');
+  title.id = uid + '-title';
+  const text = suiteEl('p', 'suite-feat-text');
+  words.append(title, text);
+  slide.append(stage, words);
+
+  // Controls: back, one dot per feature, "2 of 5", pause, next.
+  const nav = suiteEl('div', 'suite-feat-nav');
+  const prev = suiteFeatButton('suite-feat-step', 'Previous feature', '<path d="m15 18-6-6 6-6"/>');
+  const next = suiteFeatButton('suite-feat-step', 'Next feature', '<path d="m9 18 6-6-6-6"/>');
+  const dots = suiteEl('div', 'suite-feat-dots');
+  const dotButtons = features.map((f, i) => {
+    const d = suiteEl('button', 'suite-feat-dot');
+    d.type = 'button';
+    d.setAttribute('aria-label', 'Feature ' + (i + 1) + ': ' + f.title);
+    d.addEventListener('click', () => show(i, true));
+    dots.append(d);
+    return d;
+  });
+  const count = suiteEl('span', 'suite-feat-count');
+  const pause = suiteFeatButton('suite-feat-pause', '', '');
+  nav.append(prev, dots, count, pause, next);
+
+  // A quiet announcement of the new title when someone changes slide
+  // (kept separate, so nothing is read out when the slider first appears).
+  const live = suiteEl('p', 'suite-sr');
+  live.setAttribute('aria-live', 'polite');
+
+  root.append(slide, nav, live);
+  container.append(root);
+
+  prev.addEventListener('click', () => show(index - 1, true));
+  next.addEventListener('click', () => show(index + 1, true));
+  pause.addEventListener('click', () => { paused = !paused; applyMotion(); });
+
+  // Left/Right anywhere in the slider move between features; Home/End jump.
+  root.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    let to = null;
+    if (e.key === 'ArrowLeft') to = index - 1;
+    else if (e.key === 'ArrowRight') to = index + 1;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = features.length - 1;
+    if (to === null) return;
+    e.preventDefault();
+    e.stopPropagation();                       // keep the app's own arrow-key shortcuts out of it
+    show(to, true);
+  });
+
+  // Play only while it can be seen (not on a hidden tab, not scrolled away).
+  let watcher = null;
+  if ('IntersectionObserver' in window) {
+    watcher = new IntersectionObserver((entries) => {
+      offscreen = !entries.some((en) => en.isIntersecting);
+      applyMotion();
+    });
+    watcher.observe(stage);
+  }
+
+  // Start or stop the drawing, and keep the pause button's words in step.
+  function applyMotion() {
+    const label = paused ? 'Play animation' : 'Pause animation';
+    pause.setAttribute('aria-label', label);
+    pause.title = label;
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.querySelector('svg').innerHTML = paused
+      ? '<path d="M7 4v16l13-8z"/>'                                   // play (a fixed icon, not data)
+      : '<path d="M8 4v16"/><path d="M16 4v16"/>';                    // pause
+    if (!svg || !svg.pauseAnimations) return;
+    if (paused || offscreen) svg.pauseAnimations(); else svg.unpauseAnimations();
+  }
+
+  function show(i, announce) {
+    index = (i + features.length) % features.length;               // wraps round at both ends
+    const f = features[index];
+    title.textContent = f.title;
+    text.textContent = f.text;
+    slide.setAttribute('aria-label', (index + 1) + ' of ' + features.length + ': ' + f.title);
+    count.textContent = (index + 1) + ' of ' + features.length;
+    dotButtons.forEach((d, n) => d.setAttribute('aria-current', String(n === index)));
+
+    stage.replaceChildren();
+    svg = suiteFeatureArt(f.art || '');
+    if (svg) {
+      svg.classList.add('suite-feat-art');
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', f.alt || f.title);
+      svg.setAttribute('focusable', 'false');
+      stage.append(svg);
+      // A paused drawing shows its best frame rather than its first.
+      if (paused && svg.setCurrentTime) { svg.pauseAnimations(); svg.setCurrentTime(f.still || 0); }
+    }
+    applyMotion();
+    if (announce) live.textContent = 'Feature ' + (index + 1) + ' of ' + features.length + ': ' + f.title;
+  }
+
+  function destroy() {
+    if (watcher) watcher.disconnect();
+    container.suiteFeatures = null;
+  }
+
+  show(opts.start || 0, false);
+  const api = { show: (i) => show(i, true), destroy };
+  container.suiteFeatures = api;
+  return api;
+}
+
+/* A small round icon button for the slider (the icon is fixed, never data). */
+function suiteFeatButton(className, label, iconPaths) {
+  const b = suiteEl('button', className);
+  b.type = 'button';
+  if (label) { b.setAttribute('aria-label', label); b.title = label; }
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = iconPaths;
+  b.append(icon);
+  return b;
+}
+
+/* The tour in a dialog of its own, over whatever is on screen (the splash,
+   say). Closing it puts focus back where it was. */
+function suiteFeaturesOpen(features, appId) {
+  const app = SUITE_APPS.find((a) => a.id === appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-feats-dlg');
+  const h = suiteEl('h2', '', 'What ' + app.name + ' can do');
+  h.id = 'suite-feats-dlg-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the tour');
+  const body = suiteEl('div');
+  dlg.append(close, h, body);
+  document.body.append(dlg);
+  const slider = renderSuiteFeatures(body, features, { label: app.name + ' features' });
+
+  function finish() {
+    slider.destroy();
+    dlg.close();
+    dlg.remove();
+    if (back && back.isConnected && back.focus) back.focus();
+  }
+  close.addEventListener('click', finish);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); });   // Escape
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) finish(); });  // a click on the dimmed backdrop
+  dlg.showModal();
+  const first = dlg.querySelector('.suite-feat-step:last-of-type');            // "Next" is the likely first press
+  if (first) first.focus();
+  return dlg;
+}
+
+/* A wide card - "See what PDFEDTR can do" - that opens the tour. */
+function suiteFeaturesCard(features, appId) {
+  const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
+  const b = suiteEl('button', 'suite-feats-card');
+  b.type = 'button';
+  const icon = suiteFeatButton('', '', '').querySelector('svg');   // borrow the icon maker
+  // Sparkles (Lucide): "something worth seeing".
+  icon.innerHTML = '<path d="M9.94 15.5a2 2 0 0 0-1.44-1.44l-6.13-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>';
+  icon.classList.add('suite-feats-card-icon');
+  const words = suiteEl('span', 'suite-feats-card-words');
+  words.append(suiteEl('span', 'suite-splash-choice-label', 'See what ' + app.name + ' can do'),
+               suiteEl('span', 'suite-splash-choice-detail',
+                       'A quick, animated tour of ' + features.length + ' favorite features'));
+  b.append(icon, words);
+  b.addEventListener('click', () => suiteFeaturesOpen(features, appId));
+  return b;
+}
+
 /* SUITE BLOCK v4 - END ================================================== */
 
 
@@ -6889,12 +7271,60 @@ function suiteBackupDialog(opts) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.10';
+const APP_VERSION = '1.11';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
    1.4 went out without notes, so they are not listed rather than guessed at. */
+/* ---- Features: the animated tour (Help > Features, and the card on the splash) ----
+   PDFEDTR's favorite features, drawn and animated by renderSuiteFeatures in the
+   shared SUITE block. Each one has a title, a sentence or two, a description of the
+   animation for screen readers (alt), the best still moment in seconds (still,
+   shown when the device asks for less motion), and the drawing itself (art): a
+   small SVG whose colours come from the block's fx-* classes. Edit freely; keep
+   the drawings to fixed text written here (never anything from a file or a person). */
+const APP_FEATURES = [
+  {
+    title: "Turn any PDF into a form",
+    text: "Draw a box over a blank line and it becomes a real, fillable field in the saved PDF - then type your answers right in.",
+    alt: "On a sign-up sheet, a dashed box is drawn over the Name line and becomes a field with \"Ada Lovelace\" typed in; the same happens for Email.",
+    still: 6.8,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="0" y="0" width="320" height="200" class="fx-soft"/><rect x="90" y="14" width="140" height="172" rx="3" class="fx-paper fx-edge"/><text x="102" y="36" class="fx-t" font-size="11">Workshop sign-up</text><rect x="102" y="44" width="90" height="4" rx="3" class="fx-mute"/><text x="104" y="64" class="fx-t-mute" font-size="9">Name</text><line x1="104" y1="80" x2="216" y2="80" class="fx-line-mute fx-thin"/><rect x="102" y="66" width="0" height="17" rx="3" class="fx-line-acc fx-thin fx-dash"><animate attributeName="width" values="0;0;116;116;0;0" keyTimes="0;0.06;0.2;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.059;0.06;0.24;0.25;1" dur="8s" repeatCount="indefinite"/></rect><rect x="102" y="66" width="116" height="17" rx="3" class="fx-acc-soft" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.21;0.25;0.93;0.97;1" dur="8s" repeatCount="indefinite"/></rect><clipPath id="pda1"><rect x="104" y="66" height="17" width="0"><animate attributeName="width" values="0;0;112;112;0;0" keyTimes="0;0.28;0.4;0.93;0.97;1" dur="8s" repeatCount="indefinite"/></rect></clipPath><text x="106" y="78" class="fx-t" font-size="10" clip-path="url(#pda1)">Ada Lovelace</text><text x="104" y="106" class="fx-t-mute" font-size="9">Email</text><line x1="104" y1="122" x2="216" y2="122" class="fx-line-mute fx-thin"/><rect x="102" y="108" width="0" height="17" rx="3" class="fx-line-acc fx-thin fx-dash"><animate attributeName="width" values="0;0;116;116;0;0" keyTimes="0;0.42;0.56;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.419;0.42;0.6;0.61;1" dur="8s" repeatCount="indefinite"/></rect><rect x="102" y="108" width="116" height="17" rx="3" class="fx-acc-soft" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.57;0.61;0.93;0.97;1" dur="8s" repeatCount="indefinite"/></rect><clipPath id="pda2"><rect x="104" y="108" height="17" width="0"><animate attributeName="width" values="0;0;112;112;0;0" keyTimes="0;0.64;0.76;0.93;0.97;1" dur="8s" repeatCount="indefinite"/></rect></clipPath><text x="106" y="120" class="fx-t" font-size="10" clip-path="url(#pda2)">ada@example.edu</text><rect x="102" y="146" width="116" height="4" rx="3" class="fx-mute"/><rect x="102" y="156" width="96" height="4" rx="3" class="fx-mute"/><rect x="102" y="166" width="108" height="4" rx="3" class="fx-mute"/></svg>'
+  },
+  {
+    title: "Clickable checkboxes",
+    text: "Add checkboxes next to each choice, so people can tick what they want - which workshop sessions they will attend, say.",
+    alt: "Four checkboxes pop onto a form one after another, then three of them are clicked and get check marks.",
+    still: 5.8,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="0" y="0" width="320" height="200" class="fx-soft"/><rect x="90" y="14" width="140" height="172" rx="3" class="fx-paper fx-edge"/><text x="102" y="36" class="fx-t" font-size="11">Which sessions?</text><g transform="translate(110 60)"><g><animateTransform attributeName="transform" type="scale" values="0;0;1.2;1;1;0;0" keyTimes="0;0.099;0.14;0.17;0.93;0.96;1" dur="7s" repeatCount="indefinite"/><rect x="-7" y="-7" width="14" height="14" rx="3" class="fx-paper fx-line-acc fx-thin"/></g></g><rect x="126" y="57" width="70" height="6" rx="3" class="fx-mute"/><path d="M105 60l3.5 3.5 6.5-7.5" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" class="fx-line-acc fx-thick"><animate attributeName="stroke-dashoffset" values="1;1;0;0;1;1" keyTimes="0;0.48;0.53;0.93;0.95;1" dur="7s" repeatCount="indefinite"/></path><g transform="translate(110 88)"><g><animateTransform attributeName="transform" type="scale" values="0;0;1.2;1;1;0;0" keyTimes="0;0.169;0.21;0.24;0.93;0.96;1" dur="7s" repeatCount="indefinite"/><rect x="-7" y="-7" width="14" height="14" rx="3" class="fx-paper fx-line-acc fx-thin"/></g></g><rect x="126" y="85" width="88" height="6" rx="3" class="fx-mute"/><g transform="translate(110 116)"><g><animateTransform attributeName="transform" type="scale" values="0;0;1.2;1;1;0;0" keyTimes="0;0.239;0.28;0.31;0.93;0.96;1" dur="7s" repeatCount="indefinite"/><rect x="-7" y="-7" width="14" height="14" rx="3" class="fx-paper fx-line-acc fx-thin"/></g></g><rect x="126" y="113" width="60" height="6" rx="3" class="fx-mute"/><path d="M105 116l3.5 3.5 6.5-7.5" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" class="fx-line-acc fx-thick"><animate attributeName="stroke-dashoffset" values="1;1;0;0;1;1" keyTimes="0;0.62;0.67;0.93;0.95;1" dur="7s" repeatCount="indefinite"/></path><g transform="translate(110 144)"><g><animateTransform attributeName="transform" type="scale" values="0;0;1.2;1;1;0;0" keyTimes="0;0.309;0.35;0.38;0.93;0.96;1" dur="7s" repeatCount="indefinite"/><rect x="-7" y="-7" width="14" height="14" rx="3" class="fx-paper fx-line-acc fx-thin"/></g></g><rect x="126" y="141" width="80" height="6" rx="3" class="fx-mute"/><path d="M105 144l3.5 3.5 6.5-7.5" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" class="fx-line-acc fx-thick"><animate attributeName="stroke-dashoffset" values="1;1;0;0;1;1" keyTimes="0;0.74;0.79;0.93;0.95;1" dur="7s" repeatCount="indefinite"/></path><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.4;0.44;0.86;0.9;1" dur="7s" repeatCount="indefinite"/><g><path d="M0 0L0 17L4.5 13L7.5 20L10.5 18.6L7.6 11.8L13 11.8Z" fill="#fff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></g><animateTransform attributeName="transform" type="translate" values="112 64;112 64;112 64;112 120;112 120;112 148;112 148;112 148" keyTimes="0;0.44;0.48;0.58;0.62;0.7;0.74;1" dur="7s" repeatCount="indefinite"/></g></svg>'
+  },
+  {
+    title: "Draw your signature",
+    text: "Sign with a mouse, a finger or a stylus - or just type your name - pick an ink color, and place it anywhere on the page.",
+    alt: "A handwritten signature is drawn stroke by stroke along a signing line, then a Signed badge appears.",
+    still: 5.6,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="0" y="0" width="320" height="200" class="fx-soft"/><rect x="40" y="40" width="240" height="120" rx="10" class="fx-paper fx-edge"/><text x="54" y="60" class="fx-t-mute" font-size="10">Sign here</text><line x1="56" y1="134" x2="264" y2="134" class="fx-line-mute fx-thin"/><path d="M62 120c6-22 14-40 20-36s-8 40-6 44 18-30 24-28-4 22 0 22 10-14 14-14 2 12 6 12 8-10 14-10 4 8 10 8 12-16 18-14-2 12 4 12 14-6 20-8M150 112c10-2 50-6 96-4" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" class="fx-line-acc"><animate attributeName="stroke-dashoffset" values="1;1;0;0;1;1" keyTimes="0;0.08;0.6;0.93;0.96;1" dur="7s" repeatCount="indefinite"/></path><circle cx="232" cy="58" r="6" class="fx-ink"/><circle cx="248" cy="58" r="6" class="fx-acc"/><circle cx="264" cy="58" r="6" class="fx-pop"/><circle cx="248" cy="58" r="9" class="fx-line-acc fx-thin"/><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.62;0.66;0.93;0.97;1" dur="7s" repeatCount="indefinite"/><rect x="196" y="140" width="76" height="16" rx="8" class="fx-soft"/><path d="M204 148l3 3 6-6" class="fx-line-ok fx-thin"/><text x="218" y="152" class="fx-t-ok" font-size="9">Signed</text></g></svg>'
+  },
+  {
+    title: "Rearrange and merge pages",
+    text: "Bring in pages from another PDF and drag the thumbnails along the page strip into the order you want.",
+    alt: "A page from another PDF is dragged down into the page strip between pages 1 and 2; the later pages slide right to make room.",
+    still: 6.0,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="0" y="0" width="320" height="200" class="fx-soft"/><rect x="14" y="120" width="292" height="66" rx="10" class="fx-paper fx-edge"/><g transform="translate(52 153)"><rect x="-20" y="-28" width="40" height="56" rx="3" class="fx-paper fx-edge"/><rect x="-13" y="-18" width="26" height="3" rx="3" class="fx-mute"/><rect x="-13" y="-11" width="20" height="3" rx="3" class="fx-mute"/><rect x="-13" y="-4" width="24" height="3" rx="3" class="fx-mute"/><text x="0" y="20" class="fx-t-mute" font-size="11" text-anchor="middle">1</text></g><g><animateTransform attributeName="transform" type="translate" values="104 153;104 153;156 153;156 153;104 153;104 153" keyTimes="0;0.38;0.48;0.92;0.98;1" dur="8s" repeatCount="indefinite"/><rect x="-20" y="-28" width="40" height="56" rx="3" class="fx-paper fx-edge"/><rect x="-13" y="-18" width="26" height="3" rx="3" class="fx-mute"/><rect x="-13" y="-11" width="20" height="3" rx="3" class="fx-mute"/><rect x="-13" y="-4" width="24" height="3" rx="3" class="fx-mute"/><text x="0" y="20" class="fx-t-mute" font-size="11" text-anchor="middle">2</text></g><g><animateTransform attributeName="transform" type="translate" values="156 153;156 153;208 153;208 153;156 153;156 153" keyTimes="0;0.38;0.48;0.92;0.98;1" dur="8s" repeatCount="indefinite"/><rect x="-20" y="-28" width="40" height="56" rx="3" class="fx-paper fx-edge"/><rect x="-13" y="-18" width="26" height="3" rx="3" class="fx-mute"/><rect x="-13" y="-11" width="20" height="3" rx="3" class="fx-mute"/><rect x="-13" y="-4" width="24" height="3" rx="3" class="fx-mute"/><text x="0" y="20" class="fx-t-mute" font-size="11" text-anchor="middle">3</text></g><rect x="200" y="20" width="106" height="84" rx="8" class="fx-soft"/><text x="212" y="38" class="fx-t-mute" font-size="9">other.pdf</text><g><animateTransform attributeName="transform" type="translate" values="252 76;252 76;104 153;104 153;252 76;252 76" keyTimes="0;0.18;0.5;0.92;0.98;1" dur="8s" repeatCount="indefinite"/><g><animateTransform attributeName="transform" type="scale" values="1;1;1.12;1.12;1;1" keyTimes="0;0.18;0.25;0.45;0.5;1" dur="8s" repeatCount="indefinite"/><rect x="-20" y="-28" width="40" height="56" rx="3" class="fx-acc-soft fx-edge"/><rect x="-13" y="-18" width="26" height="3" rx="3" class="fx-acc"/><rect x="-13" y="-11" width="20" height="3" rx="3" class="fx-mute"/><rect x="-13" y="-4" width="24" height="3" rx="3" class="fx-mute"/><text x="0" y="20" class="fx-t-acc" font-size="11" text-anchor="middle">A</text></g></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.52;0.56;0.93;0.97;1" dur="8s" repeatCount="indefinite"/><text x="160" y="112" class="fx-t-ok" font-size="11" text-anchor="middle">Merged: 4 pages</text></g></svg>'
+  },
+  {
+    title: "Highlight, note and date",
+    text: "Highlight key sentences, leave sticky-note reminders and drop in today’s date - all without printing a thing.",
+    alt: "A yellow highlighter sweeps across a line of a page, a sticky note pops up beside it, and a date stamp appears at the bottom.",
+    still: 5.6,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect x="0" y="0" width="320" height="200" class="fx-soft"/><rect x="70" y="14" width="150" height="172" rx="3" class="fx-paper fx-edge"/><rect x="82" y="34" width="120" height="5" rx="3" class="fx-mute"/><rect x="82" y="51" width="128" height="5" rx="3" class="fx-mute"/><rect x="82" y="68" width="104" height="5" rx="3" class="fx-mute"/><rect x="80" y="81" width="0" height="13" rx="2" class="fx-hl"><animate attributeName="width" values="0;0;128;128;0;0" keyTimes="0;0.1;0.32;0.93;0.97;1" dur="7s" repeatCount="indefinite"/></rect><rect x="82" y="85" width="124" height="5" rx="3" class="fx-mute"/><rect x="82" y="102" width="90" height="5" rx="3" class="fx-mute"/><rect x="82" y="119" width="118" height="5" rx="3" class="fx-mute"/><rect x="82" y="136" width="126" height="5" rx="3" class="fx-mute"/><rect x="82" y="153" width="70" height="5" rx="3" class="fx-mute"/><g transform="translate(236 44)"><g><animateTransform attributeName="transform" type="scale" values="0;0;1.2;1;1;0;0" keyTimes="0;0.419;0.46;0.49;0.93;0.96;1" dur="7s" repeatCount="indefinite"/><path d="M-26 -26H22L26 -22V26H-26Z" class="fx-hl"/><path d="M18 -26V-18H26" class="fx-line-mute fx-thin"/><rect x="-18" y="-14" width="34" height="4" rx="3" class="fx-mute"/><rect x="-18" y="-5" width="28" height="4" rx="3" class="fx-mute"/><rect x="-18" y="4" width="32" height="4" rx="3" class="fx-mute"/></g></g><g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.58;0.62;0.93;0.97;1" dur="7s" repeatCount="indefinite"/><rect x="174" y="150" width="70" height="20" rx="4" class="fx-line-acc fx-thin"/><text x="209" y="164" class="fx-t-acc" font-size="10" text-anchor="middle">Oct 10</text></g></svg>'
+  }
+];
+
 const CHANGELOG = [
+  { version: '1.11', date: '2026-10-10', notes: [
+    'New Features tab, first in Help (? or F1 or the Help button): an animated tour of five favorite features. The splash has a "See what PDFEDTR can do" card that opens the same tour.'
+  ] },
   { version: '1.10', date: '2026-10-07', notes: [
     'More apps and the splash\'s row of apps now include DSKEDTR (dskedtr.app), the new desktop publishing app: newsletters, flyers and booklets, with text that flows between boxes.',
     'With nine apps in the family, the splash\'s row shows the eight others on one line on a computer, and 4 + 4 on a phone.'
@@ -6939,7 +7369,7 @@ const helpDlg = document.getElementById('help-dlg');
 const selectHelpTab = suiteWireTabs(helpDlg.querySelector('[role="tablist"]'));
 
 /* Open the help panel on one tab: 'htab-keys', 'htab-about', 'htab-log' or 'htab-apps'. */
-function openHelp(tabId = 'htab-keys') {
+function openHelp(tabId = 'htab-features') {
   selectHelpTab(tabId);
   if (!helpDlg.open) helpDlg.showModal();
   document.getElementById(tabId).focus();   // focus on the tab, so the arrows work at once
@@ -7035,6 +7465,7 @@ async function startUp() {
   if (state.pdfLibDoc) return;                             // a PDF already arrived
   suiteSplash({
     appId: 'pdfedtr',
+    features: APP_FEATURES,
     actions: [
       { label: 'Open a PDF', detail: 'Fill it in, sign it, mark it up or rearrange its pages', primary: true,
         run: () => dom.fileInput.click() },
@@ -7094,6 +7525,7 @@ document.getElementById('help-ver').textContent = APP_VERSION;
 document.getElementById('about-ver').textContent = APP_VERSION;
 renderChangelog();
 renderSuiteApps(document.getElementById('suite-apps'), 'pdfedtr');
+renderSuiteFeatures(document.getElementById('suite-features'), APP_FEATURES);   // Help > Features: the animated tour
 renderSuiteCredits(document.getElementById('suite-credits'));
 // The Install button: shown only while the browser allows installing.
 SuiteInstall.button(document.getElementById('btn-install'), (outcome) => {
@@ -7109,7 +7541,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
     /* no sw.js beside the page: the app still works, just not offline */
   });
 }
-document.getElementById('btn-help').addEventListener('click', () => openHelp('htab-keys'));
+document.getElementById('btn-help').addEventListener('click', () => openHelp('htab-features'));
 document.getElementById('btn-brand').addEventListener('click', () => openHelp('htab-apps'));
 helpDlg.querySelector('[data-close]').addEventListener('click', () => helpDlg.close());
 // A click on the dim backdrop (outside the panel's box) closes it too.
@@ -7127,7 +7559,7 @@ document.addEventListener('keydown', e => {
   if (helpDlg.open) return;
   // F1 opens help from anywhere, even while typing; preventDefault stops the
   // browser opening its own help page.
-  if (e.key === 'F1') { e.preventDefault(); openHelp('htab-keys'); return; }
+  if (e.key === 'F1') { e.preventDefault(); openHelp('htab-features'); return; }
 
   // Ctrl/Cmd + Z → undo
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); return; }
@@ -7163,7 +7595,7 @@ document.addEventListener('keydown', e => {
   if (inTextField) return;
 
   // ? opens the help panel (not while typing, where ? is just a character).
-  if (e.key === '?') { e.preventDefault(); openHelp('htab-keys'); return; }
+  if (e.key === '?') { e.preventDefault(); openHelp('htab-features'); return; }
 
   /* While a tool is armed, Enter drops it in the middle of the page.
      This is the keyboard-only route to placing an element. */
