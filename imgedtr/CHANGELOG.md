@@ -2,6 +2,21 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.18.0 - 2026-10-11 - Text boxes, fonts and ratios
+
+- **Text boxes size like boxes.** Dragging a text layer's handles now sizes the box, not the letters:
+  - the **width** is fixed and the words **wrap** to fit (a word too long for the box breaks between letters);
+  - the **height** is a minimum - the box still grows if the words need more room;
+  - the **font size stays the same** (change it with the Size slider);
+  - a one-line text box keeps its left and right handles even when it is thin, so it can always be made narrower;
+  - the **W and H** number boxes now work for text too (they were greyed out);
+  - **Fit box to text** (next to Edit text) goes back to a box that hugs the words, one line per Enter;
+  - the text editor wraps the same way while you type. Resizing several selected layers at once still scales everything together, font included.
+  - Projects save the box as `boxW` / `boxH` (checked when a project opens). Older projects open exactly as before.
+- **Ten built-in fonts:** Atkinson Hyperlegible, Montserrat, Poppins, Comfortaa, Oswald, Anton, Bebas Neue, Playfair Display, Pacifico and Permanent Marker (regular and bold where the font has a bold). The font files (Latin letters, from Fontsource 5.3.0) live inside index.html, so they look the same on every computer, work offline, and no request goes to Google Fonts or anywhere else. Each loads the first time it is used. Licenses: SIL OFL 1.1, Permanent Marker Apache 2.0; credited in About. The four older choices (Sans, Serif, Mono, Rounded) are unchanged.
+- **New blank canvas: ratios.** A Ratio row (Free, 16:9, 4:3, 3:2, 1:1, 4:5, 2:3, 9:16). Picking one sets the height from the width; with a ratio picked, typing either side works out the other. The size presets show their ratio.
+- index.html grows by about 370 KB because of the fonts.
+
 ## 1.17.3 - 2026-10-11 - The source, front and center
 
 - **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
