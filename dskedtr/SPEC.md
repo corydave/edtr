@@ -1242,7 +1242,8 @@ back the same day at Dave's request: he prefers the text collapsing back
 into the first box's overflow, the next boxes emptied (as before).
 
 - **Touch handles:** `touchScreen()` (pointer: coarse) gives `handlePx()`
-  18 (9 with a mouse), `handleReach()` 22 (7.5), `rotHandlePx()` 48 (26);
+  15 (9 with a mouse; 18 until 0.43.1), with corners rounded by
+  `handleRound()` (a fifth of the size; 0 with a mouse), `handleReach()` 22 (7.5), `rotHandlePx()` 48 (26);
   the quick bar keeps 70 px clear above (46); table column tabs 1.8 times
   bigger, with a matching reach. On pointerdown, when a handle and a port
   are both in reach, the nearer one wins; on narrow boxes the diagonal

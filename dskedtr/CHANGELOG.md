@@ -1,5 +1,13 @@
 # DSKEDTR changelog
 
+## 0.43.2 - 2026-10-12
+
+- The shared SUITE block was pasted in again: the other apps now share DSKEDTR's touch handles and number slider (as `SUITE_TOUCH` and `suiteNumberPop()`). DSKEDTR keeps its own versions of both.
+
+## 0.43.1 - 2026-10-12
+
+- **Touch handles are a little smaller and softly rounded.** On a phone or tablet the resize handles are 15 px (from 18), with gently rounded corners (the crop handles too). How far away a finger can catch one is unchanged (about 22 px), so they are just as easy to grab. With a mouse, nothing changes.
+
 ## 0.43.0 - 2026-10-12
 
 - **Number fields on a phone or tablet open a slider, not the keyboard.** Tap a number field in the Inspector (X, Y, Width, Height, Outline width, font size, spacing, shadow, table sizes, guide and tab stop positions) or in Page setup and the Calendar, and a small panel opens just below it (or above, near the bottom of the screen): its name and value, a slider across a sensible range (X runs across the page, Width up to the page width, Outline width 0 to 24 pt, Rotation -180 to 180), and - and + buttons that take one step (hold them to keep going). The field lights up so you can see which one you are changing. For an exact number, tap the lit field again, or the keyboard button, and the keyboard comes up as usual. A slide is one step to undo. Tap anywhere else, or press Escape, to close it. With a mouse, or arriving by a keyboard, fields work as before.
