@@ -2353,7 +2353,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.42.1';
+const APP_VERSION = '0.42.2';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -7695,13 +7695,14 @@ function focusStoryId() {
 const PORT_R_PX = 11;                // a port's radius on screen
 const PORT_OUT_PX = 16;              // how far outside the edge a port sits
 const PORT_IN_PX = 26;               // and how far in from the corner
-const PORT_DIAG_PX = 18;             // on a narrow box: this far out from the corner, each way
+const PORT_DIAG_PX = 18;             // on a narrow box: this far out from the corner, each way (26 on a touch screen, clear of the bigger handles)
 const PORT_NARROW_PX = 96;           // "narrow": less than this wide on screen
 /** Where a box's two ports are (page points), turned with the box. */
 function portSpots(f) {
   const px = onePx(), narrow = f.w / px < PORT_NARROW_PX, c = centreOf(f);
-  const inP = narrow ? { x: f.x - PORT_DIAG_PX * px, y: f.y - PORT_DIAG_PX * px } : { x: f.x + PORT_IN_PX * px, y: f.y - PORT_OUT_PX * px };
-  const outP = narrow ? { x: f.x + f.w + PORT_DIAG_PX * px, y: f.y + f.h + PORT_DIAG_PX * px } : { x: f.x + f.w - PORT_IN_PX * px, y: f.y + f.h + PORT_OUT_PX * px };
+  const diag = (window.matchMedia('(pointer: coarse)').matches ? 26 : PORT_DIAG_PX) * px;
+  const inP = narrow ? { x: f.x - diag, y: f.y - diag } : { x: f.x + PORT_IN_PX * px, y: f.y - PORT_OUT_PX * px };
+  const outP = narrow ? { x: f.x + f.w + diag, y: f.y + f.h + diag } : { x: f.x + f.w - PORT_IN_PX * px, y: f.y + f.h + PORT_OUT_PX * px };
   return { in: rotatePoint(inP, f.rotation, c), out: rotatePoint(outP, f.rotation, c) };
 }
 function inPortOf(f) { return portSpots(f).in; }
@@ -7854,8 +7855,16 @@ function pageTag(x, y, text, anchor, px) {
 }
 
 /* ---------- Picked objects: outlines and handles ---------- */
-const HANDLE_PX = 9;                 // a handle's size on screen
+const HANDLE_PX = 9;                 // a handle's size on screen (with a mouse)
 const ROT_HANDLE_PX = 26;            // how far above the top edge the rotate handle sits, on screen
+/* On a touch screen (0.42.1, Dave: hard to resize on a phone) the handles
+   are drawn bigger, a finger can catch them from further away (a target
+   about 44 px across, as phones advise), and the rotate handle sits higher
+   so it never crowds the top handle. */
+const touchScreen = () => window.matchMedia('(pointer: coarse)').matches;
+const handlePx = () => (touchScreen() ? 18 : HANDLE_PX);
+const handleReach = () => (touchScreen() ? 22 : HANDLE_PX / 2 + 3);
+const rotHandlePx = () => (touchScreen() ? 48 : ROT_HANDLE_PX);
 
 /** The one picked object that is not a line, or null. Its handles turn with it. */
 function singleShape() {
@@ -7886,7 +7895,7 @@ function handlePoints() {
     { name: 'sw', x: xs.w, y: ys.s }, { name: 'w', x: xs.w, y: ys.m }
   ];
   if (one) {
-    if (one.type !== 'table') pts.push({ name: 'rot', x: xs.c, y: ys.n - ROT_HANDLE_PX * onePx() });   // tables don't turn
+    if (one.type !== 'table') pts.push({ name: 'rot', x: xs.c, y: ys.n - rotHandlePx() * onePx() });   // tables don't turn
     const c = centreOf(one);
     return pts.map((p) => Object.assign(p, rotatePoint(p, one.rotation, c)));
   }
@@ -7913,10 +7922,11 @@ function renderHandles() {
   const tbl = list.length === 1 && list[0].type === 'table' && !list[0].locked ? list[0] : null;
   if (tbl) {
     for (const x of tableEdges(tbl).xs.slice(1, -1)) {
-      layers.handles.appendChild(svgEl('rect', { x: x - 3 * px, y: tbl.y - 16 * px, width: 6 * px, height: 12 * px, rx: 3 * px, fill: '#065f46', stroke: '#ffffff', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+      const big = touchScreen() ? 1.8 : 1;            // (bigger for a finger)
+      layers.handles.appendChild(svgEl('rect', { x: x - 3 * big * px, y: tbl.y - (4 + 12 * big) * px, width: 6 * big * px, height: 12 * big * px, rx: 3 * big * px, fill: '#065f46', stroke: '#ffffff', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
     }
   }
-  const s = HANDLE_PX * px;
+  const s = handlePx() * px;
   const pts = handlePoints();
   const rot = pts.find((h) => h.name === 'rot');
   if (rot) {
@@ -7946,7 +7956,7 @@ function renderCropOverlay(o) {
   g.appendChild(svgEl('rect', Object.assign({ x: b.x, y: b.y, width: b.w, height: b.h, fill: 'none', stroke: '#065f46', 'stroke-dasharray': '4 3' }, line)));
   g.appendChild(frameShapeEl(o, Object.assign({ fill: 'none', stroke: '#10b981' }, line)));
   layers.handles.appendChild(g);
-  const s = HANDLE_PX * onePx();
+  const s = handlePx() * onePx();
   for (const h of cropHandles(o)) {
     const r = svgEl('rect', Object.assign({ x: h.x - s / 2, y: h.y - s / 2, width: s, height: s, fill: '#065f46', stroke: '#ffffff' }, line));
     if (o.rotation) r.setAttribute('transform', 'rotate(' + r2(o.rotation) + ' ' + r2(h.x) + ' ' + r2(h.y) + ')');
@@ -11084,7 +11094,7 @@ function tableColAt(p) {
   const px = onePx(), reach = (window.matchMedia('(pointer: coarse)').matches ? 10 : 4) * px;
   const xs = tableEdges(t).xs;
   for (let i = 1; i < xs.length - 1; i++) {
-    if (Math.abs(p.x - xs[i]) <= reach && p.y >= t.y - 18 * px && p.y <= t.y + t.h) return { t, i: i - 1 };
+    if (Math.abs(p.x - xs[i]) <= reach && p.y >= t.y - (touchScreen() ? 28 : 18) * px && p.y <= t.y + t.h) return { t, i: i - 1 };   // (its tab is taller on a touch screen)
   }
   return null;
 }
@@ -11102,7 +11112,7 @@ function moveTableCol(d, p) {
   updateInspector();
 }
 function handleAt(p) {
-  const r = (HANDLE_PX / 2 + 3) * onePx();
+  const r = handleReach() * onePx();
   for (const h of handlePoints()) if (Math.abs(p.x - h.x) <= r && Math.abs(p.y - h.y) <= r) return h;
   return null;
 }
@@ -11266,7 +11276,7 @@ function wirePointer() {
     if (tool === 'select' && cropId) {
       // Cropping: corners size the picture, inside moves it, anywhere else ends cropping.
       const o = obj(cropId);
-      const reach = (HANDLE_PX / 2 + 3) * onePx();
+      const reach = handleReach() * onePx();
       const ch = cropHandles(o).find((h) => Math.abs(h.x - p.x) <= reach && Math.abs(h.y - p.y) <= reach);
       const lp = toLocal(o, p), b = cropBox(o);
       if (ch) {
@@ -11289,11 +11299,16 @@ function wirePointer() {
       svg.setPointerCapture(e.pointerId); return;
     }
     if (tool === 'select') {
+      // A handle and a port can both be within a finger's reach (they sit close
+      // on a narrow box): the one nearer the finger wins (0.42.1).
+      const near = handleAt(p), handleDist = near ? Math.hypot(p.x - near.x, p.y - near.y) : Infinity;
+      const nearer = (spot) => Math.hypot(p.x - spot.x, p.y - spot.y) <= handleDist;
       // An out-port of the shown story starts linking.
       const portFrame = outPortAt(p);
-      if (portFrame) { selectObjects([portFrame.id]); startLinkPick(portFrame.id); return; }
+      if (portFrame && nearer(outPortOf(portFrame))) { selectObjects([portFrame.id]); startLinkPick(portFrame.id); return; }
       // A green in-port goes back to the box the text comes from (on its page).
-      const before = inPortAt(p);
+      let before = inPortAt(p);
+      if (before) { const fr = doc.stories[before.story].frames; if (!nearer(inPortOf(obj(fr[fr.indexOf(before.id) + 1])))) before = null; }
       if (before) {
         if (pageOf(before.id) !== pageIndex) goToPage(pageOf(before.id));
         selectObjects([before.id]); announce('The text comes from ' + objName(before)); return;
@@ -11569,7 +11584,7 @@ function placeQuickBar(list) {
     const b = unionBounds(list);
     const left = o.left + b.x * o.k, right = o.left + (b.x + b.w) * o.k, upper = o.top + b.y * o.k, lower = o.top + (b.y + b.h) * o.k;
     cx = (left + right) / 2;
-    const clear = 46;                                   // room for the turn handle and the in-port above, the out-port below
+    const clear = touchScreen() ? 70 : 46;              // room for the turn handle and the in-port above, the out-port below (more on a touch screen)
     if (upper - clear - h >= desk.top + 4) { top = upper - clear - h; bar.dataset.side = 'above'; }
     else if (lower + clear + h <= desk.bottom - 4) { top = lower + clear; bar.dataset.side = 'below'; }
     else { top = desk.top + 8; bar.dataset.side = 'top'; }
@@ -21669,8 +21684,11 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.42.2", date: "2026-10-12", title: "", notes: [
+    "Bigger handles on a touch screen. The resize handles are drawn twice the size on a phone or tablet, a finger can catch one from about 22 px away (a target about 44 px across), the turn handle sits higher so it never crowds the top handle, and a table's column tabs are bigger too. When a handle and a link port are both within reach, the one nearer the finger wins; on narrow boxes the ports sit a little further out. With a mouse, nothing changes."
+  ] },
   { version: "0.42.1", date: "2026-10-11", title: "", notes: [
-    "The splash now says the sample is a four-page school newsletter (it grew from two pages in 0.42.0)."
+    "The splash says \"A four-page school newsletter\" for Explore the sample. It still said two pages after the sample grew in 0.42.0."
   ] },
   { version: "0.42.0", date: "2026-10-11", title: "", notes: [
     "The sample newsletter has four pages. Page 3, \"Around the School\", has a feature story that runs on to page 4 (with its \"Continued on page 4\" and \"Continued from page 3\" lines), a bulleted field trip checklist in a tinted sidebar, and a table of after-school clubs. Page 4, the back page, has the end of that story, a boxed book fair notice, a numbered list of ways to help, two short items and the school's contact details in a band. Every page uses Master A, so the footer counts \"Page 3 of 4\" by itself. Try Two pages side by side, All pages, or ticking Booklet in the View menu.",

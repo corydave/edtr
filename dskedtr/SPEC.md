@@ -1235,6 +1235,19 @@ pasting works into other documents and other DSKEDTR tabs.
   linked story crashed (the overflowing story's last box wasn't found):
   `restore` now rebuilds the lookups (`reindex`) before redrawing.
 
+## Touch handles (0.42.2)
+
+Unlinking was tried as a split (each box keeping its words) and rolled
+back the same day at Dave's request: he prefers the text collapsing back
+into the first box's overflow, the next boxes emptied (as before).
+
+- **Touch handles:** `touchScreen()` (pointer: coarse) gives `handlePx()`
+  18 (9 with a mouse), `handleReach()` 22 (7.5), `rotHandlePx()` 48 (26);
+  the quick bar keeps 70 px clear above (46); table column tabs 1.8 times
+  bigger, with a matching reach. On pointerdown, when a handle and a port
+  are both in reach, the nearer one wins; on narrow boxes the diagonal
+  ports sit 26 px out on touch (18).
+
 ## The sample newsletter (0.42.0)
 
 Dave: "add a few more pages to the sample newsletter. Let's show off the

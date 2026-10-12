@@ -1,5 +1,9 @@
 # DSKEDTR changelog
 
+## 0.42.2 - 2026-10-12
+
+- **Bigger handles on a touch screen.** The resize handles are drawn twice the size on a phone or tablet, a finger can catch one from about 22 px away (a target about 44 px across), the turn handle sits higher so it never crowds the top handle, and a table's column tabs are bigger too. When a handle and a link port are both within reach, the one nearer the finger wins; on narrow boxes the ports sit a little further out. With a mouse, nothing changes.
+
 ## 0.42.1 - 2026-10-11
 
 - **The splash says "A four-page school newsletter"** for Explore the sample. It still said two pages after the sample grew in 0.42.0.
