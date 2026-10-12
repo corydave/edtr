@@ -1,5 +1,11 @@
 # 3DEDTR changelog
 
+## 0.20.0 - 2026-10-12 - Made for fingers
+
+- Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (Position runs 150 mm either way, Size from 1 to 300 mm, Turn from -180 to 180, and very wide boxes get an everyday range; the model changes as you slide.)
+- The gizmo's arrows, rings and handles are bigger on a phone or tablet, so they are easier to catch with a finger.
+- The shared SUITE block was pasted in again (new: the touch standard, `SUITE_TOUCH` and `suiteNumberPop()`).
+
 ## 0.19.1 - 2026-10-11 - The source, front and center
 
 - **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
