@@ -2,6 +2,12 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.20.0 - 2026-10-12 - Box-select over a picture
+
+- **Alt+drag (Option+drag on a Mac) with the Select tool always draws a selection box**, even when the press lands on a layer. Before, a box could only start on empty canvas, so on a design with a full-size picture or background shape every drag moved the background instead. Every layer completely inside the box is selected (a group comes along whole); locked and hidden layers are skipped, as before. **Shift+Alt** adds to the current selection. Alt pressed after a move has started still turns snapping off.
+- The Canvas panel's tip, the multi-selection tip and the Select tool's tooltip mention it.
+- Phones and tablets (no Alt key): start the box on empty canvas or in the grey area around it, or lock the background layer so drags go past it.
+
 ## 1.19.0 - 2026-10-12 - Made for fingers
 
 - Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (X, Y, W and H run across the canvas, Rotate and Angle from -180 to 180, and the layer moves as you slide. Opacity's box, with its own slider beside it, still types.)

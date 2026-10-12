@@ -964,7 +964,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
        TOOL RAIL - one button per tool. aria-pressed marks the active one.
        =================================================================== -->
   <nav class="rail" aria-label="Tools" id="toolRail">
-    <button class="icon-btn" data-tool="select"      title="Select and move (V)" aria-label="Select tool"><span data-icon="pointer"></span></button>
+    <button class="icon-btn" data-tool="select"      title="Select and move; Alt+drag selects an area (V)" aria-label="Select tool"><span data-icon="pointer"></span></button>
     <button class="icon-btn" data-tool="crop"        title="Crop canvas (K)" aria-label="Crop canvas tool"><span data-icon="crop"></span></button>
     <hr aria-hidden="true">
     <button class="icon-btn" data-tool="arrow"       title="Arrow (A)"      aria-label="Arrow tool"><span data-icon="arrow"></span></button>
@@ -1317,7 +1317,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.19.0';
+const APP_VERSION = '1.20.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1372,6 +1372,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.20.0', date: '2026-10-12', notes: [
+    'Select several layers by dragging a box over them, even on top of a picture or background shape: hold Alt (Option on a Mac) as you start dragging with the Select tool. The box picks up every layer that is completely inside it. Shift+Alt adds to what is already selected. (A plain drag on empty canvas, or from the grey area around it, still draws a box too.)'
+  ] },
   { version: '1.19.0', date: '2026-10-12', notes: [
     'Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (X, Y, W and H run across the canvas, Rotate and Angle from -180 to 180, and the layer moves as you slide. Opacity\'s box, with its own slider beside it, still types.)',
     'Handles you can catch with a finger: on a phone or tablet they are drawn bigger (15 px) with softly rounded corners, a finger catches one from about 22 px away (the nearer handle wins), and the turn handle sits further up, clear of the rest. With a mouse, nothing changes. The crop box\'s handles too.',
@@ -3021,6 +3024,18 @@ stage.addEventListener('pointerdown', (e) => {
       }
       return;
     }
+    // Alt (Option on a Mac) + drag: ALWAYS draw a selection box, even when the
+    // press lands on a layer. That is how you box-select things that sit on top
+    // of a full-size picture or background shape (a plain drag there would move
+    // the picture). Shift+Alt keeps what is already selected.
+    // (Alt pressed only AFTER a move has started still turns snapping off.)
+    if (e.altKey && !e.ctrlKey && !e.metaKey) {
+      const base = e.shiftKey ? selectedLayers().map((l) => l.id) : [];
+      if (!e.shiftKey) selectLayer(null);
+      drag = { kind: 'marquee', startP: p, endP: null, base };
+      stage.style.cursor = 'crosshair';
+      return;
+    }
     const hit = layerAt(p.x, p.y);
     // A click on a group member picks the whole group (unless you double-clicked into it).
     const hitGroup = hit && hit.groupId && hit.groupId !== state.enteredGroup ? hit.groupId : null;
@@ -4096,7 +4111,7 @@ function renderProps() {
     labelBtn('flipH', 'Flip horiz.', () => flipCanvas('x'), 'Flip canvas horizontally'),
     labelBtn('flipV', 'Flip vert.', () => flipCanvas('y'), 'Flip canvas vertically')));
   propsBody.append(el('p', { class: 'hint', text: 'Halve size is handy for screenshots from high-DPI (Retina) screens, which come in twice as big.' }));
-  propsBody.append(el('p', { class: 'hint', style: 'margin-top:6px', text: 'Click a layer to select it; Shift+click or drag a box to select several. Pan with Space+drag or scrolling; Ctrl+scroll to zoom. The faded area around the canvas is a staging area: park things there - only the canvas is exported.' }));
+  propsBody.append(el('p', { class: 'hint', style: 'margin-top:6px', text: 'Click a layer to select it; Shift+click or drag a box to select several. To draw the box over a picture or background (instead of moving it), hold Alt (Option on a Mac) as you start dragging; a box picks up the layers that are completely inside it. Pan with Space+drag or scrolling; Ctrl+scroll to zoom. The faded area around the canvas is a staging area: park things there - only the canvas is exported.' }));
 }
 
 /**
@@ -5299,7 +5314,7 @@ function multiFields() {
     labelBtn('distV', 'Space down', () => distributeLayers('y'), 'Distribute evenly top to bottom')));
   // (Opacity for all of them at once: the % button in the layer action bar.)
   propsBody.append(el('p', { class: 'hint', text: 'Drag to move them together. Corner handles resize everything evenly; the top handle turns them. ' +
-    (gid ? 'Double-click a member on the canvas to edit it on its own.' : 'Shift or Ctrl/Cmd+click adds or removes a layer.') }));
+    (gid ? 'Double-click a member on the canvas to edit it on its own.' : 'Shift or Ctrl/Cmd+click adds or removes a layer; Alt+drag draws a selection box anywhere.') }));
 }
 
 /** Call whenever layers were added/removed/reordered or the document changed. */
