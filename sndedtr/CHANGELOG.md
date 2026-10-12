@@ -5,6 +5,11 @@ All notable changes to SNDEDTR. Newest first.
 The version number lives in two places and both must move together on a
 release: `APP_VERSION` in `index.html` and `CACHE_VERSION` in `sw.js`.
 
+## 0.11.0 - 2026-10-12 - Made for fingers
+
+- Volume envelope points are bigger on a phone or tablet (15 px), a finger catches one from about 22 px away, and the nearest point wins when two are close. With a mouse, nothing changes.
+- The shared SUITE block was pasted in again (new: the touch standard, `SUITE_TOUCH` and `suiteNumberPop()`).
+
 ## 0.10.1 - 2026-10-11 - The source, front and center
 
 - **The top bar is the family's standard 52px tall**, and Inspector headings and labels match IMGEDTR's (headings 12px bold capitals with .08em spacing, labels 13px).
