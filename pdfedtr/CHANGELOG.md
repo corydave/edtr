@@ -17,6 +17,12 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.22 - 2026-10-12 - Made for fingers
+
+- Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (X, Y, W and H run across the page, and move the item as you slide.)
+- The resize corner and the turn knob follow the suite's touch standard: 15 px with softly rounded corners, caught from about 22 px away, and the knob 48 px above the box.
+- The shared SUITE block was pasted in again (new: the touch standard, `SUITE_TOUCH` and `suiteNumberPop()`).
+
 ## 1.21 - 2026-10-11 - The source, front and center
 
 - **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
