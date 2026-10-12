@@ -2353,7 +2353,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.42.0';
+const APP_VERSION = '0.42.1';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -21669,6 +21669,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.42.1", date: "2026-10-11", title: "", notes: [
+    "The splash now says the sample is a four-page school newsletter (it grew from two pages in 0.42.0)."
+  ] },
   { version: "0.42.0", date: "2026-10-11", title: "", notes: [
     "The sample newsletter has four pages. Page 3, \"Around the School\", has a feature story that runs on to page 4 (with its \"Continued on page 4\" and \"Continued from page 3\" lines), a bulleted field trip checklist in a tinted sidebar, and a table of after-school clubs. Page 4, the back page, has the end of that story, a boxed book fair notice, a numbered list of ways to help, two short items and the school's contact details in a band. Every page uses Master A, so the footer counts \"Page 3 of 4\" by itself. Try Two pages side by side, All pages, or ticking Booklet in the View menu.",
     "A new Reading order icon: an open book with an arrow under it (\"read in this order\"). The old one, three joined dots, looked like Share."
@@ -22169,7 +22172,7 @@ async function startUp() {
       { icon: 'new', label: 'New document', detail: 'One Letter page, 8.5 × 11 in', run: newDocument, primary: true },
       { icon: 'templates', label: 'Start from a template', detail: 'Flyer, newsletter, brochure, certificate, card, sign; or pick a size', run: openNewDialog },
       { icon: 'open', label: 'Open a project', detail: 'A .dskedtr file, or a Publisher (.pub) file', run: chooseFileToOpen },
-      { icon: 'sample', label: 'Explore the sample', detail: 'A two-page school newsletter', run: loadSample }
+      { icon: 'sample', label: 'Explore the sample', detail: 'A four-page school newsletter', run: loadSample }
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
     hint: 'You can also drop a .dskedtr project anywhere in this window.',

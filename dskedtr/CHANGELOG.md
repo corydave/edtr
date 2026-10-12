@@ -1,5 +1,9 @@
 # DSKEDTR changelog
 
+## 0.42.1 - 2026-10-11
+
+- **The splash says "A four-page school newsletter"** for Explore the sample. It still said two pages after the sample grew in 0.42.0.
+
 ## 0.42.0 - 2026-10-11
 
 - **The sample newsletter has four pages.** Page 3, "Around the School", has a feature story that runs on to page 4 (with its "Continued on page 4" and "Continued from page 3" lines), a bulleted field trip checklist in a tinted sidebar, and a table of after-school clubs. Page 4, the back page, has the end of that story, a boxed book fair notice, a numbered list of ways to help, two short items and the school's contact details in a band. Every page uses Master A, so the footer counts "Page 3 of 4" by itself. Try Two pages side by side, All pages, or ticking Booklet in the View menu.
