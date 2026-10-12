@@ -198,6 +198,16 @@ body {
 .quick-bar { position: absolute; z-index: 6; display: flex; gap: 2px; padding: 4px; border-radius: 999px;
   background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 14px rgba(0,0,0,.18); }
 .quick-bar[hidden] { display: none; }
+/* Numbers with a finger (0.43.0): the panel a tap on a number field opens, and the field it works on. */
+.num-pop { position: fixed; inset: auto; margin: 0; width: min(360px, calc(100vw - 16px)); padding: 10px 12px 12px; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--panel); color: var(--fg); box-shadow: 0 8px 24px rgba(0,0,0,.28); }
+.num-pop .np-head { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.num-pop .np-head output { color: var(--fg); font-weight: 700; font-variant-numeric: tabular-nums; }
+.num-pop .np-row { display: flex; align-items: center; gap: 8px; }
+.num-pop input[type="range"] { flex: 1; min-width: 0; height: 44px; accent-color: var(--accent); }
+.num-pop button { flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--field); color: var(--fg); font-size: 22px; line-height: 1; }
+.num-pop button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+input[type="number"].num-active { outline: 3px solid var(--accent); outline-offset: 1px; }
 .quick-bar button { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 999px;
   border: 0; background: transparent; color: var(--fg); cursor: pointer; }
 .quick-bar button:hover { background: color-mix(in srgb, var(--fg) 8%, transparent); }
@@ -1861,6 +1871,17 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 
 <!-- ===================== GUIDES AND GRID (a popover from the top bar) ===================== -->
 
+<!-- Numbers with a finger (0.43.0): a tap on a number field on a touch screen opens this beside it (see wireNumberPop). -->
+<div class="num-pop" id="numPop" popover="manual" role="group" aria-labelledby="numPopLabel">
+  <div class="np-head"><span id="numPopLabel">Number</span><output id="numPopValue"></output></div>
+  <div class="np-row">
+    <button type="button" id="numPopMinus" aria-label="Less" title="Less (hold to keep going)">&#8722;</button>
+    <input type="range" id="numPopRange">
+    <button type="button" id="numPopPlus" aria-label="More" title="More (hold to keep going)">+</button>
+    <button type="button" id="numPopType" aria-label="Type a number" title="Type a number (or tap the field again)">
+      <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></button>
+  </div>
+</div>
 <!-- Spoken updates for screen readers (role changes, reading order moves, overflow). -->
 <div id="announcer" class="sr-only" aria-live="polite"></div>
 <!-- Short messages on screen ("Saved...", "That file could not be opened"); read out too. -->
@@ -2353,7 +2374,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.42.2';
+const APP_VERSION = '0.43.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -11445,7 +11466,12 @@ function wirePointer() {
     if (!drag) return;
     const d = drag;
     drag = null;
-    if (d.kind === 'pan') { desk.classList.remove('panning'); return; }
+    if (d.kind === 'pan') {
+      desk.classList.remove('panning');
+      // A tap (not a slide) on the grey off the page picks nothing, as a click there does (0.43.0).
+      if (e && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 8 && selectedIds.length) { selectObjects([]); updateInspector(); announce('Nothing picked'); }
+      return;
+    }
     renderSnap([], null);
     if (d.kind === 'guide') { finishGuideDrag(d); return; }
     if (d.kind === 'tableRow') {
@@ -11484,6 +11510,213 @@ function wirePointer() {
   // After every drag the quick-action pill comes back where it belongs.
   svg.addEventListener('pointerup', (e) => { end(e); updateQuickBar(); });
   svg.addEventListener('pointercancel', (e) => { end(e); updateQuickBar(); });
+}
+
+/* ---------- Numbers with a finger (0.43.0) ----------
+   Dave: on a phone, never make people use the on-screen keyboard unless
+   they choose to. On a touch screen every number field (Outline width, X,
+   Y, Width, Height, font sizes, table sizes, Page setup...) works like this:
+     - first tap: the field lights up and a small panel opens beside it, with
+       a slider and - and + buttons (hold one down to keep going). No keyboard.
+     - a second tap on the lit field (or the panel's keyboard button): the
+       field takes typing, for an exact number. The keyboard comes up then,
+       because the person asked for it.
+   The fields are read-only to the keyboard until then (that is what keeps
+   the keyboard away). The panel changes the field and fires its usual
+   "input" and "change" events, so every field keeps doing exactly what it
+   did; undo groups a whole slide into one step, as typing does. With a
+   mouse nothing changes. */
+let numField = null;                                 // the number field the panel is working on
+let numTyping = null;                                // the field let loose for typing (second tap)
+/* Slider ranges for fields whose own limits are too wide to slide through
+   (or that have none), in the units the field shows. The slider widens to
+   include the field's value if it is outside. */
+function numRange(el) {
+  const u = (pt) => toU(pt);
+  const W = PAGE.width, H = PAGE.height, big = Math.max(W, H);
+  const fixed = {
+    fX: [0, u(W)], fW: [u(9), u(W)], fY: [0, u(H)], fH: [u(9), u(H)], fR: [-180, 180],
+    strokeWidth: [0, 24], chSize: [4, 144], stSize: [4, 144], chKern: [-200, 400],
+    stTracking: [-20, 100], stLeading: [0.7, 3], stBefore: [0, 72], stAfter: [0, 72],
+    stIndL: [0, 144], stIndF: [-72, 72], stIndR: [0, 144], shX: [-36, 36], shY: [-36, 36], shBlur: [0, 36],
+    tblRows: [1, 30], tblCols: [1, 12], listStart: [1, 50], boxCols: [1, 6], colCount: [2, 12],
+    colGap: [0, u(72)], boxGutter: [0, u(72)], wrapGap: [0, u(72)], tblPad: [0, u(36)], picRadius: [0, u(72)], cornerRadius: [0, u(72)],
+    tblColW: [u(9), u(W)], tblRowH: [0, u(216)],
+    psW: [u(144), u(1728)], psH: [u(144), u(1728)], psMtop: [0, u(144)], psMbottom: [0, u(144)], psMleft: [0, u(144)], psMright: [0, u(144)], psBleed: [0, u(36)]
+  };
+  const v = parseFloat(el.value);
+  let min, max;
+  if (fixed[el.id]) [min, max] = fixed[el.id];
+  else if (el.id === 'calYear') { const y = new Date().getFullYear(); min = y - 5; max = y + 15; }
+  else if (el.classList.contains('u-input')) { min = 0; max = u(big); }          // a tab stop or a guide: across the page
+  else {
+    min = el.min !== '' ? parseFloat(el.min) : 0;
+    max = el.max !== '' ? parseFloat(el.max) : Math.max(100, isFinite(v) ? v * 2 : 100);
+  }
+  if (isFinite(v)) { min = Math.min(min, v); max = Math.max(max, v); }
+  return { min, max, step: numStep(el) };
+}
+/** How much one press of - or + changes the field (its own step, or the units' step). */
+function numStep(el) {
+  const s = parseFloat(el.step);
+  if (isFinite(s) && s > 0) return s;
+  return el.classList.contains('u-input') ? unit().step : 1;
+}
+/** A number written to the field's step: 0.25 -> two decimals, 1 -> none. */
+function numText(v, step) {
+  const d = Math.min(4, (String(step).split('.')[1] || '').length);
+  return String(Number(v.toFixed(d)));
+}
+/** The words to say what the field is (its label without the number in it). */
+function numName(el) {
+  const lab = el.labels && el.labels[0];
+  const words = lab ? [...lab.childNodes].filter((n) => n !== el).map((n) => n.textContent).join(' ') : '';
+  return (words.replace(/\s+/g, ' ').trim() || el.getAttribute('aria-label') || el.title || 'Number');
+}
+/** Put a new value in the field, as typing would (input now; change when done). */
+function numPut(v, done) {
+  const el = numField;
+  if (!el) return;
+  const step = numStep(el);
+  const lo = el.min !== '' ? parseFloat(el.min) : -Infinity, hi = el.max !== '' ? parseFloat(el.max) : Infinity;
+  v = Math.max(lo, Math.min(hi, Math.round(v / step) * step));
+  el.value = numText(v, step);
+  const where = numWhere(el);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  if (done) el.dispatchEvent(new Event('change', { bubbles: true }));
+  numFollow(where);
+  numShow();
+}
+/* Some lists (tab stops, guides) are redrawn when a value changes, so the
+   field the panel works on can be swapped for a fresh copy. numWhere notes
+   where the field sits (the nearest parent with an id, and which number
+   field it is inside that parent); numFollow finds the fresh copy there and
+   carries on with it, so the panel stays open. */
+function numWhere(el) {
+  const box = el.parentElement && el.parentElement.closest('[id]');
+  return box ? { id: box.id, i: [...box.querySelectorAll('input[type="number"]')].indexOf(el) } : null;
+}
+function numFollow(where) {
+  if (!numField || numField.isConnected || !where) return;
+  const box = document.getElementById(where.id);
+  const fresh = box && box.querySelectorAll('input[type="number"]')[where.i];
+  if (!fresh) { closeNumPop(); return; }
+  numField = fresh;
+  fresh.classList.add('num-active');
+  placeNumPop();
+}
+/** Show the field's value in the panel, and put the slider there (widening its range if needed). */
+function numShow() {
+  const el = numField;
+  if (!el) return;
+  const r = numRange(el), range = $('numPopRange'), v = parseFloat(el.value);
+  range.min = String(r.min); range.max = String(r.max); range.step = String(r.step);
+  if (isFinite(v) && document.activeElement !== range) range.value = String(v);
+  setText('numPopValue', isFinite(v) ? numText(v, r.step) : '');
+  range.setAttribute('aria-valuetext', isFinite(v) ? numText(v, r.step) : 'none');
+}
+/** Open the panel for number field el (first tap). */
+function openNumPop(el) {
+  if (numField && numField !== el) closeNumPop();
+  numField = el;
+  el.classList.add('num-active');
+  const pop = $('numPop');
+  // Inside a dialog (Page setup, the calendar), the panel must live in the dialog too:
+  // an open dialog makes everything outside it untouchable.
+  const home = el.closest('dialog') || document.body;
+  if (pop.parentElement !== home) { if (pop.matches(':popover-open')) pop.hidePopover(); home.appendChild(pop); }
+  setText('numPopLabel', numName(el));
+  $('numPopRange').setAttribute('aria-label', numName(el));
+  if (!pop.matches(':popover-open')) pop.showPopover();
+  numShow();
+  placeNumPop();
+}
+/** Beside the field: below it, or above when there is no room below. */
+function placeNumPop() {
+  const el = numField, pop = $('numPop');
+  if (!el || !pop.matches(':popover-open')) return;
+  if (!el.isConnected || !el.getClientRects().length) { closeNumPop(); return; }   // (the field went: a list was redrawn)
+  const r = el.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+  const below = r.bottom + 6 + h <= window.innerHeight - 8;
+  pop.style.left = Math.round(Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2))) + 'px';
+  pop.style.top = Math.round(below ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + 'px';
+}
+function closeNumPop() {
+  const pop = $('numPop');
+  if (pop.matches(':popover-open')) pop.hidePopover();
+  if (numField) numField.classList.remove('num-active');
+  numField = null;
+}
+/** Second tap, or the keyboard button: let the field take typing (the keyboard comes up). */
+function numStartTyping(el) {
+  closeNumPop();
+  el.blur();                                         // (first, so the focusout below does not lock it again)
+  numTyping = el;
+  el.readOnly = false;
+  el.inputMode = 'decimal';
+  el.focus();
+  el.select();
+}
+function wireNumberPop() {
+  if (!touchScreen()) return;                        // with a mouse, fields stay as they are
+  // Read-only to the keyboard, until asked (a read-only field brings up no keyboard).
+  const lock = (root) => { for (const el of root.querySelectorAll('input[type="number"]')) if (el !== numTyping) el.readOnly = true; };
+  lock(document);
+  new MutationObserver((list) => {
+    for (const m of list) for (const n of m.addedNodes) if (n.nodeType === 1) { if (n.matches('input[type="number"]')) { if (n !== numTyping) n.readOnly = true; } else lock(n); }
+  }).observe(document.body, { childList: true, subtree: true });
+  // A tap on a number field: the panel; a second tap on the same field: typing.
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest && e.target.closest('input[type="number"]');
+    if (!el || el.disabled || el === numTyping) return;
+    if (numField === el) numStartTyping(el);
+    else openNumPop(el);
+  });
+  // Arriving by the keyboard (a tablet with a keyboard, a switch, a screen reader's own keys): typing works at once.
+  let lastPointer = 0;
+  document.addEventListener('pointerdown', () => { lastPointer = Date.now(); }, true);
+  document.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (el.matches && el.matches('input[type="number"]') && el.readOnly && Date.now() - lastPointer > 600) { numTyping = el; el.readOnly = false; }
+  });
+  // Typing done (the field lost the keyboard): read-only again.
+  document.addEventListener('focusout', (e) => {
+    if (e.target === numTyping) { numTyping.readOnly = true; numTyping.removeAttribute('inputmode'); numTyping = null; }
+  });
+  // The panel: the slider, - and + (hold to keep going), the keyboard button.
+  const range = $('numPopRange');
+  range.addEventListener('input', () => numPut(parseFloat(range.value), false));
+  range.addEventListener('change', () => numPut(parseFloat(range.value), true));
+  for (const [id, dir] of [['numPopMinus', -1], ['numPopPlus', 1]]) {
+    const b = $(id);
+    let timer = null, repeat = null;
+    const once = () => { if (numField) numPut(parseFloat(numField.value || '0') + dir * numStep(numField), false); };
+    const stop = () => {
+      clearTimeout(timer); clearInterval(repeat); timer = repeat = null;
+      if (!numField) return;
+      const where = numWhere(numField);
+      numField.dispatchEvent(new Event('change', { bubbles: true }));
+      numFollow(where);
+    };
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();                            // (keeps the focus where it is)
+      once();
+      timer = setTimeout(() => { repeat = setInterval(once, 70); }, 400);
+    });
+    for (const t of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(t, () => { if (timer || repeat) stop(); });
+    b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); once(); stop(); } });
+  }
+  $('numPopType').addEventListener('click', () => { if (numField) numStartTyping(numField); });
+  // Close: a tap anywhere else, Escape, or the field going away. Follow the field when the panel scrolls.
+  document.addEventListener('pointerdown', (e) => {
+    if (!numField) return;
+    if ($('numPop').contains(e.target) || e.target === numField) return;
+    if (e.target.closest && e.target.closest('input[type="number"]')) return;   // (another field: the click opens it)
+    closeNumPop();
+  }, true);
+  $('numPop').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); const el = numField; closeNumPop(); if (el) el.focus(); } });
+  document.addEventListener('scroll', () => placeNumPop(), true);
+  window.addEventListener('resize', placeNumPop);
 }
 
 /* ---------- The quick-action pill ----------
@@ -21684,6 +21917,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.43.0", date: "2026-10-12", title: "", notes: [
+    "Number fields on a phone or tablet open a slider, not the keyboard. Tap a number field in the Inspector (X, Y, Width, Height, Outline width, font size, spacing, shadow, table sizes, guide and tab stop positions) or in Page setup and the Calendar, and a small panel opens just below it (or above, near the bottom of the screen): its name and value, a slider across a sensible range (X runs across the page, Width up to the page width, Outline width 0 to 24 pt, Rotation -180 to 180), and - and + buttons that take one step (hold them to keep going). The field lights up so you can see which one you are changing. For an exact number, tap the lit field again, or the keyboard button, and the keyboard comes up as usual. A slide is one step to undo. Tap anywhere else, or press Escape, to close it. With a mouse, or arriving by a keyboard, fields work as before.",
+    "A tap on the grey around the page lets go of what is picked, as a click there already did with a mouse. A drag on the grey still scrolls and keeps what is picked."
+  ] },
   { version: "0.42.2", date: "2026-10-12", title: "", notes: [
     "Bigger handles on a touch screen. The resize handles are drawn twice the size on a phone or tablet, a finger can catch one from about 22 px away (a target about 44 px across), the turn handle sits higher so it never crowds the top handle, and a table's column tabs are bigger too. When a handle and a link port are both within reach, the one nearer the finger wins; on narrow boxes the ports sit a little further out. With a mouse, nothing changes."
   ] },
@@ -22565,6 +22802,7 @@ async function start() {
   wireChrome();
   wireLayers();
   wireFilmstrip();
+  wireNumberPop();
   wirePageSetup();
   wireSectionToggles();
   wireGuides();

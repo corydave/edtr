@@ -1,5 +1,10 @@
 # DSKEDTR changelog
 
+## 0.43.0 - 2026-10-12
+
+- **Number fields on a phone or tablet open a slider, not the keyboard.** Tap a number field in the Inspector (X, Y, Width, Height, Outline width, font size, spacing, shadow, table sizes, guide and tab stop positions) or in Page setup and the Calendar, and a small panel opens just below it (or above, near the bottom of the screen): its name and value, a slider across a sensible range (X runs across the page, Width up to the page width, Outline width 0 to 24 pt, Rotation -180 to 180), and - and + buttons that take one step (hold them to keep going). The field lights up so you can see which one you are changing. For an exact number, tap the lit field again, or the keyboard button, and the keyboard comes up as usual. A slide is one step to undo. Tap anywhere else, or press Escape, to close it. With a mouse, or arriving by a keyboard, fields work as before.
+- **A tap on the grey around the page lets go of what is picked**, as a click there already did with a mouse. A drag on the grey still scrolls and keeps what is picked.
+
 ## 0.42.2 - 2026-10-12
 
 - **Bigger handles on a touch screen.** The resize handles are drawn twice the size on a phone or tablet, a finger can catch one from about 22 px away (a target about 44 px across), the turn handle sits higher so it never crowds the top handle, and a table's column tabs are bigger too. When a handle and a link port are both within reach, the one nearer the finger wins; on narrow boxes the ports sit a little further out. With a mouse, nothing changes.

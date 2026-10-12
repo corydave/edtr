@@ -1248,6 +1248,34 @@ into the first box's overflow, the next boxes emptied (as before).
   are both in reach, the nearer one wins; on narrow boxes the diagonal
   ports sit 26 px out on touch (18).
 
+## Number fields on touch (0.43.0)
+
+Dave's goal: on a phone, never need the on-screen keyboard unless the
+user asks for it or it can't be helped (names, hex codes, links).
+
+- `wireNumberPop()` runs only when `touchScreen()`. Every
+  `input[type=number]` is made `readOnly` (a MutationObserver locks ones
+  added later), so a tap brings up no keyboard. A tap opens `#numPop`
+  (`popover="manual"`) beside the field (`placeNumPop()`: below, or above
+  when there is no room; it follows scrolling). Inside a `<dialog>` the
+  panel is moved into the dialog first, because an open modal dialog
+  makes everything outside it inert.
+- The panel: label (`numName()`, the field's label text), value, a range
+  slider (`numRange()`: a table of sensible ranges in the user's units,
+  always widened to include the current value), -/+ (one step; held, a
+  step every 70 ms after 400 ms) and a keyboard button. Values go in
+  through `numPut()`, which clamps to the field's min/max, rounds to its
+  step and fires the field's own `input` (and `change` when done), so
+  every field keeps its own handler and undo grouping.
+- A second tap on the lit field, or the keyboard button, calls
+  `numStartTyping()`: not read-only, `inputmode="decimal"`, focus and
+  select. When it loses focus it is read-only again. Focus arriving by a
+  keyboard (no pointer in the last 600 ms) unlocks the field at once.
+- Lists that redraw when a value changes (tab stops, guides):
+  `numWhere()` / `numFollow()` find the fresh copy of the field (the
+  nearest parent with an id, and its index) so the panel stays open.
+- A tap on the grey (a pan shorter than 8 px) deselects.
+
 ## The sample newsletter (0.42.0)
 
 Dave: "add a few more pages to the sample newsletter. Let's show off the
