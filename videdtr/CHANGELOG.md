@@ -12,6 +12,12 @@ refreshes the page inside it, and Check for updates compares the server's
 Releases before 3.4 went out without notes. Rather than guess at them, this
 file starts at 3.4.
 
+## 3.33 - 2026-10-12 - Made for fingers
+
+- Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (Start and Length run across the project, and - and + move a tenth of a second.)
+- The corner handles in the preview have softly rounded corners on a touch screen, and the turn handle sits 48 px above the box: the suite's touch standard.
+- The shared SUITE block was pasted in again (new: the touch standard, `SUITE_TOUCH` and `suiteNumberPop()`).
+
 ## 3.32 - 2026-10-11 - The source, front and center
 
 - **The top bar is the family's standard 52px tall**, and Inspector headings and labels match IMGEDTR's (headings 12px bold capitals with .08em spacing, labels 13px).
