@@ -18,6 +18,12 @@ never had.
 
 ---
 
+## 1.22
+
+**Changed** - made for fingers.
+
+- The shared SUITE block was pasted in again (new: the touch standard, `SUITE_TOUCH` and `suiteNumberPop()`).
+
 ## 1.21
 
 **Changed** - the source, front and center.
