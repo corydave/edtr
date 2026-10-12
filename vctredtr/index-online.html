@@ -902,6 +902,28 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 @media (prefers-color-scheme: dark) { .suite-source-btn:focus-visible { outline-color: #8ab4ff; } }
 :root[data-theme="dark"] .suite-source-btn:focus-visible { outline-color: #8ab4ff; }
 :root[data-theme="light"] .suite-source-btn:focus-visible { outline-color: #0046ad; }
+
+/* ---- Touch standard (2026-10-12): numbers with a finger ------------------
+   The panel a tap on a number field opens on a phone or tablet (see
+   suiteNumberPop), and the lit field it works on. Big enough to use with a
+   thumb: 44 px buttons and a 44 px tall slider. */
+.suite-num-pop { position: fixed; inset: auto; margin: 0; width: min(360px, calc(100vw - 16px));
+  padding: 10px 12px 12px; border: 1px solid color-mix(in srgb, var(--suite-fg, CanvasText) 22%, transparent);
+  border-radius: 14px; background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28); font: 14px/1.4 system-ui, sans-serif; }
+.suite-num-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; font-size: 13px; opacity: .85; }
+.suite-num-head output { font-weight: 700; font-variant-numeric: tabular-nums; opacity: 1; }
+.suite-num-row { display: flex; align-items: center; gap: 8px; }
+.suite-num-pop input[type="range"] { flex: 1; min-width: 0; height: 44px; margin: 0; accent-color: var(--suite-accent, #0046ad); }
+.suite-num-pop button { flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  border-radius: 10px; border: 1px solid color-mix(in srgb, var(--suite-fg, CanvasText) 22%, transparent);
+  background: color-mix(in srgb, var(--suite-fg, CanvasText) 6%, var(--suite-bg, Canvas)); color: inherit;
+  font-size: 22px; line-height: 1; cursor: pointer; touch-action: manipulation; }
+.suite-num-pop button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75;
+  stroke-linecap: round; stroke-linejoin: round; }
+.suite-num-pop button:focus-visible, .suite-num-pop input:focus-visible { outline: 3px solid var(--suite-accent, #0046ad); outline-offset: 2px; }
+/* The field being changed lights up, so it's clear which one the panel is working on. */
+input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #0046ad); outline-offset: 1px; }
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 </style>
 </head>
@@ -1317,7 +1339,7 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.15.1';
+const APP_VERSION = '0.16.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1372,6 +1394,11 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.16.0', date: '2026-10-12', notes: [
+    'Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (X and Y run across the artboard, Width and Height up to its size, Rotation from -180 to 180, and the shape changes as you slide. Boxes with their own slider beside them still type.)',
+    'Handles you can catch with a finger: on a phone or tablet they are drawn bigger (15 px) with softly rounded corners, a finger catches one from about 22 px away (the nearer handle wins), and the turn handle sits further up, clear of the rest. With a mouse, nothing changes. In Edit points the point squares are bigger (11 px) and easier to catch, too.',
+    'The shared SUITE block was pasted in again (new: the touch standard, SUITE_TOUCH and suiteNumberPop).'
+  ] },
   { version: '0.15.1', date: '2026-10-11', notes: [
     'About now starts with a "View the source on GitHub" button: every app is free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in and works offline.'
   ] },
@@ -1490,6 +1517,13 @@ const MAX_FILE_BYTES = 30 * 1024 * 1024;     // refuse files over 30 MB (protect
 const MAX_ITEMS = 20000;                     // refuse drawings with more shapes than this
 const HANDLE_PX = 9;                         // resize handle size, in screen pixels
 const ROTATE_PX = 26;                        // how far above the box the rotate handle sits (screen px)
+/* On a phone or tablet (the suite's touch standard, 2026-10-12) the handles
+   are drawn bigger (15 px) with softly rounded corners, a finger catches
+   one from about 22 px away (the nearer handle wins), and the turn handle
+   sits further up so it never crowds the top handle. With a mouse, nothing
+   changes. The numbers live in SUITE_TOUCH, in the shared SUITE block. */
+const handlePx = () => suiteHandlePx(HANDLE_PX);
+const rotatePx = () => (suiteTouchScreen() ? SUITE_TOUCH.turnPx : ROTATE_PX);
 const SNAP_PX = 6;                           // how close (screen px) counts as "lined up"
 const HISTORY_LIMIT = 150;                   // undo steps kept
 
@@ -1920,7 +1954,7 @@ function setupEngine() {
   // New items are NOT added to the drawing automatically; we always say
   // where each one goes. This keeps helper shapes out of the drawing.
   P.settings.insertItems = false;
-  P.settings.handleSize = 7;              // size of the point squares in Edit points
+  P.settings.handleSize = suiteTouchScreen() ? 11 : 7;   // size of the point squares in Edit points (bigger for a finger)
   gridLayer = new P.Layer({ name: 'grid' });
   artLayer = new P.Layer({ name: 'art' });
   uiLayer = new P.Layer({ name: 'ui' });
@@ -2548,7 +2582,7 @@ function handlePoint(b, name) {
   const [hx, hy] = HANDLES[name];
   return new P.Point(b.center.x + hx * b.width / 2, b.center.y + hy * b.height / 2);
 }
-function rotateHandlePoint(b) { return new P.Point(b.center.x, b.top - ROTATE_PX / P.view.zoom); }
+function rotateHandlePoint(b) { return new P.Point(b.center.x, b.top - rotatePx() / P.view.zoom); }
 
 function drawSelectionUI() {
   if (!ENGINE_OK || !uiLayer) return;
@@ -2622,7 +2656,8 @@ function drawSelectionUI() {
   const b = selectionBounds();
   add(new P.Path.Rectangle({ rectangle: b, strokeColor: brand, strokeWidth: 1.5 * px }));
   if (sel.every((it) => it.locked)) return;
-  const hs = HANDLE_PX * px;
+  const hs = handlePx() * px;                     // (bigger on a touch screen)
+  const corner = suiteHandleRound(HANDLE_PX) * px;  // (rounded on a touch screen, square with a mouse)
   const top = new P.Point(b.center.x, b.top);
   const rp = rotateHandlePoint(b);
   add(new P.Path.Line({ from: top, to: rp, strokeColor: brand, strokeWidth: px }));
@@ -2632,7 +2667,7 @@ function drawSelectionUI() {
     if ((name === 'n' || name === 's') && b.width * z < 30) continue;
     if ((name === 'e' || name === 'w') && b.height * z < 30) continue;
     const c = handlePoint(b, name);
-    add(new P.Path.Rectangle({ rectangle: new P.Rectangle(c.x - hs / 2, c.y - hs / 2, hs, hs),
+    add(new P.Path.Rectangle({ rectangle: new P.Rectangle(c.x - hs / 2, c.y - hs / 2, hs, hs), radius: corner,
       fillColor: '#ffffff', strokeColor: brand, strokeWidth: 1.5 * px }));
   }
 }
@@ -2640,12 +2675,15 @@ function drawSelectionUI() {
 /** Which handle (if any) of the selection box is under this drawing point? */
 function handleAt(point) {
   if (!state.sel.length || state.tool !== 'select' || state.sel.every((it) => it.locked)) return null;
-  const b = selectionBounds(), r = (HANDLE_PX / 2 + 3) / P.view.zoom;
+  const b = selectionBounds(), r = suiteHandleReach(HANDLE_PX) / P.view.zoom;
   if (point.getDistance(rotateHandlePoint(b)) <= r + 2 / P.view.zoom) return 'rotate';
+  // The nearest handle within reach wins (on a small box, a finger's reach covers several).
+  let best = null, bestD = Infinity;
   for (const name of Object.keys(HANDLES)) {
-    if (point.getDistance(handlePoint(b, name)) <= r) return name;
+    const d = point.getDistance(handlePoint(b, name));
+    if (d <= r && d < bestD) { best = name; bestD = d; }
   }
-  return null;
+  return best;
 }
 
 /* -----------------------------------------------------------------------
@@ -3694,7 +3732,7 @@ const pickedSegments = () => allItems().filter((it) => it instanceof P.Path).fla
 
 function downDirect(p, e) {
   const hit = artLayer.hitTest(p, {
-    segments: true, handles: true, stroke: true, fill: true, tolerance: tol(5),
+    segments: true, handles: true, stroke: true, fill: true, tolerance: tol(suiteTouchScreen() ? 12 : 5),   // (a finger reaches further)
     match: (r) => {
       const t = topOf(r.item);
       if (!t || t.locked || !t.visible) return false;
@@ -3787,7 +3825,7 @@ function upPointMarquee(d) {
 }
 /** Double-click in Edit points: on the outline adds a point; on a point switches smooth/corner. */
 function dblDirect(p) {
-  const hit = artLayer.hitTest(p, { segments: true, stroke: true, tolerance: tol(5),
+  const hit = artLayer.hitTest(p, { segments: true, stroke: true, tolerance: tol(suiteTouchScreen() ? 12 : 5),
     match: (r) => { const t = topOf(r.item); return t && !t.locked && t.visible; } });
   if (!hit) return;
   if (hit.type === 'segment') { toggleSmooth(hit.segment); return; }
@@ -5484,6 +5522,15 @@ function numberField(label, get, set, opts = {}) {
     if (!opts.noCommit) commit(opts.key || null, true);   // (noCommit: a setting, not a change to the drawing)
     input.value = round2(get());
   });
+  // On a touch screen the number panel's slider (suiteNumberPop) moves the
+  // value while the field is read-only: show each step as it goes. The
+  // "change" above still saves it, once, as one step to undo.
+  input.addEventListener('input', () => {
+    const v = Number(input.value);
+    if (!input.readOnly || !Number.isFinite(v)) return;
+    set(opts.min !== undefined ? Math.max(opts.min, v) : v);
+    drawSelectionUI();
+  });
   propRefs.push({ input, get });
   return el('div', { class: 'field' }, el('label', { for: id, text: label }), input);
 }
@@ -5812,6 +5859,12 @@ function boxLabel(letter, name, get, set, key) {
     if (Number.isFinite(v)) { set(v); commit(key || null); }
     input.value = round2(get());
     renderProps();
+  });
+  // A slide on the touch number panel: show it as it goes (see numberField).
+  input.addEventListener('input', () => {
+    const v = Number(input.value);
+    if (!input.readOnly || !Number.isFinite(v)) return;
+    set(v); drawSelectionUI();
   });
   propRefs.push({ input, get });
   return el('label', {}, el('span', { text: letter, 'aria-hidden': 'true' }), input);
@@ -8689,6 +8742,319 @@ function suiteFeaturesCard(features, appId) {
   return b;
 }
 
+/* ======================================================================
+   TOUCH STANDARD (2026-10-12, from DSKEDTR 0.42.2 - 0.43.1)
+   ======================================================================
+   Two things every app does the same way on a phone or tablet. With a
+   mouse, nothing changes: both only switch on when the main pointer is
+   a finger - the CSS question "(pointer: coarse)".
+
+   1. HANDLES you can catch with a finger. The little squares on the
+      corners and sides of a picked object (and the turn handle above it)
+      are drawn bigger on a touch screen, with softly rounded corners, and
+      a finger can catch one from further away than it looks (a target
+      about 44 px across, as phone makers advise). When two handles are
+      both in reach, the nearer one wins. SUITE_TOUCH holds the numbers
+      so every app draws the same handles.
+
+   2. NUMBERS WITHOUT THE KEYBOARD. On a phone the on-screen keyboard
+      covers half the screen, so a tap on a number field opens a small
+      panel beside it instead: the field's name and value, a slider across
+      a sensible range, and - and + buttons (hold one down to keep going).
+      Tap the lit field again, or the panel's keyboard button, to type an
+      exact number. See suiteNumberPop() below.
+   ====================================================================== */
+
+/** True when the main pointer is a finger (a phone or tablet), not a mouse. */
+function suiteTouchScreen() {
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
+/* The handle numbers, in screen pixels (not page or canvas units - an app
+   that zooms divides by its zoom so a handle looks the same at any zoom). */
+const SUITE_TOUCH = {
+  handlePx: 15,        // a handle's size on a touch screen (a mouse's stay at the app's own size, about 8-9 px)
+  roundFrac: 0.2,      // its corners: rounded by a fifth of its size (3 px on a 15 px handle)
+  reachPx: 22,         // how far from a handle's centre a finger still catches it (a target 44 px across)
+  turnPx: 48           // how far above the top edge the turn handle sits, so it never crowds the top handle
+};
+/** A handle's size on screen: SUITE_TOUCH.handlePx for a finger, else the app's own mouse size. */
+function suiteHandlePx(mousePx) { return suiteTouchScreen() ? SUITE_TOUCH.handlePx : mousePx; }
+/** A handle's corner rounding on screen (0 - square - with a mouse). */
+function suiteHandleRound(mousePx) { return suiteTouchScreen() ? suiteHandlePx(mousePx) * SUITE_TOUCH.roundFrac : 0; }
+/** How far from a handle's centre it can be caught, on screen. */
+function suiteHandleReach(mousePx) { return suiteTouchScreen() ? SUITE_TOUCH.reachPx : mousePx / 2 + 3; }
+
+/* ----------------------------------------------------------------------
+   suiteNumberPop(opts): numbers with a finger
+   ----------------------------------------------------------------------
+   Call it once when the app starts. On a touch screen, every
+   <input type="number"> in the app (now or added later) then works like
+   this:
+     - first tap: the field lights up and a small panel opens just below
+       it (or above it, near the bottom of the screen). No keyboard.
+     - slide, or press - and + (hold to keep going): the field changes and
+       fires its usual "input" events as it goes, then one "change" at the
+       end - exactly what typing a number does - so the app's own code
+       needs no changes, and its undo counts a whole slide as one step.
+     - a second tap on the lit field, or the panel's keyboard button: the
+       field takes typing, and the keyboard comes up because the person
+       asked for it.
+     - a tap anywhere else, or Escape: the panel closes.
+   Arriving at a field by a keyboard (a tablet with a keyboard, a switch,
+   a screen reader's own keys) still types at once. With a mouse, nothing
+   changes at all.
+
+   How the keyboard is kept away: the fields are read-only until the
+   second tap (a read-only field brings up no keyboard). A script can still
+   set its value, which is how the panel changes it.
+
+   opts (all optional):
+     range(el)  -> [min, max] for the slider, or null to use the field's
+                   own min and max. For fields with no max, or a max far
+                   too big to slide through (a width of 10,000 px), give a
+                   sensible everyday range here. The slider always
+                   widens to include the field's current value.
+     step(el)   -> how much one press of - or + changes it (default: the
+                   field's own step, or 1).
+     name(el)   -> the words for the field, if its label can't be found.
+     skip(el)   -> true to leave a field alone (it keeps the keyboard).
+                   A number box with a slider right beside it is left
+                   alone anyway.
+   ---------------------------------------------------------------------- */
+function suiteNumberPop(opts = {}) {
+  if (!suiteTouchScreen()) return;                   // with a mouse, fields stay as they are
+  const NUM = 'input[type="number"]';
+  let field = null;                                  // the number field the panel is working on
+  let typing = null;                                 // the field let loose for typing (second tap)
+  /* A number box with its own slider right beside it (Opacity [slider] [80] %)
+     keeps the keyboard: the slider is already there, so a tap on the box
+     means "let me type". */
+  const besideSlider = (el) => {
+    const box = el.parentElement && (el.parentElement.tagName === 'LABEL' ? el.parentElement.parentElement : el.parentElement);
+    return !!(box && box.querySelector('input[type="range"]'));
+  };
+  const wanted = (el) => el && el.matches && el.matches(NUM) && !besideSlider(el) && !(opts.skip && opts.skip(el));
+
+  // ---- The panel itself (built once, here, so no app needs extra HTML) ----
+  const pop = suiteEl('div', 'suite-num-pop');
+  pop.setAttribute('popover', 'manual');             // shown and hidden by this code only
+  pop.setAttribute('role', 'group');
+  const head = suiteEl('div', 'suite-num-head');
+  const label = suiteEl('span', 'suite-num-name', 'Number');
+  label.id = 'suiteNumName';
+  pop.setAttribute('aria-labelledby', label.id);
+  const value = document.createElement('output');
+  head.append(label, value);
+  const row = suiteEl('div', 'suite-num-row');
+  const minus = suiteEl('button', '', '−');    // a real minus sign
+  minus.type = 'button'; minus.setAttribute('aria-label', 'Less'); minus.title = 'Less (hold to keep going)';
+  const range = document.createElement('input');
+  range.type = 'range';
+  const plus = suiteEl('button', '', '+');
+  plus.type = 'button'; plus.setAttribute('aria-label', 'More'); plus.title = 'More (hold to keep going)';
+  const kb = suiteEl('button', 'suite-num-kb');
+  kb.type = 'button'; kb.setAttribute('aria-label', 'Type a number'); kb.title = 'Type a number (or tap the field again)';
+  // A small keyboard drawing (fixed markup, never data).
+  kb.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>';
+  row.append(minus, range, plus, kb);
+  pop.append(head, row);
+  document.body.append(pop);
+
+  // ---- Reading a field ----
+  /** How much one press of - or + changes the field. */
+  const stepOf = (el) => {
+    const own = opts.step && opts.step(el);
+    if (own > 0) return own;
+    const s = parseFloat(el.step);
+    return isFinite(s) && s > 0 ? s : 1;
+  };
+  /** A number written to the field's step: a step of 0.25 gives two decimals, 1 gives none. */
+  const text = (v, step) => String(Number(v.toFixed(Math.min(4, (String(step).split('.')[1] || '').length))));
+  /** The slider's range: the app's everyday range, else the field's own min and max, widened to hold its value. */
+  const rangeOf = (el) => {
+    const v = parseFloat(el.value);
+    let r = opts.range && opts.range(el);
+    if (!r) {
+      const lo = el.min !== '' ? parseFloat(el.min) : 0;
+      const hi = el.max !== '' ? parseFloat(el.max) : Math.max(100, isFinite(v) ? Math.abs(v) * 2 : 100);
+      r = [lo, hi];
+    }
+    let [min, max] = r;
+    // Never past the field's own limits (an everyday range of -200 to 200 on a field that stops at 1 starts at 1).
+    if (el.min !== '') min = Math.max(min, parseFloat(el.min));
+    if (el.max !== '') max = Math.min(max, parseFloat(el.max));
+    if (isFinite(v)) { min = Math.min(min, v); max = Math.max(max, v); }
+    return { min, max, step: stepOf(el) };
+  };
+  /** The words for a field, in the order a screen reader picks them: aria-labelledby,
+      then aria-label, then its label (without any number inside it), then title or the app's name for it. */
+  const nameOf = (el) => {
+    let words = '';
+    if (el.getAttribute('aria-labelledby')) {
+      words = el.getAttribute('aria-labelledby').split(/\s+/).map((id) => (document.getElementById(id) || {}).textContent || '').join(' ');
+    }
+    if (!words.trim()) words = el.getAttribute('aria-label') || '';
+    const lab = el.labels && el.labels[0];
+    if (!words.trim() && lab) words = [...lab.childNodes].filter((n) => n !== el && !(n.contains && n.contains(el))).map((n) => n.textContent).join(' ');
+    words = words.replace(/\s+/g, ' ').trim();
+    return words || el.title || (opts.name && opts.name(el)) || 'Number';
+  };
+
+  /* Some apps redraw their Inspector when a value changes, swapping the
+     field for a fresh copy. whereIs notes where the field sits (the
+     nearest parent with an id, and which number field it is in there);
+     follow finds the fresh copy and carries on with it, so the panel
+     stays open under the person's finger. */
+  const whereIs = (el) => {
+    const box = el.parentElement && el.parentElement.closest('[id]');
+    return box ? { id: box.id, i: [...box.querySelectorAll(NUM)].indexOf(el) } : null;
+  };
+  const follow = (where) => {
+    if (!field || field.isConnected || !where) return;
+    const box = document.getElementById(where.id);
+    const fresh = box && box.querySelectorAll(NUM)[where.i];
+    if (!fresh) { close(); return; }
+    field = fresh;
+    fresh.readOnly = true;
+    fresh.classList.add('suite-num-active');
+    place();
+  };
+
+  // ---- Showing and changing ----
+  /** Show the field's value in the panel and put the slider there. */
+  const show = () => {
+    if (!field) return;
+    const r = rangeOf(field), v = parseFloat(field.value);
+    range.min = String(r.min); range.max = String(r.max); range.step = String(r.step);
+    if (isFinite(v) && document.activeElement !== range) range.value = String(v);
+    value.textContent = isFinite(v) ? text(v, r.step) : '';
+    range.setAttribute('aria-valuetext', isFinite(v) ? text(v, r.step) : 'none');
+  };
+  /** Put a new value in the field as typing would: "input" now, "change" when done. */
+  const put = (v, done) => {
+    if (!field) return;
+    const step = stepOf(field);
+    const lo = field.min !== '' ? parseFloat(field.min) : -Infinity;
+    const hi = field.max !== '' ? parseFloat(field.max) : Infinity;
+    v = Math.max(lo, Math.min(hi, Math.round(v / step) * step));
+    const where = whereIs(field);
+    field.value = text(v, step);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    if (done) field.dispatchEvent(new Event('change', { bubbles: true }));
+    follow(where);
+    show();
+  };
+  /** Below the field, or above it when there is no room below; always on screen. */
+  const place = () => {
+    if (!field || !pop.matches(':popover-open')) return;
+    if (!field.isConnected || !field.getClientRects().length) { close(); return; }   // (the field went away)
+    const r = field.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    const below = r.bottom + 6 + h <= window.innerHeight - 8;
+    pop.style.left = Math.round(Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2))) + 'px';
+    pop.style.top = Math.round(below ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + 'px';
+  };
+  /** First tap: open the panel for field el. */
+  const open = (el) => {
+    if (field && field !== el) close();
+    field = el;
+    el.classList.add('suite-num-active');
+    // Inside a dialog the panel must live in the dialog too: an open modal
+    // dialog makes everything outside it untouchable.
+    const home = el.closest('dialog') || document.body;
+    if (pop.parentElement !== home) { if (pop.matches(':popover-open')) pop.hidePopover(); home.append(pop); }
+    label.textContent = nameOf(el);
+    range.setAttribute('aria-label', nameOf(el));
+    if (!pop.matches(':popover-open')) pop.showPopover();
+    show();
+    place();
+  };
+  function close() {
+    if (pop.matches(':popover-open')) pop.hidePopover();
+    if (field) field.classList.remove('suite-num-active');
+    field = null;
+  }
+  /** Second tap, or the keyboard button: let the field take typing. */
+  const startTyping = (el) => {
+    close();
+    el.blur();                                       // (first, so the focusout below doesn't lock it again)
+    typing = el;
+    el.readOnly = false;
+    // A number keypad, unless the app already chose a keyboard for this field.
+    if (!el.hasAttribute('inputmode')) { el.inputMode = 'decimal'; el.dataset.suiteNumKeypad = '1'; }
+    el.focus();
+    el.select();
+  };
+
+  // ---- Wiring ----
+  // Read-only to the keyboard until asked - now, and for every number field added later.
+  const lock = (root) => { for (const el of root.querySelectorAll(NUM)) if (el !== typing && wanted(el)) el.readOnly = true; };
+  lock(document);
+  new MutationObserver((list) => {
+    for (const m of list) for (const n of m.addedNodes) {
+      if (n.nodeType !== 1) continue;
+      if (n.matches(NUM)) { if (n !== typing && wanted(n)) n.readOnly = true; } else lock(n);
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+  // A tap on a number field opens the panel; a second tap on the same field types.
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest && e.target.closest(NUM);
+    if (!wanted(el) || el.disabled || el === typing) return;
+    if (field === el) startTyping(el); else open(el);
+  });
+  // Arriving by the keyboard (no finger just now): typing works at once.
+  let lastPointer = 0;
+  document.addEventListener('pointerdown', () => { lastPointer = Date.now(); }, true);
+  document.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (wanted(el) && el.readOnly && Date.now() - lastPointer > 600) { typing = el; el.readOnly = false; }
+  });
+  // Typing done (the field let go of the keyboard): read-only again.
+  document.addEventListener('focusout', (e) => {
+    if (e.target === typing) {
+      typing.readOnly = true;
+      if (typing.dataset.suiteNumKeypad) { typing.removeAttribute('inputmode'); delete typing.dataset.suiteNumKeypad; }
+      typing = null;
+    }
+  });
+  // The slider: "input" as it moves, "change" when the finger lifts.
+  range.addEventListener('input', () => put(parseFloat(range.value), false));
+  range.addEventListener('change', () => put(parseFloat(range.value), true));
+  // - and +: one step a press; hold for a quick run of steps; one "change" at the end.
+  for (const [b, dir] of [[minus, -1], [plus, 1]]) {
+    let timer = null, repeat = null;
+    const once = () => { if (field) put(parseFloat(field.value || '0') + dir * stepOf(field), false); };
+    const stop = () => {
+      clearTimeout(timer); clearInterval(repeat); timer = repeat = null;
+      if (!field) return;
+      const where = whereIs(field);
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+      follow(where);
+      show();
+    };
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();                            // (keeps the focus where it is)
+      once();
+      timer = setTimeout(() => { repeat = setInterval(once, 70); }, 400);
+    });
+    for (const t of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(t, () => { if (timer || repeat) stop(); });
+    b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); once(); stop(); } });
+  }
+  kb.addEventListener('click', () => { if (field) startTyping(field); });
+  // Close: a tap anywhere else (another number field opens instead), or Escape.
+  document.addEventListener('pointerdown', (e) => {
+    if (!field || pop.contains(e.target) || e.target === field) return;
+    if (wanted(e.target.closest && e.target.closest(NUM))) return;
+    close();
+  }, true);
+  pop.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); const el = field; close(); if (el) el.focus(); }
+  });
+  // Follow the field when the page or a panel scrolls, or the window changes size.
+  document.addEventListener('scroll', place, true);
+  window.addEventListener('resize', place);
+}
+
 /* SUITE BLOCK v4 - END ================================================== */
 
 
@@ -9356,6 +9722,28 @@ function init() {
   renderSuiteApps($('suiteApps'), 'vctredtr');
   renderSuiteFeatures($('suiteFeatures'), APP_FEATURES);   // Help > Features: the animated tour
   renderSuiteCredits($('suiteCredits'));
+  /* Numbers with a finger: on a phone or tablet a tap on a number field
+     opens a slider and - and + instead of the keyboard (suiteNumberPop, in
+     the shared SUITE block). A number box with its own slider beside it
+     keeps the keyboard (the slider is right there). These are the panel's
+     everyday ranges for fields with no limits, or limits too wide to slide. */
+  suiteNumberPop({
+    skip: (el) => !!el.closest('.range-wrap'),
+    range(el) {
+      const bd = doc ? boardRect() : null, W = bd ? bd.width : 1920, H = bd ? bd.height : 1080;
+      const name = el.getAttribute('aria-label') || (el.labels && el.labels[0] ? el.labels[0].textContent : '');
+      if (el.id === 'newW' || el.id === 'newH') return [1, 4000];
+      if (/^X position/.test(name)) return [bd ? bd.left : 0, bd ? bd.right : W];
+      if (/^Y position/.test(name)) return [bd ? bd.top : 0, bd ? bd.bottom : H];
+      if (name === 'Width') return [1, W];
+      if (name === 'Height') return [1, H];
+      if (/^Rotation/.test(name)) return [-180, 180];
+      if (name === 'Size') return [6, 200];                     // font size
+      if (name === 'Margin (px)') return [0, 200];
+      if (name === 'Distance') return [-200, 200];
+      return null;
+    }
+  });
   renderChangelog();
   renderMergeGuide();
   // The Install button: shown only while the browser allows installing.

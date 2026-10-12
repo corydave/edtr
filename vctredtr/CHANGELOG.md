@@ -2,6 +2,12 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.16.0 - 2026-10-12 - Made for fingers
+
+- Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (X and Y run across the artboard, Width and Height up to its size, Rotation from -180 to 180, and the shape changes as you slide. Boxes with their own slider beside them still type.)
+- Handles you can catch with a finger: on a phone or tablet they are drawn bigger (15 px) with softly rounded corners, a finger catches one from about 22 px away (the nearer handle wins), and the turn handle sits further up, clear of the rest. With a mouse, nothing changes. In Edit points the point squares are bigger (11 px) and easier to catch, too.
+- The shared SUITE block was pasted in again (new: the touch standard, `SUITE_TOUCH` and `suiteNumberPop()`).
+
 ## 0.15.1 - 2026-10-11 - The source, front and center
 
 - **About starts with a "View the source on GitHub" button** (github.com/corydave/edtr), with a line on why: free and open source (MIT license), runs in your browser, keeps your files on your device, needs no sign-in, works offline.
