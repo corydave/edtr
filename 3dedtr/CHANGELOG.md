@@ -1,5 +1,10 @@
 # 3DEDTR changelog
 
+## 0.21.0 - 2026-10-12 - A phone sample
+
+- **Phone sample** on the splash (a fourth card, with a phone icon) and in the Tips section: `loadPhoneSample()` builds a made-up smartphone - deliberately no real brand's design - from 37 ordinary shapes in one group called Phone: a rounded extruded body (72 x 150 x 8 mm) with a bevelled edge, the screen glass, a front camera dot, 24 app tiles (a 4 x 5 grid and a dock), a camera bar on the back with two lenses in rings and a flash, two volume buttons and a side button, and a charging port. Every part is a normal shape with its own settings, so it can be picked (click the phone again), changed, moved apart or exported.
+- It spins: an 8-second looping turntable laid on the group with `layerKeys` (two keyframes, Steady), and the timeline opens so Play is right there. One undo step takes it all away.
+
 ## 0.20.0 - 2026-10-12 - Made for fingers
 
 - Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (Position runs 150 mm either way, Size from 1 to 300 mm, Turn from -180 to 180, and very wide boxes get an everyday range; the model changes as you slide.)

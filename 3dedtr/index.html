@@ -1574,7 +1574,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.20.0';
+const APP_VERSION = '0.21.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1629,6 +1629,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.21.0', date: '2026-10-12', notes: [
+    'A phone sample, on the start screen (Phone sample) and in Tips: a made-up smartphone built from 37 ordinary shapes in a group - body, screen with a home screen of app tiles, front camera, a camera bar with two lenses and a flash on the back, side buttons and a charging port. Click it again to pick a part and change it; press Play to watch it spin (an 8-second turntable made of ordinary keyframes).'
+  ] },
   { version: '0.20.0', date: '2026-10-12', notes: [
     'Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (Position runs 150 mm either way, Size from 1 to 300 mm, Turn from -180 to 180, and very wide boxes get an everyday range; the model changes as you slide.)',
     'The gizmo\'s arrows, rings and handles are bigger on a phone or tablet, so they are easier to catch with a finger.',
@@ -9042,6 +9045,74 @@ function loadExample() {
   if (window.matchMedia('(max-width: 820px)').matches) openSheet(true);
 }
 
+/**
+ * The phone sample on the splash: a made-up smartphone (no real brand's
+ * design), built from ordinary shapes in a group, so every part can be
+ * picked, changed, moved apart or exported - and it spins when you press
+ * Play. Measurements in mm, a phone standing up, its screen facing front
+ * (+Z) and its bottom on the floor.
+ */
+function loadPhoneSample() {
+  suiteSplashClose();
+  const D = Math.PI / 180;
+  const W = 72, H = 150, T = 8;                         // width, height and thickness of the phone
+  const front = T / 2, back = -T / 2;                   // where its front and back faces are (z)
+  // One part: a shape with its own settings, place (x, y, z), turn (degrees) and look.
+  const part = (type, name, params, pos, rot, color, finish = 'satin') => ({
+    id: 'o' + nextId++, name, type, params: { ...defaultParams(type), ...params }, geometry: null,
+    position: pos, rotation: (rot || [0, 0, 0]).map((a) => a * D), scale: [1, 1, 1],
+    color, roughness: FINISHES[finish].roughness, metalness: FINISHES[finish].metalness,
+    opacity: 1, flat: false, visible: true, pivot: 'centre'
+  });
+  const pill = (w, h, d, corner) => ({ profile: 'roundrect', width: w, height: h, depth: d, corner, bevel: 0, segments: 24 });
+  const parts = [
+    // The body: a rounded slab with softened edges, in a soft silver.
+    part('profile', 'Body', { ...pill(W, H, T, 11), bevel: 1.4, bevelSteps: 3 }, [0, H / 2, 0], null, '#c3c8d0', 'satin'),
+    // The glass on the front, a hair proud of the body.
+    part('profile', 'Screen', pill(W - 4, H - 4, 0.6, 9), [0, H / 2, front + 0.2], null, '#0d1117', 'glossy'),
+    // The front camera, a small dot at the top of the screen.
+    part('cylinder', 'Front camera', { radius: 1.5, height: 0.5, segments: 24 }, [0, H - 9, front + 0.6], [90, 0, 0], '#000000', 'glossy')
+  ];
+  // A home screen: a grid of app tiles (4 across, 5 down) and a dock of 4 at the bottom.
+  const tiles = ['#e25d4f', '#f2c14e', '#43a36b', '#4f8fe6', '#9b6cd8', '#e27fb0', '#3fb3b8', '#e8a33d'];
+  const tile = (n, x, y) => part('box', 'App ' + n, { width: 11, height: 11, depth: 0.4, round: 0.15, roundSteps: 2 },
+    [x, y, front + 0.7], null, tiles[(n - 1) % tiles.length], 'glossy');
+  let n = 1;
+  for (let row = 0; row < 5; row++) for (let col = 0; col < 4; col++) parts.push(tile(n++, -22.5 + col * 15, H - 24 - row * 18));
+  for (let col = 0; col < 4; col++) parts.push(tile(n++, -22.5 + col * 15, 14));
+  // The back: a camera bar (a tall pill) with two lenses in metal rings, and a flash.
+  const bx = -W / 2 + 17, by = H - 30;
+  parts.push(part('profile', 'Camera bar', pill(24, 48, 1.6, 10), [bx, by, back - 0.6], null, '#2b2f36', 'glossy'));
+  for (const [k, y] of [[1, by + 11], [2, by - 7]]) {
+    parts.push(part('cylinder', 'Lens ' + k, { radius: 6, height: 1.6, segments: 48 }, [bx, y, back - 1.6], [90, 0, 0], '#06080c', 'glossy'));
+    parts.push(part('torus', 'Lens ring ' + k, { radius: 6.6, tube: 0.7, segments: 64 }, [bx, y, back - 2.3], [90, 0, 0], '#d9dde3', 'satin'));
+  }
+  parts.push(part('cylinder', 'Flash', { radius: 2, height: 1.2, segments: 32 }, [bx, by - 19, back - 1.5], [90, 0, 0], '#f3e3b0', 'glossy'));
+  // Buttons on the sides: volume up and down on the left, the side button on the right.
+  const button = (name, side, y, len) => part('box', name, { width: 1.4, height: len, depth: 3, round: 0.6, roundSteps: 3 },
+    [side * (W / 2 + 0.3), y, 0], null, '#aeb4be', 'satin');
+  parts.push(button('Volume up', -1, H - 38, 14), button('Volume down', -1, H - 56, 14), button('Side button', 1, H - 46, 20));
+  // The charging port, as a dark slot on the bottom edge.
+  parts.push(part('box', 'Charging port', { width: 9, height: 0.6, depth: 3.2, round: 0.25, roundSteps: 2 }, [0, 0.2, 0], null, '#0b0c0f', 'matte'));
+
+  const group = { id: 'o' + nextId++, name: 'Phone', type: 'group', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1],
+    visible: true, keys: null, children: parts };
+  const phone = createItem(group);
+  addMesh(phone);
+  dropToFloor([phone]);
+  // It spins round once every 8 seconds when you press Play (a turntable: ordinary keyframes you can change).
+  anim = { ...anim, length: 8, loop: true };
+  layerKeys(phone, [{ t: 0, u: 0, e: 'linear' }, { t: 8, u: 1, e: 'linear' }], (pose, u) => { pose.r[1] += Math.PI * 2 * u; return pose; }, ['r']);
+  setSelection([phone], false);
+  commit();
+  setTimelineOpen(true);                                 // (so Play is right there)
+  setView('corner');
+  frameSelection(false);
+  setTimeout(focusStageIfLost, 0);
+  toast('A phone, made of ' + parts.length + ' ordinary shapes in a group. Click it again to pick a part; press Play (Shift+Space) to spin it.', 7000);
+  announce('Opened the phone sample: a group of ' + parts.length + ' parts.');
+}
+
 /* -----------------------------------------------------------------------
    11. MERGE SHAPES (Union, Subtract, Intersect)
    The work is done by three-bvh-csg ("constructive solid geometry"):
@@ -11067,7 +11138,8 @@ function renderSceneProps(body) {
     'One grid square is 10 mm.']) ul.append(el('li', '', t));
   tips.body.append(ul);
   const r = el('div', 'btn-row');
-  r.append(button('Try the example', loadExample, 'A box and a cylinder, ready to subtract'));
+  r.append(button('Try the example', loadExample, 'A box and a cylinder, ready to subtract'),
+    button('Phone sample', loadPhoneSample, 'A phone made of ordinary shapes in a group: pick its parts, or press Play to spin it'));
   tips.body.append(r);
   body.append(tips.box);
 }
@@ -15314,6 +15386,9 @@ async function startUp() {
     actions: [
       { icon: 'cube', label: 'New scene', detail: 'An empty grid, ready for shapes', run: () => $('stage').focus(), primary: true },
       { icon: 'shapes3d', label: 'Try the example', detail: 'A box and a cylinder, ready to subtract', run: loadExample },
+      // A phone icon (Lucide "smartphone", ISC licence): a sample model to explore.
+      { icon: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>', label: 'Phone sample',
+        detail: 'A phone built from 37 shapes - press Play to spin it', run: loadPhoneSample },
       { icon: 'open', label: 'Open a file', detail: 'STL, OBJ, glTF, GLB, SVG or a .3dedtr project', run: openPicker }
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
