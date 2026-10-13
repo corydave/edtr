@@ -1206,6 +1206,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <label class="tl-field"><input type="checkbox" id="tlLoop"> Loop</label>
       <label class="tl-field" id="tlFollowWrap" hidden title="On: moving the play head moves the view along the camera's keyframes. Off: look round freely (the camera keyframes stay)."><input type="checkbox" id="tlFollow" checked> Follow the camera</label>
       <label class="tl-field" title="Off: a change is kept only when you press Add keyframe. On: moving, turning or resizing a picked object adds a keyframe by itself."><input type="checkbox" id="tlAuto"> Auto-key</label>
+      <label class="tl-field" title="On: a keyframe of a group also keeps where each of its parts is, so parts can move apart and come back together while the whole group turns. Off: just the group as a whole."><input type="checkbox" id="tlParts" checked> Parts too</label>
     </div>
     <div class="tl-note-row"><p class="tl-note" id="tlNote" role="status"></p>
       <button type="button" class="btn" id="tlKeep" hidden title="Add a keyframe for what changed, here (K)">Keep it</button></div>
@@ -1574,7 +1575,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.21.0';
+const APP_VERSION = '0.22.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1629,6 +1630,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.22.0', date: '2026-10-13', notes: [
+    'Keyframes of a group keep its parts too: Add keyframe on a group now also remembers where each of its parts is (Parts too, on the timeline, on by default). Pull a phone\'s parts apart at 4 s, add a keyframe, and they glide apart while the whole phone keeps turning - or put them together at the end for an assembly. A part keyed for the first time also gets a keyframe at the group\'s earlier moments, where it was before you moved it. Untick Parts too to key just the group as a whole.',
+    'Exploded view (Ready-made...) can now spread the parts in layers along X, Y or Z, not just out from the middle - the way CAD apps lay out an assembly: a phone\'s glass and screen to the front, its camera parts to the back, each layer a step further out.'
+  ] },
   { version: '0.21.0', date: '2026-10-12', notes: [
     'A phone sample, on the start screen (Phone sample) and in Tips: a made-up smartphone built from 37 ordinary shapes in a group - body, screen with a home screen of app tiles, front camera, a camera bar with two lenses and a flash on the back, side buttons and a charging port. Click it again to pick a part and change it; press Play to watch it spin (an 8-second turntable made of ordinary keyframes).'
   ] },
@@ -3691,6 +3696,7 @@ const DEFAULTS = {
   shadows: true,
   light: 'studio',        // the mood NEW scenes start with (see LIGHT_MOODS); each scene keeps its own in sceneLight
   singleKeys: true,       // single-key shortcuts on or off (WCAG 2.1.4)
+  keyParts: true,         // Add keyframe on a group also keeps where each of its parts is (see keyTargets)
   grid: true,
   wire: false,
   xray: false,            // X-ray: every object see-through, to see (and click) what is behind or inside
@@ -3707,7 +3713,7 @@ function loadSettings() {
   const s = { ...DEFAULTS };
   if (['system', 'light', 'dark'].includes(saved.theme)) s.theme = saved.theme;
   if (['studio', 'soft', 'bright', 'product', 'dramatic', 'sunset'].includes(saved.light)) s.light = saved.light;
-  for (const k of ['snap', 'shadows', 'singleKeys', 'grid', 'wire', 'xray', 'inspector', 'oneSide', 'keepImportPlace']) {
+  for (const k of ['snap', 'shadows', 'singleKeys', 'grid', 'wire', 'xray', 'inspector', 'oneSide', 'keepImportPlace', 'keyParts']) {
     if (typeof saved[k] === 'boolean') s[k] = saved[k];
   }
   const num = (v, lo, hi, d) => (typeof v === 'number' && isFinite(v) ? clamp(v, lo, hi) : d);
@@ -13635,24 +13641,79 @@ function withKey(keys, key) {
 const keyOwners = () => selection.filter((m) => keyIndexAt(m.userData.keys, animTime) >= 0);
 
 /* ---- Adding, removing and changing keyframes ---- */
+/**
+ * Which objects a keyframe is for: the picked ones and - with "Parts too"
+ * on (the usual) - every part inside a picked group, at every level. So a
+ * keyframe of a phone keeps where its screen and buttons are as well:
+ * pull the parts apart at 2 s, add a keyframe, and they glide apart, while
+ * the phone as a whole can still turn and move. Off: only the group itself.
+ */
+function keyTargets(list) {
+  if (!settings.keyParts) return list;
+  return [...new Set(allItems(list))];                   // (a group and all its parts, each once)
+}
 function addKeyframes(list = selection) {
   if (!timelineOpen) { setTimelineOpen(true); announce('Timeline shown'); }
   if (playing) stopPlayback(false);
   if (!list.length) { addCameraKeyframe(); return; }     // nothing picked: the keyframe is for the camera
   const t = frameTime(animTime);
   animTime = t;
+  const picked = list;
+  list = keyTargets(list);
+  // A part getting its very first keyframe, inside a group that already has keyframes at other moments:
+  // at those moments it should be where it was then, not where it has just been dragged. Without keyframes
+  // of its own, "where it was" is its oldest place in the undo history - so it is keyed there too.
+  let backFilled = 0;
+  for (const m of list) {
+    if (picked.includes(m) || hasKeys(m)) continue;
+    const times = new Set();
+    for (let g = m.parent; g && g !== modelGroup; g = g.parent) for (const k of g.userData.keys || []) if (Math.abs(k.t - t) > KEY_EPS) times.add(k.t);
+    if (!times.size) continue;
+    const was = oldestPose(m.userData.id, m.parent && m.parent !== modelGroup ? m.parent.userData.id : null);
+    if (!was || samePose(poseOf(m), was)) continue;
+    let keys = null;
+    for (const tt of [...times].sort((a, b) => a - b)) keys = withKey(keys, { t: tt, ...was, e: 'smooth' });
+    m.userData.keys = keys;
+    backFilled++;
+  }
   for (const m of list) {
     const old = m.userData.keys, i = keyIndexAt(old, t);
     m.userData.keys = withKey(old, { t, ...poseOf(m), e: i >= 0 ? old[i].e : 'smooth' });
   }
   commit('', { noAutoKey: true });
-  const who = list.length === 1 ? list[0].name + ' (' + list[0].userData.keys.length + ' in all)' : list.length + ' objects';
+  const parts = list.length - picked.length;
+  const who = (picked.length === 1 ? picked[0].name + ' (' + picked[0].userData.keys.length + ' in all)' : picked.length + ' objects') +
+    (parts ? ', and its ' + parts + (parts === 1 ? ' part' : ' parts') : '');
   announce('Keyframe at ' + fmtTime(t) + ' for ' + who + '.');
+  if (backFilled) toast(backFilled + (backFilled === 1 ? ' part' : ' parts') + ' had no keyframes yet: at the group\'s other keyframes, ' +
+    (backFilled === 1 ? 'it is' : 'they are') + ' where ' + (backFilled === 1 ? 'it was' : 'they were') + ' before you moved ' + (backFilled === 1 ? 'it' : 'them') + '.', 6500);
   // The first time: say what to do next (it is the part people miss).
-  if (!keyTipShown && list.some((m) => m.userData.keys.length === 1)) {
+  if (!keyTipShown && !backFilled && list.some((m) => m.userData.keys.length === 1)) {
     keyTipShown = true;
     toast('Keyframe added. Now move the play head, move or turn the object, and add another keyframe: it will glide between them.', 6500);
   }
+}
+/**
+ * Where an object was in the oldest undo step that still has it (or null):
+ * { p, r, s, o }, the pose a keyframe keeps.
+ */
+function oldestPose(id, parentId) {
+  // (Only a step where it was in the same group counts: its numbers are measured in that group.)
+  const find = (list, par) => {
+    for (const d of list) {
+      if (d.id === id) return par === parentId ? d : null;
+      if (d.children) { const f = find(d.children, d.id); if (f) return f; }
+    }
+    return null;
+  };
+  for (const state of [...history.past, lastState]) {
+    const d = state && find(state.objects, null);
+    if (!d) continue;
+    const pose = { p: d.position.slice(), r: d.rotation.slice(), s: d.scale.slice() };
+    if (typeof d.opacity === 'number') pose.o = d.opacity;
+    return pose;
+  }
+  return null;
 }
 /** Remember the view (the camera) at the play head. */
 function addCameraKeyframe() {
@@ -13675,7 +13736,7 @@ function removeKeyframes(list = selection) {
     announce('Camera keyframe at ' + fmtTime(animTime) + ' removed.');
     return;
   }
-  const owners = list.filter((m) => keyIndexAt(m.userData.keys, animTime) >= 0);
+  const owners = keyTargets(list).filter((m) => keyIndexAt(m.userData.keys, animTime) >= 0);   // (a group's parts' too)
   if (!owners.length) {
     const msg = 'The picked objects have no keyframe at ' + fmtTime(animTime) + '. Page Up and Page Down on the timeline jump to one.';
     toast(msg); announce(msg); return;
@@ -14009,6 +14070,7 @@ function updateTimeline() {
   $('tlFps').value = String(anim.fps);
   $('tlLoop').checked = anim.loop;
   $('tlAuto').checked = autoKey;
+  $('tlParts').checked = !!settings.keyParts;
   const owners = keyOwners();
   const camKey = !selection.length ? keyIndexAt(anim.camera, animTime) : -1;   // nothing picked: the camera
   $('tlAddKey').lastChild.textContent = selection.length ? ' Add keyframe' : ' Add camera keyframe';
@@ -14332,7 +14394,12 @@ function renderPresetOptions() {
     presetField('stagger', 'Next one starts after (s)', presetNumber(selection.length > 1 ? 0.3 : 0, 0, 60, 0.05), 'In the order you picked them. 0: all at once.');
   }
   if (presetKind === 'explode') {
-    presetField('dist', 'How far apart (%)', presetNumber(60, 5, 500, 5), 'Of the whole thing\'s size: 100% moves each part out by one whole width.');
+    // Which way the parts go: out from the middle, or in layers along one direction - the way a CAD
+    // "linear explode" lays out an assembly (a phone: glass and screen to the front, camera parts to the back).
+    presetField('way', 'Which way', presetSelect([['out', 'Out from the middle'], ['z', 'In layers, front and back (Z)'],
+      ['x', 'In layers, left and right (X)'], ['y', 'In layers, upwards (Y)']], 'out'),
+      'In layers: parts at the same depth move together, each layer further than the one before - the parts in the middle layer stay put.');
+    presetField('dist', 'How far apart (%)', presetNumber(60, 5, 500, 5), 'Of the whole thing\'s size: 100% moves each part out by one whole width (in layers: the furthest layer).');
     presetField('back', 'Then', presetSelect([['stay', 'Stays apart'], ['back', 'Comes back together']], 'back'));
     presetField('hold', 'Stays apart for (s)', presetNumber(1, 0, 60, 0.1), 'Only when it comes back together.');
   }
@@ -14434,7 +14501,37 @@ function applyPreset() {
       : [{ t: start, u: 0, e: easing }, { t: start + len, u: 1, e: 'smooth' }];
     end = times[times.length - 1].t;
     const dirs = new Map();
-    for (const m of parts) {
+    const way = presetFields.way ? presetFields.way.value : 'out';
+    if (way !== 'out') {
+      // In layers along one direction (measured in the group). Parts whose middles are at (nearly) the same
+      // depth make one layer; layers are counted outwards from the middle one, which stays where it is.
+      const ax = 'xyz'.indexOf(way), mid = c[ax];
+      const along = (m) => boxInParent([m]).getCenter(new THREE.Vector3()).getComponent(ax);
+      const tol = Math.max(0.25, size.getComponent(ax) * 0.02);   // "the same depth": within this many mm
+      // The layers on each side, nearest the middle first. Upwards (Y) counts from the bottom layer, which stays on the floor.
+      const levels = (vals) => { const out = []; for (const v of vals.sort((a, b) => a - b)) if (!out.length || v - out[out.length - 1] > tol) out.push(v); return out; };
+      const vals = parts.map(along);
+      const rankOf = new Map();
+      if (way === 'y') {
+        const lv = levels(vals.slice());
+        for (const m of parts) { const v = along(m); rankOf.set(m, lv.findIndex((l) => Math.abs(l - v) <= tol + 1e-9)); }
+      } else {
+        const above = levels(vals.filter((v) => v > mid + tol));
+        const below = levels(vals.filter((v) => v < mid - tol).map((v) => -v));
+        for (const m of parts) {
+          const v = along(m);
+          if (v > mid + tol) rankOf.set(m, 1 + above.findIndex((l) => Math.abs(l - v) <= tol + 1e-9));
+          else if (v < mid - tol) rankOf.set(m, -(1 + below.findIndex((l) => Math.abs(l + v) <= tol + 1e-9)));
+          else rankOf.set(m, 0);
+        }
+      }
+      const most = Math.max(1, ...[...rankOf.values()].map(Math.abs));
+      for (const m of parts) {
+        const d = new THREE.Vector3();
+        d.setComponent(ax, (rankOf.get(m) / most) * dist);          // the furthest layer goes the whole distance
+        dirs.set(m, d);
+      }
+    } else for (const m of parts) {
       // Out along the line from the middle to this part's middle (straight up for a part right in the middle).
       const mc = boxInParent([m]).getCenter(new THREE.Vector3());
       const d = new THREE.Vector3(mc.x - c[0], mc.y - c[1], mc.z - c[2]);
@@ -14582,6 +14679,11 @@ function wireTimeline() {
     if (cameraFollow) { applyCamera(); requestRender(); }
     updateTimeline();
     announce(cameraFollow ? 'The view follows the camera keyframes' : 'Free view: the camera keyframes are kept, but the view doesn\'t follow them');
+  });
+  $('tlParts').addEventListener('change', () => {
+    settings.keyParts = $('tlParts').checked;
+    saveSettings();
+    announce(settings.keyParts ? 'Parts too: a group\'s keyframe also keeps where each of its parts is' : 'Parts too off: a group\'s keyframe is for the group as a whole');
   });
   $('tlAuto').addEventListener('change', () => {
     autoKey = $('tlAuto').checked;
