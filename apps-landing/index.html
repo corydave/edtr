@@ -19,8 +19,9 @@
                          Our JavaScript lives inside this file, so
                          inline scripts must be allowed. No outside
                          scripts can load at all.
-  - style-src            Our own inline CSS, plus Google Fonts' CSS.
-  - font-src             The font files themselves (Google's server).
+  - style-src            Our own inline CSS only.
+  - font-src 'self'      The font files, kept on this same site (no
+                         outside font server sees who visits).
   - img-src 'self' data: Screenshots from this same website, plus
                          tiny built-in "data:" images.
   - base-uri / form-action 'none'
@@ -34,59 +35,15 @@
   ================================================================
 -->
 <meta http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <!-- Don't tell other sites which page a visitor came from. -->
 <meta name="referrer" content="no-referrer">
 
 <title>EDTR Apps</title>
-<meta name="description" content="Free editors for text, PDFs, images, sound, video, vector art, 3D models and page layout, plus a screen recorder. They run in your browser and your files stay on your device.">
-
-<!--
-  ================================================================
-  SHARING PREVIEW (Open Graph and Twitter/X cards)
-  ================================================================
-  When someone pastes this page's link into Facebook, LinkedIn,
-  Slack, Teams, Discord, iMessage, X and so on, those sites read the
-  tags below to draw a preview card: a big picture, a title and a
-  short description.
-
-  - og:* tags      The Open Graph standard most sites use.
-  - twitter:* tags X (Twitter) reads these; most of it falls back to
-                   og:* anyway, but "summary_large_image" asks for the
-                   big picture instead of a small square one.
-
-  The picture (og-image.jpg, 1200 x 630 pixels, the size every site
-  expects) sits beside this file. Its address MUST be the full
-  https:// address - sharing sites ignore short relative paths. If
-  the page ever moves, update the four addresses below.
-
-  These tags only describe the page; they don't load anything, so
-  the security rules above don't need to change.
-  ================================================================
--->
-<link rel="canonical" href="https://edtrapps.com/">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="EDTR Apps">
-<meta property="og:locale" content="en_US">
-<meta property="og:url" content="https://edtrapps.com/">
-<meta property="og:title" content="EDTR Apps: free, private editors that run in your browser">
-<meta property="og:description" content="Nine free editors for text, PDFs, images, sound, video, screen recording, vector art, 3D models and page layout. Open source, no sign-in, works offline, and your files never leave your device.">
-<meta property="og:image" content="https://edtrapps.com/og-image.jpg">
-<meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<!-- The picture described in words, for people using screen readers. -->
-<meta property="og:image:alt" content="EDTR Apps: nine free editors that run in your browser. Open source, on your computer, never takes your data, no sign-in, works offline. A row of the nine app icons sits along the bottom.">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="EDTR Apps: free, private editors that run in your browser">
-<meta name="twitter:description" content="Nine free editors that run in your browser. Open source, no sign-in, works offline, and your files never leave your device.">
-<meta name="twitter:image" content="https://edtrapps.com/og-image.jpg">
-<meta name="twitter:image:alt" content="EDTR Apps: nine free editors that run in your browser, with a row of the nine app icons.">
-
-<!-- Fonts: Atkinson Hyperlegible for reading, Comfortaa for headings. -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Comfortaa:wght@600;700&display=swap">
+<meta name="description" content="EDTR Apps: nine free, private editors that run in your browser - text and code, PDFs, images, sound, video, screen recording, vector art, 3D models and page layout. No account, no uploads. Free and open source.">
+<meta property="og:title" content="EDTR Apps">
+<meta property="og:description" content="Small, private editors for everyday making. Free, open source, and your files stay on your device.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect width='8' height='8' rx='2' fill='%23a23108'/%3E%3Crect x='11' width='8' height='8' rx='2' fill='%238a1c5c'/%3E%3Crect x='22' width='8' height='8' rx='2' fill='%23305305'/%3E%3Crect y='11' width='8' height='8' rx='2' fill='%234b5563'/%3E%3Crect x='11' y='11' width='8' height='8' rx='2' fill='%230046ad'/%3E%3Crect x='22' y='11' width='8' height='8' rx='2' fill='%2300565d'/%3E%3Crect y='22' width='8' height='8' rx='2' fill='%235b21b6'/%3E%3Crect x='11' y='22' width='8' height='8' rx='2' fill='%237a4100'/%3E%3Crect x='22' y='22' width='8' height='8' rx='2' fill='%23065f46'/%3E%3C/svg%3E">
 
 <style>
 /* ================================================================
@@ -170,45 +127,6 @@ a { color: inherit; }
 .site-head .intro { flex: 1; }
 .site-head h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin: 0 0 8px; }
 .site-head p { margin: 0; max-width: 62ch; color: var(--muted); }
-/* ----------------------------------------------------------------
-   THE FIVE PROMISES, AS ONE BIG SENTENCE
-   "Nine editors that are [open source], run [on your computer], ..."
-   Each promise is a rounded "chip" in one of the apps' own colors,
-   with a small line icon. The sentence is real text, so a screen
-   reader simply reads it aloud as one sentence.
-   ---------------------------------------------------------------- */
-/* (".site-head .promise" so it beats the grey ".site-head p" rule above.) */
-.site-head .promise {
-  margin: 26px 0 0;
-  max-width: 34em;                              /* keeps the lines from running too long */
-  font: 700 clamp(1.3rem, 2.9vw, 2rem)/1.7 Comfortaa, system-ui, sans-serif;
-  color: var(--fg);
-}
-/* One chip. inline-flex lines the icon up with the words; nowrap keeps
-   a chip in one piece, so lines only break between chips. */
-.chip {
-  display: inline-flex; align-items: center; gap: .3em;
-  padding: .02em .6em .1em; margin: .08em 0;
-  border-radius: 999px;
-  color: #fff;                                  /* white on every chip color is 7:1 or better */
-  font-size: .86em; white-space: nowrap;
-  text-decoration: none;
-  vertical-align: .06em;
-}
-.chip svg {
-  width: .95em; height: .95em; flex: none;
-  fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round;
-}
-/* The chip colors: the same colors as the apps' icons. */
-.chip-code    { background: #a23108; }   /* TXTEDTR's rust */
-.chip-device  { background: #8a1c5c; }   /* PDFEDTR's plum */
-.chip-private { background: #305305; }   /* IMGEDTR's green */
-.chip-nosign  { background: #0046ad; }   /* VIDEDTR's blue */
-.chip-offline { background: #5b21b6; }   /* VCTREDTR's purple */
-/* The "open source" chip is also a link to GitHub: underline it on hover
-   and give it the focus ring, so it still looks and acts like a link. */
-a.chip:hover span { text-decoration: underline; text-underline-offset: .15em; }
-a.chip:focus-visible { outline-offset: 3px; border-radius: 999px; }
 
 /* Small round icon buttons (theme toggle, close, arrows). */
 .icon-btn {
@@ -367,32 +285,6 @@ dialog.show::backdrop { background: var(--backdrop); }
 .foot-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
 
 /* ================================================================
-   BY THE NUMBERS: a band of big zeros near the bottom of the page.
-   (A bit of fun: the same promises as the top, told in numbers.)
-   ================================================================ */
-.numbers { padding: 8px 0 40px; }
-.numbers h2 { font-size: 1.1rem; margin: 0 0 12px; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .1em; font-family: inherit; }
-/* Five columns on a wide screen, fewer as it narrows (auto-fit does the
-   counting), with a strong line above and below like a printed table. */
-.numbers ul {
-  list-style: none; margin: 0; padding: 0;
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr));
-  border-top: 2px solid var(--fg); border-bottom: 2px solid var(--fg);
-}
-.numbers li { padding: 18px 18px 16px; border-right: 1px solid var(--line); }
-.numbers li:last-child { border-right: 0; }
-.numbers .n { display: block; font: 700 clamp(2.4rem, 5vw, 3.5rem)/1 Comfortaa, system-ui, sans-serif;
-  letter-spacing: -.02em; }
-.numbers .l { display: block; font-weight: 700; margin-top: 10px; }
-.numbers .s { display: block; color: var(--muted); font-size: .95rem; }
-/* On a phone the columns stack: swap the side lines for lines between rows. */
-@media (max-width: 560px) {
-  .numbers li { border-right: 0; border-bottom: 1px solid var(--line); }
-  .numbers li:last-child { border-bottom: 0; grid-column: 1 / -1; }   /* the odd one out gets the full row */
-}
-
-/* ================================================================
    FOOTER
    ================================================================ */
 .site-foot { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--muted); font-size: .95rem; }
@@ -411,58 +303,336 @@ dialog.show::backdrop { background: var(--backdrop); }
   .card, .stage .fade { transition: none; animation: none; }
   .card:hover { transform: none; }
 }
+/* ================================================================
+   FONTS: kept on this site (no outside font server), so nothing
+   about a visit is shared with anyone else.
+   ================================================================ */
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/atkinson-hyperlegible-400.woff") format("woff"); }
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/atkinson-hyperlegible-700.woff") format("woff"); }
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; font-style: italic; font-display: swap; src: url("fonts/atkinson-hyperlegible-400-italic.woff") format("woff"); }
+@font-face { font-family: Comfortaa; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/comfortaa-700.woff") format("woff"); }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+section[tabindex="-1"]:focus { outline: none; }   /* focus lands here from the nav links; no ring on a whole section */
+
+/* ================================================================
+   TOP BAR
+   ================================================================ */
+.topbar { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.topbar .wrap { display: flex; align-items: center; gap: 12px; min-height: 64px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; margin-right: auto;
+  font: 700 1.2rem/1 Comfortaa, system-ui, sans-serif; }
+.brand-mark { width: 28px; height: 28px; flex: none; }
+.topnav { display: flex; gap: 4px; }
+.topnav a { text-decoration: none; padding: 10px 12px; border-radius: 8px; color: var(--muted); font-weight: 700; }
+.topnav a:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 7%, transparent); }
+@media (max-width: 760px) { .topnav { display: none; } }
+
+/* ================================================================
+   HERO
+   ================================================================ */
+.hero { position: relative; overflow: hidden; padding: clamp(48px, 9vw, 112px) 0 clamp(48px, 8vw, 96px);
+  border-bottom: 1px solid var(--line); }
+/* The tilted wall of screenshots, faded so the words stay easy to read. */
+.hero-wall { position: absolute; inset: -20% -10% -20% 30%; display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 18px; transform: rotate(-10deg) skewX(6deg); opacity: .9; pointer-events: none; }
+.hero-wall img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .25); }
+.hero::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, var(--bg) 0%, var(--bg) 38%, color-mix(in srgb, var(--bg) 70%, transparent) 62%, color-mix(in srgb, var(--bg) 25%, transparent) 100%); }
+.hero-inner { position: relative; z-index: 1; }
+.eyebrow { margin: 0 0 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-size: .9rem; }
+.hero h1 { font-size: clamp(2.1rem, 5.4vw, 3.6rem); margin: 0 0 16px; max-width: 15ch; }
+.lede { font-size: clamp(1.1rem, 2vw, 1.3rem); max-width: 52ch; margin: 0 0 24px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
+.hero-actions .btn { background: var(--fg); color: var(--bg); }
+.hero-actions .btn-line { background: var(--surface); }
+.pills { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.pills li { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+  font-size: .95rem; font-weight: 700; }
+@media (max-width: 760px) {
+  .hero-wall { inset: auto -30% -6% -30%; height: 46%; opacity: .35; }
+  .hero::after { background: linear-gradient(180deg, var(--bg) 0%, var(--bg) 55%, color-mix(in srgb, var(--bg) 40%, transparent) 100%); }
+}
+
+/* ================================================================
+   SECTIONS
+   ================================================================ */
+main { padding: 0; }
+main section { padding: clamp(48px, 7vw, 88px) 0; }
+main section h2 { font-size: clamp(1.6rem, 3.4vw, 2.3rem); margin: 0 0 10px; }
+.section-lede { margin: 0 0 32px; color: var(--muted); max-width: 64ch; font-size: 1.1rem; }
+
+/* The three promises. */
+.pillars { list-style: none; margin: 0 0 40px; padding: 0; display: grid; gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.pillar { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; box-shadow: var(--shadow); }
+.pillar h3 { margin: 14px 0 8px; font: 700 1.25rem/1.3 "Atkinson Hyperlegible", system-ui, sans-serif; }
+.pillar p { margin: 0; color: var(--muted); }
+.pillar-icon { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 14px;
+  background: var(--fg); color: var(--bg); }
+.pillar-icon svg { width: 28px; height: 28px; }
+.family-traits { border-left: 4px solid var(--fg); padding: 4px 0 4px 20px; }
+.family-traits h3 { margin: 0 0 10px; font: 700 1.15rem/1.3 "Atkinson Hyperlegible", system-ui, sans-serif; }
+.family-traits ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; color: var(--muted); }
+.family-traits strong { color: var(--fg); }
+kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6px; border: 1px solid var(--line);
+  border-bottom-width: 2px; border-radius: 5px; background: var(--surface); }
+
+.apps { background: color-mix(in srgb, var(--fg) 3%, var(--bg)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.card h3.app-name { font: 700 1.35rem/1.2 system-ui, sans-serif; }
+
+/* The story, as a timeline down the left. */
+.timeline { list-style: none; margin: 8px 0 0; padding: 0; position: relative; max-width: 820px; }
+.timeline::before { content: ""; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+.timeline li { position: relative; padding: 0 0 36px 44px; }
+.timeline li::before { content: ""; position: absolute; left: 3px; top: 6px; width: 18px; height: 18px;
+  border-radius: 50%; background: var(--bg); border: 3px solid var(--fg); }
+.timeline .when { margin: 0 0 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: .85rem; color: var(--muted); }
+.timeline h3 { margin: 10px 0 6px; font: 700 1.3rem/1.3 "Atkinson Hyperlegible", system-ui, sans-serif; }
+.timeline p { margin: 0; }
+.when-apps { display: flex; flex-wrap: wrap; gap: 8px; }
+.when-apps img { width: 40px; height: 40px; border-radius: 10px; display: block; }
+.when-gh { width: 40px; height: 40px; border-radius: 10px; background: var(--fg); color: var(--bg); display: grid; place-items: center; }
+.when-gh svg { width: 24px; height: 24px; }
+
+/* Open source band. */
+.open { background: #0f141c; color: #eef1f5; }
+.open-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
+.open-inner > div { max-width: 64ch; }
+.open p { margin: 0; color: #c9d0da; }
+.btn-dark { background: #fff !important; color: #0f141c !important; }
+.open :focus-visible { outline-color: #9cc2ff; }
+
+/* Questions. */
+.faq details { max-width: 820px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+  margin-bottom: 10px; }
+.faq summary { cursor: pointer; padding: 16px 18px; font-weight: 700; font-size: 1.1rem; min-height: 44px; }
+.faq details p { margin: 0; padding: 0 18px 18px; color: var(--muted); }
+
+.site-foot p + p { margin-top: 6px; }
 </style>
 </head>
 <body>
 
 <a class="skip" href="#apps">Skip to the apps</a>
 
-<header class="site-head">
+<!-- ================================================================
+     TOP BAR: the name, a few links, GitHub and the night mode toggle.
+     ================================================================ -->
+<header class="topbar">
   <div class="wrap">
-    <div class="intro">
-      <h1>EDTR Apps</h1>
-      <p>Free editors for text, PDFs, images, sound, video, vector art, 3D models and page layout, plus a screen recorder. They run right in your browser, install like regular apps, and keep your files on your own device.</p>
-      <!-- Why these apps exist: the five promises every one of them keeps,
-           as one sentence. The icons are decoration (aria-hidden); the
-           words in each chip carry the meaning. -->
-      <p class="promise">Nine editors that are
-        <a class="chip chip-code" href="https://github.com/corydave/edtr" rel="noopener noreferrer"
-           title="Every line is on GitHub, under the MIT license"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg><span>open source</span></a>,
-        run <span class="chip chip-device"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/></svg>on your computer</span>,
-        <span class="chip chip-private"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>never take your data</span>,
-        need <span class="chip chip-nosign"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M3 3l18 18"/></svg>no sign-in</span>
-        and <span class="chip chip-offline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.8"/><path d="M19 12.9a10 10 0 0 0-2-1.5"/><path d="M2 8.8a15 15 0 0 1 4.2-2.7"/><path d="M22 8.8A15 15 0 0 0 11.9 5"/><path d="m2 2 20 20"/></svg>work offline</span>.</p>
-    </div>
+    <a class="brand" href="#top" aria-label="EDTR Apps, back to the top">
+      <!-- A tiny 3 x 3 grid of the app colours: nine apps, one family. -->
+      <svg class="brand-mark" viewBox="0 0 30 30" aria-hidden="true">
+        <rect x="0" y="0" width="8" height="8" rx="2" fill="#a23108"/><rect x="11" y="0" width="8" height="8" rx="2" fill="#8a1c5c"/><rect x="22" y="0" width="8" height="8" rx="2" fill="#305305"/>
+        <rect x="0" y="11" width="8" height="8" rx="2" fill="#4b5563"/><rect x="11" y="11" width="8" height="8" rx="2" fill="#0046ad"/><rect x="22" y="11" width="8" height="8" rx="2" fill="#00565d"/>
+        <rect x="0" y="22" width="8" height="8" rx="2" fill="#5b21b6"/><rect x="11" y="22" width="8" height="8" rx="2" fill="#7a4100"/><rect x="22" y="22" width="8" height="8" rx="2" fill="#065f46"/>
+      </svg>
+      <span>EDTR Apps</span>
+    </a>
+    <nav class="topnav" aria-label="On this page">
+      <a href="#why">Why EDTR</a>
+      <a href="#apps">The apps</a>
+      <a href="#story">The story</a>
+      <a href="#faq">Questions</a>
+    </nav>
+    <a class="icon-btn" id="gh-top" href="https://github.com/corydave/edtr" target="_blank" rel="noopener noreferrer"
+       aria-label="Source code on GitHub (opens in a new tab)" title="Source code on GitHub"></a>
     <!-- Night mode toggle. Its icon shows where it will take you: a moon in light mode, a sun in dark. -->
     <button class="icon-btn" id="theme-btn" type="button"></button>
   </div>
 </header>
 
-<main id="apps" tabindex="-1">
-  <div class="wrap">
-    <!-- The cards are built by JavaScript from the APPS list below. -->
-    <ul class="cards" id="cards"></ul>
+<!-- ================================================================
+     HERO: what EDTR is, in one breath.
+     ================================================================ -->
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <!-- A tilted wall of the apps in use, behind the words. Decoration only. -->
+  <div class="hero-wall" aria-hidden="true">
+    <img src="shots/txtedtr-thumb.webp" alt=""><img src="shots/pdfedtr-thumb.webp" alt=""><img src="shots/imgedtr-thumb.webp" alt="">
+    <img src="shots/sndedtr-thumb.webp" alt=""><img src="shots/videdtr-thumb.webp" alt=""><img src="shots/scrncstr-thumb.webp" alt="">
+    <img src="shots/vctredtr-thumb.webp" alt=""><img src="shots/3dedtr-thumb.webp" alt=""><img src="shots/dskedtr-thumb.webp" alt="">
   </div>
-</main>
-
-<!-- BY THE NUMBERS: the same promises, told as big numbers. Just for fun. -->
-<section class="numbers" aria-labelledby="numbers-title">
-  <div class="wrap">
-    <h2 id="numbers-title">By the numbers</h2>
-    <ul>
-      <li><span class="n">$0</span><span class="l">Open source, MIT</span><span class="s">Every line on GitHub.</span></li>
-      <li><span class="n">0&nbsp;KB</span><span class="l">Uploaded, ever</span><span class="s">Your files stay on your device.</span></li>
-      <li><span class="n">0</span><span class="l">Trackers</span><span class="s">Nothing collected. No server.</span></li>
-      <li><span class="n">0</span><span class="l">Sign-ins</span><span class="s">No account, no email.</span></li>
-      <li><span class="n">100%</span><span class="l">Offline</span><span class="s">After your first visit.</span></li>
+  <div class="wrap hero-inner">
+    <p class="eyebrow">EDTR Apps</p>
+    <h1 id="hero-title">Small, private editors for everyday making.</h1>
+    <p class="lede">Nine free tools that run right in your browser: text and code, PDFs, images, sound, video,
+      screen recording, vector art, 3D models and page layout. No account, no uploads, no installer.
+      Open one and start making.</p>
+    <div class="hero-actions">
+      <a class="btn" href="#apps">Browse the apps</a>
+      <a class="btn-line" href="https://github.com/corydave/edtr" target="_blank" rel="noopener noreferrer" id="gh-hero">Source on GitHub<span class="sr-only"> (opens in a new tab)</span></a>
+    </div>
+    <ul class="pills" aria-label="At a glance">
+      <li>Free and open source (MIT)</li>
+      <li>Your files stay on your device</li>
+      <li>Works offline</li>
+      <li>Installs like an app</li>
     </ul>
   </div>
 </section>
 
+<main>
+  <!-- ==============================================================
+       WHY: the three promises every app keeps.
+       ============================================================== -->
+  <section class="why" id="why" aria-labelledby="why-title" tabindex="-1">
+    <div class="wrap">
+      <h2 id="why-title">Built small on purpose</h2>
+      <p class="section-lede">These aren't Photoshop, Premiere or InDesign, and they aren't trying to be. They're for
+        the jobs most of us actually have: blur a name in a screenshot, sign a form, trim a recording, lay out a
+        flyer. Quick to learn, quick to finish.</p>
+      <ul class="pillars">
+        <li class="pillar">
+          <span class="pillar-icon" data-icon="lock"></span>
+          <h3>Private by design</h3>
+          <p>Your files never leave your device. Each app opens files right in your browser and saves them back to
+            your computer. There's no server to upload to, no account to make and nothing to sign in to. Even the
+            crash backups stay in your own browser.</p>
+        </li>
+        <li class="pillar">
+          <span class="pillar-icon" data-icon="feather"></span>
+          <h3>Light and quick</h3>
+          <p>Each app is a web page that opens in a moment on a Chromebook, a laptop or a tablet. Once you've opened
+            it, it keeps working with no internet, and you can install it to sit in your dock like any other app.</p>
+        </li>
+        <li class="pillar">
+          <span class="pillar-icon" data-icon="target"></span>
+          <h3>Made for the job</h3>
+          <p>Every tool is built for people who don't need professional software. Clear buttons, plain words, a
+            tour of the best features and sensible starting points mean you spend your time making, not
+            learning menus.</p>
+        </li>
+      </ul>
+      <div class="family-traits">
+        <h3>Learn one, and you know them all</h3>
+        <ul>
+          <li><strong>The same layout:</strong> tools on the left, your work in the middle, settings on the right.</li>
+          <li><strong>The same help:</strong> the <kbd>?</kbd> button opens a tour, keyboard shortcuts and what's new.</li>
+          <li><strong>Accessible from the start:</strong> full keyboard use, screen reader labels, high-contrast colors and dark mode.</li>
+          <li><strong>Safety nets:</strong> undo in every editor, and in most a backup if the tab closes mid-project.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================================================
+       THE APPS: one card each, built by JavaScript from the APPS list.
+       ============================================================== -->
+  <section class="apps" id="apps" aria-labelledby="apps-title" tabindex="-1">
+    <div class="wrap">
+      <h2 id="apps-title">Pick a tool</h2>
+      <p class="section-lede">Every app is free, opens in a new tab, and comes with its own short tour.</p>
+      <ul class="cards" id="cards"></ul>
+    </div>
+  </section>
+
+  <!-- ==============================================================
+       THE STORY: how a text editor for one class became nine apps.
+       ============================================================== -->
+  <section class="story" id="story" aria-labelledby="story-title" tabindex="-1">
+    <div class="wrap">
+      <h2 id="story-title">How it started</h2>
+      <ol class="timeline">
+        <li>
+          <p class="when">July 2026</p>
+          <div class="when-apps"><img src="icons/txtedtr.png" alt=""></div>
+          <h3>One editor for one class</h3>
+          <p>It began with TXTEDTR. Dave Ghidiu, who teaches computing at Finger Lakes Community College, needed a
+            text editor for his vibe coding course: one with a live preview right beside the code, no frills to get
+            lost in, and a careful eye for the things that quietly break a beginner's code, like curly quotes and
+            invisible spaces pasted in from a word processor.</p>
+        </li>
+        <li>
+          <p class="when">Summer into fall</p>
+          <div class="when-apps"><img src="icons/pdfedtr.png" alt=""><img src="icons/imgedtr.png" alt=""><img src="icons/sndedtr.png" alt=""><img src="icons/videdtr.png" alt=""><img src="icons/scrncstr.png" alt=""></div>
+          <h3>Then the tutorials needed tools</h3>
+          <p>Making lessons and how-to guides meant marking up screenshots, recording the screen, cutting video,
+            cleaning up audio and fixing PDFs. Each gap became an app, built the same way: small, private and in
+            the browser.</p>
+        </li>
+        <li>
+          <p class="when">September and October</p>
+          <div class="when-apps"><img src="icons/vctredtr.png" alt=""><img src="icons/3dedtr.png" alt=""><img src="icons/dskedtr.png" alt=""></div>
+          <h3>A family, not a pile</h3>
+          <p>Vector art with PowerPoint-style shape merging, 3D models ready for the school's 3D printer, and
+            desktop publishing to fill the hole Microsoft Publisher left. Along the way the apps grew a shared
+            look, shared help and shared habits, so learning one teaches you the rest.</p>
+        </li>
+        <li>
+          <p class="when">Now</p>
+          <div class="when-apps when-gh" data-icon="github"></div>
+          <h3>Shared in the open</h3>
+          <p>The apps were hosted privately while they grew up. Now they're ready to share: the source is on
+            GitHub under the MIT license, so anyone can use them, learn from them or build on them.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ==============================================================
+       OPEN SOURCE
+       ============================================================== -->
+  <section class="open" aria-labelledby="open-title">
+    <div class="wrap open-inner">
+      <div>
+        <h2 id="open-title">Free, and open to read</h2>
+        <p>Every line of every app is on GitHub under the MIT license. Read how it works, use it in your classroom,
+          change it to suit you, or share it. The code is written to be followed by people who are new to coding,
+          with plenty of plain-English comments.</p>
+      </div>
+      <a class="btn btn-dark" href="https://github.com/corydave/edtr" target="_blank" rel="noopener noreferrer" id="gh-open">View on GitHub<span class="sr-only"> (opens in a new tab)</span></a>
+    </div>
+  </section>
+
+  <!-- ==============================================================
+       QUESTIONS: native <details>, so they work with no JavaScript.
+       ============================================================== -->
+  <section class="faq" id="faq" aria-labelledby="faq-title" tabindex="-1">
+    <div class="wrap">
+      <h2 id="faq-title">Questions</h2>
+      <details>
+        <summary>Are they really free?</summary>
+        <p>Yes. No trials, no ads, no accounts, no paid upgrades. The code is open source under the MIT license.</p>
+      </details>
+      <details>
+        <summary>Where do my files go?</summary>
+        <p>Nowhere. Files open inside your browser and save back to your own computer. Nothing is sent to a server,
+          because there isn't one to send it to.</p>
+      </details>
+      <details>
+        <summary>Do they work without the internet?</summary>
+        <p>Yes, after the first time you open them. Each app keeps a copy of itself in your browser, and checks for
+          a newer version when you're back online.</p>
+      </details>
+      <details>
+        <summary>Which browsers and devices?</summary>
+        <p>Chrome and Edge work best, including on Chromebooks and Android. Most apps work in Firefox and Safari too.
+          SCRNCSTR, the screen recorder, needs Chrome or Edge.</p>
+      </details>
+      <details>
+        <summary>Can I install them?</summary>
+        <p>Yes. In Chrome or Edge, press Install on an app's start screen and it gets its own window and icon. On an
+          iPhone or iPad, use Share, then Add to Home Screen.</p>
+      </details>
+      <details>
+        <summary>Are they accessible?</summary>
+        <p>That's built in from the start: everything works from the keyboard, controls are labelled for screen
+          readers, text meets high-contrast (AAA) targets, and every app has a dark mode and respects
+          "reduce motion".</p>
+      </details>
+    </div>
+  </section>
+</main>
+
 <footer class="site-foot">
   <div class="wrap">
-    <p>Made by <a href="https://daveghidiu.com" rel="noopener noreferrer">Dave Ghidiu</a> with Claude.
-      Free and open source: <a href="https://github.com/corydave/edtr" rel="noopener noreferrer">the code is on GitHub</a> under the MIT license.</p>
+    <p>Made by <a href="https://daveghidiu.com" target="_blank" rel="noopener noreferrer">Dave Ghidiu</a> with Claude.</p>
+    <p><a href="https://github.com/corydave/edtr" target="_blank" rel="noopener noreferrer">Source on GitHub</a> ·
+      MIT License · Copyright 2026 Dave Ghidiu</p>
   </div>
 </footer>
 
@@ -776,6 +946,10 @@ const ICONS = {
   external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   images: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  github: '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  feather: '<path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>'
 };
 function icon(name) {
@@ -880,7 +1054,7 @@ APPS.forEach(app => {
   loadImage(thumb, [app.thumb, firstSlide], 'Screenshot of ' + app.name, app, 'Picture coming soon');
 
   const body = el('div', 'card-body');
-  const name = el('h2', 'app-name', app.name);
+  const name = el('h3', 'app-name', app.name);
   const blurb = el('p', '', app.blurb);
 
   // Button 1: opens the slideshow. This is how keyboard users open it.
@@ -915,6 +1089,11 @@ APPS.forEach(app => {
 });
 
 paintThemeButton();
+
+/* The fixed drawings named in the page (data-icon="lock" ...), and the
+   GitHub mark in the top bar. */
+document.querySelectorAll('[data-icon]').forEach(node => node.append(icon(node.dataset.icon)));
+document.getElementById('gh-top').append(icon('github'));
 
 /* ==================================================================
    THE SLIDESHOW
