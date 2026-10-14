@@ -1317,7 +1317,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.20.0';
+const APP_VERSION = '1.21.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1372,6 +1372,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.21.0', date: '2026-10-13', notes: [
+    'Shields in the Shapes panel: the same nine styles as VCTREDTR - Classic, Heater, Pointed, Round, Arched, Dipped, Notched, Peaked and Scalloped. A click drops one at its natural proportions; Shift keeps them while you drag.',
+    'Cut a picture to a shape: an image layer has a Shape drop-down (Rectangle, Circle, triangle, hexagon, star, heart, speech bubble, seal, the shields and more). Picking one crops the picture to that shape\'s proportions, so a circle comes out round; Crop image chooses which part shows. The border and the shadow follow the shape, and Undo puts the rectangle back.'
+  ] },
   { version: '1.20.0', date: '2026-10-12', notes: [
     'Select several layers by dragging a box over them, even on top of a picture or background shape: hold Alt (Option on a Mac) as you start dragging with the Select tool. The box picks up every layer that is completely inside it. Shift+Alt adds to what is already selected. (A plain drag on empty canvas, or from the grey area around it, still draws a box too.)'
   ] },
@@ -4434,7 +4438,15 @@ function imageFields(L) {
       commit(); syncPropValues(); requestRender();
     }),
     labelBtn('eraser', 'Eraser', () => setTool('eraser'))));
-  rows.push(rangeField('Corners', L, 'radius', true, 0, 200));
+  rows.push(imageShapeField(L));
+  if (maskShapeOf(L)) {
+    rows.push(el('div', { class: 'btn-row', style: 'margin-bottom:8px' },
+      el('button', { type: 'button', class: 'btn', text: 'Fit crop to the shape',
+        onclick: () => { fitCropToShape(L); commit(); renderProps(); requestRender(); announce('Crop fitted to the shape'); } })));
+    rows.push(el('p', { class: 'hint', text: 'Use Crop image to choose which part of the picture shows inside the shape. The border and shadow follow the shape.' }));
+  } else {
+    rows.push(rangeField('Corners', L, 'radius', true, 0, 200));
+  }
   rows.push(el('div', { class: 'subhead', text: 'Adjust' }));
   rows.push(rangeField('Brightness', L, 'brightness', true, -100, 100));
   rows.push(rangeField('Contrast', L, 'contrast', true, -100, 100));
@@ -4461,6 +4473,31 @@ function imageFields(L) {
       L.paint && L.paint.length ? el('button', { type: 'button', class: 'btn', text: 'Clear all color changes', onclick: () => clearPainting(L) }) : null));
   }
   return rows;
+}
+/**
+ * The image's Shape: a drop-down of Rectangle plus every shape an image can
+ * be cut to, grouped as in the Shapes panel. Picking a shape also crops the
+ * picture to that shape's proportions (so a circle is round, not an oval).
+ * Undo (Ctrl+Z) puts the rectangle and the old crop back in one step.
+ */
+function imageShapeField(L) {
+  const sel = el('select', { id: 'imgShape' }, el('option', { value: '', text: 'Rectangle' }));
+  const groups = {};
+  for (const key of MASK_SHAPES) {
+    const def = SHAPE_BY_KEY[key];
+    if (!groups[def.group]) { groups[def.group] = el('optgroup', { label: def.group }); sel.append(groups[def.group]); }
+    groups[def.group].append(el('option', { value: key, text: key === 'ellipse' ? 'Circle / ellipse' : def.label }));
+  }
+  sel.value = maskShapeOf(L) || '';
+  sel.addEventListener('change', () => {
+    L.maskShape = sel.value || null;
+    if (L.maskShape) fitCropToShape(L);
+    commit(); renderProps(); requestRender();
+    const again = $('imgShape'); if (again) again.focus();      // the panel was rebuilt: stay on the drop-down
+    announce(L.maskShape ? 'Image cut to ' + SHAPE_BY_KEY[L.maskShape].label : 'Image is a rectangle again');
+  });
+  if (L.locked) sel.disabled = true;
+  return el('div', { class: 'field' }, el('label', { for: 'imgShape', text: 'Shape' }), sel);
 }
 function actionBtn(icon, label, fn) {
   const b = el('button', { type: 'button', class: 'icon-btn', 'aria-label': label, title: label, onclick: fn });
@@ -5538,11 +5575,13 @@ function imageDrawSource(layer) {
   const radiusSrc = (layer.radius || 0) * cr.w / Math.max(1, layer.w);   // corner radius in source pixels
   const adjust = hasAdjust(layer);
   const painted = paintSig(layer);                // colour changes from the magic wand (Fill / Recolor)
-  if (!mask && radiusSrc < 0.5 && !adjust && !painted) return { img: src, sx: cr.x, sy: cr.y, sw: cr.w, sh: cr.h };
+  const shape = maskShapeOf(layer);              // cut to a shape (a star, a shield...)? see "Image shapes"
+  if (!mask && radiusSrc < 0.5 && !adjust && !painted && !shape) return { img: src, sx: cr.x, sy: cr.y, sw: cr.w, sh: cr.h };
   const base = painted ? paintedSource(layer) : src;   // the recoloured copy, when there is one
 
   const key = [layer.imageId, cr.x, cr.y, cr.w, cr.h, eraseSig(layer), painted, Math.round(radiusSrc),
-    layer.brightness || 0, layer.contrast || 0, layer.saturation || 0].join('|');
+    layer.brightness || 0, layer.contrast || 0, layer.saturation || 0,
+    shape ? shape + (layer.flipX ? 'x' : '') + (layer.flipY ? 'y' : '') : ''].join('|');
   let s = styledCache.get(layer.id);
   if (!s || s.key !== key) {
     const c = document.createElement('canvas');
@@ -5555,7 +5594,13 @@ function imageDrawSource(layer) {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.drawImage(mask, cr.x, cr.y, cr.w, cr.h, 0, 0, c.width, c.height);
     }
-    if (radiusSrc >= 0.5) {    // keep only the inside of a rounded rectangle
+    if (shape) {               // keep only the inside of the shape
+      // The layer's flip is applied AFTER this (when drawing), so the shape is
+      // mirrored here first: flipped twice, it ends up the right way round.
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.fillStyle = '#000';
+      ctx.fill(maskPath(shape, 0, 0, c.width, c.height, layer.flipX, layer.flipY));
+    } else if (radiusSrc >= 0.5) {    // keep only the inside of a rounded rectangle
       ctx.globalCompositeOperation = 'destination-in';
       roundRectPath(ctx, 0, 0, c.width, c.height, radiusSrc);
       ctx.fillStyle = '#000'; ctx.fill();
@@ -5590,11 +5635,32 @@ function drawImageLayer(ctx, layer, pxScale = 1) {
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(d.img, d.sx, d.sy, d.sw, d.sh, x, y, w, h);
   ctx.restore();
-  if (layer.borderWidth > 0) {           // border sits just inside the edge
-    const b = layer.borderWidth / 2;
-    roundRectPath(ctx, x + b, y + b, w - b * 2, h - b * 2, Math.max(0, (layer.radius || 0) - b));
-    ctx.strokeStyle = layer.borderColor; ctx.lineWidth = layer.borderWidth; ctx.stroke();
+  drawImageBorder(ctx, layer, x, y, w, h, 1);
+}
+
+/**
+ * An image layer's border, just inside its edge. "s" = output pixels per
+ * layer pixel (1 normally; more when drawing a tilted picture's flat copy).
+ * A shaped image gets a border that follows the shape: the outline is
+ * stroked twice as thick, but clipped to the inside of the shape, so the
+ * half that shows is exactly the border's thickness.
+ */
+function drawImageBorder(ctx, L, x, y, w, h, s) {
+  if (!(L.borderWidth > 0)) return;
+  ctx.strokeStyle = L.borderColor;
+  const shape = maskShapeOf(L);
+  if (shape) {
+    const p = maskPath(shape, x, y, w, h, false, false);    // drawn after the flip, so not mirrored
+    ctx.save();
+    ctx.clip(p);
+    ctx.lineWidth = L.borderWidth * s * 2; ctx.lineJoin = 'round';
+    ctx.stroke(p);
+    ctx.restore();
+    return;
   }
+  const b = L.borderWidth * s / 2;
+  roundRectPath(ctx, x + b, y + b, w - b * 2, h - b * 2, Math.max(0, ((L.radius || 0) - L.borderWidth / 2) * s));
+  ctx.lineWidth = L.borderWidth * s; ctx.stroke();
 }
 
 /** Draw the WHOLE original picture into a rectangle, mirrored if the layer is flipped. */
@@ -7286,6 +7352,46 @@ const RIBBON = (() => {
      - A regular pentagon and a 5-point star: width = 2 x sin 72 degrees,
        height = 1 + cos 36 degrees, so about 1.051 wide per 1 tall.        */
 const EQUILATERAL = 2 / Math.sqrt(3);
+
+/* ---- Shields (the same nine styles as VCTREDTR) ----
+   VCTREDTR draws each shield in a box 100 wide and 120 tall (the point at
+   the bottom middle). Our shapes live in a 100 x 100 box, so squashY()
+   squashes a path's up-and-down numbers by 100/120; each shield's default
+   size and "aspect" stretch it back out, so it keeps its real proportions.
+   Copied from VCTREDTR's SHIELD_STYLES (section 10 there): keep them in step. */
+const SHIELD_BOTTOM = 'C100 88 76 106 50 120C24 106 0 88 0 58';
+const SHIELD_STYLES = {
+  classic:   { label: 'Classic',   d: 'M0 0H100V52C100 84 76 104 50 120C24 104 0 84 0 52Z' },
+  heater:    { label: 'Heater',    d: 'M0 0H100C100 58 82 94 50 120C18 94 0 58 0 0Z' },
+  pointed:   { label: 'Pointed',   d: 'M0 0H100V70L50 120L0 70Z' },
+  round:     { label: 'Round',     d: 'M0 0H100V70C100 98 78 120 50 120C22 120 0 98 0 70Z' },
+  arched:    { label: 'Arched',    d: 'M0 14Q50 -14 100 14V58' + SHIELD_BOTTOM + 'Z' },
+  dipped:    { label: 'Dipped',    d: 'M0 0Q50 24 100 0V58' + SHIELD_BOTTOM + 'Z' },
+  notched:   { label: 'Notched',   d: 'M16 0H84A16 16 0 0 0 100 16V58' + SHIELD_BOTTOM + 'V16A16 16 0 0 0 16 0Z' },
+  peaked:    { label: 'Peaked',    d: 'M0 8C18 10 36 7 50 0C64 7 82 10 100 8V58' + SHIELD_BOTTOM + 'Z' },
+  scalloped: { label: 'Scalloped', d: 'M0 10Q12.5 -4 25 10Q37.5 -4 50 10Q62.5 -4 75 10Q87.5 -4 100 10V58' + SHIELD_BOTTOM + 'Z' }
+};
+const SHIELD_ASPECT = 100 / 120;     // width / height of every shield
+
+/**
+ * Multiply every up-and-down number in an SVG path by k. Works on paths
+ * written with capital (absolute) commands, like the shields:
+ *   M L T C S Q = pairs of x y      H = x only (nothing to change)
+ *   V = y only                      A = rx ry turn big sweep x y (ry and y change)
+ */
+function squashY(d, k) {
+  const fmt = (n) => String(Math.round(n * 1000) / 1000);
+  return d.replace(/([MLTCSQHVAZ])([^MLTCSQHVAZ]*)/gi, (all, cmd, args) => {
+    const n = (args.match(/-?\d*\.?\d+(?:e-?\d+)?/gi) || []).map(Number);
+    const out = n.map((v, i) => {
+      if (cmd === 'V') return fmt(v * k);
+      if (cmd === 'H' || cmd === 'Z') return fmt(v);
+      if (cmd === 'A') return fmt(i % 7 === 1 || i % 7 === 6 ? v * k : v);
+      return fmt(i % 2 === 1 ? v * k : v);            // pairs: every second number is a y
+    });
+    return cmd + out.join(' ');
+  });
+}
 const FIVE_POINT = (2 * Math.sin(72 * Math.PI / 180)) / (1 + Math.cos(36 * Math.PI / 180));
 
 const SHAPES = [
@@ -7327,10 +7433,46 @@ const SHAPES = [
     d: 'M28 74C28 62 0 56 0 36A50 36 0 1 1 100 36C100 56 72 62 72 74Z M30 79H70V86H30Z M36 91H64V100H36Z' },
   { key: 'ribbon', label: 'Award ribbon', group: 'Callouts and awards', size: [140, 196],
     preset: { fill: '#1d4ed8', fillOn: true, stroke: '#ffffff', strokeWidth: 3 }, d: RIBBON.d, detail: RIBBON.detail },
-  { key: 'seal', label: 'Badge / seal', group: 'Callouts and awards', aspect: 1, d: ringPath(starPts(16, 50, 42)) }
+  { key: 'seal', label: 'Badge / seal', group: 'Callouts and awards', aspect: 1, d: ringPath(starPts(16, 50, 42)) },
+  // --- Shields (VCTREDTR's nine styles, see SHIELD_STYLES above) -----------
+  ...Object.entries(SHIELD_STYLES).map(([k, st]) => ({
+    key: 'shield' + k[0].toUpperCase() + k.slice(1),          // shieldClassic, shieldHeater...
+    label: st.label + ' shield', group: 'Shields', size: [150, 180], aspect: SHIELD_ASPECT, tall: true,
+    d: squashY(st.d, 100 / 120) }))
 ];
 // Look a shape up by its key. Path2D objects are made once and reused.
 const SHAPE_BY_KEY = Object.fromEntries(SHAPES.map((s) => [s.key, s]));
+
+/* ---- Image shapes ----
+   An image layer can be cut to any of these shapes (layer.maskShape = the
+   shape's key; none = a rectangle, with the Corners slider). Shapes made of
+   separate pieces or with holes (the # sign, the no sign, the location pin
+   and the light bulb) would make odd cut-outs, so they are left out.      */
+const MASK_SHAPES = SHAPES.filter((sh) => !['rect', 'hash', 'noSign', 'pin', 'bulb'].includes(sh.key)).map((sh) => sh.key);
+/** The shape an image is cut to, or null (a plain rectangle). Unknown keys count as none. */
+const maskShapeOf = (L) => (L.maskShape && MASK_SHAPES.includes(L.maskShape) ? L.maskShape : null);
+/** A shape's outline stretched over the box (x, y, w, h), optionally mirrored. */
+function maskPath(key, x, y, w, h, flipX, flipY) {
+  const sx = (flipX ? -1 : 1) * w / 100, sy = (flipY ? -1 : 1) * h / 100;
+  const p = new Path2D();
+  p.addPath(basePaths(key).main, new DOMMatrix([sx, 0, 0, sy, x + (flipX ? w : 0), y + (flipY ? h : 0)]));
+  return p;
+}
+/**
+ * Crop an image so its box has the shape's own proportions (a circle needs
+ * a square, a shield is a little taller than wide). Keeps the middle of the
+ * picture and its size on the canvas; only the crop's long side shrinks.
+ */
+function fitCropToShape(L) {
+  const shape = maskShapeOf(L);
+  if (!shape) return;
+  const a = shapeAspect(shape), cr = cropOf(L), k = L.w / cr.w, c = centerOf(L);
+  let cw = cr.w, ch = cr.h;
+  if (cw / ch > a) cw = ch * a; else ch = cw / a;
+  L.crop = { x: cr.x + (cr.w - cw) / 2, y: cr.y + (cr.h - ch) / 2, w: cw, h: ch };
+  L.w = cw * k; L.h = ch * k;
+  L.x = c.x - L.w / 2; L.y = c.y - L.h / 2;
+}
 const shapePathCache = {};
 function basePaths(kind) {
   if (!shapePathCache[kind]) {
@@ -7429,8 +7571,11 @@ function shapeDefaultSize(kind, square) {
 function shapeIcon(key, strokeWidth = 7) {
   const s = SHAPE_BY_KEY[key];
   const pad = strokeWidth + 2;
+  // A tall shape (the shields) is drawn narrower in its button, so the
+  // picture shows its real proportions rather than the squashed 100 x 100 box.
+  const narrow = s.tall ? ` transform="translate(${50 - 50 * s.aspect} 0) scale(${s.aspect} 1)"` : '';
   return `<svg viewBox="${-pad} ${-pad} ${100 + pad * 2} ${100 + pad * 2}" aria-hidden="true" focusable="false">` +
-    `<path d="${s.d}" fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linejoin="round"/>` +
+    `<path d="${s.d}"${narrow} fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linejoin="round"/>` +
     (s.detail ? `<path d="${s.detail}" fill="currentColor"/>` : '') + '</svg>';
 }
 
@@ -7740,11 +7885,7 @@ function flatForTilt(L, res) {
   if (L.flipX || L.flipY) { ctx.translate(c.width / 2, c.height / 2); ctx.scale(L.flipX ? -1 : 1, L.flipY ? -1 : 1); ctx.translate(-c.width / 2, -c.height / 2); }
   ctx.drawImage(d.img, d.sx, d.sy, d.sw, d.sh, 0, 0, c.width, c.height);
   ctx.restore();
-  if (L.borderWidth > 0) {
-    const b = L.borderWidth * res / 2;
-    roundRectPath(ctx, b, b, c.width - b * 2, c.height - b * 2, Math.max(0, ((L.radius || 0) - L.borderWidth / 2) * res));
-    ctx.strokeStyle = L.borderColor; ctx.lineWidth = L.borderWidth * res; ctx.stroke();
-  }
+  drawImageBorder(ctx, L, 0, 0, c.width, c.height, res);
   return c;
 }
 
@@ -7754,7 +7895,7 @@ function drawTiltedImage(ctx, L, pxScale) {
   // Work at the picture's own detail level, but never bigger than TILT_MAX_PX.
   const res = Math.min(cr.w / L.w, TILT_MAX_PX / Math.max(L.w, L.h));
   const key = [imageDrawSource(L).img === imageStore.get(L.imageId) ? 'raw' : styledCache.get(L.id)?.key,
-    L.w, L.h, L.tiltX, L.tiltY, L.flipX, L.flipY, L.borderWidth, L.borderColor, L.radius, res.toFixed(4)].join('|');
+    L.w, L.h, L.tiltX, L.tiltY, L.flipX, L.flipY, L.borderWidth, L.borderColor, L.radius, L.maskShape || '', res.toFixed(4)].join('|');
   let t = tiltCache.get(L.id);
   if (!t || t.key !== key) {
     const flat = flatForTilt(L, res);
@@ -8139,6 +8280,8 @@ function validateProject(data) {
     }
     if (L.type === 'cursor' && !CURSOR_KINDS[L.kind]) L.kind = 'pointer';
     if (L.type === 'text' && !FONTS[L.font]) L.font = 'sans';
+    // An image cut to a shape (1.21.0): a known shape key, or nothing.
+    if (L.type === 'image' && L.maskShape != null && !MASK_SHAPES.includes(L.maskShape)) L.maskShape = null;
     // A sized text box (1.18.0): a positive number, or nothing (the box hugs the words).
     if (L.type === 'text') for (const k of ['boxW', 'boxH']) L[k] = num(L[k]) && L[k] > 0 ? Math.min(L[k], 100000) : null;
     if (L.type === 'redact') L.block = Math.max(REDACT_MIN_BLOCK, num(L.block) ? L.block : 16);

@@ -2,6 +2,14 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.21.0 - 2026-10-13 - Shields, and pictures cut to shapes
+
+- **Shields in the Shapes panel** (a new Shields group): **Classic, Heater, Pointed, Round, Arched, Dipped, Notched, Peaked and Scalloped** - the same nine styles as VCTREDTR, copied from its `SHIELD_STYLES` table so the two apps match. VCTREDTR draws them 100 x 120; IMGEDTR's shapes live in a 100 x 100 box, so `squashY()` squashes each outline and the shield's default size (150 x 180) and proportions stretch it back. A click drops a shield at its natural shape, Shift keeps it while drawing or resizing, and Make regular snaps a stretched one back. Their buttons in the panel show them at their real proportions.
+- **Cut a picture to a shape.** Image layers have a **Shape** drop-down: Rectangle (with the Corners slider, as before) or any shape from the Shapes panel - circle, triangle, diamond, pentagon, hexagon, octagon, star, heart, check, X, plus, warning sign, speech bubble, block arrow, award ribbon, seal and all nine shields. (The # sign, no sign, location pin and light bulb are left out: their holes and separate pieces make odd cut-outs.)
+  - Picking a shape also **crops the picture to the shape's proportions**, keeping the middle, so a circle comes out round and a shield the right height. **Fit crop to the shape** does it again after you change the crop; **Crop image** chooses which part of the picture shows.
+  - The **border follows the shape** (it is the outline stroked twice as thick and clipped to the inside, so it sits exactly inside the edge), and so does the **shadow**. Flipping, erasing, the magic wand, adjustments and perspective tilt all work on shaped pictures.
+  - **Undo** puts the rectangle and the old crop back in one step. Projects save it as `maskShape` (checked when a project opens; an unknown shape opens as a rectangle). Older projects open unchanged.
+
 ## 1.20.0 - 2026-10-12 - Box-select over a picture
 
 - **Alt+drag (Option+drag on a Mac) with the Select tool always draws a selection box**, even when the press lands on a layer. Before, a box could only start on empty canvas, so on a design with a full-size picture or background shape every drag moved the background instead. Every layer completely inside the box is selected (a group comes along whole); locked and hidden layers are skipped, as before. **Shift+Alt** adds to the current selection. Alt pressed after a move has started still turns snapping off.
