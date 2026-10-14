@@ -1,0 +1,21 @@
+{
+  "name": "ANIMEDTR",
+  "short_name": "ANIMEDTR",
+  "description": "Make animated, interactive lessons in your browser: a stage, a timeline and keyframes, no code. Exports one accessible HTML file. Nothing is uploaded.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#655800",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": { "application/x-animedtr": [".animedtr"] }
+    }
+  ]
+}
