@@ -574,6 +574,38 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 .dlg-body table { border-collapse: collapse; width: 100%; font-size: 13px; }
 .dlg-body td { padding: 5px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .dlg-body td:first-child { white-space: nowrap; width: 1%; }
+/* 0.13.0: Export's "What to make": one choice a row, and the progress of a video or GIF. */
+.ex-kinds { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px 8px; margin: 10px 0; display: grid; gap: 2px; }
+.ex-kinds legend { font-weight: 700; padding: 0 4px; }
+.ex-kind { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; font-size: 13.5px; cursor: pointer; min-height: 28px; }
+.ex-kind input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--brand); flex: none; }
+#exOpts:empty { display: none; }
+#exOpts { border-left: 3px solid var(--brand); padding: 2px 0 2px 10px; margin: 0 0 10px; }
+.ex-progress { display: flex; gap: 10px; align-items: center; margin: 0 0 10px; }
+.ex-progress progress { flex: 1; height: 14px; accent-color: var(--brand); }
+.ex-progress span { font-size: 13px; min-width: 9em; }
+/* 0.14.0: colour schemes (as DSKEDTR's): the strip, the cards, the six fields, the swatches under colour fields. */
+.scheme-strip { display: inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); flex: none; }
+.scheme-strip span { width: 14px; height: 14px; }
+.scheme-btn { display: flex; gap: 8px; align-items: center; width: 100%; justify-content: flex-start; margin: 0 0 10px; }
+.scheme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 0 0 12px; }
+.scheme-card { display: grid; gap: 4px; justify-items: start; padding: 6px; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; text-align: left; font: inherit; }
+.scheme-card[aria-pressed="true"] { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand) inset; }
+.scheme-thumb { display: block; width: 100%; aspect-ratio: 16 / 9; background: var(--desk); border-radius: 4px; overflow: hidden; }
+.scheme-thumb svg { width: 100%; height: 100%; display: block; }
+.scheme-in { font-size: 12px; color: var(--text-muted); min-height: 1em; }
+.scheme-own { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 8px; }
+.scheme-slot { display: grid; justify-items: center; gap: 2px; font-size: 12.5px; }
+.scheme-slot input { width: 44px; height: 36px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+.warn-text { color: var(--danger); font-size: 13px; min-height: 1em; margin: 0; }
+/* An SVG drawing's preview (0.15.0): on a checkerboard, so white and see-through parts show. */
+.svg-preview { height: 220px; border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin: 8px 0;
+  background: repeating-conic-gradient(#e5e7eb 0 25%, #ffffff 0 50%) 0 0 / 16px 16px; }
+.svg-preview svg { width: 100%; height: 100%; display: block; }
+/* Getting started: the Brightspace steps (0.14.0). */
+#paneStart h4 { font-size: 14px; margin: 12px 0 4px; }
+.swatch-row { display: flex; gap: 4px; margin: -2px 0 8px; justify-content: flex-end; }
+.swatch { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(0,0,0,.35); box-shadow: 0 0 0 1px rgba(255,255,255,.7) inset; padding: 0; cursor: pointer; }
 .problems { list-style: none; padding: 0; margin: 0 0 8px; }
 .problems li { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
 .problems li .grow { flex: 1; }
@@ -1167,13 +1199,13 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <button class="icon-btn" id="toolPen" title="Pen (P): click for corners, drag for curves" aria-label="Pen" aria-pressed="false"><span data-icon="penTool"></span></button>
     <button class="icon-btn" id="toolPencil" title="Pencil (B): draw freehand" aria-label="Pencil" aria-pressed="false"><span data-icon="pencil"></span></button>
     <button class="icon-btn has-flyout" id="addShape" title="Shapes (U): stars, arrows, callouts and more" aria-label="Shapes" aria-pressed="false" aria-haspopup="dialog" aria-expanded="false" aria-controls="shapeGallery"><span data-icon="shapes"></span></button>
-    <button class="icon-btn" id="addPicture" title="Picture (F): PNG, JPEG, WebP or GIF. You can also drop or paste one on the stage" aria-label="Add a picture"><span data-icon="image"></span></button>
+    <button class="icon-btn" id="addPicture" title="Picture (F): PNG, JPEG, WebP, GIF, or an SVG drawing (it comes in as shapes). You can also drop or paste one on the stage" aria-label="Add a picture"><span data-icon="image"></span></button>
     <hr>
     <button class="icon-btn" id="railMarker" title="Add a marker at the play head (M)" aria-label="Add a marker at the play head"><span data-icon="flag"></span></button>
   </nav>
   <!-- The shapes gallery (opened by the Shapes tool). Arrow keys move between shapes. -->
   <div class="gallery" id="shapeGallery" role="dialog" aria-labelledby="galTitle" hidden></div>
-  <input type="file" id="pictureInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden>
+  <input type="file" id="pictureInput" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,.svg" multiple hidden>
   <!-- Open a project: an .animedtr file (a zip with the lesson and its pictures). -->
   <input type="file" id="projectInput" accept=".animedtr,application/x-animedtr" hidden>
   <input type="file" id="soundInput" accept="audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/x-m4a,audio/aac,audio/webm,.mp3,.wav,.ogg,.m4a,.aac,.webm" hidden>
@@ -1357,14 +1389,65 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <div class="field"><label for="exTitle">Lesson title</label><input type="text" id="exTitle" maxlength="200"></div>
     <div class="field"><label for="exLang">Language</label><input type="text" id="exLang" maxlength="20" aria-describedby="exLangHelp"></div>
     <p class="hint" id="exLangHelp">A language code, such as en, es or fr-CA. Screen readers use it to pick a voice.</p>
+    <!-- What to make (0.13.0): the lesson, a SCORM package, a video, a GIF or a picture. Each kind's settings show under it. -->
+    <fieldset class="ex-kinds">
+      <legend>What to make</legend>
+      <label class="ex-kind"><input type="radio" name="exKind" value="html" checked> <span><strong>Lesson</strong> (one HTML file: interactive, works anywhere)</span></label>
+      <label class="ex-kind"><input type="radio" name="exKind" value="scorm"> <span><strong>For an LMS</strong> (SCORM 1.2 package: completion and score go to the gradebook)</span></label>
+      <label class="ex-kind"><input type="radio" name="exKind" value="video"> <span><strong>Video</strong> (WebM with sound, and a captions file)</span></label>
+      <label class="ex-kind"><input type="radio" name="exKind" value="gif"> <span><strong>Animated GIF</strong> (silent, loops)</span></label>
+      <label class="ex-kind"><input type="radio" name="exKind" value="png"> <span><strong>Picture of this frame</strong> (PNG)</span></label>
+    </fieldset>
+    <div id="exOpts"></div>
+    <div class="ex-progress" id="exProgress" hidden>
+      <progress id="exBar" max="100" value="0" aria-labelledby="exProgText"></progress>
+      <span id="exProgText" aria-live="polite"></span>
+    </div>
     <h3>Checks</h3>
     <ul class="problems" id="exProblems"></ul>
-    <p class="hint">The lesson is one HTML file with everything inside. It works offline, opens in any modern browser, and can be uploaded to Brightspace or another LMS. It makes no network requests and keeps no data.</p>
   </div>
   <div class="dlg-foot">
+    <button class="btn" data-close id="exCancel">Cancel</button>
+    <button class="btn primary" id="exGo"><span data-icon="download"></span> <span id="exGoText">Download the lesson</span></button>
+  </div>
+</dialog>
+
+<!-- Colour scheme (0.14.0): a card per scheme (this frame, in its colours), and the lesson's own six. -->
+<dialog id="schemeDlg" aria-labelledby="schemeTitle">
+  <div class="dlg-head"><h2 id="schemeTitle">Colour scheme</h2>
+    <button class="icon-btn" data-close title="Close" aria-label="Close"><span data-icon="x"></span></button></div>
+  <div class="dlg-body">
+    <p class="hint">Six colours that go together. Picking one recolours the lesson: everything in the old scheme's colours (and lighter or darker shades of them) takes the new one's. White, black, pictures and your own colours stay. Undo puts it back.</p>
+    <div class="scheme-grid" id="schemeGrid" role="group" aria-label="Colour schemes"></div>
+    <h3>This lesson's six: <span id="schemeOwnName"></span></h3>
+    <div class="scheme-own" id="schemeOwn"></div>
+    <p class="warn-text" id="schemeWarn" aria-live="polite"></p>
+  </div>
+  <div class="dlg-foot"><button class="btn primary" data-close>Done</button></div>
+</dialog>
+
+<!-- An animated GIF (0.14.0): as a flipbook, or just its first picture? -->
+<dialog id="gifDlg" aria-labelledby="gifDlgTitle" aria-describedby="gifDlgText">
+  <div class="dlg-head"><h2 id="gifDlgTitle">This GIF moves</h2></div>
+  <div class="dlg-body"><p id="gifDlgText"></p>
+    <p class="hint">A flipbook keeps it moving: one page for each picture (Edit flipbook changes them). Or add just the first picture, as a still.</p></div>
+  <div class="dlg-foot">
     <button class="btn" data-close>Cancel</button>
-    <button class="btn" id="exPng" title="A PNG picture of the stage at the play head, for slides or a handout"><span data-icon="image"></span> Picture of this frame (PNG)</button>
-    <button class="btn primary" id="exGo"><span data-icon="download"></span> Download the lesson</button>
+    <button class="btn" id="gifStill">Just its first picture</button>
+    <button class="btn primary" id="gifFlip">As a flipbook (it moves)</button>
+  </div>
+</dialog>
+
+<!-- An SVG drawing (0.15.0): a preview drawn from ANIMEDTR's own numbers, what was left out, and how to bring it in. -->
+<dialog id="svgDlg" aria-labelledby="svgDlgTitle" aria-describedby="svgDlgText">
+  <div class="dlg-head"><h2 id="svgDlgTitle">Bring in a drawing</h2></div>
+  <div class="dlg-body"><p id="svgDlgText"></p>
+    <div id="svgPreview" class="svg-preview"></div>
+    <p id="svgDlgNotes" class="hint" hidden></p>
+    <fieldset id="svgHow" class="ex-kinds"></fieldset></div>
+  <div class="dlg-foot">
+    <button class="btn" data-close>Cancel</button>
+    <button class="btn primary" id="svgAdd">Add it</button>
   </div>
 </dialog>
 
@@ -1440,7 +1523,10 @@ var ANIRuntime = (function () {
   var FPS = [12, 24, 30, 60];
   // The behaviour actions. A lesson can only ever ask for one of these:
   // there is no way to put code of your own into a lesson.
-  var ACTIONS = ['gotoPlay', 'gotoPause', 'play', 'pause', 'show', 'hide', 'toggle', 'set', 'link', 'say', 'change', 'if', 'check', 'sound', 'stopSounds'];
+  var ACTIONS = ['gotoPlay', 'gotoPause', 'play', 'pause', 'show', 'hide', 'toggle', 'set', 'link', 'say', 'change', 'if', 'check', 'sound', 'stopSounds', 'complete'];
+  // "complete" (0.13.0): Mark the lesson complete, for an LMS (SCORM 1.2). A lesson
+  // exported for an LMS also counts as complete when the play head reaches its end
+  // or its last marker, and sends its score (one variable, out of a number).
   // Sounds (0.12.0): MP3, WAV, Ogg, M4A (AAC) or WebM audio, kept inside the lesson as
   // data: addresses, like pictures. A sound is speech (its words, as captions, are a
   // must), an effect (a short note such as [a bell rings]) or music. It plays from a
@@ -1819,7 +1905,15 @@ var ANIRuntime = (function () {
     });
     // Behaviours of the whole lesson: when it starts, when the play head reaches a marker, when a key is pressed.
     var on = isObj(raw.on) ? raw.on : {};
-    p.on = { start: cleanActs(on.start), marks: [], keys: [], sorted: cleanActs(on.sorted) };   // sorted: everything in a right place (0.11.0)
+    p.on = { start: cleanActs(on.start), marks: [], keys: [], sorted: cleanActs(on.sorted) };
+    // For an LMS (0.13.0): which variable is the score, out of what, and the pass mark (0: none).
+    // lms is true only in a lesson exported as a SCORM package: then the player talks to the LMS.
+    var sc = isObj(raw.scorm) ? raw.scorm : {};
+    p.scorm = { v: varIds[sc.v] === true ? sc.v : '', max: int(sc.max, 1, 100000, 1), pass: int(sc.pass, 0, 100, 0) };
+    p.lms = raw.lms === true;
+    // The lesson's colour scheme (0.14.0): six colours with jobs, used by the editor only.
+    var scc = isObj(raw.scheme) ? list(raw.scheme.colours, 6).map(function (c) { return colour(c, ''); }) : [];
+    p.scheme = scc.length === 6 && scc.every(function (c) { return c; }) ? { name: str(raw.scheme.name, 40) || 'Your own', colours: scc } : null;   // sorted: everything in a right place (0.11.0)
     list(on.marks, LIMITS.markers).forEach(function (m) {
       if (isObj(m) && markerIds[m.marker] === true) { var acts = cleanActs(m.acts); if (acts.length || drafts) p.on.marks.push({ marker: m.marker, acts: acts }); }
     });
@@ -1960,6 +2054,7 @@ var ANIRuntime = (function () {
       case 'check': return 'check the answers';
       case 'sound': var sn = ''; (p.sounds || []).forEach(function (x) { if (x.id === a.s) sn = x.name; }); return 'play the sound ' + sn;
       case 'stopSounds': return 'stop all sounds';
+      case 'complete': return 'mark the lesson complete';
       case 'if': return 'if ' + vname(a.v) + ' ' + CMP_WORDS[a.cmp] + ' ' + a.n + ', ' + (each(a.then) || 'nothing') +
         (a.otherwise.length ? '; otherwise ' + each(a.otherwise) : '');
     }
@@ -2656,6 +2751,68 @@ var ANIRuntime = (function () {
     return bank;
   }
 
+  /* ---------- 4c. Talking to an LMS: SCORM 1.2 (0.13.0) ----------
+     An LMS (Brightspace, Moodle, Canvas...) shows a SCORM lesson inside a
+     frame of its own page, and puts an object called API on one of the
+     windows around it. The lesson finds it, says hello (LMSInitialize),
+     sends its score as it changes and "completed" (or passed / failed, with
+     a pass mark) when it is done, and says goodbye (LMSFinish) when the
+     page closes. Only these few values are ever sent: nothing about the
+     learner is read, and outside an LMS nothing happens at all. */
+  function findLmsApi(win) {
+    var w = win;
+    for (var i = 0; w && i < 10; i++) {
+      try { if (w.API && typeof w.API.LMSInitialize === 'function') return w.API; } catch (err) { return null; }   // (another site's window: stop)
+      if (!w.parent || w.parent === w) break;
+      w = w.parent;
+    }
+    try { if (win.opener && win.opener.API && typeof win.opener.API.LMSInitialize === 'function') return win.opener.API; } catch (err) { /* (not ours to read) */ }
+    return null;
+  }
+  function scormSession(win, p) {
+    var api = findLmsApi(win);
+    if (!api) return null;
+    var call = function (fn, a, b) { try { return api[fn](a === undefined ? '' : a, b); } catch (err) { return ''; } };
+    if (String(call('LMSInitialize', '')) !== 'true') return null;
+    var t0 = Date.now(), done = false, finished = false, score = null;
+    var status = String(call('LMSGetValue', 'cmi.core.lesson_status'));
+    if (!status || status === 'not attempted') call('LMSSetValue', 'cmi.core.lesson_status', 'incomplete');
+    call('LMSCommit', '');
+    var cfg = p.scorm || { v: '', max: 1, pass: 0 };
+    function statusNow() {
+      if (cfg.pass > 0 && score !== null) return (score / cfg.max * 100 >= cfg.pass) ? 'passed' : 'failed';
+      return 'completed';
+    }
+    return {
+      /** The score variable changed (whole numbers from 0 to its "out of"). */
+      score: function (value) {
+        if (!cfg.v) return;
+        score = Math.max(0, Math.min(cfg.max, Math.round(value)));
+        call('LMSSetValue', 'cmi.core.score.min', '0');
+        call('LMSSetValue', 'cmi.core.score.max', String(cfg.max));
+        call('LMSSetValue', 'cmi.core.score.raw', String(score));
+        if (done) call('LMSSetValue', 'cmi.core.lesson_status', statusNow());
+        call('LMSCommit', '');
+      },
+      /** Done: the end, the last marker, or "Mark the lesson complete". */
+      complete: function (value) {
+        if (cfg.v && score === null && typeof value === 'number') this.score(value);
+        done = true;
+        call('LMSSetValue', 'cmi.core.lesson_status', statusNow());
+        call('LMSCommit', '');
+      },
+      /** The page is closing: how long it was open (HHHH:MM:SS), then goodbye. */
+      finish: function () {
+        if (finished) return;
+        finished = true;
+        var sec = Math.round((Date.now() - t0) / 1000), two = function (n) { return (n < 10 ? '0' : '') + n; };
+        call('LMSSetValue', 'cmi.core.session_time', (Math.floor(sec / 3600) < 10 ? '000' : '00') + Math.floor(sec / 3600) + ':' + two(Math.floor(sec / 60) % 60) + ':' + two(sec % 60));
+        call('LMSCommit', '');
+        call('LMSFinish', '');
+      }
+    };
+  }
+
   var PLAYER_ICONS = {
     play: ['M7 4.5 19 12 7 19.5Z'],
     pause: ['M8 5v14', 'M16 5v14'],
@@ -2742,6 +2899,13 @@ var ANIRuntime = (function () {
     if (markers.length) { bBack = button('back', 'Back'); bNext = button('next', 'Next'); bar.appendChild(bBack); bar.appendChild(bNext); }
     // Sounds (0.12.0): a Sound button (off and on again: WCAG 1.4.2) and a Captions button.
     var bank = (p.sounds || []).length ? soundBank(win, p) : null;
+    var lms = p.lms ? scormSession(win, p) : null;          // (a SCORM package inside an LMS: 0.13.0)
+    function scoreNow() { return p.scorm && p.scorm.v && typeof vals[p.scorm.v] === 'number' ? vals[p.scorm.v] : undefined; }
+    function completeLesson() { if (lms) lms.complete(scoreNow()); }
+    if (lms) {
+      win.addEventListener('pagehide', function () { lms.finish(); });
+      win.addEventListener('beforeunload', function () { lms.finish(); });
+    }
     var bSound = null, bCC = null, ccOn = true;
     if (bank) {
       bSound = button('sound', 'Sound'); bSound.setAttribute('aria-pressed', 'true'); bar.appendChild(bSound);
@@ -2896,6 +3060,7 @@ var ANIRuntime = (function () {
       x = a.op === 'set' ? a.n : a.op === 'sub' ? x - a.n : x + a.n;
       vals[a.v] = Math.max(-VAR_MAX, Math.min(VAR_MAX, x));
       varsChanged = true;
+      if (lms && p.scorm.v === a.v) lms.score(vals[a.v]);      // the score goes to the LMS as it changes
     }
     /** If the object that has keyboard focus leaves the stage, move focus to Play (and say so). */
     /** Is this object drawn right now? (Not if it, or the group it is in, is hidden.) */
@@ -2940,6 +3105,11 @@ var ANIRuntime = (function () {
     function tick(now) {
       if (!playing) return;
       var nf = Math.floor((now - t0) * p.stage.fps / 1000);
+      // 0.14.1: never a frame BACK. The browser's time for a frame (now) can be a little
+      // earlier than the moment Play was pressed, which put the play head one frame
+      // before where it was. Playing from a "Pause here" marker, that stepped back
+      // over the marker, met it again, and stopped there: Play sometimes did nothing.
+      if (nf < f) nf = f;
       // The markers passed since the last frame shown: their actions run, and one set to
       // "Pause here" stops the lesson there.
       for (var i = 0; i < markers.length; i++) {
@@ -2958,7 +3128,7 @@ var ANIRuntime = (function () {
       }
       if (nf > last) {
         if (p.stage.loop) { nf = nf % (last + 1); t0 = now - frameMs(nf); }
-        else { f = last; playing = false; draw(); say('The end.'); return; }
+        else { f = last; playing = false; draw(); say('The end.'); completeLesson(); return; }
       }
       if (nf !== f) { f = nf; draw(); }
       if (bank) bank.sync(f);
@@ -2967,6 +3137,7 @@ var ANIRuntime = (function () {
     /** The play head reached a marker: run the lesson's actions for it. */
     function reached(m, depth) {
       p.on.marks.forEach(function (mk) { if (mk.marker === m.id) runActs(mk.acts, depth + 1); });
+      if (markers.length && m === markers[markers.length - 1]) completeLesson();   // the last marker: done (for an LMS)
     }
     function goToMarker(id, thenPlay, depth) {
       var m = null; markers.forEach(function (x) { if (x.id === id) m = x; });
@@ -3010,8 +3181,9 @@ var ANIRuntime = (function () {
       var now = vis.has(id) ? vis.get(id) : !t.startHidden;
       var next = on === null ? !now : on;
       vis.set(id, next);
-      // Text that appears because of a click is read out, so a reveal works without looking.
-      if (next && !now && t.type === 'text') revealed[id] = true; else if (!next) delete revealed[id];
+      // What appears because of a click is read out, so a reveal works without looking: text,
+      // and (0.14.0) anything else a screen reader would read (a named picture, group or button).
+      if (next && !now && (t.type === 'text' || readAs(t, p) !== null)) revealed[id] = true; else if (!next) delete revealed[id];
     }
     /** The value of one property of an object as shown right now (the timeline, then any "Set"). */
     function shownValue(o, prop) {
@@ -3062,6 +3234,7 @@ var ANIRuntime = (function () {
         else if (a.do === 'check') checkAnswers(depth);
         else if (a.do === 'sound') { if (bank) bank.play(a.s); }
         else if (a.do === 'stopSounds') { if (bank) bank.stopAll(); }
+        else if (a.do === 'complete') completeLesson();
         else if (a.do === 'link') win.open(a.url, '_blank', 'noopener,noreferrer');   // a new tab, which cannot reach back to the lesson
       });
       draw();
@@ -3523,6 +3696,7 @@ var ANIRuntime = (function () {
     VAR_OPS: VAR_OPS, VAR_CMPS: VAR_CMPS, CMP_WORDS: CMP_WORDS, VAR_NAME_RE: VAR_NAME_RE, VAR_MAX: VAR_MAX,
     varValues: varValues, fillVars: fillVars, placeholdersIn: placeholdersIn, compare: compare,
     SOUND_RE: SOUND_RE, SOUND_KINDS: SOUND_KINDS, captionCues: captionCues, captionWords: captionWords, soundBank: soundBank,
+    findLmsApi: findLmsApi,
     CLIP_MODES: CLIP_MODES, CLIP_PART_TYPES: CLIP_PART_TYPES, clipOf: clipOf, clipFrame: clipFrame
   };
 })();
@@ -5458,7 +5632,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* =====================================================================
    1. BASICS
    ===================================================================== */
-const APP_VERSION = '0.12.0';
+const APP_VERSION = '0.15.0';
 const R = ANIRuntime;                 // short name for the shared runtime
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -6446,7 +6620,9 @@ function defaultSize(type, shapeKey) {
 }
 /** A new object of this type, in the box given (in its container's numbers). */
 function makeObject(type, ci, box, extra) {
-  const fill = type === 'text' ? '#111827' : type === 'ellipse' ? '#f45922' : type === 'path' ? '#86198f' : '#2563eb';
+  // New things start in the lesson's colour scheme (section 18q): text in Text, a rectangle in Main,
+  // an ellipse in Accent 1, an outline in Accent 2 (Studio, the usual scheme, has ANIMEDTR's old colours).
+  const fill = schemeColour(type === 'text' ? 0 : type === 'ellipse' ? 2 : type === 'path' ? 3 : 1);
   const o = {
     id: newId('o'), type, layer: ci.layer, parent: ci.parent,
     name: nextName(type === 'path' ? SHAPES[currentShape].label : TYPE_WORDS[type]), label: '', decorative: false,
@@ -6821,13 +6997,30 @@ function redrawPicture(bmp) {
   const data = seeThrough ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.9);
   return R.PICTURE_RE.test(data) ? { data, w, h } : null;
 }
-/** Add pictures from files (a file picker, a drop or a paste). at = a stage point to centre the first one on. */
-async function addPictureFiles(files, at) {
-  const list = [...files].filter((f) => f && f.type && f.type.startsWith('image/'));
+/**
+ * Add pictures from files (a file picker, a drop or a paste). at = a stage point to centre the
+ * first one on. opts.label: what it shows, when that is known already (an SVG's own title).
+ */
+async function addPictureFiles(files, at, opts) {
+  const list = [...files].filter((f) => f && ((f.type && f.type.startsWith('image/')) || isSvgFile(f)));
   if (!list.length) return;
   let added = 0;
   for (const file of list) {
     try {
+      // An SVG drawing (0.15.0, section 18t): read as data, and brought in as shapes (or a picture).
+      if (isSvgFile(file)) { await addSvgFile(file, at); continue; }
+      // A GIF that moves (0.14.0, section 18r): as a flipbook, or just its first picture?
+      if (file.type === 'image/gif' || /\.gif$/i.test(file.name)) {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        if (isGifBytes(bytes)) {
+          const gif = await decodeGif(bytes);
+          if (gif.frames.length > 1) {
+            const how = await askGifHow(file.name, gif.frames.length);
+            if (!how) continue;
+            if (how === 'flip') { await addGifFlipbook(gif, file.name.replace(/\.[^.]+$/, '').replace(/[^\w .,'()-]+/g, ' ').trim(), at); continue; }
+          }
+        }
+      }
       const pic = await readPicture(file);
       const ci = containerInfo();
       const id = newId('a');
@@ -6838,10 +7031,12 @@ async function addPictureFiles(files, at) {
       const c = at ? toLocal(at, ci.m) : viewCentre(ci);
       const o = addObject('image', { x: c.x - w / 2 + added * 24, y: c.y - h / 2 + added * 24, w, h }, { asset: id, name: pic.name });
       if (!o) return;
+      if (opts && opts.label) o.label = opts.label.slice(0, 300);
       added++;
     } catch (err) { announce(err.message); }
   }
-  if (added) {
+  if (added && opts && opts.label) { announce(plural(added, 'picture') + ' added, read aloud as "' + opts.label.slice(0, 80) + '".'); requestRender(); }
+  else if (added) {
     // Ask for alt text the moment a picture lands (as DSKEDTR does).
     settings.open.access = true; saveSettings();
     focusAfterBuild = 'inspLabel'; inspectorDirty = true;
@@ -7018,10 +7213,14 @@ let pasteHandled = false;
 document.addEventListener('paste', (e) => {
   if (isTyping(e.target) || dialogOpen()) return;
   pasteHandled = true;
-  const files = [...(e.clipboardData ? e.clipboardData.files : [])].filter((f) => PICTURE_TYPES.test(f.type));
+  const files = [...(e.clipboardData ? e.clipboardData.files : [])].filter((f) => PICTURE_TYPES.test(f.type) || isSvgFile(f));
   e.preventDefault();
+  // SVG code as text (VCTREDTR's "Copy SVG code", say): brought in as a drawing (0.15.0).
+  const words = !files.length && e.clipboardData ? e.clipboardData.getData('text/plain') : '';
   if (files.length) addPictureFiles(files);
-  else pasteClip();
+  else if (words && words.length <= SVG_IN.bytes && /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE[^>]*>\s*)?<svg[\s>]/i.test(words)) {
+    addSvgDrawing(words, 'Pasted drawing').catch((err) => announce(err.message));
+  } else pasteClip();
 });
 
 /* ----- Deleting and stacking ----- */
@@ -8165,6 +8364,7 @@ function startPlayback() {
 function playTick(now) {
   if (!playing) return;
   let f = Math.floor((now - playT0) * project.stage.fps / 1000);
+  f = Math.max(f, frame);                           // 0.14.1: never a frame back (the browser's frame time can be a touch before Play was pressed)
   if (f > lastFrame()) {
     if (project.stage.loop) { f %= project.stage.frames; playT0 = now - f * 1000 / project.stage.fps; }
     else { frame = lastFrame(); stopPlayback(); return; }
@@ -8269,7 +8469,8 @@ function colourField(label, get, set) {
   input.addEventListener('input', () => set(input.value, 'field-' + id));
   input.addEventListener('change', endGroup);
   bindings.push({ el: input, get });
-  return el('div', { class: 'field' }, el('label', { for: id, text: label }), input);
+  // Under it, the colour scheme's six as swatches (section 18q).
+  return el('div', null, el('div', { class: 'field' }, el('label', { for: id, text: label }), input), swatchRow(input, label));
 }
 function checkField(label, get, set, opts = {}) {
   const id = opts.id || 'f' + (++fieldCount);
@@ -8581,7 +8782,7 @@ function motionTable(o) {
 const ACTION_WORDS = { gotoPlay: 'Go to a marker and play', gotoPause: 'Go to a marker and pause', play: 'Play', pause: 'Pause',
   show: 'Show an object', hide: 'Hide an object', toggle: 'Show or hide an object', set: 'Change an object (colour, opacity, place, turn)',
   link: 'Open a web page', say: 'Say something', check: 'Check the answers (drag and drop)',
-  sound: 'Play a sound', stopSounds: 'Stop all sounds',
+  sound: 'Play a sound', stopSounds: 'Stop all sounds', complete: 'Mark the lesson complete (for an LMS)',
   change: 'Change a variable (add, take away, set)', if: 'If a variable is... (then, otherwise)' };
 const OP_WORDS = { add: 'add', sub: 'take away', set: 'set it to' };     // "Score: add 1" (0.10.0)
 const SET_WORDS = { opacity: 'Opacity (%)', fill: 'Colour', x: 'X (left edge)', y: 'Y (top edge)', rot: 'Turned (degrees)' };
@@ -8868,6 +9069,7 @@ function buildLessonInspector(head, body) {
 
   const le = section('lesson', 'Lesson');
   le.body.append(
+    schemeButton(),                                      // the colour scheme (section 18q)
     textField('Title', () => project.title, (v, g) => { commit(g); project.title = v.slice(0, 200); }, { max: 200 }),
     textField('Language', () => project.lang, (v, g) => { if (R.LANG_RE.test(v.trim())) { commit(g); project.lang = v.trim(); } }, { max: 20, help: 'A language code, such as en, es or fr-CA.' }),
     textField('Text version intro', () => project.desc, (v, g) => { commit(g); project.desc = v.slice(0, 4000); }, { lines: true, rows: 3, stack: true,
@@ -9051,8 +9253,9 @@ function markersBlock() {
  *                           already inside the file
  * So a lesson cannot phone home, track anyone, or run anything else.
  */
-async function buildLessonHtml() {
+async function buildLessonHtml(opts = {}) {
   // Exactly what a lesson accepts, with only the pictures it uses.
+  // opts.lms: for a SCORM package (section 18p): the player then talks to the LMS around it.
   const used = {};
   usedAssetIds().forEach((id) => { used[id] = project.assets[id]; });          // (the lesson's pictures, its clips' too)
   const raw = JSON.parse(snapshot()); raw.assets = used;
@@ -9060,6 +9263,7 @@ async function buildLessonHtml() {
   const heard = new Set(usedSoundIds());
   raw.sounds = (raw.sounds || []).filter((sd) => heard.has(sd.id));
   raw.audio = {}; heard.forEach((id) => { raw.audio[id] = lesson().audio[id]; });
+  raw.lms = opts.lms === true;
   const p = R.cleanProject(raw);
   const runtime = $('aniRuntime').textContent.trim() + '\nANIRuntime.boot();\n';
   // The player's look, then the fonts the lesson's text uses (section 18j), all inside the one style
@@ -9178,6 +9382,14 @@ function lessonProblems() {
     // A button needs a name a screen reader can say (text boxes have their own words).
     if (R.isInteractive(o) && !o.label.trim() && !(o.type === 'text' && o.text.trim())) out.push({ level: 'must', text: o.name + ' is a button but has no "Read aloud as" name.', fix: () => fixObject(o, 'inspLabel') });
     // A picture says what it shows, or is marked as decoration.
+    // A drawing brought in as shapes (0.15.0): its parts are decoration, so the group is the only
+    // thing a screen reader could read. Like a picture, it needs words (or to be decoration).
+    if (o.type === 'group' && !R.isInteractive(o) && !o.label.trim() && !o.decorative) {
+      const parts = project.objects.filter((k) => k.parent === o.id);
+      if (parts.length && parts.every((k) => k.decorative)) out.push({ level: 'must', text: 'The drawing ' + o.name + ' needs words for screen readers (Read aloud as), or tick Decoration.', fix: () => fixObject(o, 'inspLabel') });
+      // (Some of it is text, which is read: then it is a tip, since the words may be enough.)
+      else if (parts.some((k) => k.decorative)) out.push({ level: 'tip', text: 'The drawing ' + o.name + ': its text is read, but not what it shows. Say that in Read aloud as, or tick Decoration.', fix: () => fixObject(o, 'inspLabel') });
+    }
     if (o.type === 'image' && !R.isInteractive(o) && !o.label.trim() && !o.decorative) out.push({ level: 'must', text: 'The picture ' + o.name + ' needs words for screen readers (Read aloud as), or tick Decoration.', fix: () => fixObject(o, 'inspLabel') });
     [o.on.activate, o.on.point, o.on.dropRight || [], o.on.dropWrong || []].forEach((acts) => checkActs(acts, o.name, () => fixObject(o), out));
     // A place to drop things needs a name: learners hear "Whale is on Mammals" (section 18l).
@@ -9243,9 +9455,10 @@ function renderProblems() {
     if (go) { const b = el('button', { type: 'button', class: 'btn small', text: 'Fix' }); b.addEventListener('click', go); li.append(b); }
     list.append(li);
   });
-  const blocked = probs.some((pr) => pr.level === 'must');
-  $('exGo').disabled = blocked;
-  $('exGo').title = blocked ? 'Fix what is marked Needed first' : 'Download the lesson';
+  // Needed items stop a lesson or an LMS package (learners use those); a video, a GIF or a picture can go ahead.
+  const kind = exportKind(), blocked = (kind === 'html' || kind === 'scorm') && probs.some((pr) => pr.level === 'must');
+  $('exGo').disabled = blocked || exportBusy;
+  $('exGo').title = blocked ? 'Fix what is marked Needed first' : $('exGoText').textContent;
 }
 function openExport() {
   leaveClip(true);                                     // (exporting is about the whole lesson)
@@ -9253,6 +9466,7 @@ function openExport() {
   measureContrast();                                  // (the list updates itself when the measuring is done)
   $('exTitle').value = project.title;
   $('exLang').value = project.lang;
+  showExportKind();                                   // the settings of what to make (section 18p)
   renderProblems();
   $('exportDlg').showModal();
 }
@@ -9264,9 +9478,10 @@ $('exLang').addEventListener('input', () => {
   renderProblems();
 });
 $('exportDlg').addEventListener('close', () => { endGroup(); if (!R.LANG_RE.test(project.lang)) project.lang = 'en'; inspectorDirty = true; requestRender(); });
-$('exGo').addEventListener('click', async () => {
+/** The lesson as one HTML file, downloaded (Export's first kind). */
+async function exportLessonHtml() {
   const html = await buildLessonHtml();
-  const name = ((project.title || 'lesson').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'lesson') + '.html';
+  const name = exportName() + '.html';
   const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   const a = el('a', { href: url, download: name });
   document.body.append(a); a.click(); a.remove();
@@ -9275,7 +9490,10 @@ $('exGo').addEventListener('click', async () => {
   if (backup) backup.markSafe();                   // exported: no crash backup needed
   $('exportDlg').close();
   announce('Exported ' + name + ' to your downloads.');
-});
+}
+/** A file name from the lesson's title: "The water cycle" -> "the-water-cycle". */
+const exportName = () => (project.title || 'lesson').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'lesson';
+$('exGo').addEventListener('click', () => runExport());    // whichever kind is picked (section 18p)
 
 /* =====================================================================
    15. HELP, THEME AND THE INSPECTOR BUTTON
@@ -9300,7 +9518,7 @@ const HELP_KEYS = [
   ['Alt+F10', 'Jump to the quick actions floating above what is picked (Edit flipbook, Edit points...); Left and Right move along them, Escape goes back'],
   ['Enter or double-click (a clip)', 'Edit the clip; Escape goes back to the lesson'],
   [', and . (in a flipbook)', 'The page before / after'],
-  ['F', 'Add a picture (or drop one on the stage, or paste it)'],
+  ['F', 'Add a picture or an SVG drawing (or drop one on the stage, or paste it)'],
   ['Click / Shift+click', 'Pick one object / add one to the picked ones; drag on empty stage to pick by box'],
   ['Arrows (on the stage)', 'Move the picked objects (Shift: 10 points)'],
   ['Delete (on the stage)', 'Delete the picked objects'],
@@ -9354,13 +9572,34 @@ function buildHelp() {
   $('paneStart').replaceChildren(
     el('h3', { text: 'Getting started' }),
     el('ol', null,
-      el('li', { text: 'Draw a shape, text box or picture from the tool rail, or start from a template (the Templates button: a moving thing, a labelled diagram, click to reveal, multiple choice, process steps, or the sample). Put things on layers to keep them tidy; group things that move together (Ctrl+G).' }),
+      el('li', { text: 'Draw a shape, text box or picture from the tool rail, or start from a template (the Templates button: the water cycle, a bouncing ball, a motion path, clips and a flipbook, a labelled diagram, click to reveal, a quiz with a score, sort these, step by step, flip cards, match them, or the sample). A drawing from VCTREDTR (an SVG file: the Picture tool, a drop, or paste its SVG code) comes in as shapes you can animate one by one. Put things on layers to keep them tidy; group things that move together (Ctrl+G). The Lesson\u2019s Colour scheme gives everything six colours that go together.' }),
       el('li', { text: 'To animate it: move the play head along the timeline, move or change the object, then press K. It glides from where it was to where it is now. Add more keyframes the same way.' }),
       el('li', { text: 'Add markers (M) for the moments that matter, with a description each: they become the lesson\u2019s text version, and learners can step between them.' }),
       el('li', { text: 'Give an object a behaviour in the Inspector: when it is activated (a click, a tap, Enter or Space), or when it is pointed at or focused (to show a label, say). It becomes a button in the lesson. The whole lesson has behaviours too (Lesson, Behaviours): when it starts, when the play head reaches a marker, when a key is pressed. Say something shows the words under the lesson and reads them out; Open a web page opens it in a new tab.' }),
       el('li', { text: 'Check it: the Accessibility tab beside the Inspector (or the figure button in the top bar) lists anything that would make the lesson hard to see, hear or use, most serious first, with a button that goes straight to it. Lesson, Reading order sets the order a screen reader reads things.' }),
-      el('li', { text: 'Preview (W) to try it, then Export (Ctrl+S): you get one HTML file that works offline and in your LMS.' }),
+      el('li', { text: 'Preview (W) to try it, then Export (Ctrl+S): one HTML file that works offline, a SCORM package for your LMS, a video with captions, an animated GIF, or a picture of a frame.' }),
       el('li', { text: 'Save the project (Ctrl+Shift+S) to keep editing later: an .animedtr file with everything in it. Open it again with Open (Ctrl+O), or drop it on ANIMEDTR.' })),
+    // Brightspace (0.14.0): the three ways in. Menu names can differ a little between Brightspace versions and
+    // set-ups, so the words say so, and point to the college's own Brightspace help.
+    el('h3', { text: 'Putting a lesson in Brightspace' }),
+    el('p', { text: 'Three ways in, from what Export makes. (Brightspace’s menus can be named a little differently from one college to the next; your college’s Brightspace help has the exact steps.)' }),
+    el('h4', { text: 'As a page (Lesson, one HTML file)' }),
+    el('ol', null,
+      el('li', { text: 'In your course, open Content and pick the module it belongs in.' }),
+      el('li', { text: 'Upload / Create, then Upload Files. Choose the lesson’s .html file (or drag it onto the module).' }),
+      el('li', { text: 'It shows as a topic. Open it as a student would (View as Learner) to try it.' })),
+    el('h4', { text: 'With a score in the gradebook (For an LMS, a SCORM .zip)' }),
+    el('ol', null,
+      el('li', { text: 'In Export, pick For an LMS. Choose the Score variable, its Out of and (if you like) a Pass mark, then download the .zip. Leave it zipped.' }),
+      el('li', { text: 'In Content, open the module: Upload / Create, then New SCORM Object / xAPI Object, and upload the .zip.' }),
+      el('li', { text: 'Add it to the module. When Brightspace asks, say Yes to a grade item: the lesson’s score goes to the gradebook as a percentage of its Out of.' }),
+      el('li', { text: 'It counts as completed when a learner reaches its end or its last marker (or a behaviour runs Mark the lesson complete).' })),
+    el('h4', { text: 'As a video (Video: a .webm and a .vtt)' }),
+    el('ol', null,
+      el('li', { text: 'In Content, open the module: Upload / Create, then Video or Audio, and upload the .webm.' }),
+      el('li', { text: 'Open the video’s Edit, then Advanced Editing, then Closed Captions: Upload the .vtt file ANIMEDTR saved beside it, then save.' }),
+      el('li', { text: 'A video plays straight through: for buttons, drag and drop or a score, use the page or the SCORM package instead.' })),
+    el('p', { class: 'hint', text: 'An animated GIF goes anywhere a picture does: in a page, a discussion, an announcement or a slide.' }),
     el('h3', { text: 'Your work stays with you' }),
     el('p', { text: 'A few seconds after each change, ANIMEDTR keeps a backup in this browser. If the page closes before you save or export (a crash, a closed tab), the next start offers to pick up where you left off. Saving or exporting clears the backup. It never leaves this computer.' }));
   // About
@@ -9370,7 +9609,7 @@ function buildHelp() {
     el('h3', { text: 'ANIMEDTR ' + APP_VERSION }),
     el('p', { text: 'Make animated, interactive lessons in your browser: draw on a stage, animate with keyframes on a timeline, add behaviours without code, and export one accessible HTML file that works offline, with a keyboard and with a screen reader.' }),
     el('p', { text: 'Privacy: ANIMEDTR runs entirely in your browser. It makes no network requests (beyond checking for a newer version of itself), has no accounts and no tracking, and your lessons never leave your computer. Exported lessons are the same: nothing is loaded or sent.' }),
-    el('p', { class: 'hint', text: 'Next, in phase 2: reusable animated objects (like Flash\u2019s symbols), frame-by-frame drawing, motion paths and sounds. See the ANIMEDTR spec for the plan.' }),
+    el('p', { class: 'hint', text: 'Clips and flipbooks, motion paths, a score and variables, drag and drop, sounds with captions, colour schemes, and exports for an LMS (SCORM), video and GIF are all in. See the ANIMEDTR spec for what is next.' }),
     credits);
   renderSuiteCredits(credits);
 }
@@ -9578,7 +9817,6 @@ function wireButtons() {
   $('btnA11y').addEventListener('click', showA11y);
   $('btnOpen').addEventListener('click', chooseProjectFile);
   $('btnSave').addEventListener('click', saveProject);
-  $('exPng').addEventListener('click', exportFramePng);
   // Every dialog's Close and Cancel buttons.
   document.querySelectorAll('dialog [data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
   // Leaving with changes that were never saved or exported: the browser asks first.
@@ -10693,6 +10931,7 @@ function scoreQuizProject() {
     stage: { w: 1280, h: 720, bg: '#f8fafc', fps: 24, frames: 96, loop: false, autoplay: true, still: 0 },
     layers: [{ id: 'lmain', name: 'Quiz' }],
     vars: [{ id: 'vscore', name: 'Score', start: 0 }],
+    scorm: { v: 'vscore', max: 3, pass: 0 },               // for an LMS: Score, out of 3 (0.13.0)
     markers: [
       { id: 'mq1', name: 'Question 1', f: 0, stop: true, desc: 'Which of these is a mammal? A shark, a whale or a trout.' },
       { id: 'mq2', name: 'Question 2', f: 24, stop: true, desc: 'Which planet is closest to the Sun? Venus, Mercury or Mars.' },
@@ -10751,6 +10990,7 @@ function sortPlanetsProject() {
       { id: 'sbonk', name: 'Bonk', kind: 'effect', dur: tplSounds().bonk.dur, caption: '[a low bonk]' },
       { id: 'sfanfare', name: 'Fanfare', kind: 'effect', dur: tplSounds().fanfare.dur, caption: '[a happy fanfare]' }],
     audio: { schime: tplSounds().chime.data, sbonk: tplSounds().bonk.data, sfanfare: tplSounds().fanfare.data },
+    scorm: { v: 'vscore', max: 6, pass: 0 },               // for an LMS: Score, out of 6 (0.13.0)
     markers: [{ id: 'mstart', name: 'Sort the planets', f: 0, stop: true, desc: 'Sort the six planets into two groups: rocky planets (Mercury, Venus, Earth, Mars) and gas giants (Jupiter, Saturn).' }],
     on: { sorted: [{ do: 'show', target: 'odone' }, { do: 'sound', s: 'sfanfare' }, { do: 'say', text: 'All six planets sorted. Well done!' }] },
     objects
@@ -14198,6 +14438,1952 @@ function soundChecks() {
     text: 'Speech starts as the lesson plays by itself, but browsers only play sound after a click or a key. Start the lesson paused (untick "Plays by itself", or a "pause here" marker at the start), so the first Play brings the sound.' });
   return out;
 }
+
+/* =====================================================================
+   18n. VIDEO (0.13.0): the lesson as a WebM video, with a captions file
+   The animation plays straight through, start to end, the way it plays
+   before anyone clicks: behaviours do not run (nothing is clicked, no
+   "pause here" marker waits), things hidden at the start stay hidden,
+   draggables stay home, and variables keep their starting numbers. Sounds
+   on the timeline are heard; sounds played by behaviours are not.
+
+   How a video is made, in four steps, all inside this page:
+     1. Each frame is drawn by the lesson's own runtime (frameRenderer),
+        as a picture on a canvas.
+     2. The browser's video encoder (WebCodecs: VP9, or VP8) squeezes the
+        frames; its audio encoder squeezes the sound (Opus), which is the
+        timeline's sounds mixed together in an OfflineAudioContext.
+     3. writeWebM puts both into a .webm file (the "Matroska" format: a
+        tree of numbered boxes, written by hand below).
+     4. The captions of the sounds on the timeline become a .vtt file, the
+        captions format LMSs and video players read.
+   It never waits for real time: it takes about as long as the lesson plays,
+   often less (a 17-second lesson at full size: about 16 s here). Browsers
+   without WebCodecs (older Safari) are told so; Chrome, Edge and Firefox
+   have it.
+   ===================================================================== */
+
+/**
+ * Draws a lesson's frames onto a canvas of w by h, exactly as the lesson
+ * draws them (the runtime's createStage and drawFrame), with its fonts.
+ * Returns { canvas, ctx, draw(f) } - draw is async (a picture of an SVG
+ * takes the browser a moment to read).
+ */
+async function frameRenderer(p, w, h) {
+  await fontsLoadedFor(p);                              // (so text wraps with its real letters)
+  const st = R.createStage(document, p, 'lesson');
+  st.svg.querySelectorAll('.ani-ring, .ani-hit').forEach((n) => n.remove());   // (only a live lesson needs these)
+  st.svg.setAttribute('width', w); st.svg.setAttribute('height', h);
+  const faces = lessonFontCss(p);                       // a picture of an SVG cannot see the page's fonts: they go inside it
+  if (faces) { const s = document.createElementNS('http://www.w3.org/2000/svg', 'style'); s.textContent = faces; st.svg.insertBefore(s, st.svg.firstChild); }
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const ser = new XMLSerializer();
+  return {
+    canvas, ctx,
+    async draw(f) {
+      // The clock of clips that "keep moving" runs with the frames, as if the lesson never waited.
+      R.drawFrame(st, p, f, { clock: f * 1000 / p.stage.fps });
+      const url = URL.createObjectURL(new Blob([ser.serializeToString(st.svg)], { type: 'image/svg+xml' }));
+      try {
+        const img = new Image();
+        await new Promise((ok, fail) => { img.onload = ok; img.onerror = fail; img.src = url; });
+        ctx.fillStyle = p.stage.bg; ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+      } finally { URL.revokeObjectURL(url); }
+    }
+  };
+}
+/** The lesson as it goes into a video or GIF: the whole lesson, with the sounds on its timeline. */
+function mediaProject() {
+  const raw = JSON.parse(snapshot());
+  raw.assets = project.assets;
+  raw.audio = lesson().audio || {};
+  return R.cleanProject(raw);
+}
+/** Even numbers (video encoders like them): a size scaled by k. */
+const evenSize = (n, k) => Math.max(2, Math.round(n * k / 2) * 2);
+
+/* ----- Captions as a WebVTT file ----- */
+/** "00:01:02.500" */
+function vttTime(t) {
+  const ms = Math.max(0, Math.round(t * 1000)), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s = Math.floor(ms / 1000) % 60;
+  const two = (n) => String(n).padStart(2, '0');
+  return two(h) + ':' + two(m) + ':' + two(s) + '.' + String(ms % 1000).padStart(3, '0');
+}
+/**
+ * The captions of every sound on the timeline, at their times in the video
+ * (cut off at its end). Text goes in as plain text: & and < are written the
+ * way VTT asks, so a caption can never become markup. '' when there are none.
+ */
+function captionsVtt(p) {
+  const end = p.stage.frames / p.stage.fps, lines = [];
+  (p.cues || []).forEach((c) => {
+    const sd = (p.sounds || []).find((x) => x.id === c.s);
+    if (!sd || !sd.caption.trim()) return;
+    const at = c.f / p.stage.fps;
+    R.captionCues(sd.caption, sd.dur).forEach((q) => {
+      const t0 = at + q.t0, t1 = Math.min(end, at + q.t1);
+      if (t0 < end && t1 > t0) lines.push({ t0, t1, text: q.text });
+    });
+  });
+  if (!lines.length) return '';
+  lines.sort((a, b) => a.t0 - b.t0);
+  const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return 'WEBVTT\n\n' + lines.map((q, i) => (i + 1) + '\n' + vttTime(q.t0) + ' --> ' + vttTime(q.t1) + '\n' + esc(q.text)).join('\n\n') + '\n';
+}
+
+/* ----- The timeline's sounds, mixed into one ----- */
+/** Every sound on the timeline at its place, as one stereo track (48000 a second). null when there are none. */
+async function mixTimelineSounds(p) {
+  if (!(p.cues || []).length || typeof OfflineAudioContext === 'undefined') return null;
+  const rate = 48000, len = Math.max(1, Math.ceil(p.stage.frames / p.stage.fps * rate));
+  const ctx = new OfflineAudioContext(2, len, rate);
+  const buffers = {};
+  for (const c of p.cues) {
+    if (!buffers[c.s]) {
+      const snd = soundToBytes(p.audio[c.s]);
+      if (!snd) continue;
+      try { buffers[c.s] = await ctx.decodeAudioData(snd.bytes.buffer.slice(0)); } catch (err) { continue; }   // (one it cannot read is left out)
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buffers[c.s]; src.connect(ctx.destination);
+    src.start(c.f / p.stage.fps);
+  }
+  return ctx.startRendering();
+}
+
+/* ----- WebM, written by hand -----
+   A WebM file is a tree of "elements": each is an ID (1 to 4 bytes), its
+   size (a "variable-length integer": the first byte says how many bytes
+   the number takes) and its contents (numbers, text, bytes, or more
+   elements). The parts used here:
+     EBML header   "this is a WebM file"
+     Segment       everything else:
+       SeekHead    where Info, Tracks and Cues are (so players find them)
+       Info        the time scale (milliseconds) and the length
+       Tracks      the video track (and the audio track)
+       Cluster...  the squeezed frames and sound, in time order
+       Cues        where each cluster starts (so players can jump about) */
+const EB = {
+  /** A number as a variable-length size (8 bytes: always room). */
+  size8(n) { const b = new Uint8Array(8); b[0] = 0x01; let v = n; for (let i = 7; i >= 1; i--) { b[i] = v % 256; v = Math.floor(v / 256); } return b; },
+  /** A small size, in as few bytes as it needs. */
+  size(n) {
+    if (n < 0x7f) return new Uint8Array([0x80 | n]);
+    if (n < 0x3fff) return new Uint8Array([0x40 | (n >> 8), n & 255]);
+    if (n < 0x1fffff) return new Uint8Array([0x20 | (n >> 16), (n >> 8) & 255, n & 255]);
+    return EB.size8(n);
+  },
+  /** An element: its id bytes, its size, then its contents (bytes, or several pieces). */
+  el(id, ...parts) {
+    const body = EB.cat(parts);
+    return EB.cat([new Uint8Array(id), EB.size(body.length), body]);
+  },
+  /** The same, with an 8-byte size (for the Segment, which is big). */
+  el8(id, ...parts) { const body = EB.cat(parts); return EB.cat([new Uint8Array(id), EB.size8(body.length), body]); },
+  /** A whole number, in as few bytes as it needs (fixed: always 8 bytes, so its size never changes). */
+  uint(n, fixed) {
+    const out = []; let v = n;
+    do { out.unshift(v % 256); v = Math.floor(v / 256); } while (v > 0);
+    while (fixed && out.length < 8) out.unshift(0);
+    return new Uint8Array(out);
+  },
+  float(x) { const b = new Uint8Array(8); new DataView(b.buffer).setFloat64(0, x); return b; },
+  text(s) { return new TextEncoder().encode(s); },
+  cat(parts) {
+    const list = parts.flat ? parts.flat(Infinity) : parts;
+    const len = list.reduce((n, b) => n + b.length, 0), out = new Uint8Array(len);
+    let at = 0; list.forEach((b) => { out.set(b, at); at += b.length; });
+    return out;
+  }
+};
+/** The IDs used (from the Matroska specification). */
+const WID = {
+  EBML: [0x1a, 0x45, 0xdf, 0xa3], EBMLVersion: [0x42, 0x86], EBMLReadVersion: [0x42, 0xf7], MaxID: [0x42, 0xf2], MaxSize: [0x42, 0xf3],
+  DocType: [0x42, 0x82], DocTypeVersion: [0x42, 0x87], DocTypeReadVersion: [0x42, 0x85],
+  Segment: [0x18, 0x53, 0x80, 0x67], SeekHead: [0x11, 0x4d, 0x9b, 0x74], Seek: [0x4d, 0xbb], SeekID: [0x53, 0xab], SeekPosition: [0x53, 0xac],
+  Info: [0x15, 0x49, 0xa9, 0x66], TimecodeScale: [0x2a, 0xd7, 0xb1], Duration: [0x44, 0x89], MuxingApp: [0x4d, 0x80], WritingApp: [0x57, 0x41],
+  Tracks: [0x16, 0x54, 0xae, 0x6b], TrackEntry: [0xae], TrackNumber: [0xd7], TrackUID: [0x73, 0xc5], FlagLacing: [0x9c], CodecID: [0x86], TrackType: [0x83],
+  CodecPrivate: [0x63, 0xa2], CodecDelay: [0x56, 0xaa], SeekPreRoll: [0x56, 0xbb], DefaultDuration: [0x23, 0xe3, 0x83],
+  Video: [0xe0], PixelWidth: [0xb0], PixelHeight: [0xba], Audio: [0xe1], SamplingFrequency: [0xb5], Channels: [0x9f],
+  Cluster: [0x1f, 0x43, 0xb6, 0x75], Timecode: [0xe7], SimpleBlock: [0xa3],
+  Cues: [0x1c, 0x53, 0xbb, 0x6b], CuePoint: [0xbb], CueTime: [0xb3], CueTrackPositions: [0xb7], CueTrack: [0xf7], CueClusterPosition: [0xf1]
+};
+/**
+ * Put squeezed video (and audio) into a WebM file.
+ *   video: { codec ('V_VP9' or 'V_VP8'), width, height, fps, chunks: [{ ts (ms), key, data }] }
+ *   audio: null, or { channels, rate, head (the OpusHead bytes), delayNs, chunks: [...] }
+ *   durationMs: the length
+ * Returns a Blob ('video/webm').
+ */
+function writeWebM(video, audio, durationMs) {
+  const E = EB;
+  const header = E.el(WID.EBML, E.el(WID.EBMLVersion, E.uint(1)), E.el(WID.EBMLReadVersion, E.uint(1)), E.el(WID.MaxID, E.uint(4)), E.el(WID.MaxSize, E.uint(8)),
+    E.el(WID.DocType, E.text('webm')), E.el(WID.DocTypeVersion, E.uint(4)), E.el(WID.DocTypeReadVersion, E.uint(2)));
+  const info = E.el(WID.Info, E.el(WID.TimecodeScale, E.uint(1000000)), E.el(WID.Duration, E.float(durationMs)),
+    E.el(WID.MuxingApp, E.text('ANIMEDTR')), E.el(WID.WritingApp, E.text('ANIMEDTR ' + APP_VERSION)));
+  const vTrack = E.el(WID.TrackEntry, E.el(WID.TrackNumber, E.uint(1)), E.el(WID.TrackUID, E.uint(1)), E.el(WID.FlagLacing, E.uint(0)),
+    E.el(WID.CodecID, E.text(video.codec)), E.el(WID.TrackType, E.uint(1)), E.el(WID.DefaultDuration, E.uint(Math.round(1e9 / video.fps))),
+    E.el(WID.Video, E.el(WID.PixelWidth, E.uint(video.width)), E.el(WID.PixelHeight, E.uint(video.height))));
+  const aTrack = audio ? E.el(WID.TrackEntry, E.el(WID.TrackNumber, E.uint(2)), E.el(WID.TrackUID, E.uint(2)), E.el(WID.FlagLacing, E.uint(0)),
+    E.el(WID.CodecID, E.text('A_OPUS')), E.el(WID.TrackType, E.uint(2)), E.el(WID.CodecPrivate, audio.head),
+    E.el(WID.CodecDelay, E.uint(audio.delayNs)), E.el(WID.SeekPreRoll, E.uint(80000000)),
+    E.el(WID.Audio, E.el(WID.SamplingFrequency, E.float(audio.rate)), E.el(WID.Channels, E.uint(audio.channels)))) : new Uint8Array(0);
+  const tracks = E.el(WID.Tracks, vTrack, aTrack);
+
+  // Every block, in time order (video first when two share a moment).
+  const blocks = video.chunks.map((c) => ({ track: 1, ts: c.ts, key: c.key, data: c.data }))
+    .concat(audio ? audio.chunks.map((c) => ({ track: 2, ts: c.ts, key: true, data: c.data })) : [])
+    .sort((a, b) => a.ts - b.ts || a.track - b.track);
+  // Clusters: a new one at each video keyframe (or every 20 s), so each starts where a player can begin.
+  const clusters = [];
+  let cur = null;
+  blocks.forEach((b) => {
+    if (!cur || (b.track === 1 && b.key && cur.blocks.length) || b.ts - cur.ts > 20000) { cur = { ts: b.ts, blocks: [], key: b.track === 1 && b.key }; clusters.push(cur); }
+    cur.blocks.push(b);
+  });
+  const clusterBytes = clusters.map((c) => E.el8(WID.Cluster, E.el(WID.Timecode, E.uint(Math.max(0, Math.round(c.ts)))),
+    c.blocks.map((b) => {
+      const rel = Math.round(b.ts) - Math.max(0, Math.round(c.ts)), head = new Uint8Array(4);
+      head[0] = 0x80 | b.track;                          // the track number (a 1-byte variable-length number)
+      new DataView(head.buffer).setInt16(1, rel);        // the time, from the cluster's start
+      head[3] = b.key ? 0x80 : 0;                        // a keyframe (a player can start here)
+      return E.el(WID.SimpleBlock, head, b.data);
+    })));
+
+  // Where things are, counted from the start of the Segment's contents. The SeekHead's
+  // positions are always 8 bytes, so its size is known before the positions are.
+  const seekFor = (id, pos) => E.el(WID.Seek, E.el(WID.SeekID, new Uint8Array(id)), E.el(WID.SeekPosition, E.uint(pos, true)));
+  const seekSize = E.el(WID.SeekHead, seekFor(WID.Info, 0), seekFor(WID.Tracks, 0), seekFor(WID.Cues, 0)).length;
+  const infoAt = seekSize, tracksAt = infoAt + info.length, firstCluster = tracksAt + tracks.length;
+  let at = firstCluster;
+  const cuePoints = [];
+  clusters.forEach((c, i) => { if (c.key) cuePoints.push({ ts: Math.max(0, Math.round(c.ts)), pos: at }); at += clusterBytes[i].length; });
+  const cues = E.el(WID.Cues, cuePoints.map((q) => E.el(WID.CuePoint, E.el(WID.CueTime, E.uint(q.ts)),
+    E.el(WID.CueTrackPositions, E.el(WID.CueTrack, E.uint(1)), E.el(WID.CueClusterPosition, E.uint(q.pos))))));
+  const seekHead = E.el(WID.SeekHead, seekFor(WID.Info, infoAt), seekFor(WID.Tracks, tracksAt), seekFor(WID.Cues, at));
+  const segment = E.el8(WID.Segment, seekHead, info, tracks, clusterBytes, cues);
+  return new Blob([header, segment], { type: 'video/webm' });
+}
+
+/** Can this browser make a video? (WebCodecs' VideoEncoder, with VP9 or VP8.) Resolves the codec, or null. */
+async function videoCodecFor(w, h, fps) {
+  if (typeof VideoEncoder === 'undefined') return null;
+  for (const [codec, id] of [['vp09.00.10.08', 'V_VP9'], ['vp8', 'V_VP8']]) {
+    try {
+      const r = await VideoEncoder.isConfigSupported({ codec, width: w, height: h, bitrate: 2500000, framerate: fps });
+      if (r && r.supported) return { codec, id };
+    } catch (err) { /* (try the next) */ }
+  }
+  return null;
+}
+/** An OpusHead (the few bytes a player needs to read Opus): used if the encoder does not give its own. */
+function opusHead(channels, preSkip, rate) {
+  const b = new Uint8Array(19), v = new DataView(b.buffer);
+  b.set(new TextEncoder().encode('OpusHead'));
+  b[8] = 1; b[9] = channels; v.setUint16(10, preSkip, true); v.setUint32(12, rate, true); v.setInt16(16, 0, true); b[18] = 0;
+  return b;
+}
+/** The mixed sound, squeezed as Opus. Resolves { channels, rate, head, delayNs, chunks } or null (no sound, or no Opus here). */
+async function encodeOpus(buffer, signal) {
+  if (!buffer || typeof AudioEncoder === 'undefined' || typeof AudioData === 'undefined') return null;
+  const config = { codec: 'opus', sampleRate: 48000, numberOfChannels: 2, bitrate: 128000 };
+  try { const r = await AudioEncoder.isConfigSupported(config); if (!r || !r.supported) return null; } catch (err) { return null; }
+  const chunks = []; let head = null, failed = null;
+  const enc = new AudioEncoder({
+    output: (chunk, meta) => {
+      const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data);
+      chunks.push({ ts: chunk.timestamp / 1000, data });
+      const d = meta && meta.decoderConfig && meta.decoderConfig.description;
+      if (d && !head) { const h = new Uint8Array(d instanceof ArrayBuffer ? d : d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength)); if (h.length >= 19) head = h; }
+    },
+    error: (e) => { failed = e; }
+  });
+  enc.configure(config);
+  const L = buffer.getChannelData(0), Rt = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : L, step = 4800;   // a tenth of a second at a time
+  for (let i = 0; i < buffer.length && !failed; i += step) {
+    if (signal.stop) break;
+    const n = Math.min(step, buffer.length - i), planar = new Float32Array(n * 2);
+    planar.set(L.subarray(i, i + n), 0); planar.set(Rt.subarray(i, i + n), n);
+    const ad = new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / 48 * 1000), data: planar });
+    enc.encode(ad); ad.close();
+  }
+  await enc.flush(); enc.close();
+  if (failed || !chunks.length) return null;
+  // The encoder's head says how much silence Opus adds at the start ("pre-skip"); without one, libopus's usual 312.
+  const preSkip = head ? new DataView(head.buffer, head.byteOffset).getUint16(10, true) : 312;
+  return { channels: 2, rate: 48000, head: head || opusHead(2, 312, 48000), delayNs: Math.round(preSkip / 48000 * 1e9), chunks };
+}
+
+/**
+ * Make the video. opts: { scale (1 or 0.5) }. Calls progress(fraction, words).
+ * signal.stop = true stops it. Resolves { video (Blob), vtt ('' or text), sound (true/false) }.
+ */
+async function makeVideo(opts, progress, signal) {
+  const p = mediaProject(), fps = p.stage.fps, total = p.stage.frames;
+  const w = evenSize(p.stage.w, opts.scale), h = evenSize(p.stage.h, opts.scale);
+  const vc = await videoCodecFor(w, h, fps);
+  if (!vc) throw new Error('This browser cannot make videos. Chrome, Edge or Firefox can.');
+  progress(0, 'Mixing the sounds...');
+  let sound = null;
+  try { sound = await encodeOpus(await mixTimelineSounds(p), signal); } catch (err) { sound = null; }
+  const chunks = []; let failed = null;
+  const enc = new VideoEncoder({
+    output: (chunk) => { const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data); chunks.push({ ts: chunk.timestamp / 1000, key: chunk.type === 'key', data }); },
+    error: (e) => { failed = e; }
+  });
+  enc.configure({ codec: vc.codec, width: w, height: h, bitrate: Math.round(2500000 * opts.scale * opts.scale + 500000), framerate: fps, latencyMode: 'quality' });
+  const r = await frameRenderer(p, w, h);
+  for (let f = 0; f < total; f++) {
+    if (signal.stop) { enc.close(); throw new Error('stopped'); }
+    if (failed) throw failed;
+    await r.draw(f);
+    const vf = new VideoFrame(r.canvas, { timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps) });
+    enc.encode(vf, { keyFrame: f % (fps * 2) === 0 });     // a keyframe every 2 seconds (a player can jump to each)
+    vf.close();
+    while (enc.encodeQueueSize > 4) await new Promise((ok) => setTimeout(ok, 5));    // (let the encoder catch up)
+    if (f % 4 === 0) progress((f + 1) / total, 'Frame ' + (f + 1) + ' of ' + total);
+  }
+  await enc.flush(); enc.close();
+  if (failed) throw failed;
+  progress(1, 'Putting it together...');
+  const video = writeWebM({ codec: vc.id, width: w, height: h, fps, chunks }, sound, total * 1000 / fps);
+  return { video, vtt: captionsVtt(p), sound: !!sound, heardCues: (p.cues || []).length > 0 };
+}
+
+/* =====================================================================
+   18o. ANIMATED GIF (0.13.0)
+   The lesson as a GIF: silent, plays by itself, loops. Made the same way
+   as the video (frameRenderer draws each frame), then:
+     1. a palette: the 255 colours that best cover the lesson ("median
+        cut": put sample pixels in a box, keep cutting the biggest box in
+        two at its middle, and use each box's average colour). One palette
+        for the whole GIF, so colours never flicker from frame to frame;
+        colour 255 means "see-through".
+     2. each frame's pixels become palette numbers (with Floyd-Steinberg
+        dithering if asked: each pixel's error is shared with its
+        neighbours, which smooths gradients such as a sky);
+     3. only the part that changed since the last frame is written, with
+        the unchanged pixels inside it see-through, so a GIF of a small
+        moving thing stays small; a frame with no change just makes the one
+        before it last longer;
+     4. each part is squeezed with LZW, the GIF's own compression.
+   The planned shared GIF block (IMGEDTR-GIF-SPEC, section 9) can grow from
+   this encoder; for now it lives in ANIMEDTR only.
+   ===================================================================== */
+const GIF_CLEAR = 255;                                   // the see-through palette entry
+
+/** Up to 255 colours that cover these sample pixels (r, g, b, r, g, b...). Returns an array of [r, g, b]. */
+function medianCutPalette(samples, count) {
+  const n = samples.length / 3;
+  let boxes = [{ idx: Uint32Array.from({ length: n }, (_, i) => i) }];
+  const range = (box) => {                                // the box's widest colour channel, and how wide
+    const lo = [255, 255, 255], hi = [0, 0, 0];
+    box.idx.forEach((i) => { for (let c = 0; c < 3; c++) { const v = samples[i * 3 + c]; if (v < lo[c]) lo[c] = v; if (v > hi[c]) hi[c] = v; } });
+    let ch = 0; for (let c = 1; c < 3; c++) if (hi[c] - lo[c] > hi[ch] - lo[ch]) ch = c;
+    return { ch, width: hi[ch] - lo[ch] };
+  };
+  boxes.forEach((b) => Object.assign(b, range(b)));
+  while (boxes.length < count) {
+    // Cut the box with the most colour in it (its width times how many pixels it holds).
+    let best = -1, score = 0;
+    boxes.forEach((b, i) => { const s = b.width * Math.sqrt(b.idx.length); if (b.idx.length > 1 && b.width > 0 && s > score) { score = s; best = i; } });
+    if (best < 0) break;                                   // (every box is one colour: no more to cut)
+    const b = boxes[best], ch = b.ch;
+    const sorted = Array.from(b.idx).sort((x, y) => samples[x * 3 + ch] - samples[y * 3 + ch]);
+    const mid = sorted.length >> 1;
+    const a1 = { idx: Uint32Array.from(sorted.slice(0, mid)) }, a2 = { idx: Uint32Array.from(sorted.slice(mid)) };
+    Object.assign(a1, range(a1)); Object.assign(a2, range(a2));
+    boxes.splice(best, 1, a1, a2);
+  }
+  return boxes.map((b) => {
+    const sum = [0, 0, 0];
+    b.idx.forEach((i) => { sum[0] += samples[i * 3]; sum[1] += samples[i * 3 + 1]; sum[2] += samples[i * 3 + 2]; });
+    return sum.map((v) => Math.round(v / b.idx.length));
+  });
+}
+/** Finds the nearest palette colour fast: each colour (to 6 bits a channel) is worked out once, then remembered. */
+function paletteMapper(pal) {
+  const memo = new Int16Array(1 << 18).fill(-1);
+  return (r, g, b) => {
+    const key = ((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2);
+    let k = memo[key];
+    if (k >= 0) return k;
+    let bestD = Infinity;
+    for (let i = 0; i < pal.length; i++) {
+      const dr = r - pal[i][0], dg = g - pal[i][1], db = b - pal[i][2], d = dr * dr * 2 + dg * dg * 4 + db * db * 3;   // (eyes notice green most)
+      if (d < bestD) { bestD = d; k = i; }
+    }
+    memo[key] = k;
+    return k;
+  };
+}
+/** A frame's pixels (RGBA) as palette numbers, dithered or not. */
+function indexPixels(rgba, w, h, pal, near, dither) {
+  const out = new Uint8Array(w * h);
+  if (!dither) {
+    for (let i = 0, j = 0; i < out.length; i++, j += 4) out[i] = near(rgba[j], rgba[j + 1], rgba[j + 2]);
+    return out;
+  }
+  // Floyd-Steinberg: the error of each pixel goes 7/16 right, 3/16 down-left, 5/16 down, 1/16 down-right.
+  const err = new Float32Array(w * h * 3);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x, j = i * 4;
+    const r = Math.max(0, Math.min(255, rgba[j] + err[i * 3])), g = Math.max(0, Math.min(255, rgba[j + 1] + err[i * 3 + 1])), b = Math.max(0, Math.min(255, rgba[j + 2] + err[i * 3 + 2]));
+    const k = near(r | 0, g | 0, b | 0); out[i] = k;
+    const er = r - pal[k][0], eg = g - pal[k][1], eb = b - pal[k][2];
+    const share = (dx, dy, part) => {
+      const xx = x + dx, yy = y + dy; if (xx < 0 || xx >= w || yy >= h) return;
+      const t = (yy * w + xx) * 3; err[t] += er * part; err[t + 1] += eg * part; err[t + 2] += eb * part;
+    };
+    share(1, 0, 7 / 16); share(-1, 1, 3 / 16); share(0, 1, 5 / 16); share(1, 1, 1 / 16);
+  }
+  return out;
+}
+/** LZW, as GIF wants it (8-bit codes to start), written in sub-blocks of up to 255 bytes. */
+function gifLzw(pixels) {
+  const minSize = 8, clear = 256, eoi = 257;
+  const bytes = []; let cur = 0, bits = 0;
+  const put = (code, size) => { cur |= code << bits; bits += size; while (bits >= 8) { bytes.push(cur & 255); cur >>= 8; bits -= 8; } };
+  let dict = new Map(), next = 258, size = 9;
+  put(clear, size);
+  let prefix = pixels[0];
+  for (let i = 1; i < pixels.length; i++) {
+    const c = pixels[i], key = prefix * 256 + c;
+    const found = dict.get(key);
+    if (found !== undefined) { prefix = found; continue; }
+    put(prefix, size);
+    if (next < 4096) { dict.set(key, next++); if (next > (1 << size) && size < 12) size++; }
+    else { put(clear, size); dict = new Map(); next = 258; size = 9; }    // (the table is full: start a fresh one)
+    prefix = c;
+  }
+  put(prefix, size); put(eoi, size);
+  if (bits > 0) bytes.push(cur & 255);
+  // Sub-blocks: a length byte (up to 255), then that many bytes; a 0 at the end.
+  const out = new Uint8Array(1 + bytes.length + Math.ceil(bytes.length / 255) + 1);
+  let at = 0;
+  out[at++] = minSize;
+  for (let i = 0; i < bytes.length; i += 255) {
+    const n = Math.min(255, bytes.length - i);
+    out[at++] = n;
+    for (let j = 0; j < n; j++) out[at++] = bytes[i + j];
+  }
+  out[at++] = 0;
+  return out.subarray(0, at);
+}
+
+/**
+ * Make the GIF. opts: { fps (5 to 25), width, loops (0: for ever; else how many times), dither }.
+ * Calls progress(fraction, words); signal.stop stops it. Resolves a Blob ('image/gif').
+ */
+async function makeGif(opts, progress, signal) {
+  const p = mediaProject(), lessonFps = p.stage.fps, total = p.stage.frames;
+  const w = Math.max(2, Math.round(opts.width)), h = Math.max(2, Math.round(opts.width * p.stage.h / p.stage.w));
+  const r = await frameRenderer(p, w, h);
+  const secs = total / lessonFps, n = Math.max(1, Math.floor(secs * opts.fps + 1e-6));
+  const pick = (k) => Math.min(total - 1, Math.round(k * lessonFps / opts.fps));     // the lesson's frame for GIF frame k
+  // 1. The palette, from up to 12 frames across the lesson.
+  progress(0, 'Choosing the colours...');
+  const sampleFrames = [...new Set(Array.from({ length: Math.min(12, n) }, (_, i) => pick(Math.round(i * (n - 1) / Math.max(1, Math.min(12, n) - 1)))))];
+  const per = Math.max(1, Math.floor(w * h * sampleFrames.length / 60000)), samples = [];
+  for (const f of sampleFrames) {
+    if (signal.stop) throw new Error('stopped');
+    await r.draw(f);
+    const d = r.ctx.getImageData(0, 0, w, h).data;
+    for (let i = 0; i < w * h; i += per) samples.push(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]);
+  }
+  const pal = medianCutPalette(Uint8Array.from(samples), 255);
+  while (pal.length < 256) pal.push([0, 0, 0]);           // (entry 255 is the see-through one)
+  const near = paletteMapper(pal.slice(0, 255));
+  // 2. The file's start: size, palette, how often it plays. (The file is kept as a list of
+  //    pieces, so a big frame never has to be copied into one huge list of numbers.)
+  const parts = [], out = { push: (...nums) => parts.push(Uint8Array.from(nums)) };
+  const u16 = (v) => [v & 255, (v >> 8) & 255];
+  out.push(...new TextEncoder().encode('GIF89a'), ...u16(w), ...u16(h), 0xf7, 0, 0);    // a global palette of 256 colours
+  pal.forEach((c) => out.push(c[0], c[1], c[2]));
+  if (opts.loops !== 1) out.push(0x21, 0xff, 11, ...new TextEncoder().encode('NETSCAPE2.0'), 3, 1, ...u16(opts.loops === 0 ? 0 : opts.loops - 1), 0);
+  // 3. The frames: only what changed, each lasting until the next change.
+  let prev = null, pending = null;                         // the frame waiting to be written (its time grows while nothing changes)
+  const writeFrame = (fr) => {
+    out.push(0x21, 0xf9, 4, (1 << 2) | (fr.clear ? 1 : 0), ...u16(Math.max(2, fr.delay)), GIF_CLEAR, 0);   // keep what is under it; this long; see-through 255
+    out.push(0x2c, ...u16(fr.x), ...u16(fr.y), ...u16(fr.w), ...u16(fr.h), 0);
+    parts.push(gifLzw(fr.pixels));
+  };
+  const centi = (k) => Math.round(k * 100 / opts.fps);   // when GIF frame k starts, in hundredths of a second
+  for (let k = 0; k < n; k++) {
+    if (signal.stop) throw new Error('stopped');
+    await r.draw(pick(k));
+    const idx = indexPixels(r.ctx.getImageData(0, 0, w, h).data, w, h, pal, near, opts.dither);
+    const delay = centi(k + 1) - centi(k);
+    if (!prev) { pending = { x: 0, y: 0, w, h, pixels: idx, delay, clear: false }; prev = idx; continue; }
+    // The box round everything that changed.
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (idx[i] !== prev[i]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } }
+    if (x1 < 0) { pending.delay += delay; continue; }     // nothing changed: the last frame just lasts longer
+    writeFrame(pending);
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, part = new Uint8Array(bw * bh);
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      const i = (y + y0) * w + x + x0;
+      part[y * bw + x] = idx[i] === prev[i] ? GIF_CLEAR : idx[i];   // unchanged: see-through (it squeezes better)
+    }
+    pending = { x: x0, y: y0, w: bw, h: bh, pixels: part, delay, clear: true };
+    prev = idx;
+    if (k % 3 === 0) { progress((k + 1) / n, 'Frame ' + (k + 1) + ' of ' + n); await new Promise((ok) => setTimeout(ok, 0)); }
+  }
+  writeFrame(pending);
+  out.push(0x3b);                                          // the end
+  return new Blob(parts, { type: 'image/gif' });
+}
+
+/* =====================================================================
+   18p. EXPORT: WHAT TO MAKE (0.13.0)
+   The Export dialog makes five things, picked at the top:
+     Lesson         one HTML file (section 14: buildLessonHtml)
+     For an LMS     a SCORM 1.2 package: the same lesson in a .zip with a
+                    manifest; inside an LMS it reports "completed" (or
+                    passed / failed) and its score (runtime, section 4c)
+     Video          WebM with sound, and a .vtt captions file (section 18n)
+     Animated GIF   silent and looping (section 18o)
+     Picture        a PNG of the frame at the play head (section 17)
+   Each kind's settings show under the choice. Needed items (the checks)
+   stop the lesson and the LMS package, which learners use; a video, GIF
+   or picture can go ahead. A video or GIF shows its progress, and Cancel
+   becomes Stop while it is made.
+   ===================================================================== */
+const EXPORT_KINDS = {
+  html: { button: 'Download the lesson' },
+  scorm: { button: 'Download for an LMS (.zip)' },
+  video: { button: 'Make the video' },
+  gif: { button: 'Make the GIF' },
+  png: { button: 'Download the picture (PNG)' }
+};
+/** The settings of a video and a GIF, for this session (each lesson's LMS settings are saved with it). */
+const exportOpts = { videoScale: 1, gifWidth: 640, gifFps: 12, gifLoops: 0, gifDither: false };
+let exportBusy = false;              // a video or GIF is being made
+let exportSignal = null;             // { stop } for the one being made
+const exportKind = () => { const r = document.querySelector('input[name="exKind"]:checked'); return r ? r.value : 'html'; };
+
+/** Show the picked kind's settings (and name the main button after it). */
+function showExportKind() {
+  const kind = exportKind(), box = $('exOpts');
+  $('exGoText').textContent = EXPORT_KINDS[kind].button;
+  box.replaceChildren(...(kind === 'scorm' ? scormOptions() : kind === 'video' ? videoOptions() : kind === 'gif' ? gifOptions() : kind === 'png' ? pngOptions() : htmlOptions()));
+  if (typeof renderProblems === 'function' && $('exportDlg').open) renderProblems();
+}
+document.querySelectorAll('input[name="exKind"]').forEach((r) => r.addEventListener('change', showExportKind));
+
+/** A small labelled control for the settings below a choice. */
+function optField(label, control, hint) {
+  const id = control.id || (control.id = 'exo' + (++fieldCount));
+  const out = [el('div', { class: 'field' }, el('label', { for: id, text: label }), control)];
+  if (hint) { const hid = id + '-h'; control.setAttribute('aria-describedby', hid); out.push(el('p', { class: 'hint', id: hid, text: hint })); }
+  return out;
+}
+function optSelect(choices, value, set) {
+  const s = el('select');
+  choices.forEach(([v, t]) => s.append(el('option', { value: String(v), text: t })));
+  s.value = String(value);
+  s.addEventListener('change', () => set(s.value));
+  return s;
+}
+
+/* ----- The lesson (HTML) ----- */
+function htmlOptions() {
+  return [el('p', { class: 'hint', text: 'One HTML file with everything inside. It works offline, opens in any modern browser, and can be uploaded to Brightspace or another LMS as a web page. It makes no network requests and keeps no data.' })];
+}
+
+/* ----- For an LMS (SCORM 1.2) ----- */
+/** A good guess at the highest score: everything the lesson ever adds to that variable. */
+function guessMaxScore(id) {
+  const total = allActions().filter((a) => a.do === 'change' && a.v === id && a.op === 'add' && a.n > 0).reduce((n, a) => n + a.n, 0);
+  return Math.max(1, total);
+}
+function scormOptions() {
+  const sc = project.scorm || (project.scorm = { v: '', max: 1, pass: 0 }), vars = lessonVars();
+  const out = [el('p', { class: 'hint', text: 'The same lesson in a SCORM 1.2 package (a .zip) for Brightspace, Moodle, Canvas or Blackboard. It counts as completed when the learner reaches its end or its last marker (or a behaviour runs "Mark the lesson complete").' })];
+  out.push(...optField('Score', optSelect([['', 'None (just completed)']].concat(vars.map((v) => [v.id, v.name])), sc.v, (v) => {
+    commit(); sc.v = v; if (v) sc.max = guessMaxScore(v); showExportKind();
+  }), vars.length ? 'The variable whose number goes to the gradebook.' : 'Add a variable (the Lesson, Variables) to send a score.'));
+  if (sc.v) {
+    const max = el('input', { type: 'number', min: 1, max: 100000, step: 1, value: sc.max, inputmode: 'numeric' });
+    max.addEventListener('input', () => { const n = parseInt(max.value, 10); if (n >= 1) { commit('scmax'); sc.max = Math.min(100000, n); } });
+    max.addEventListener('change', () => { max.value = sc.max; endGroup(); });
+    const pass = el('input', { type: 'number', min: 0, max: 100, step: 1, value: sc.pass, inputmode: 'numeric' });
+    pass.addEventListener('input', () => { const n = parseInt(pass.value, 10); if (n >= 0) { commit('scpass'); sc.pass = Math.min(100, n); } });
+    pass.addEventListener('change', () => { pass.value = sc.pass; endGroup(); });
+    out.push(...optField('Out of', max, 'The highest score (worked out from what its behaviours add; change it if it is wrong).'),
+      ...optField('Pass mark (%)', pass, '0: no pass mark (the LMS just hears "completed"). Over 0: "passed" or "failed" by the score.'));
+  }
+  return out;
+}
+/** The SCORM 1.2 manifest: one lesson (a "SCO"), index.html. */
+function scormManifest(title, sc) {
+  const x = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const id = 'ANIMEDTR-' + exportName().toUpperCase().replace(/[^A-Z0-9]+/g, '-').slice(0, 40) + '-' + Date.now().toString(36).toUpperCase();
+  const mastery = sc.v && sc.pass > 0 ? '\n        <adlcp:masteryscore>' + Math.round(sc.pass) + '</adlcp:masteryscore>' : '';
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<!-- Made with ANIMEDTR ' + x(APP_VERSION) + ' -->\n' +
+    '<manifest identifier="' + x(id) + '" version="1.0"\n' +
+    '  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"\n' +
+    '  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"\n' +
+    '  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"\n' +
+    '  xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">\n' +
+    '  <metadata>\n    <schema>ADL SCORM</schema>\n    <schemaversion>1.2</schemaversion>\n  </metadata>\n' +
+    '  <organizations default="ORG1">\n    <organization identifier="ORG1">\n      <title>' + x(title) + '</title>\n' +
+    '      <item identifier="ITEM1" identifierref="RES1" isvisible="true">\n        <title>' + x(title) + '</title>' + mastery + '\n      </item>\n' +
+    '    </organization>\n  </organizations>\n' +
+    '  <resources>\n    <resource identifier="RES1" type="webcontent" adlcp:scormtype="sco" href="index.html">\n      <file href="index.html"/>\n    </resource>\n  </resources>\n' +
+    '</manifest>\n';
+}
+async function exportScorm() {
+  const html = await buildLessonHtml({ lms: true });
+  const zip = await makeZip([
+    { name: 'imsmanifest.xml', bytes: new TextEncoder().encode(scormManifest(project.title || 'Lesson', project.scorm || {})), squeeze: true },
+    { name: 'index.html', bytes: new TextEncoder().encode(html), squeeze: true }]);
+  const name = exportName() + '-scorm.zip';
+  downloadBlob(zip, name);
+  dirty = false;
+  if (backup) backup.markSafe();
+  $('exportDlg').close();
+  announce('Saved ' + name + '. Upload it to your LMS as a SCORM package (in Brightspace: Add Existing, SCORM / xAPI).');
+}
+
+/* ----- Video ----- */
+function videoOptions() {
+  const s = lesson().stage, out = [];
+  if (typeof VideoEncoder === 'undefined') {
+    out.push(el('p', { class: 'warn-note', text: 'This browser cannot make videos. Chrome, Edge or Firefox can.' }));
+    return out;
+  }
+  out.push(...optField('Size', optSelect([[1, 'Full (' + evenSize(s.w, 1) + ' by ' + evenSize(s.h, 1) + ')'], [0.5, 'Half (' + evenSize(s.w, 0.5) + ' by ' + evenSize(s.h, 0.5) + ')']],
+    exportOpts.videoScale, (v) => { exportOpts.videoScale = Number(v); })));
+  out.push(el('p', { class: 'hint', text: 'It plays straight through, the way the lesson plays before anyone clicks: behaviours do not run, and nothing waits at a marker. Sounds on the timeline are heard (sounds played by behaviours are not). Their captions go into a .vtt file beside the video, for Brightspace, YouTube or any video player.' }));
+  const speechy = (lesson().cues || []).map((c) => soundById(c.s)).filter((sd) => sd && sd.kind === 'speech' && !sd.caption.trim());
+  if (speechy.length) out.push(el('p', { class: 'warn-note', text: speechy[0].name + ' is speech with no words yet, so the video’s captions will leave it out. Type its captions first (the Lesson, Sounds).' }));
+  return out;
+}
+/* ----- GIF ----- */
+function gifOptions() {
+  const s = lesson().stage;
+  const widths = [[320, 'Small (320 wide)'], [480, 'Medium (480 wide)'], [640, 'Large (640 wide)'], [s.w, 'Full (' + s.w + ' wide)']].filter(([v], i, all) => v <= s.w && all.findIndex((x) => x[0] === v) === i);
+  if (!widths.some(([v]) => v === exportOpts.gifWidth)) exportOpts.gifWidth = widths[Math.min(2, widths.length - 1)][0];
+  const fpsList = [8, 10, 12, 15, 20, 25].filter((n) => n <= s.fps);
+  if (!fpsList.includes(exportOpts.gifFps)) exportOpts.gifFps = fpsList[fpsList.length - 1] || s.fps;
+  const dither = el('input', { type: 'checkbox', id: 'exGifDither' });
+  dither.checked = exportOpts.gifDither;
+  dither.addEventListener('change', () => { exportOpts.gifDither = dither.checked; });
+  return [
+    ...optField('Width', optSelect(widths, exportOpts.gifWidth, (v) => { exportOpts.gifWidth = Number(v); })),
+    ...optField('Frames a second', optSelect(fpsList.map((n) => [n, String(n)]), exportOpts.gifFps, (v) => { exportOpts.gifFps = Number(v); }), 'Fewer frames and a smaller width make a smaller file. 12 is smooth enough for most lessons.'),
+    ...optField('Plays', optSelect([[0, 'Over and over'], [1, 'Once'], [3, '3 times']], exportOpts.gifLoops, (v) => { exportOpts.gifLoops = Number(v); }),
+      'A GIF has no pause button. If it moves for more than 5 seconds, Once or 3 times is kinder (WCAG 2.2.2), and lets people read what is next to it.'),
+    el('label', { class: 'check', for: 'exGifDither' }, dither, 'Smooth colours (dithering: better gradients, bigger file)'),
+    el('p', { class: 'hint', text: 'Silent, and it plays straight through like the video. A GIF has 256 colours at most, so soft gradients can show bands.' })
+  ];
+}
+/* ----- Picture ----- */
+function pngOptions() {
+  return [el('p', { class: 'hint', text: 'The stage at the play head (frame ' + shownFrame(frame) + '), as a PNG the size of the stage: for slides, a handout or a thumbnail.' })];
+}
+
+/* ----- Making it ----- */
+async function runExport() {
+  const kind = exportKind();
+  if (exportBusy) return;
+  if (kind === 'html') return exportLessonHtml();
+  if (kind === 'scorm') return exportScorm();
+  if (kind === 'png') { $('exportDlg').close(); return exportFramePng(); }
+  // A video or a GIF: it takes a while, so it shows how far it has got, and can be stopped.
+  exportBusy = true; exportSignal = { stop: false };
+  const bar = $('exBar'), words = $('exProgText'), prog = $('exProgress');
+  prog.hidden = false; bar.value = 0; words.textContent = 'Starting...';
+  $('exCancel').textContent = 'Stop';
+  document.querySelectorAll('input[name="exKind"], #exOpts select, #exOpts input').forEach((c) => { c.disabled = true; });
+  renderProblems();
+  let last = 0;
+  const progress = (fr, text) => { bar.value = Math.round(fr * 100); if (Date.now() - last > 400 || fr >= 1) { words.textContent = text; last = Date.now(); } };
+  announce(kind === 'video' ? 'Making the video. This can take a little while.' : 'Making the GIF. This can take a little while.');
+  try {
+    if (kind === 'video') {
+      const r = await makeVideo({ scale: exportOpts.videoScale }, progress, exportSignal);
+      downloadBlob(r.video, exportName() + '.webm');
+      if (r.vtt) downloadBlob(new Blob([r.vtt], { type: 'text/vtt' }), exportName() + '.vtt');
+      announce('Saved ' + exportName() + '.webm (' + mbWords(r.video.size) + ')' + (r.vtt ? ' and its captions, ' + exportName() + '.vtt' : '') + '.' +
+        (r.heardCues && !r.sound ? ' This browser could not add the sound, so the video is silent.' : ''));
+    } else {
+      const g = await makeGif({ fps: exportOpts.gifFps, width: exportOpts.gifWidth, loops: exportOpts.gifLoops, dither: exportOpts.gifDither }, progress, exportSignal);
+      downloadBlob(g, exportName() + '.gif');
+      announce('Saved ' + exportName() + '.gif (' + mbWords(g.size) + ').');
+    }
+    finishExport();
+    $('exportDlg').close();
+  } catch (err) {
+    finishExport();
+    announce(err && err.message === 'stopped' ? 'Stopped. Nothing was saved.' : (err && err.message && /browser/.test(err.message) ? err.message : 'That could not be made. ' + (err && err.message ? '(' + err.message + ')' : '')));
+    words.textContent = '';
+  }
+}
+const mbWords = (n) => (n >= 1048576 ? (Math.round(n / 104857.6) / 10) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');
+function finishExport() {
+  exportBusy = false; exportSignal = null;
+  $('exProgress').hidden = true;
+  $('exCancel').textContent = 'Cancel';
+  document.querySelectorAll('input[name="exKind"], #exOpts select, #exOpts input').forEach((c) => { c.disabled = false; });
+  renderProblems();
+}
+// Cancel stops a video or GIF being made (instead of closing the dialog under it).
+$('exCancel').addEventListener('click', (e) => {
+  if (!exportBusy) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  exportSignal.stop = true;
+  $('exProgText').textContent = 'Stopping...';
+}, true);
+$('exportDlg').addEventListener('cancel', (e) => { if (exportBusy) { e.preventDefault(); exportSignal.stop = true; } });   // (Escape: stop first)
+
+/* =====================================================================
+   18q. COLOUR SCHEMES (0.14.0), as DSKEDTR has them
+   A lesson has a colour scheme (lesson().scheme): six colours that go
+   together, each with a job (DSKEDTR's six, so the family agrees):
+     0 Text      words: dark, easy to read on white and on Pale
+     1 Main      the main colour (a rectangle starts in it; white reads on it)
+     2 Accent 1  a second colour (an ellipse starts in it)
+     3 Accent 2  a third colour (an outline starts in it)
+     4 Pale      a light fill: panels, cards
+     5 Light     a light, nearly neutral fill
+   Colours are still stored as plain "#rrggbb" everywhere, so drawing,
+   lessons and checks never change. Picking another scheme RECOLOURS the
+   lesson: every colour that is one of the old scheme's becomes the new
+   scheme's colour for that job, and a lighter or darker shade of one
+   becomes the same shade of the new one (DSKEDTR's colourMapper, the same
+   way). White, black and your own colours stay as they are. The schemes
+   are DSKEDTR's thirteen, after ANIMEDTR's own, Studio (its usual colours).
+   Every colour field in the Inspector offers the six as swatches.
+   ===================================================================== */
+const SCHEME_SLOTS = ['Text', 'Main', 'Accent 1', 'Accent 2', 'Pale', 'Light'];
+const SCHEMES = [
+  { name: 'Studio',    colours: ['#111827', '#2563eb', '#f45922', '#86198f', '#dbeafe', '#f1f5f9'] },   // ANIMEDTR's own (its usual colours)
+  { name: 'Lakeside',  colours: ['#1b1f24', '#065f46', '#10b981', '#b45309', '#d1fae5', '#f1f5f9'] },   // the rest: DSKEDTR's, colour for colour
+  { name: 'Harbor',    colours: ['#1b1f24', '#1e3a8a', '#3b82f6', '#f59e0b', '#dbeafe', '#f1f5f9'] },
+  { name: 'Harvest',   colours: ['#1c1917', '#78350f', '#b45309', '#fbbf24', '#fef3c7', '#fafaf9'] },
+  { name: 'Ember',     colours: ['#1c1917', '#9a3412', '#ea580c', '#ca8a04', '#ffedd5', '#fafaf9'] },
+  { name: 'Orchard',   colours: ['#1b1f24', '#991b1b', '#dc2626', '#65a30d', '#fee2e2', '#f8fafc'] },
+  { name: 'Meadow',    colours: ['#1a2e05', '#3f6212', '#65a30d', '#ca8a04', '#ecfccb', '#fafaf9'] },
+  { name: 'Ocean',     colours: ['#0f1f24', '#115e59', '#14b8a6', '#0369a1', '#ccfbf1', '#f1f5f9'] },
+  { name: 'Sunrise',   colours: ['#1b1f24', '#0f766e', '#ea580c', '#eab308', '#ffedd5', '#f8fafc'] },
+  { name: 'Lilac',     colours: ['#1e1b2e', '#5b21b6', '#8b5cf6', '#db2777', '#ede9fe', '#f8fafc'] },
+  { name: 'Berry',     colours: ['#1b1f24', '#9d174d', '#ec4899', '#7c3aed', '#fce7f3', '#f8fafc'] },
+  { name: 'Classroom', colours: ['#1b1f24', '#1d4ed8', '#dc2626', '#facc15', '#fef9c3', '#f1f5f9'] },
+  { name: 'Slate',     colours: ['#0f172a', '#334155', '#64748b', '#0ea5e9', '#e2e8f0', '#f8fafc'] },
+  { name: 'Grayscale', colours: ['#111111', '#333333', '#777777', '#555555', '#e5e5e5', '#f5f5f5'] }
+];
+/** The lesson's scheme (a lesson from before 0.14.0 has Studio's: its colours were ANIMEDTR's usual ones). */
+const schemeOf = (p) => { const L = p || lesson(); return L.scheme && Array.isArray(L.scheme.colours) && L.scheme.colours.length === 6 ? L.scheme : SCHEMES[0]; };
+/** The lesson's colour for a job: 0 Text, 1 Main, 2 Accent 1, 3 Accent 2, 4 Pale, 5 Light. */
+const schemeColour = (slot) => schemeOf().colours[slot];
+const presetFor = (colours) => SCHEMES.find((sc) => sc.colours.every((c, i) => c === colours[i])) || null;
+const rgbOfHex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const hexOfRgb = (a) => '#' + a.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+
+/**
+ * A function that recolours one "#rrggbb" from scheme `from` to scheme `to`
+ * (each six colours). A colour that IS one of from's becomes to's colour for
+ * the same job. A shade of one (that colour mixed with white, or with black,
+ * by some amount t, to within 2.5 levels in each of red, green and blue)
+ * becomes the same mix of to's colour. Anything else comes back unchanged.
+ * (DSKEDTR's colourMapper, the same steps.) Answers are remembered.
+ */
+function colourMapper(from, to) {
+  const memo = new Map();
+  return (c) => {
+    if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) return c;
+    c = c.toLowerCase();
+    if (memo.has(c)) return memo.get(c);
+    let out = c;
+    const exact = from.indexOf(c);
+    if (exact >= 0) out = to[exact];
+    else {
+      const v = rgbOfHex(c);
+      let best = null;
+      from.forEach((slot, k) => {
+        if (slot === to[k]) return;                    // that job's colour isn't changing
+        const a = rgbOfHex(slot);
+        for (const base of [255, 0]) {                 // mixed with white, then with black
+          // The amount t that comes closest (least squares over the three channels).
+          let num = 0, den = 0;
+          for (let j = 0; j < 3; j++) { num += (v[j] - a[j]) * (base - a[j]); den += (base - a[j]) ** 2; }
+          if (den < 300) continue;                     // the slot colour is (almost) white or black already
+          const t = num / den;
+          if (t <= 0.02 || t >= 0.98) continue;        // not really a mix
+          const err = Math.max(...[0, 1, 2].map((j) => Math.abs(a[j] + (base - a[j]) * t - v[j])));
+          if (err <= 2.5 && (!best || err < best.err)) best = { k, base, t, err };
+        }
+      });
+      if (best) out = hexOfRgb(rgbOfHex(to[best.k]).map((x) => x + (best.base - x) * best.t));
+    }
+    memo.set(c, out);
+    return out;
+  };
+}
+/**
+ * Recolour a whole lesson with map: the stage's background, every object's
+ * colour and outline (in every keyframe, and inside clips), and the colours
+ * behaviours "Set". Pictures are pictures: they stay. Returns how many changed.
+ */
+function recolourLesson(p, map) {
+  let n = 0;
+  const swap = (holder, key) => { const v = holder[key]; if (typeof v !== 'string') return; const w = map(v); if (w !== v) { holder[key] = w; n++; } };
+  swap(p.stage, 'bg');
+  const objects = p.objects.concat(...(p.clips || []).map((c) => c.objects));
+  objects.forEach((o) => { swap(o.base, 'fill'); swap(o, 'stroke'); o.keys.forEach((k) => swap(k.v, 'fill')); });
+  const lists = [p.on.start, ...p.on.marks.map((m) => m.acts), ...p.on.keys.map((k) => k.acts), p.on.sorted || []];
+  p.objects.forEach((o) => lists.push(o.on.activate, o.on.point, o.on.dropRight || [], o.on.dropWrong || []));
+  lists.flatMap(withNested).forEach((l) => l.forEach((a) => { if (a.do === 'set' && a.prop === 'fill') swap(a, 'value'); }));
+  return n;
+}
+/** Make these six the lesson's scheme, recolouring what used the old one (one undo step). Returns how many colours changed. */
+function setScheme(colours, name, group) {
+  const L = lesson(), from = schemeOf(L).colours.slice();
+  commit(group);
+  const n = recolourLesson(L, colourMapper(from, colours));
+  L.scheme = { name, colours: colours.slice() };
+  stageKey = ''; inspectorDirty = true;
+  requestRender();
+  return n;
+}
+/** Where text would be hard to read with these six. */
+function schemeWarnings(c) {
+  const out = [], need = (a, b, min, words) => { const r = contrastL(luminanceHex(a), luminanceHex(b)); if (r < min) out.push(words + ' is ' + r.toFixed(1) + ':1 (needs ' + min + ':1)'); };
+  need(c[0], '#ffffff', 4.5, 'Text on white');
+  need(c[0], c[4], 4.5, 'Text on Pale');
+  need(c[0], c[5], 4.5, 'Text on Light');
+  need(c[1], '#ffffff', 4.5, 'Main on white (and white on Main)');
+  return out;
+}
+/** A small row of the six colours (for the button and the cards). */
+function schemeStrip(colours) {
+  const strip = el('span', { class: 'scheme-strip', 'aria-hidden': 'true' });
+  colours.forEach((c) => { const sw = el('span'); sw.style.background = c; strip.append(sw); });
+  return strip;
+}
+/** The Lesson Inspector's button: the scheme's name and colours; opens the dialog. */
+function schemeButton() {
+  const sc = schemeOf(), b = el('button', { type: 'button', class: 'btn scheme-btn', 'data-fid': 'scheme-open' });
+  b.append(schemeStrip(sc.colours), el('span', { text: 'Colour scheme: ' + sc.name }));
+  b.addEventListener('click', openSchemes);
+  return b;
+}
+
+/* ----- The Colour scheme dialog: a card per scheme (this frame, in its colours), and the lesson's own six ----- */
+function openSchemes() {
+  if (playing) stopPlayback();
+  if (inClip()) leaveClip(true);
+  const grid = $('schemeGrid');
+  grid.replaceChildren();
+  const cur = schemeOf().colours.slice(), base = JSON.stringify(lesson());     // (the lesson, to draw in each scheme)
+  SCHEMES.forEach((sc) => {
+    const card = el('button', { type: 'button', class: 'scheme-card', 'data-key': sc.name, 'aria-pressed': 'false' },
+      el('span', { class: 'scheme-thumb' }), schemeStrip(sc.colours), el('strong', { text: sc.name }), el('span', { class: 'scheme-in' }));
+    card.addEventListener('click', () => {
+      if (sc.colours.every((c, i) => c === schemeOf().colours[i])) return;
+      const n = setScheme(sc.colours, sc.name);
+      fillSchemeDialog();
+      announce('Colour scheme: ' + sc.name + '. ' + (n ? plural(n, 'colour') + ' changed.' : 'Nothing in the lesson used the old colours yet.'));
+    });
+    grid.append(card);
+  });
+  fillSchemeDialog();
+  $('schemeDlg').showModal();
+  (grid.querySelector('[aria-pressed="true"]') || grid.querySelector('button')).focus();
+  // This frame in each scheme's colours, one card at a time (so the dialog opens at once).
+  let i = 0;
+  const next = () => {
+    if (i >= SCHEMES.length || !$('schemeDlg').open) return;
+    const sc = SCHEMES[i++];
+    try {
+      const raw = JSON.parse(base); raw.assets = project.assets;
+      const p = R.cleanProject(raw);
+      recolourLesson(p, colourMapper(cur, sc.colours));
+      const st = R.createStage(document, p, 'thumb');
+      R.drawFrame(st, p, frame, {});
+      st.svg.querySelectorAll('.ani-ring, .ani-hit').forEach((nd) => nd.remove());
+      st.svg.setAttribute('focusable', 'false');
+      const box = grid.querySelector('[data-key="' + sc.name + '"] .scheme-thumb');
+      if (box) box.replaceChildren(st.svg);
+    } catch (err) { /* (a card without its picture is still a card) */ }
+    requestAnimationFrame(next);
+  };
+  requestAnimationFrame(next);
+}
+/** Mark the scheme in use, and fill in the lesson's own six and any warnings. */
+function fillSchemeDialog() {
+  const sc = schemeOf(), preset = presetFor(sc.colours);
+  $('schemeGrid').querySelectorAll('.scheme-card').forEach((card) => {
+    const on = !!preset && card.dataset.key === preset.name;
+    card.setAttribute('aria-pressed', String(on));
+    card.querySelector('.scheme-in').textContent = on ? 'In use' : '';
+  });
+  SCHEME_SLOTS.forEach((label, k) => { $('schemeSlot' + k).value = sc.colours[k]; });
+  $('schemeOwnName').textContent = preset ? preset.name + ' (change a colour to make it your own)' : sc.name;
+  const warn = schemeWarnings(sc.colours);
+  $('schemeWarn').textContent = warn.length ? 'Hard to read: ' + warn.join('; ') + '.' : '';
+}
+(function wireSchemes() {
+  const own = $('schemeOwn');
+  SCHEME_SLOTS.forEach((label, k) => {
+    const input = el('input', { type: 'color', id: 'schemeSlot' + k });
+    own.append(el('label', { class: 'scheme-slot', for: 'schemeSlot' + k }, input, el('span', { text: label })));
+    // Change one of the six, and everything that used it changes too (a run of changes is one undo step).
+    input.addEventListener('input', () => {
+      const colours = schemeOf().colours.slice();
+      colours[k] = input.value.toLowerCase();
+      const preset = presetFor(colours);
+      setScheme(colours, preset ? preset.name : 'Your own', 'scheme' + k);
+      fillSchemeDialog();
+    });
+    input.addEventListener('change', endGroup);
+  });
+})();
+
+/**
+ * Swatches: under a colour field, the scheme's six colours as small buttons.
+ * One Tab stop for the row (Left and Right move along it); pressing one sets
+ * the field exactly as picking that colour in the field would.
+ */
+function swatchRow(input, what) {
+  const row = el('div', { class: 'swatch-row', role: 'group', 'aria-label': what + ': the scheme’s colours' });
+  SCHEME_SLOTS.forEach((label, k) => {
+    const b = el('button', { type: 'button', class: 'swatch', 'aria-label': label + ' (' + schemeColour(k) + ')', title: label, tabindex: k ? '-1' : '0' });
+    b.style.background = schemeColour(k);
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', () => {
+      input.value = schemeColour(k);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    row.append(b);
+  });
+  row.addEventListener('keydown', (e) => {
+    const all = [...row.querySelectorAll('.swatch')], i = all.indexOf(document.activeElement);
+    if (i < 0) return;
+    const j = e.key === 'ArrowRight' ? (i + 1) % all.length : e.key === 'ArrowLeft' ? (i + all.length - 1) % all.length : e.key === 'Home' ? 0 : e.key === 'End' ? all.length - 1 : -1;
+    if (j < 0) return;
+    e.preventDefault();
+    all.forEach((x, n) => { x.tabIndex = n === j ? 0 : -1; });
+    all[j].focus();
+  });
+  return row;
+}
+
+/* =====================================================================
+   18r. AN ANIMATED GIF IN, AS A FLIPBOOK (0.14.0)
+   Add a GIF that moves (the Picture tool, a drop or a paste) and ANIMEDTR
+   asks: as a flipbook (it moves), or just its first picture? A flipbook
+   gets one page for each of the GIF's pictures, each page showing for the
+   same time (the GIF's own speed, on average), and is used on the stage
+   like any clip: it keeps moving while the lesson waits, as a GIF would.
+
+   Every GIF is treated as hostile (as IMGEDTR's GIF spec asks):
+     - its size is checked before anything is made: at most 4000 pixels a
+       side, and all its pictures together within a memory budget;
+     - at most 1000 pictures are read (and 120 kept: more are thinned out);
+     - the LZW decoder (GIF's compression) checks its code size (2 to 8),
+       never lets its table grow past 4096 entries, never writes past a
+       picture's own box, and stops at the end of the data;
+     - a cut-off file keeps the pictures that were whole, and says so.
+   Pixels go into canvases with putImageData, and come out as PNG pictures
+   checked like any other. Nothing from the file ever becomes HTML.
+   ===================================================================== */
+const GIF_IN = { side: 4000, frames: 1000, keep: 120, budget: 400e6, seconds: 30 };
+
+/** Is it a GIF? (By its first bytes.) */
+const isGifBytes = (b) => b.length > 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38;
+
+/** GIF's LZW: codes into palette numbers. Writes at most `count`; returns how many it wrote. */
+function gifLzwDecode(data, minSize, out, count) {
+  if (minSize < 2 || minSize > 8) throw new Error('bad code size');
+  const clear = 1 << minSize, eoi = clear + 1;
+  const prefix = new Int16Array(4096), suffix = new Uint8Array(4096), stack = new Uint8Array(4097);
+  for (let i = 0; i < clear; i++) { prefix[i] = -1; suffix[i] = i; }
+  let size = minSize + 1, mask = (1 << size) - 1, next = eoi + 1, prev = -1, first = 0;
+  let cur = 0, bits = 0, pos = 0, op = 0;
+  while (op < count) {
+    while (bits < size) { if (pos >= data.length) return op; cur |= data[pos++] << bits; bits += 8; }   // (the end of the data: stop)
+    const code = cur & mask; cur >>>= size; bits -= size;
+    if (code === clear) { size = minSize + 1; mask = (1 << size) - 1; next = eoi + 1; prev = -1; continue; }
+    if (code === eoi) break;
+    if (prev < 0) { if (code >= clear) break; out[op++] = code; prev = code; first = code; continue; }
+    if (code > next) break;                                   // (a code that cannot be: damaged data)
+    let c = code, sp = 0;
+    if (code === next) { stack[sp++] = first; c = prev; }       // the one case LZW sends before it is in the table
+    while (c >= clear) { if (sp >= 4096) return op; stack[sp++] = suffix[c]; c = prefix[c]; }
+    stack[sp++] = c; first = c;
+    while (sp > 0 && op < count) out[op++] = stack[--sp];
+    if (next < 4096) { prefix[next] = prev; suffix[next] = first; next++; if (next > mask && size < 12) { size++; mask = (1 << size) - 1; } }
+    prev = code;
+  }
+  return op;
+}
+/**
+ * Read a GIF. Returns { w, h, frames: [{ rgba, delay (ms) }], loops (0 for ever, -1 once, else extra plays), cut (a part was damaged) }.
+ * Throws a plain-words Error when the file cannot be used at all.
+ */
+async function decodeGif(b) {
+  const bad = (why) => { throw new Error(why); };
+  if (!isGifBytes(b)) bad('That is not a GIF.');
+  const u16 = (i) => b[i] | (b[i + 1] << 8);
+  const w = u16(6), h = u16(8);
+  if (!w || !h || w > GIF_IN.side || h > GIF_IN.side) bad('That GIF is ' + w + ' by ' + h + ': too big (4000 a side at most).');
+  let pos = 13, gct = null;
+  if (b[10] & 0x80) { const n = 3 << ((b[10] & 7) + 1); if (pos + n > b.length) bad('That GIF is damaged.'); gct = b.subarray(pos, pos + n); pos += n; }
+  const canvas = new Uint8ClampedArray(w * h * 4);           // what the GIF shows so far (see-through to start)
+  const frames = [];
+  let gce = { disposal: 0, delay: 100, trans: -1 }, loops = -1, cut = false;   // loops -1: no NETSCAPE block, so it plays once
+  const t0 = Date.now();
+  const subBlocks = () => {                                   // a run of sub-blocks (a length, then that many bytes), joined
+    const parts = []; let total = 0;
+    while (pos < b.length) {
+      const n = b[pos++]; if (!n) return { data: joinBytes(parts, total), ok: true };
+      if (pos + n > b.length) { parts.push(b.subarray(pos, b.length)); total += b.length - pos; pos = b.length; return { data: joinBytes(parts, total), ok: false }; }
+      parts.push(b.subarray(pos, pos + n)); total += n; pos += n;
+    }
+    return { data: joinBytes(parts, total), ok: false };
+  };
+  while (pos < b.length) {
+    if (Date.now() - t0 > GIF_IN.seconds * 1000) { cut = true; break; }   // (never take for ever)
+    const kind = b[pos++];
+    if (kind === 0x3b) break;                                 // the end
+    if (kind === 0x21) {                                      // an extension
+      const label = b[pos++];
+      if (label === 0xf9 && b[pos] === 4) {                   // timing and see-through ("graphic control")
+        const pk = b[pos + 1];
+        gce = { disposal: (pk >> 2) & 7, delay: u16(pos + 2) * 10, trans: pk & 1 ? b[pos + 4] : -1 };
+        pos += 5; subBlocks();
+      } else if (label === 0xff) {                            // an application block: NETSCAPE2.0 says how often it plays
+        const sb = subBlocks();
+        const d = sb.data;
+        // (Its sub-blocks come joined: "NETSCAPE2.0", then 1, then the count, low byte first.)
+        if (d.length >= 14 && String.fromCharCode(...d.subarray(0, 11)) === 'NETSCAPE2.0' && d[11] === 1) loops = d[12] | (d[13] << 8);
+      } else subBlocks();                                     // comments and the rest: skipped, never kept
+      continue;
+    }
+    if (kind !== 0x2c) { cut = true; break; }                 // (something that should not be here: stop)
+    // A picture: its box, its own palette perhaps, interlaced or not, then its LZW data.
+    if (pos + 9 > b.length) { cut = true; break; }
+    const fx = u16(pos), fy = u16(pos + 2), fw = u16(pos + 4), fh = u16(pos + 6), pk = b[pos + 8];
+    pos += 9;
+    let pal = gct;
+    if (pk & 0x80) { const n = 3 << ((pk & 7) + 1); if (pos + n > b.length) { cut = true; break; } pal = b.subarray(pos, pos + n); pos += n; }
+    const minSize = b[pos++];
+    const sb = subBlocks();
+    if (!pal || !fw || !fh) { if (!sb.ok) { cut = true; break; } continue; }
+    if (frames.length >= GIF_IN.frames) { cut = true; break; }
+    if ((frames.length + 1) * w * h * 4 > GIF_IN.budget) { cut = true; break; }   // (the memory budget)
+    const idx = new Uint8Array(fw * fh);
+    let got = 0;
+    try { got = gifLzwDecode(sb.data, minSize, idx, idx.length); } catch (err) { cut = true; break; }
+    if (got < idx.length * 0.5 && !sb.ok) { cut = true; break; }   // (most of it missing: leave it out)
+    // Interlaced: rows come in four passes (every 8th from 0, every 8th from 4, every 4th from 2, every 2nd from 1).
+    let rowOf = null;
+    if (pk & 0x40) { rowOf = []; [[0, 8], [4, 8], [2, 4], [1, 2]].forEach(([start, step]) => { for (let y = start; y < fh; y += step) rowOf.push(y); }); }
+    const before = gce.disposal === 3 ? canvas.slice() : null;      // "put back what was there" afterwards
+    for (let r = 0; r < fh; r++) {
+      const y = fy + (rowOf ? rowOf[r] : r); if (y >= h) continue;
+      for (let x = 0; x < fw; x++) {
+        const xx = fx + x; if (xx >= w) continue;
+        const k = idx[r * fw + x];
+        if (k === gce.trans || k * 3 + 2 >= pal.length) continue;   // see-through, or a colour that is not there
+        const o = (y * w + xx) * 4;
+        canvas[o] = pal[k * 3]; canvas[o + 1] = pal[k * 3 + 1]; canvas[o + 2] = pal[k * 3 + 2]; canvas[o + 3] = 255;
+      }
+    }
+    frames.push({ rgba: canvas.slice(), delay: gce.delay });
+    // What happens before the next picture: 2 clears its box, 3 puts back what was under it.
+    if (gce.disposal === 2) for (let y = fy; y < Math.min(h, fy + fh); y++) canvas.fill(0, (y * w + fx) * 4, (y * w + Math.min(w, fx + fw)) * 4);
+    else if (before) canvas.set(before);
+    gce = { disposal: 0, delay: 100, trans: -1 };
+    if (frames.length % 20 === 0) await new Promise((ok) => setTimeout(ok, 0));   // (let the page breathe)
+    if (!sb.ok) { cut = true; break; }
+  }
+  if (!frames.length) bad('That GIF could not be read.');
+  return { w, h, frames, loops, cut };
+}
+function joinBytes(parts, total) { const out = new Uint8Array(total); let at = 0; parts.forEach((p) => { out.set(p, at); at += p.length; }); return out; }
+
+/** Ask how to add a GIF that moves: as a flipbook, or just its first picture. Resolves 'flip', 'still' or null (cancelled). */
+function askGifHow(name, count) {
+  return new Promise((ok) => {
+    const dlg = $('gifDlg');
+    $('gifDlgText').textContent = name + ' moves: it has ' + count + ' pictures.';
+    const done = (v) => { dlg.removeEventListener('close', onClose); ok(v); };
+    const onClose = () => done(dlg.returnValue === 'flip' || dlg.returnValue === 'still' ? dlg.returnValue : null);
+    dlg.returnValue = '';
+    dlg.addEventListener('close', onClose);
+    dlg.showModal();
+    $('gifFlip').focus();
+  });
+}
+$('gifFlip').addEventListener('click', () => $('gifDlg').close('flip'));
+$('gifStill').addEventListener('click', () => $('gifDlg').close('still'));
+
+/** A GIF's pictures as a flipbook, used on the stage. at: where it goes (a stage point), or the middle of the view. */
+async function addGifFlipbook(gif, name, at) {
+  if (inClip()) leaveClip(true);
+  if (entered) exitGroup(true);
+  const ci = containerInfo(), layer = layerById(ci.layer);
+  if (layer && layer.locked) { announce('The layer ' + layer.name + ' is locked. Unlock it in the timeline, or pick another layer.'); return null; }
+  // How many pages: the GIF's pictures, thinned out evenly if there are too many (each kept one lasts longer).
+  const room = Math.max(1, Math.min(GIF_IN.keep, R.LIMITS.assets - Object.keys(project.assets).length - 1, R.LIMITS.clipObjects));
+  const step = Math.max(1, Math.ceil(gif.frames.length / room));
+  const kept = [];
+  for (let i = 0; i < gif.frames.length; i += step) {
+    const group = gif.frames.slice(i, i + step);
+    kept.push({ rgba: group[0].rgba, delay: group.reduce((n, f) => n + (f.delay >= 20 ? f.delay : 100), 0) });   // (browsers play a 0 or 10 ms delay as 100 ms)
+  }
+  // The same time for each page: the GIF's own speed on average, in the lesson's frames (1 to 12 a page).
+  const fps = project.stage.fps, avg = kept.reduce((n, f) => n + f.delay, 0) / kept.length;
+  const hold = clamp(Math.round(avg / 1000 * fps), 1, 12);
+  // Each picture as a PNG (scaled down to 960 a side at most, which keeps lessons light).
+  const k = Math.min(1, 960 / Math.max(gif.w, gif.h)), W = Math.max(1, Math.round(gif.w * k)), H = Math.max(1, Math.round(gif.h * k));
+  const full = document.createElement('canvas'); full.width = gif.w; full.height = gif.h;
+  const out = document.createElement('canvas'); out.width = W; out.height = H;
+  const fctx = full.getContext('2d'), octx = out.getContext('2d');
+  const assets = [];
+  for (const fr of kept) {
+    fctx.putImageData(new ImageData(fr.rgba, gif.w, gif.h), 0, 0);
+    octx.clearRect(0, 0, W, H); octx.drawImage(full, 0, 0, W, H);
+    const data = out.toDataURL('image/png');
+    if (!R.PICTURE_RE.test(data)) continue;
+    assets.push(data);
+    if (assets.length % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
+  }
+  if (!assets.length) { announce('That GIF could not be added.'); return null; }
+  commit();
+  const def = { id: freshClipId('c'), name: nextClipName(name ? name.slice(0, 40) : 'Flipbook'), flip: true, hold, stage: { w: W, h: H, frames: assets.length * hold },
+    layers: [{ id: freshClipId('l'), name: 'Pictures', hidden: false, locked: false }], objects: [] };
+  assets.forEach((data, i) => {
+    const aid = newId('a');
+    project.assets[aid] = { data, w: W, h: H };
+    def.objects.push(makeObject('image', { layer: def.layers[0].id, parent: '' }, { x: 0, y: 0, w: W, h: H },
+      { id: freshClipId('o'), asset: aid, name: 'Page ' + (i + 1), decorative: true, start: i * hold, end: i * hold + hold - 1 }));
+  });
+  project.clips.push(def);
+  // On the stage: about 60% of it at most, keeping its shape; it keeps moving while the lesson waits (as a GIF does).
+  const s = Math.min(1, 0.6 * ci.box.w / W, 0.6 * ci.box.h / H), w = Math.round(W * s), h = Math.round(H * s);
+  const c = at ? toLocal(at, ci.m) : viewCentre(ci);
+  const use = makeObject('clip', ci, { x: round1(c.x - w / 2), y: round1(c.y - h / 2), w, h },
+    { clip: def.id, clipMode: gif.loops === -1 ? 'once' : 'loop', clipAt: 0, always: true, name: def.name });   // (a GIF that plays once, once)
+  project.objects.push(use);
+  setSelection([use.id], true);
+  settings.open.access = true; saveSettings();
+  focusAfterBuild = 'inspLabel'; inspectorDirty = true;
+  announce(def.name + ': a flipbook of ' + plural(assets.length, 'page') + (step > 1 ? ' (every ' + step + 'th of the GIF’s ' + gif.frames.length + ' pictures)' : '') +
+    (gif.cut ? '. Part of the GIF was damaged, so only the whole pictures came in' : '') +
+    '. Say what it shows, in Read aloud as, or tick Decoration if it is just for looks. Edit flipbook changes its pages.');
+  requestRender();
+  return use;
+}
+
+/* =====================================================================
+   18s. MORE TEMPLATES (0.14.0)
+   Three more starting points, each showing off something different:
+     Step by step     the scientific method as a flowchart that builds one
+                      step at a time, waiting at each (markers, Next), in
+                      the Studio colour scheme's own colours, so a new
+                      colour scheme recolours all of it
+     Flip cards       three vocabulary cards: activate one to turn it over
+                      (show and hide), and again to turn it back
+     Match them       drag each animal to its habitat, then Check my
+                      answers (drag and drop as a test, a score for an LMS)
+   All original: shapes and words made here, sounds made from numbers.
+   ===================================================================== */
+const STUDIO = slotsOf(SCHEMES[0].colours);
+/** The six colours by job: c.text, c.main, c.accent1, c.accent2, c.pale, c.light. */
+function slotsOf(c) { return { text: c[0], main: c[1], accent1: c[2], accent2: c[3], pale: c[4], light: c[5] }; }
+
+/* ---- Step by step: the scientific method ---- */
+function scientificMethodProject() {
+  const C = STUDIO, objects = [], add = (...o) => objects.push(...o);
+  const STEPS = [
+    ['Ask a question', 'What do you want to find out? Start with something you have noticed. Do plants grow faster in sunlight?'],
+    ['Do some research', 'Find out what is already known: books, articles, experts. It helps you make a good guess.'],
+    ['Make a hypothesis', 'A guess you can test: "If a plant gets more sunlight, then it will grow taller."'],
+    ['Test it', 'Run a fair experiment: change one thing (the sunlight), keep the rest the same, and measure.'],
+    ['Draw a conclusion', 'Was the hypothesis right? Share what you found. New questions often start the circle again.']];
+  const PER = 24, n = STEPS.length, FRAMES = n * PER + 24;
+  add({ id: 'otitle', type: 'text', layer: 'lwords', name: 'Title', text: 'The scientific method', size: 48, bold: true, base: tv(60, 30, 1160, 64, C.text) },
+      { id: 'ohow', type: 'text', layer: 'lwords', name: 'How to', text: 'Five steps, one at a time. Press Next step to go on, or Back to see the step before again.', size: 24, base: tv(60, 98, 1160, 36, C.accent2) });
+  const backs = [];                                  // (the Back buttons: added after the loop, see below)
+  // The flowchart: five boxes in a row, each sliding up as its step comes.
+  const BW = 200, BH = 120, GAP = 40, X0 = (1280 - (n * BW + (n - 1) * GAP)) / 2, Y = 190;
+  STEPS.forEach(([name, words], i) => {
+    const x = X0 + i * (BW + GAP), at = i * PER, life = { start: at };
+    const box = tv(x, Y, BW, BH, i % 2 ? C.accent1 : C.main), from = tv(x, Y + 40, BW, BH, i % 2 ? C.accent1 : C.main, { opacity: 0 });
+    add({ id: 'obox' + i, type: 'rect', layer: 'lchart', name: 'Step ' + (i + 1) + ' box', decorative: true, radius: 16, base: box, keys: [{ f: at, v: from, ease: 'out' }, { f: at + 12, v: box, ease: 'hold' }], ...life },
+        { id: 'onum' + i, type: 'text', layer: 'lchart', name: 'Step ' + (i + 1) + ' number', decorative: true, text: String(i + 1), size: 28, bold: true, align: 'center',
+          base: tv(x, Y + 12, BW, 36, '#ffffff'), keys: [{ f: at, v: tv(x, Y + 52, BW, 36, '#ffffff', { opacity: 0 }), ease: 'out' }, { f: at + 12, v: tv(x, Y + 12, BW, 36, '#ffffff'), ease: 'hold' }], ...life },
+        { id: 'oname' + i, type: 'text', layer: 'lchart', name: 'Step ' + (i + 1), text: name, size: 24, bold: true, align: 'center',
+          base: tv(x + 10, Y + 52, BW - 20, 60, '#ffffff'), keys: [{ f: at, v: tv(x + 10, Y + 92, BW - 20, 60, '#ffffff', { opacity: 0 }), ease: 'out' }, { f: at + 12, v: tv(x + 10, Y + 52, BW - 20, 60, '#ffffff'), ease: 'hold' }], ...life });
+    if (i) {
+      // An arrow from the box before (it grows from the left).
+      const ax = x - GAP + 6, aw = GAP - 12, arrow = tv(ax, Y + BH / 2 - 14, aw, 28, C.text);
+      add({ id: 'oarrow' + i, type: 'path', layer: 'lchart', name: 'Arrow ' + i, decorative: true, ...tplShape('arrow'), start: at,
+        base: arrow, keys: [{ f: at, v: tv(ax, Y + BH / 2 - 14, 2, 28, C.text), ease: 'out' }, { f: at + 8, v: arrow, ease: 'hold' }] });
+    }
+    // The step in words, on a pale card, while it is the step being told.
+    const card = tv(60, 360, 1160, 200, C.pale), end = i < n - 1 ? at + PER - 1 : -1;
+    add({ id: 'ocard' + i, type: 'rect', layer: 'lwords', name: 'Card ' + (i + 1), decorative: true, radius: 18, start: at + 6, end, base: card, keys: [{ f: at + 6, v: tv(60, 360, 1160, 200, C.pale, { opacity: 0 }), ease: 'out' }, { f: at + 12, v: card, ease: 'hold' }] },
+        { id: 'ocardh' + i, type: 'text', layer: 'lwords', name: 'Step ' + (i + 1) + ' heading', text: 'Step ' + (i + 1) + ': ' + name, size: 34, bold: true, start: at + 8, end, base: tv(90, 382, 1100, 48, C.main) },
+        { id: 'ocardw' + i, type: 'text', layer: 'lwords', name: 'Step ' + (i + 1) + ' words', text: words, size: 28, start: at + 8, end, lineHeight: 1.4, base: tv(90, 440, 1100, 110, C.text) });
+    // A Back button for every step after the first (0.14.1). Each goes to the step before
+    // and waits there ("Go to marker and pause"). It hides while the next step builds
+    // (end: at + PER - 1), so it never takes the learner somewhere unexpected mid-build.
+    if (i) backs.push(...tplButton('oback' + i, 'lwords', 'Back', 700, 600, 240, 80, [{ do: 'gotoPause', marker: 'm' + (i - 1) }],
+      { start: at + 12, end: i < n - 1 ? at + PER - 1 : -1 }));
+  });
+  // 0.14.1: ONE Next step button for every step, and its action is plain "Play".
+  // The lesson is waiting at a "Pause here" marker, so Play builds the next step and
+  // stops at the next marker: exactly one step. (0.14.0 used "Go to marker and play",
+  // which jumped to the NEXT step's marker and then played on to the one after it,
+  // so a step went by on its own.) One button also means keyboard focus never moves.
+  const next = tplButton('onext', 'lwords', 'Next step', 980, 600, 240, 80, [{ do: 'play' }], { start: 12, end: (n - 1) * PER + 11 });
+  // Start again: back to step 1, waiting there. It sits on the left, and it comes first
+  // in the list, so the reading order matches what is seen (Start again, then Back), and
+  // the keyboard lands on it when Next step leaves at the last step.
+  const again = tplButton('oagain', 'lwords', 'Start again', 60, 600, 280, 80, [{ do: 'gotoPause', marker: 'm0' }], { start: (n - 1) * PER + 12 });
+  // Each Back button is labelled with where it goes ("Back to step 2"), so a screen reader
+  // says more than "Back". Its look: the pale colour with a Main outline, so it reads as
+  // the lesser choice next to Next step.
+  backs.forEach((o, k) => {
+    const to = 'step ' + Math.floor(k / 2 + 1);       // (two objects per button: the box, then its words)
+    if (o.type === 'rect') { o.label = 'Back to ' + to; o.name = 'Back to ' + to + ' button'; o.base.fill = C.pale; o.stroke = C.main; o.strokeW = 3; }
+    else { o.name = 'Back to ' + to + ' words'; o.base.fill = C.text; }
+  });
+  add(...again, ...backs, ...next);
+  objects.filter((o) => (o.id === 'onext' || o.id === 'oagain')).forEach((o) => { o.base.fill = C.main; });
+  return R.cleanProject({
+    format: R.FORMAT, version: R.VERSION, title: 'The scientific method', lang: 'en',
+    desc: 'The scientific method in five steps, as a flowchart that builds one step at a time.',
+    stage: { w: 1280, h: 720, bg: '#ffffff', fps: 24, frames: FRAMES, loop: false, autoplay: true, still: FRAMES - 1 },
+    scheme: { name: 'Studio', colours: SCHEMES[0].colours.slice() },
+    layers: [{ id: 'lchart', name: 'Flowchart' }, { id: 'lwords', name: 'Words' }],
+    markers: STEPS.map(([name, words], i) => ({ id: 'm' + i, name: 'Step ' + (i + 1) + ': ' + name, f: i * PER + 12, stop: true, desc: words })),
+    objects
+  });
+}
+
+/* ---- Flip cards: activate a card to turn it over ---- */
+function flipCardsProject() {
+  const C = STUDIO, objects = [], add = (...o) => objects.push(...o);
+  const CARDS = [['Photosynthesis', 'How plants make food: they use sunlight, water and carbon dioxide, and give out oxygen.'],
+    ['Habitat', 'The natural home of a plant or animal: where it finds food, water and shelter.'],
+    ['Predator', 'An animal that hunts other animals for food. The animals it hunts are its prey.']];
+  add({ id: 'otitle', type: 'text', layer: 'lfront', name: 'Title', text: 'Flip cards: science words', size: 46, bold: true, base: tv(60, 34, 1160, 60, C.text) },
+      { id: 'ohow', type: 'text', layer: 'lfront', name: 'How to', text: 'Activate a card (click, tap, or Tab and Enter) to turn it over. Activate it again to turn it back.', size: 24, base: tv(60, 100, 1160, 70, C.accent2) });
+  const W = 340, H = 400, GAP = 50, X0 = (1280 - (3 * W + 2 * GAP)) / 2, Y = 210;
+  CARDS.forEach(([term, meaning], i) => {
+    const x = X0 + i * (W + GAP), id = 'c' + i;
+    // The front: a button with the word.
+    add({ id: 'o' + id + 'f', type: 'rect', layer: 'lfront', name: term + ' card', label: term + ' (turn the card over)', radius: 22, stroke: C.main, strokeW: 4,
+      base: tv(x, Y, W, H, C.pale), on: { activate: [{ do: 'show', target: 'o' + id + 'b' }] } },
+    { id: 'o' + id + 'fw', type: 'text', layer: 'lfront', name: term + ' word', decorative: true, text: term, size: 40, bold: true, align: 'center', base: tv(x + 20, Y + H / 2 - 30, W - 40, 60, C.main) },
+    { id: 'o' + id + 'ft', type: 'text', layer: 'lfront', name: term + ' hint', decorative: true, text: 'Turn me over', size: 22, align: 'center', base: tv(x + 20, Y + H - 60, W - 40, 34, C.text) });
+    // The back: a group (a darker card and the meaning) that covers the front; activate it to turn back.
+    add({ id: 'o' + id + 'b', type: 'group', layer: 'lback', name: term + ' back', label: term + ': ' + meaning + ' (turn back)', startHidden: true, gw: W, gh: H, base: tv(x, Y, W, H, '#ffffff'),
+      on: { activate: [{ do: 'hide', target: 'o' + id + 'b' }] } },
+    { id: 'o' + id + 'bb', type: 'rect', layer: 'lback', parent: 'o' + id + 'b', name: term + ' back card', decorative: true, radius: 22, base: tv(0, 0, W, H, C.main) },
+    { id: 'o' + id + 'bt', type: 'text', layer: 'lback', parent: 'o' + id + 'b', name: term + ' back word', decorative: true, text: term, size: 30, bold: true, align: 'center', base: tv(20, 30, W - 40, 44, '#ffffff') },
+    { id: 'o' + id + 'bm', type: 'text', layer: 'lback', parent: 'o' + id + 'b', name: term + ' meaning', decorative: true, text: meaning, size: 26, lineHeight: 1.35, align: 'center', base: tv(24, 100, W - 48, 260, '#ffffff') });
+  });
+  return R.cleanProject({
+    format: R.FORMAT, version: R.VERSION, title: 'Flip cards: science words', lang: 'en',
+    desc: 'Three vocabulary cards to turn over. Photosynthesis: how plants make food from sunlight, water and carbon dioxide. Habitat: the natural home of a plant or animal. Predator: an animal that hunts other animals for food.',
+    stage: { w: 1280, h: 720, bg: '#ffffff', fps: 24, frames: 24, loop: false, autoplay: false, still: 0 },
+    scheme: { name: 'Studio', colours: SCHEMES[0].colours.slice() },
+    layers: [{ id: 'lfront', name: 'Fronts' }, { id: 'lback', name: 'Backs' }],
+    markers: [{ id: 'mstart', name: 'Flip cards', f: 0, stop: true, desc: 'Three cards: Photosynthesis, Habitat and Predator. Activate one to read what it means.' }],
+    objects
+  });
+}
+
+/* ---- Match them: drag each animal to its home, then check ---- */
+function matchHabitatsProject() {
+  const C = slotsOf(SCHEMES.find((s) => s.name === 'Meadow').colours), objects = [], add = (...o) => objects.push(...o);
+  const PAIRS = [['Camel', 'Desert'], ['Polar bear', 'Arctic'], ['Frog', 'Pond'], ['Monkey', 'Rainforest']];
+  add({ id: 'otitle', type: 'text', layer: 'lplaces', name: 'Title', text: 'Match each animal to its home', size: 44, bold: true, base: tv(50, 28, 1180, 60, C.text) },
+      { id: 'ohow', type: 'text', layer: 'lplaces', name: 'How to', text: 'Drag each animal onto its habitat (or tap it, then tap the habitat). Then press Check my answers.', size: 24, base: tv(50, 92, 1180, 70, C.main) });
+  const PW = 270, PH = 100, GAP = 30, X0 = (1280 - (4 * PW + 3 * GAP)) / 2;
+  // The places: a pale box each, with the habitat's name above (the box is named for screen readers).
+  const order = [2, 0, 3, 1];                                    // (the habitats in a different order from the animals)
+  order.forEach((k, i) => {
+    const x = X0 + i * (PW + GAP), hab = PAIRS[k][1];
+    add({ id: 'h' + k, type: 'text', layer: 'lplaces', name: hab + ' heading', decorative: true, text: hab, size: 28, bold: true, align: 'center', base: tv(x, 400, PW, 40, C.main) },
+        { id: 'p' + k, type: 'rect', layer: 'lplaces', name: hab, label: hab, drop: true, radius: 16, stroke: C.main, strokeW: 3, base: tv(x, 446, PW, PH, C.pale) });
+  });
+  // The animals: chips to drag (test mode: they stay wherever they are dropped until the check).
+  PAIRS.forEach(([animal], k) => {
+    const x = X0 + k * (PW + GAP) + 10, id = 'a' + k;
+    add({ id, type: 'group', layer: 'lchips', name: animal, label: animal, gw: 250, gh: 70, base: tv(x, 220, 250, 70, '#ffffff'),
+      drag: true, goesTo: ['p' + k], stayWrong: true,
+      on: { dropRight: [{ do: 'change', v: 'vscore', op: 'add', n: 1 }, { do: 'sound', s: 'schime' }], dropWrong: [{ do: 'sound', s: 'sbonk' }] } },
+    { id: id + 'b', type: 'rect', layer: 'lchips', parent: id, name: animal + ' chip', decorative: true, radius: 35, base: tv(0, 0, 250, 70, C.accent1) },
+    { id: id + 'w', type: 'text', layer: 'lchips', parent: id, name: animal + ' words', decorative: true, text: animal, size: 30, bold: true, align: 'center', base: tv(10, 13, 230, 44, '#ffffff') });
+  });
+  add(...tplButton('ocheck', 'lchips', 'Check my answers', 760, 600, 470, 90, [{ do: 'check' }]),
+      { id: 'oscore', type: 'text', layer: 'lplaces', name: 'Matched', text: 'Matched: {Score} of 4', size: 30, bold: true, base: tv(50, 620, 600, 50, C.text) },
+      { id: 'odone', type: 'text', layer: 'lplaces', name: 'All matched', text: 'All four matched. Well done!', size: 30, bold: true, startHidden: true, base: tv(50, 170, 1180, 44, C.main) });
+  objects.find((o) => o.id === 'ocheck').base.fill = C.main;
+  return R.cleanProject({
+    format: R.FORMAT, version: R.VERSION, title: 'Match each animal to its home', lang: 'en',
+    desc: 'A matching activity: the camel lives in the desert, the polar bear in the Arctic, the frog in a pond, and the monkey in the rainforest.',
+    stage: { w: 1280, h: 720, bg: '#ffffff', fps: 24, frames: 24, loop: false, autoplay: false, still: 0 },
+    scheme: { name: 'Meadow', colours: SCHEMES.find((s) => s.name === 'Meadow').colours.slice() },
+    layers: [{ id: 'lplaces', name: 'Habitats' }, { id: 'lchips', name: 'Animals' }],
+    vars: [{ id: 'vscore', name: 'Score', start: 0 }],
+    scorm: { v: 'vscore', max: 4, pass: 0 },
+    sounds: [{ id: 'schime', name: 'Chime', kind: 'effect', dur: tplSounds().chime.dur, caption: '[a bright chime]' },
+      { id: 'sbonk', name: 'Bonk', kind: 'effect', dur: tplSounds().bonk.dur, caption: '[a low bonk]' },
+      { id: 'sfanfare', name: 'Fanfare', kind: 'effect', dur: tplSounds().fanfare.dur, caption: '[a happy fanfare]' }],
+    audio: { schime: tplSounds().chime.data, sbonk: tplSounds().bonk.data, sfanfare: tplSounds().fanfare.data },
+    markers: [{ id: 'mstart', name: 'Match them', f: 0, stop: true, desc: 'Four animals (camel, polar bear, frog, monkey) and four habitats (desert, Arctic, pond, rainforest). Put each animal in its home, then check.' }],
+    on: { sorted: [{ do: 'show', target: 'odone' }, { do: 'sound', s: 'sfanfare' }] },
+    objects
+  });
+}
+
+// Into the Templates dialog, before the sample.
+TEMPLATES.splice(TEMPLATES.findIndex((t) => t.id === 'sample'), 0,
+  { id: 'steps', name: 'Step by step (process)', blurb: 'The scientific method as a flowchart that builds itself, waiting at each of five steps, with a card of words for each and Next step and Back buttons. In the Studio colour scheme, so another scheme recolours all of it.',
+    make: () => scientificMethodProject() },
+  { id: 'flip', name: 'Flip cards', blurb: 'Three vocabulary cards. Activate one (click, tap, or Tab and Enter) to turn it over and read what the word means; again to turn it back.',
+    make: () => flipCardsProject() },
+  { id: 'match', name: 'Match them (drag and drop)', blurb: 'Drag four animals to their habitats, then Check my answers: right ones stay and score, wrong ones slide back to try again. Set up for an LMS (out of 4).',
+    make: () => matchHabitatsProject() });
+
+/* =====================================================================
+   18t. SVG DRAWINGS COME IN AS SHAPES (0.15.0)
+   A drawing from VCTREDTR (or any SVG file) becomes ANIMEDTR shapes you
+   can animate, part by part: a bird's wing can flap while its body
+   glides. Three ways in, all through addPictureFiles (section 8): the
+   Picture tool, a drop, and a paste (a file, or SVG code copied from
+   VCTREDTR's "Copy SVG code").
+
+   SAFETY FIRST. An SVG file is a little program-shaped document: it can
+   hold scripts, links to other sites, pictures from anywhere and XML
+   "entities" (text that expands itself, sometimes into gigabytes). So
+   it is only ever read as DATA, following the suite's SVG rules
+   (SUITE-STANDARD.md, section 8), the same way VCTREDTR and 3DEDTR do:
+     1. Size first: no file over 10 MB.
+     2. XML entities are refused outright (<!ENTITY anywhere: no).
+     3. DOMParser reads it (it never runs anything it reads), and then a
+        CLEAN COPY is made, element by element, keeping only drawing
+        elements (shapes, groups, gradients, text) and only attributes on
+        a fixed list, with every value checked. Scripts, pictures,
+        outside links, "on..." handlers, filters and masks never make it
+        into the copy. Nothing from the file is put in the page with
+        innerHTML, and the copy is never attached to the page.
+     4. <use> (a copy of another part) is expanded here, by us, with a
+        limit on how deep and how many, so a file that copies itself a
+        billion times stops early instead of freezing the browser.
+     5. Paper.js (already inside the page for Merge Shapes) reads the
+        clean copy into plain shapes: every transform is worked into the
+        points, and circles, polygons and arcs become outlines.
+     6. From then on it is all OUR numbers: an outline's points (checked
+        again by the runtime's path rules), a colour as #rrggbb, sizes.
+        The preview in the dialog is drawn from those numbers, never from
+        the file's markup.
+
+   WHAT COMES ACROSS
+     - Every shape becomes an outline (filled, or a line when it has no
+       fill), with its fill colour, outline colour and width, and see-
+       through-ness. Text becomes a text box (in ANIMEDTR's fonts, so a
+       screen reader can read it).
+     - Gradients become one flat colour (their average). Clipping,
+       masks, filters, patterns, dashes and pictures inside the drawing
+       are left out, and the dialog says which.
+     - "Non-zero" fills (SVG's usual rule, where overlapping pieces of one
+       shape stay filled) are worked out with Paper.js, so they look the
+       same with ANIMEDTR's "even-odd" rule (where overlaps make holes).
+
+   HOW IT IS GROUPED (the dialog asks)
+     - As one group (the usual): move the whole drawing, or open the
+       group to animate any shape in it.
+     - A group for each of its own top-level groups (when it has two or
+       more: a character's head, arms and legs from VCTREDTR's layers),
+       so each one can be animated on its own.
+     - As one picture: flat, like a PNG. Always possible, and the only
+       choice when there are too many shapes for a lesson.
+   Inside a group or a clip (which cannot hold groups) the shapes are
+   added straight in, loose.
+   ===================================================================== */
+const SVG_IN = {
+  bytes: 10e6,          // the biggest file read at all
+  nodes: 20000,         // elements in the clean copy (counting <use> copies)
+  useDepth: 8,          // how many times a copy may hold a copy
+  parts: 200,           // shapes and text boxes made from one drawing (a lesson holds 500 things)
+  pictureSide: 2400     // "As a picture": the longest side, in pixels
+};
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const XLINK_NS = 'http://www.w3.org/1999/xlink';
+
+/* ----- 1-4: the clean copy ----- */
+// The elements that are kept. Anything else (script, image, foreignObject, filter, mask,
+// clipPath, pattern, marker, animate...) is left out, with what it was counted for the note.
+const SVG_KEEP = new Set(['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon',
+  'text', 'tspan', 'defs', 'symbol', 'use', 'linearGradient', 'radialGradient', 'stop', 'title', 'desc', 'a', 'switch']);
+// What a left-out element is called in the dialog's note ("Left out: 2 pictures, 1 mask").
+const SVG_LEFT_OUT = { image: 'picture', foreignObject: 'web content', script: 'script (never run)', clipPath: 'clipping shape',
+  mask: 'mask', filter: 'filter', pattern: 'pattern', marker: 'line-end marker', animate: 'animation', animateTransform: 'animation',
+  animateMotion: 'animation', set: 'animation', iframe: 'web content', video: 'video', audio: 'sound', mpath: 'animation' };
+// The attributes that are kept, everywhere. (Namespaced ones such as xlink:href are handled on their own.)
+const SVG_ATTR_KEEP = new Set(['id', 'class', 'transform', 'd', 'points', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'cx', 'cy', 'r', 'rx', 'ry',
+  'fx', 'fy', 'width', 'height', 'viewBox', 'offset', 'gradientUnits', 'gradientTransform', 'spreadMethod',
+  'fill', 'stroke', 'stroke-width', 'opacity', 'fill-opacity', 'stroke-opacity', 'fill-rule', 'display', 'visibility', 'color',
+  'stop-color', 'stop-opacity', 'font-size', 'font-weight', 'font-style', 'text-anchor', 'style', 'stroke-dasharray']);
+// The properties that may come from a style="" attribute or a <style> sheet.
+const SVG_STYLE_KEEP = new Set(['fill', 'stroke', 'stroke-width', 'opacity', 'fill-opacity', 'stroke-opacity', 'fill-rule', 'display',
+  'visibility', 'color', 'stop-color', 'stop-opacity', 'font-size', 'font-weight', 'font-style', 'text-anchor', 'stroke-dasharray']);
+/**
+ * Is this attribute value safe to keep? Plain numbers, words and colours are; a url() only
+ * when it points INSIDE the file (url(#name), for a gradient). Never a script address, CSS
+ * code, an escape or anything very long.
+ */
+function svgValueOk(name, v) {
+  if (typeof v !== 'string' || v.length > (name === 'd' || name === 'points' ? 2e6 : 2000)) return false;
+  if (/javascript:|data:|expression\s*\(|@import|\\|<|>/i.test(v)) return false;
+  const urls = v.match(/url\s*\(/gi);
+  if (urls) return (name === 'fill' || name === 'stroke') && /^\s*url\(\s*["']?#[\w.:-]+["']?\s*\)(\s+[#\w(),.\s-]*)?$/.test(v);
+  return true;
+}
+/** A style="" attribute (or a sheet's rule) cut down to the properties on the list, with safe values. */
+function svgStyleDecls(text) {
+  const out = [];
+  String(text).split(';').slice(0, 60).forEach((part) => {
+    const i = part.indexOf(':');
+    if (i < 0) return;
+    const k = part.slice(0, i).trim().toLowerCase(), v = part.slice(i + 1).replace(/!important/i, '').trim();
+    if (SVG_STYLE_KEEP.has(k) && v && svgValueOk(k, v)) out.push([k, v]);
+  });
+  return out;
+}
+/**
+ * A <style> sheet, read as data: only the simplest rules, the kind design apps write
+ * (".cls-1 { fill: #2563eb; }", "#wing, path { ... }"). Each rule is a list of selectors
+ * (a class, an id or an element name) and its kept properties. Anything fancier is skipped.
+ */
+function svgSheetRules(text) {
+  const rules = [];
+  const css = String(text).slice(0, 200000).replace(/\/\*[\s\S]*?\*\//g, '');
+  const re = /([^{}]+)\{([^{}]*)\}/g;
+  let m;
+  while ((m = re.exec(css)) && rules.length < 500) {
+    const sels = m[1].split(',').map((s) => s.trim()).filter((s) => /^([.#]?[A-Za-z_][\w-]*)$/.test(s));
+    const decls = svgStyleDecls(m[2]);
+    if (sels.length && decls.length) rules.push({ sels, decls });
+  }
+  return rules;
+}
+/** Does a simple selector (".a", "#b" or "path") match this element of the original file? */
+function svgSelMatch(sel, node) {
+  if (sel[0] === '.') return (' ' + (node.getAttribute('class') || '') + ' ').includes(' ' + sel.slice(1) + ' ');
+  if (sel[0] === '#') return node.getAttribute('id') === sel.slice(1);
+  return node.localName === sel;
+}
+/** A friendly name in the file, if it has one: Illustrator's data-name or Inkscape's label. (Ids are names already: Paper.js reads them.) */
+function svgNameOf(node) {
+  let n = node.getAttribute('data-name') || node.getAttributeNS('http://www.inkscape.org/namespaces/inkscape', 'label') || '';
+  n = n.replace(/[_-]+/g, ' ').replace(/[^\w .,'()&+]/g, '').trim().slice(0, 60);
+  if (!n || /^(path|g|rect|circle|ellipse|polygon|polyline|line|svg|text|tspan|use|shape|group|layer|object|svg \d+|cls) ?\d*$/i.test(n)) return '';
+  return n;
+}
+
+/**
+ * Read SVG text into a clean copy (steps 2 to 4). Returns
+ *   { svg, title, desc, leftOut: { word: count } }
+ * or throws an Error with a message for the person.
+ */
+function cleanSvgForImport(text) {
+  if (/<!ENTITY/i.test(text)) throw new Error('That SVG uses XML entities, which ANIMEDTR never reads (they can be used to freeze a browser).');
+  const parsed = new DOMParser().parseFromString(text, 'image/svg+xml');
+  const src = parsed.documentElement;
+  if (!src || src.localName !== 'svg' || src.namespaceURI !== SVG_NS || parsed.getElementsByTagName('parsererror').length) {
+    throw new Error('That file is not a readable SVG drawing.');
+  }
+  const leftOut = {};
+  const note = (word) => { leftOut[word] = (leftOut[word] || 0) + 1; };
+  // The <style> sheets first (their rules are written onto each element below, so they need no sheet).
+  const rules = [];
+  src.querySelectorAll('style').forEach((s) => rules.push(...svgSheetRules(s.textContent)));
+  let count = 0;
+  const copy = (node) => {
+    const name = node.localName;
+    if (node.namespaceURI !== SVG_NS) return null;                    // (another kind of markup inside: skipped)
+    if (name === 'style') return null;                                 // (already read above)
+    if (!SVG_KEEP.has(name)) { if (SVG_LEFT_OUT[name]) note(SVG_LEFT_OUT[name]); return null; }
+    if (++count > SVG_IN.nodes) throw new Error('That SVG has too many parts to bring in (over ' + SVG_IN.nodes + ').');
+    // A link (<a>) and a <switch> are just groups here: the link itself is not kept.
+    const out = document.createElementNS(SVG_NS, name === 'a' || name === 'switch' ? 'g' : name);
+    for (const a of [...node.attributes]) {
+      if (a.namespaceURI || !SVG_ATTR_KEEP.has(a.name)) continue;     // (on... handlers, href and the rest: never copied)
+      if (a.name === 'style' || !svgValueOk(a.name, a.value)) continue;
+      out.setAttribute(a.name, a.value);
+    }
+    if (out.getAttribute('stroke-dasharray')) { if (!/^\s*(none|0)\s*$/.test(out.getAttribute('stroke-dasharray'))) note('dashed line'); out.removeAttribute('stroke-dasharray'); }
+    // Style: the sheet's rules, then the element's own style="" (which wins), as one style attribute.
+    const decls = [];
+    rules.forEach((r) => { if (r.sels.some((s) => svgSelMatch(s, node))) decls.push(...r.decls); });
+    if (node.hasAttribute('style')) decls.push(...svgStyleDecls(node.getAttribute('style')));
+    const kept = decls.filter(([k]) => k !== 'stroke-dasharray');
+    if (decls.some(([k, v]) => k === 'stroke-dasharray' && !/^\s*(none|0)\s*$/.test(v))) note('dashed line');
+    if (kept.length) out.setAttribute('style', kept.map(([k, v]) => k + ':' + v).join(';'));
+    // <use>: only a link to a part of this same file (#name) is kept, to be expanded below.
+    if (name === 'use') {
+      const href = node.getAttribute('href') || node.getAttributeNS(XLINK_NS, 'href') || '';
+      if (/^#[\w.:-]{1,200}$/.test(href)) out.setAttribute('data-use', href.slice(1)); else return null;
+    }
+    // SVG's rule: a rounded rectangle with only rx (or only ry) uses it for both (Paper.js would not).
+    if (name === 'rect') {
+      if (out.hasAttribute('rx') && !out.hasAttribute('ry')) out.setAttribute('ry', out.getAttribute('rx'));
+      else if (out.hasAttribute('ry') && !out.hasAttribute('rx')) out.setAttribute('rx', out.getAttribute('ry'));
+    }
+    // A friendly name (Illustrator's data-name, Inkscape's label) is kept for naming the shapes.
+    const friendly = svgNameOf(node);
+    if (friendly) out.setAttribute('data-n', friendly);
+    for (const child of node.childNodes) {
+      if (child.nodeType === 1) { const c = copy(child); if (c) out.append(c); }
+      else if (child.nodeType === 3 && (name === 'text' || name === 'tspan' || name === 'title' || name === 'desc')) out.append(document.createTextNode(child.nodeValue.slice(0, 4000)));
+    }
+    return out;
+  };
+  const svg = copy(src);
+  // The drawing's own title and description (VCTREDTR writes them: its alt text).
+  const kid = (tag) => [...svg.children].find((c) => c.localName === tag);
+  const title = kid('title') ? kid('title').textContent.replace(/\s+/g, ' ').trim().slice(0, 300) : '';
+  const desc = kid('desc') ? kid('desc').textContent.replace(/\s+/g, ' ').trim().slice(0, 300) : '';
+  svg.querySelectorAll('title, desc').forEach((t) => t.remove());
+  expandSvgUses(svg);
+  joinSvgTextLines(svg);
+  // Some apps (Paper.js, and so VCTREDTR) add " 1" to every id to keep them apart ("Wing 1",
+  // "Beak 1"). When EVERY shape's id ends that way, it is not part of the name: taken off.
+  const shapeIds = [...svg.querySelectorAll('[id]')].filter((n) => !/Gradient$|^stop$/.test(n.localName));
+  if (shapeIds.length > 1 && shapeIds.every((n) => /[ _-]1$/.test(n.id))) shapeIds.forEach((n) => n.setAttribute('id', n.id.slice(0, -2)));
+  // Paper.js names each shape from its id, so a friendly name (data-n) becomes the id now.
+  // (Only gradients are pointed at by id after the <use>s are expanded, and they keep theirs.)
+  svg.querySelectorAll('[data-n]').forEach((n) => {
+    if (!/Gradient$|^stop$/.test(n.localName)) n.setAttribute('id', n.getAttribute('data-n'));
+    n.removeAttribute('data-n');
+  });
+  return { svg, title, desc, leftOut };
+}
+/**
+ * Step 4: each <use> becomes a group holding a copy of what it points at, moved by its
+ * x and y. A copy can hold more <use>s, so this goes round again, at most SVG_IN.useDepth
+ * times, and stops when the drawing would grow past SVG_IN.nodes elements. Whatever is
+ * still a <use> after that is dropped.
+ */
+function expandSvgUses(svg) {
+  const byId = new Map();
+  svg.querySelectorAll('[id]').forEach((n) => { if (!byId.has(n.id)) byId.set(n.id, n); });
+  let total = svg.querySelectorAll('*').length;
+  for (let round = 0; round < SVG_IN.useDepth; round++) {
+    // Only the copies that SHOW (not ones inside <defs> or a <symbol>, which show only when
+    // something uses them): a file cannot fill the budget with copies nobody sees.
+    const uses = [...svg.querySelectorAll('use')].filter((u) => !u.closest('defs, symbol'));
+    if (!uses.length) break;
+    for (const u of uses) {
+      const target = byId.get(u.getAttribute('data-use'));
+      // (Not found, or pointing at itself or a group around itself: dropped.)
+      if (!target || target === u || target.contains(u)) { u.remove(); continue; }
+      const size = target.querySelectorAll('*').length + 1;
+      if (total + size > SVG_IN.nodes) { u.remove(); continue; }
+      total += size;
+      const g = document.createElementNS(SVG_NS, 'g');
+      // Its look (fill, stroke...) passes down to the copy, as in SVG.
+      for (const a of [...u.attributes]) if (!['x', 'y', 'width', 'height', 'transform', 'data-use', 'id'].includes(a.name)) g.setAttribute(a.name, a.value);
+      const x = parseFloat(u.getAttribute('x')) || 0, y = parseFloat(u.getAttribute('y')) || 0;
+      g.setAttribute('transform', (u.getAttribute('transform') || '') + ' translate(' + x + ' ' + y + ')');
+      // A <symbol> is a group of parts; anything else is copied whole.
+      const parts = target.localName === 'symbol' ? [...target.childNodes] : [target];
+      parts.forEach((p) => { const c = p.cloneNode(true); if (c.nodeType === 1) { c.removeAttribute('id'); c.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id')); } g.append(c); });
+      u.replaceWith(g);
+    }
+  }
+  svg.querySelectorAll('use').forEach((u) => u.remove());
+  svg.querySelectorAll('symbol').forEach((s) => s.remove());         // (a symbol only ever shows through a <use>)
+  // What is left in <defs> is only needed if it is a colour blend (a gradient).
+  svg.querySelectorAll('defs > *').forEach((n) => { if (!/Gradient$/.test(n.localName)) n.remove(); });
+}
+/**
+ * VCTREDTR writes text with more than one line as one <text> holding a <tspan> per line,
+ * each placed with its own x and y. Paper.js would run the lines together, so the lines
+ * are joined here with line breaks, at the first line's place: it becomes ONE text box of
+ * several lines in ANIMEDTR. Very many tspans (text on a curve: one per letter) become
+ * one line.
+ */
+function joinSvgTextLines(svg) {
+  svg.querySelectorAll('text').forEach((t) => {
+    const spans = [...t.children].filter((c) => c.localName === 'tspan');
+    if (!spans.length) return;
+    const lines = spans.length > 12 || !spans.every((s) => s.hasAttribute('y'))
+      ? [spans.map((s) => s.textContent).join('')]
+      : spans.map((s) => s.textContent.replace(/\s+/g, ' ').trim());
+    const first = spans[0];
+    ['x', 'y'].forEach((k) => { if (!t.hasAttribute(k) && first.hasAttribute(k)) t.setAttribute(k, first.getAttribute(k).split(/[\s,]+/)[0]); });
+    // The first line's own look (a tspan can set its own size or colour) passes to the whole text.
+    for (const a of [...first.attributes]) if (a.name !== 'x' && a.name !== 'y' && !t.hasAttribute(a.name)) t.setAttribute(a.name, a.value);
+    t.textContent = lines.filter(Boolean).join('\n');
+  });
+}
+/** The drawing's size from a clean <svg>: its viewBox, else its width and height, else null (Paper.js measures it). */
+function svgArtboard(svg) {
+  const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  if (vb.length === 4 && vb.every(Number.isFinite) && vb[2] > 0 && vb[3] > 0) return { x: vb[0], y: vb[1], w: vb[2], h: vb[3] };
+  const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) && n > 0 && !/%/.test(v || '') ? n : null; };
+  const w = num(svg.getAttribute('width')), h = num(svg.getAttribute('height'));
+  return w && h ? { x: 0, y: 0, w, h } : null;
+}
+
+/* ----- 5-6: shapes, as our own numbers ----- */
+/** A Paper.js colour as #rrggbb and how solid it is (a gradient: the average of its stops). Or null for none. */
+function svgPaperColour(c) {
+  if (!c) return null;
+  let r, g, b, a;
+  if (c.gradient) {
+    const stops = c.gradient.stops;
+    if (!stops.length) return null;
+    r = g = b = a = 0;
+    stops.forEach((s) => { r += s.color.red; g += s.color.green; b += s.color.blue; a += s.color.alpha; });
+    r /= stops.length; g /= stops.length; b /= stops.length; a /= stops.length;
+  } else { r = c.red; g = c.green; b = c.blue; a = c.alpha; }
+  if (![r, g, b, a].every(Number.isFinite)) return null;
+  const hex = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, '0');
+  return { hex: '#' + hex(r) + hex(g) + hex(b), alpha: Math.max(0, Math.min(1, a)), gradient: !!c.gradient };
+}
+/**
+ * An outline's points as path text short enough for a lesson (LIMITS.pathChars): two
+ * decimals, then one, then whole numbers. Null if it is still too long.
+ */
+function svgPathText(item) {
+  for (const prec of [2, 1, 0]) {
+    const d = item.getPathData(null, prec);
+    if (d && d.length <= R.LIMITS.pathChars) return d;
+  }
+  return null;
+}
+/**
+ * Steps 5 and 6: the clean <svg> into a list of pieces, in the drawing's own numbers (its
+ * top-left corner is 0, 0). Each piece is one of
+ *   { kind: 'path', d, box, fill, stroke, strokeW, open, opacity, name, top }
+ *   { kind: 'text', text, box, size, bold, italic, align, rot, fill, opacity, name, top }
+ * where top is the number of the drawing's top-level group it is in (or -1), and box its
+ * bounds { x, y, w, h }. Also returns the drawing's size, the top-level groups' names, and
+ * notes on what changed (gradients made flat, shapes too detailed to keep).
+ */
+function svgPieces(clean) {
+  const sc = mergeEngine();
+  if (!sc) throw new Error('The drawing engine is missing, so the SVG cannot be read.');
+  const svg = clean.svg;
+  const board = svgArtboard(svg);
+  ['width', 'height', 'viewBox'].forEach((a) => svg.removeAttribute(a));   // (so Paper.js keeps the file's own units)
+  // applyMatrix: false keeps each part's transform as a matrix of its own, so a part drawn
+  // twice the size (scale(2)) can have its outline width doubled too (below).
+  const root = sc.project.importSVG(svg, { insert: false, expandShapes: true, applyMatrix: false });
+  if (!root) throw new Error('Nothing could be read from that SVG.');
+  const kids = (it) => (it.children ? [...it.children] : []);
+  // Paper.js can add a box that clips to the file's frame: not wanted (the group's box does that job).
+  const all = []; const gather = (it) => { all.push(it); if (it.className === 'Group') kids(it).forEach(gather); };
+  gather(root);
+  all.forEach((it) => { if (it.clipMask) it.remove(); });
+  const area = board || (root.bounds.width > 0 ? { x: root.bounds.x, y: root.bounds.y, w: root.bounds.width, h: root.bounds.height } : null);
+  if (!area) throw new Error('That SVG has nothing in it to draw.');
+  root.translate(new sc.Point(-area.x, -area.y));                       // (so the drawing starts at 0, 0)
+  const pieces = [], notes = { gradients: 0, tooLong: 0, crossings: 0 };
+  const tops = [];                                                      // the drawing's own top-level groups
+  // A drawing wrapped in one group (VCTREDTR wraps the whole drawing so) has its top-level
+  // groups one step further in: that wrapper does not count as one of them.
+  let base = root;
+  while (kids(base).filter((c) => c.visible).length === 1 && kids(base).find((c) => c.visible).className === 'Group') base = kids(base).find((c) => c.visible);
+  const walk = (it, opacity, groupName, top) => {
+    if (!it.visible) return;
+    const op = opacity * (Number.isFinite(it.opacity) ? it.opacity : 1);
+    if (it.className === 'Group') {
+      let t = top;
+      if (it.parent === base && kids(it).length) { t = tops.length; tops.push(svgCleanName(it.name) || 'Group ' + (tops.length + 1)); }
+      kids(it).forEach((c) => walk(c, op, svgCleanName(it.name) || groupName, t));
+      return;
+    }
+    if (it.className === 'Path' || it.className === 'CompoundPath') {
+      let fill = svgPaperColour(it.fillColor);
+      const stroke = it.strokeWidth > 0 ? svgPaperColour(it.strokeColor) : null;
+      // The part with every transform above it worked into its points (the drawing's own numbers).
+      const k = scaleOfPaper(it);
+      // (Its copy works its OWN matrix into its points as applyMatrix is switched on; then the
+      // transforms of the groups it is in are worked in too.)
+      let shape = it.clone({ insert: false });
+      shape.applyMatrix = true;
+      // SVG's usual fill rule is "non-zero" (overlapping pieces of one shape stay filled); ANIMEDTR's
+      // is even-odd. Paper.js untangles the shape so both rules agree (the same as its Merge does).
+      // (Done before the groups' transforms are worked in: Paper.js loses them otherwise.)
+      if (fill && it.fillRule !== 'evenodd' && (shape.className === 'CompoundPath' || shape.getCrossings().length)) {
+        try { shape = shape.resolveCrossings().reorient(true, true); notes.crossings++; } catch (err) { /* (kept as it was) */ }
+        shape.applyMatrix = true;
+      }
+      if (it.parent) shape.transform(it.parent.globalMatrix);
+      // A line that is not closed and covers no area (an SVG <line>, a polyline) is a line, whatever its fill says.
+      const isOpen = shape.className === 'Path' ? !shape.closed : shape.children.every((c) => !c.closed);
+      if (fill && stroke && isOpen && Math.abs(shape.area) < 0.5) fill = null;
+      if (!fill && !stroke) return;                                     // (nothing to see)
+      if ((fill && fill.gradient) || (stroke && stroke.gradient)) notes.gradients++;
+      const d = svgPathText(shape);
+      if (!d) { notes.tooLong++; return; }
+      const b = shape.bounds;
+      pieces.push({ kind: 'path', d, box: { x: b.x, y: b.y, w: Math.max(b.width, 1), h: Math.max(b.height, 1) },
+        fill: fill ? fill.hex : stroke.hex, open: !fill,
+        stroke: fill && stroke ? stroke.hex : '', strokeW: stroke ? Math.min(100, it.strokeWidth * k) : 0,
+        opacity: op * (fill ? fill.alpha : stroke.alpha), name: svgCleanName(it.name), group: groupName, top });
+      return;
+    }
+    if (it.className === 'PointText' && it.content && it.content.trim()) {
+      const fill = svgPaperColour(it.fillColor) || { hex: '#000000', alpha: 1 };
+      // The text's own box (its size before turning), put where it shows: every transform above
+      // it (globalMatrix) moves its middle, stretches it (k) and may turn it (rot).
+      const m = it.globalMatrix, k = scaleOfPaper(it);
+      const turn = Math.atan2(m.b, m.a) * 180 / Math.PI, rot = Math.abs(turn) > 0.5 ? Math.round(turn * 10) / 10 : 0;
+      const ib = it.internalBounds, c = m.transform(ib.center);
+      const w = ib.width * k, h = ib.height * k;
+      const just = it.justification === 'center' ? 'center' : it.justification === 'right' ? 'right' : 'left';
+      pieces.push({ kind: 'text', text: it.content.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).join('\n').trim().slice(0, R.LIMITS.text),
+        box: { x: c.x - w / 2, y: c.y - h / 2, w, h }, size: Math.max(6, Math.min(400, it.fontSize * k)),
+        bold: /bold|[6-9]00/.test(String(it.fontWeight)), italic: /italic/.test(String(it.fontWeight)) || /italic/.test(String(it.fontStyle || '')),
+        align: just, rot, fill: fill.hex, opacity: op * fill.alpha, name: '', group: groupName, top });
+    }
+  };
+  kids(root).forEach((c) => walk(c, 1, '', -1));
+  return { pieces, size: { w: area.w, h: area.h }, tops, notes };
+}
+/** How much an item's transform stretches it (for stroke widths and text sizes). */
+function scaleOfPaper(it) {
+  const m = it.globalMatrix || it.matrix;
+  return m ? Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1 : 1;
+}
+/** A name from the file made tidy, or '' when it is just a number like "path123". */
+function svgCleanName(n) {
+  n = String(n || '').replace(/[_-]+/g, ' ').replace(/[^\w .,'()&+]/g, '').trim().slice(0, 60);
+  if (!n || /^(path|g|rect|circle|ellipse|polygon|polyline|line|svg|text|tspan|use|shape|group|layer|object|cls|vctr title|vctr desc) ?\d*$/i.test(n)) return '';
+  return n;
+}
+
+/* ----- The preview (from our numbers) ----- */
+/** An <svg> drawn from the pieces: for the dialog's preview, and for "As a picture". */
+function svgFromPieces(pieces, size, forPicture) {
+  const s = svgEl('svg', { viewBox: '0 0 ' + size.w + ' ' + size.h, xmlns: SVG_NS });
+  if (!forPicture) { s.setAttribute('aria-hidden', 'true'); s.setAttribute('focusable', 'false'); }
+  pieces.forEach((p) => {
+    if (p.kind === 'path') {
+      const a = { d: p.d, 'fill-rule': 'evenodd', 'stroke-linejoin': 'round', 'stroke-linecap': 'round', opacity: +p.opacity.toFixed(3) };
+      if (p.open) Object.assign(a, { fill: 'none', stroke: p.fill, 'stroke-width': p.strokeW || 4 });
+      else { a.fill = p.fill; if (p.stroke && p.strokeW > 0) Object.assign(a, { stroke: p.stroke, 'stroke-width': p.strokeW }); }
+      s.append(svgEl('path', a));
+    } else {
+      const x = p.align === 'center' ? p.box.x + p.box.w / 2 : p.align === 'right' ? p.box.x + p.box.w : p.box.x;
+      const t = svgEl('text', { x, y: p.box.y + p.size * 0.95, 'font-size': p.size, fill: p.fill, opacity: +p.opacity.toFixed(3),
+        'font-family': R.fontFamily(R.DEFAULT_FONT), 'font-weight': p.bold ? 700 : 400, 'font-style': p.italic ? 'italic' : 'normal',
+        'text-anchor': p.align === 'center' ? 'middle' : p.align === 'right' ? 'end' : 'start' });
+      if (p.rot) t.setAttribute('transform', 'rotate(' + p.rot + ' ' + (p.box.x + p.box.w / 2) + ' ' + (p.box.y + p.box.h / 2) + ')');
+      // One <tspan> a line (textContent: always plain words, never markup).
+      p.text.split('\n').forEach((line, i) => { const ts = svgEl('tspan', { x, dy: i ? p.size * 1.2 : 0 }); ts.textContent = line; t.append(ts); });
+      s.append(t);
+    }
+  });
+  return s;
+}
+
+/* ----- The dialog ----- */
+/**
+ * Ask how the drawing comes in. Resolves to 'one' (one group), 'tops' (a group for each
+ * of its top-level groups), 'loose' (shapes straight into the group or clip that is open),
+ * 'picture', or null (Cancel).
+ */
+function askSvgHow(name, read, room) {
+  return new Promise((ok) => {
+    const dlg = $('svgDlg'), { pieces, tops, notes } = read;
+    const paths = pieces.filter((p) => p.kind === 'path').length, texts = pieces.length - paths;
+    const loose = !!entered || inClip();
+    const tooMany = pieces.length > Math.min(SVG_IN.parts, room);
+    $('svgDlgText').textContent = name + ': ' + (pieces.length ? plural(paths, 'shape') + (texts ? ' and ' + texts + (texts === 1 ? ' text box' : ' text boxes') : '') : 'nothing that ANIMEDTR can draw as shapes') + '.';
+    // What changed on the way in.
+    const said = [];
+    const left = Object.entries(read.leftOut).filter(([w]) => w !== 'dashed line').map(([w, n]) => plural(n, w));
+    if (left.length) said.push('Left out: ' + left.join(', ') + '.');
+    if (read.leftOut['dashed line']) said.push('Dashed lines become solid.');
+    if (notes.gradients) said.push('Colour blends (gradients) become one flat colour each.');
+    if (notes.tooLong) said.push(plural(notes.tooLong, 'shape') + ' had too many points to keep as shapes.');
+    if (tooMany) said.push('That is more shapes than ' + (pieces.length > SVG_IN.parts ? 'one drawing can bring in (' + SVG_IN.parts + ')' : 'there is room for in this ' + (inClip() ? 'clip' : 'lesson') + ' (' + room + ' more)') + ', so it can only come in as a picture.');
+    $('svgDlgNotes').textContent = said.join(' ');
+    $('svgDlgNotes').hidden = !said.length;
+    // The preview, drawn from our numbers.
+    $('svgPreview').replaceChildren(svgFromPieces(pieces, read.size, false));
+    // The choices that make sense here.
+    const opts = [];
+    if (!tooMany && pieces.length) {
+      if (loose) opts.push(['loose', 'As shapes', inClip() ? 'Straight into this clip (a clip holds shapes, not groups).' : 'Straight into this group (a group cannot hold another group).']);
+      else {
+        opts.push(['one', 'As one group of shapes', 'Move the whole drawing, or open the group (double-click, or Enter) to animate any shape in it.']);
+        if (tops.length >= 2) opts.push(['tops', 'A group for each of its ' + tops.length + ' groups', 'Each of ' + listWords(tops) + ' can be animated on its own.']);
+      }
+    }
+    opts.push(['picture', 'As one picture', 'Flat, like a PNG: it moves as one thing, and its shapes cannot be changed.']);
+    const box = $('svgHow');
+    box.replaceChildren(el('legend', { text: 'Bring it in' }), ...opts.map(([v, title, more], i) => el('label', { class: 'ex-kind' },
+      el('input', { type: 'radio', name: 'svgHow', value: v, checked: i === 0 }),
+      el('span', {}, el('strong', { text: title }), ' (' + more + ')'))));
+    const done = (v) => { dlg.removeEventListener('close', onClose); ok(v); };
+    const onClose = () => done(dlg.returnValue === 'add' ? (box.querySelector('input:checked') || {}).value || null : null);
+    dlg.returnValue = '';
+    dlg.addEventListener('close', onClose);
+    dlg.showModal();
+    $('svgAdd').focus();
+  });
+}
+$('svgAdd').addEventListener('click', () => $('svgDlg').close('add'));
+/** "Head, Arms and Legs" (the first few, then "and 3 more"). */
+function listWords(words) {
+  const w = words.slice(0, 4), more = words.length - w.length;
+  if (more) return w.join(', ') + ' and ' + more + ' more';
+  return w.length > 1 ? w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1] : w[0];
+}
+
+/* ----- Making the objects ----- */
+/**
+ * Read an SVG (its text) and bring it in, the way the person picks. name: what to call it
+ * (the file's name). at: a stage point to centre it on (a drop), or the middle of the view.
+ */
+async function addSvgDrawing(text, name, at) {
+  if (playing) stopPlayback();
+  announce('Reading ' + name + '\u2026');
+  await new Promise((ok) => setTimeout(ok, 30));                        // (so the message shows before the work)
+  const clean = cleanSvgForImport(text);
+  const read = svgPieces(clean);
+  read.leftOut = clean.leftOut;
+  if (!read.pieces.length) {
+    const left = Object.keys(clean.leftOut);
+    throw new Error('There is nothing in ' + name + ' that ANIMEDTR can draw' + (left.length ? ' (it only has: ' + left.join(', ') + ').' : '.'));
+  }
+  const ci = containerInfo(), layer = layerById(ci.layer);
+  if (!ci.parent && layer && layer.locked) { announce('The layer ' + layer.name + ' is locked. Unlock it in the timeline, or pick another layer.'); return; }
+  const cap = inClip() ? R.LIMITS.clipObjects : R.LIMITS.objects;
+  const room = cap - project.objects.length - (entered || inClip() ? 0 : Math.max(1, read.tops.length));
+  const how = await askSvgHow(name, read, room);
+  if (!how) return;
+  const label = clean.title ? clean.title + (clean.desc ? '. ' + clean.desc : '') : clean.desc;
+  if (how === 'picture') { await addSvgPicture(read, name, label, at); return; }
+  // Its size: the same rule as a picture (fits in about 60% of the stage or group), and
+  // a tiny drawing (an icon) is made bigger, to about 240 across.
+  const { w, h } = read.size;
+  const k = Math.min(0.6 * ci.box.w / w, 0.6 * ci.box.h / h, Math.max(1, 240 / Math.max(w, h)));
+  const c = at ? toLocal(at, ci.m) : viewCentre(ci);
+  const ox = c.x - w * k / 2, oy = c.y - h * k / 2;                  // where the drawing's corner lands
+  commit();
+  const made = [];
+  // Names: the shape's own, else its group's with a number ("Wing 2"), else "Shape 3".
+  const counts = {};
+  const nameFor = (p) => {
+    if (p.name) return p.name;
+    if (p.kind === 'text') return p.text.split('\n')[0].slice(0, 40);   // (a text box is named by its words, as usual)
+    const word = p.group || 'Shape';
+    counts[word] = (counts[word] || 0) + 1;
+    return word + ' ' + counts[word];
+  };
+  /** One piece as an object, in a container's numbers: its corner at (x0, y0), stretched by s. */
+  const objectFor = (p, parent, layerId, x0, y0, s, inGroup) => {
+    const box = { x: x0 + p.box.x * s, y: y0 + p.box.y * s, w: p.box.w * s, h: p.box.h * s };
+    const o = makeObject(p.kind === 'text' ? 'text' : 'path', { parent, layer: layerId }, box, { name: nameFor(p) });
+    o.base.fill = p.fill; o.base.opacity = Math.round(p.opacity * 1000) / 1000;
+    if (p.kind === 'path') {
+      o.d = p.d; o.vb = [p.box.x, p.box.y, p.box.w, p.box.h]; o.open = p.open;
+      // A line keeps its width; the outline width shows on screen as it is (it does not stretch), so it is scaled here.
+      o.stroke = p.stroke; o.strokeW = Math.round(Math.min(100, p.strokeW * (inGroup ? k : s)) * 10) / 10;
+      if (o.strokeW > 0 && o.strokeW < 0.5) o.strokeW = 0.5;
+      o.decorative = inGroup;                                           // (a part: the group is what is read)
+    } else {
+      Object.assign(o, { text: p.text, size: Math.round(p.size * s * 10) / 10, bold: p.bold, italic: p.italic, align: p.align, font: R.DEFAULT_FONT });
+      o.base.rot = Math.round(p.rot * 10) / 10;
+      // Room so the words do not wrap onto a second line in ANIMEDTR's font (which is a little different).
+      const extra = o.base.w * 0.25 + o.size * 0.6;
+      o.base.x -= p.align === 'center' ? extra / 2 : p.align === 'right' ? extra : 0;
+      o.base.w += extra;
+    }
+    onThisPage(o);                                                      // (in a flipbook: on the page you are on)
+    return o;
+  };
+  /** A group from some pieces: its box is theirs, in the drawing's numbers; the group is placed by k. */
+  const groupFor = (list, gname) => {
+    const x = Math.min(...list.map((p) => p.box.x)), y = Math.min(...list.map((p) => p.box.y));
+    const gw = Math.max(1, Math.max(...list.map((p) => p.box.x + p.box.w)) - x), gh = Math.max(1, Math.max(...list.map((p) => p.box.y + p.box.h)) - y);
+    const g = makeObject('group', { parent: '', layer: ci.layer }, { x: ox + x * k, y: oy + y * k, w: gw * k, h: gh * k }, { name: gname, gw, gh });
+    onThisPage(g);
+    made.push(g);
+    list.forEach((p) => made.push(objectFor(p, g.id, ci.layer, -x, -y, 1, true)));
+    return g;
+  };
+  if (how === 'loose' || read.pieces.length === 1) {
+    read.pieces.forEach((p) => { const o = objectFor(p, ci.parent, ci.layer, ox, oy, k, false); if (read.pieces.length === 1 && !p.name) o.name = name; made.push(o); });
+  } else if (how === 'tops') {
+    // One group for each top-level group; shapes outside any group go in a group of their own.
+    const sets = read.tops.map((t, i) => [t, read.pieces.filter((p) => p.top === i)]);
+    const rest = read.pieces.filter((p) => p.top < 0);
+    if (rest.length) sets.push(['Other shapes', rest]);
+    sets.forEach(([t, list]) => {
+      if (!list.length) return;
+      if (list.length === 1) { const o = objectFor(list[0], '', ci.layer, ox, oy, k, false); o.name = t; made.push(o); }
+      else groupFor(list, t);
+    });
+  } else {
+    const g = groupFor(read.pieces, name);
+    g.label = label;
+  }
+  if (made.length === 1 && label && !made[0].label) made[0].label = label;
+  // In the lesson's stacking order: on top of everything (in the open group: after its last part).
+  project.objects.push(...made);
+  const top = made.filter((o) => o.parent === ci.parent);
+  setSelection(top.map((o) => o.id), true);
+  stageKey = ''; inspectorDirty = true;
+  // Ask what it shows (as for a picture), unless the file said already.
+  if (!label && top.length === 1) { settings.open.access = true; saveSettings(); focusAfterBuild = 'inspLabel'; }
+  announce(name + ' added as ' + (top.length === 1 ? (top[0].type === 'group' ? 'a group of ' + plural(made.length - 1, 'part') : 'a shape') : plural(top.length, 'object')) +
+    (label ? ', read aloud as "' + label.slice(0, 80) + '"' : '. Say what it shows, in Read aloud as, or tick Decoration if it is just for looks') + '.');
+  requestRender();
+}
+/** "As one picture": the pieces drawn on a canvas (from our numbers), saved as a PNG, added as a picture. */
+async function addSvgPicture(read, name, label, at) {
+  const { w, h } = read.size;
+  const k = Math.min(SVG_IN.pictureSide / Math.max(w, h), Math.max(2, 1));   // (twice its size, for sharp edges, at most 2400 across)
+  const pw = Math.max(1, Math.round(w * k)), ph = Math.max(1, Math.round(h * k));
+  const s = svgFromPieces(read.pieces, read.size, true);
+  s.setAttribute('width', pw); s.setAttribute('height', ph);
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(s)], { type: 'image/svg+xml' }));
+  try {
+    const img = new Image();
+    await new Promise((ok, no) => { img.onload = ok; img.onerror = () => no(new Error('The drawing could not be turned into a picture.')); img.src = url; });
+    const cv = document.createElement('canvas'); cv.width = pw; cv.height = ph;
+    cv.getContext('2d').drawImage(img, 0, 0, pw, ph);
+    const blob = await new Promise((ok) => cv.toBlob(ok, 'image/png'));
+    if (!blob) throw new Error('The drawing could not be turned into a picture.');
+    // Then exactly as any other PNG (redrawn, sized, and the alt text asked for).
+    const file = new File([blob], (name || 'Drawing') + '.png', { type: 'image/png' });
+    await addPictureFiles([file], at, { label });
+  } finally { URL.revokeObjectURL(url); }
+}
+/** Is this file an SVG? (By its type, or its name when a system does not say.) */
+const isSvgFile = (f) => f && (f.type === 'image/svg+xml' || /\.svgz?$/i.test(f.name || ''));
+/** Read an SVG file's text (after checking its size), then bring it in. */
+async function addSvgFile(file, at) {
+  if (file.size > SVG_IN.bytes) throw new Error(file.name + ' is too big for an SVG drawing (over 10 MB).');
+  if (/\.svgz$/i.test(file.name)) throw new Error(file.name + ' is a compressed SVG (.svgz). Open it in VCTREDTR and save it as a plain .svg first.');
+  const text = await file.text();
+  await addSvgDrawing(text, file.name.replace(/\.[^.]+$/, '').replace(/[^\w .,'()-]+/g, ' ').trim().slice(0, 60) || 'Drawing', at);
+}
 /* =====================================================================
    19. THE FEATURES TOUR AND THE CHANGELOG
    ===================================================================== */
@@ -14258,6 +16444,28 @@ const APP_FEATURES = [
    straight off a disk. The long form is CHANGELOG.md beside index.html.
    Newest first; the first entry is the version that is running. */
 const CHANGELOG = [
+  { version: '0.15.0', date: '2026-10-14', notes: [
+    'SVG drawings come in as shapes: a drawing from VCTREDTR (or any SVG) becomes outlines and text boxes you can animate one by one, so a bird\u2019s wing can flap while its body glides. The Picture tool, a drop, or paste SVG code (VCTREDTR\u2019s Copy SVG code). A dialog shows it (drawn from ANIMEDTR\u2019s own numbers) and asks how: as one group, a group for each of its own groups (a character\u2019s head, arms and legs), or as one flat picture. Inside a group or a clip, the shapes go straight in.',
+    'Kept: every shape\u2019s fill, outline colour and width, see-through-ness, transforms, names (VCTREDTR\u2019s, Illustrator\u2019s, Inkscape\u2019s labels), text (in ANIMEDTR\u2019s fonts, so it is read), and the drawing\u2019s title as its words for screen readers. Gradients become their average colour; dashes become solid; pictures, masks and filters are left out, and the dialog says so.',
+    'Safety: an SVG is read as data only. Over 10 MB, or with XML entities: refused. A clean copy keeps only drawing elements and checked values (no scripts, links, outside pictures or handlers), <use> copies are expanded here with a limit, and nothing from the file is put in the page. The Accessibility check asks for words for a drawing, as for a picture.'
+  ] },
+  { version: '0.14.1', date: '2026-10-14', notes: [
+    'Step by step template: a Back button on every step after the first, and Next step now moves exactly one step (it used to jump ahead and then play on, so a step went by on its own). One Next step button for every step, so the keyboard stays on it.',
+    'Fixed: pressing Play (or a button that plays) at a \u201cPause here\u201d marker sometimes did nothing, because the play head could slip back a frame and meet the same marker again. The play head never goes backwards now.'
+  ] },
+  { version: '0.14.0', date: '2026-10-14', notes: [
+    'Colour schemes, as in DSKEDTR: six colours that go together (Text, Main, Accent 1, Accent 2, Pale, Light). The Lesson Inspector\u2019s Colour scheme button shows this frame in each one: pick one and the whole lesson is recoloured (shades too); white, black, pictures and your own colours stay. Fourteen schemes (ANIMEDTR\u2019s own Studio, then DSKEDTR\u2019s thirteen), or make the six your own, with a warning when text would be hard to read. Every colour field offers the six as swatches, and new things start in them.',
+    'Animated GIFs come in as flipbooks: add a GIF that moves and ANIMEDTR asks, as a flipbook (one page for each picture, at the GIF\u2019s own speed, moving like a GIF) or just its first picture. Every GIF is checked as carefully as IMGEDTR\u2019s GIF spec asks (size, number of pictures, its compression), and a damaged one keeps the pictures that were whole.',
+    'Three more templates: Step by step (the scientific method, a flowchart that builds one step at a time), Flip cards (three vocabulary cards to turn over) and Match them (drag four animals to their habitats, then Check my answers; set up for an LMS).',
+    'Getting started (Help) now says how to put a lesson in Brightspace: as a page, as a SCORM package with a grade item, or as a video with its captions.'
+  ] },
+  { version: '0.13.0', date: '2026-10-14', notes: [
+    'Export now asks What to make: the Lesson (one HTML file, as before), For an LMS, a Video, an Animated GIF, or a Picture of this frame. Each shows its own settings, and the main button says what it makes.',
+    'For an LMS: a SCORM 1.2 package (.zip) for Brightspace, Moodle, Canvas or Blackboard. Inside an LMS it reports "completed" when the learner reaches the end or the last marker (or a behaviour runs the new action Mark the lesson complete), and sends a score: pick its variable, its "out of" (worked out for you) and an optional pass mark, for "passed" or "failed". Outside an LMS it works like any lesson. The quiz and Sort these templates come set up with their scores.',
+    'Video: a WebM (VP9 with Opus sound), full or half size, made frame by frame (about as long as the lesson takes, often less), plus a .vtt captions file from the sounds\u2019 captions. It plays straight through the way the lesson plays before anyone clicks; sounds on the timeline are heard.',
+    'Animated GIF: small, medium, large or full width, 8 to 25 frames a second, plays over and over, once or 3 times, with optional dithering. It keeps to one palette (no flicker) and writes only what changed in each frame, so it stays small.',
+    'A video or GIF shows its progress while it is made, and Cancel becomes Stop. Needed items still stop a lesson or an LMS package, but not a video, GIF or picture.'
+  ] },
   { version: '0.12.0', date: '2026-10-14', notes: [
     'Sounds: add narration, sound effects or music (MP3, WAV, Ogg, M4A or WebM audio; SNDEDTR\u2019s exports work) under Sounds in the Lesson Inspector. Each file is checked by its first bytes and kept inside the lesson, so it works offline.',
     'On the timeline: the new Sounds row. "On the timeline here" starts a sound at the play head; drag its block to move it (or type its frame). It follows the play head like Flash\u2019s stream sounds: Play starts it, Pause pauses it, a jump catches it up, and while the lesson waits at a "pause here" marker it plays on to its end. It plays along in the editor too.',

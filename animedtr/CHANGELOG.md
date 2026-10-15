@@ -1,5 +1,186 @@
 # ANIMEDTR changelog
 
+## 0.15.0 - 2026-10-14
+
+**SVG drawings come in as shapes** (Dave picked this as the next build: it
+was in the plan from the start, "SVG drawings brought in from VCTREDTR",
+and had not been built).
+
+- **Three ways in:** the Picture tool (F), a drop on the stage, or a
+  paste: an SVG file, or SVG code as text (VCTREDTR's **Copy SVG code**).
+- **The dialog** shows the drawing, says what it found ("7 shapes and 2
+  text boxes") and what changed on the way in, and asks how to bring it in:
+  - **As one group of shapes** (the usual): move the whole drawing, or open
+    the group to animate any shape in it.
+  - **A group for each of its groups** (when it has two or more, such as a
+    character's head, arms and legs from VCTREDTR's layers): each one can
+    be animated on its own.
+  - **As one picture:** flat, like a PNG. Always possible, and the only
+    choice when there are more than 200 shapes (or no room in the lesson).
+  - Inside a group or a clip (which cannot hold groups), the shapes go
+    straight in.
+  The preview is drawn from ANIMEDTR's own numbers, never from the file.
+- **What comes across:** every shape becomes an outline with its fill,
+  outline colour and width, and see-through-ness (a group's opacity
+  included); a shape with no fill becomes a line. Transforms (move, turn,
+  stretch, skew), circles, polygons and arcs are worked into the points.
+  An outline drawn at twice the size keeps twice the width. Text becomes a
+  text box in ANIMEDTR's fonts (so it is read aloud), lines kept. Names come
+  from the drawing (VCTREDTR's, Illustrator's data-name, Inkscape's labels;
+  VCTREDTR's added " 1" is taken off), and the drawing's title and
+  description become its words for screen readers.
+- **What changes:** gradients become their average colour; dashed lines
+  become solid; pictures, masks, clipping, filters, patterns and animation
+  inside the drawing are left out. The dialog lists them.
+- **"Non-zero" fills** (SVG's usual rule, where overlapping pieces of one
+  shape stay filled) are untangled with Paper.js, so they look the same
+  with ANIMEDTR's even-odd rule. Checked: drawn both ways, imports differ
+  from the original in under 1% of pixels (a VCTREDTR export, nested
+  transforms with skew and arcs, an icon set's stroke-only icon).
+- **Safety, from the ground up** (the suite's SVG rules):
+  - over 10 MB, a compressed .svgz, or any XML entity: refused before
+    reading;
+  - DOMParser reads it as data, then a clean copy keeps only drawing
+    elements and a fixed list of attributes, every value checked (no
+    scripts, "on..." handlers, links, outside pictures, stylesheets that
+    import, or url()s that leave the file);
+  - <style> classes are applied by ANIMEDTR itself (simple rules only);
+  - <use> copies are expanded here, only the ones that show, at most 8
+    deep and 20,000 elements in all, so a "billion copies" file stops in
+    about a second;
+  - nothing from the file is ever put in the page, and the copy is never
+    attached to it.
+  Tested with a hostile file (onload, script, foreignObject, javascript:
+  links, outside pictures and stylesheets, a self-copying <use>): nothing
+  ran and nothing was fetched.
+- **Accessibility check:** a drawing of shapes with no words must have
+  them (as a picture must); one with text gets a tip. When the file has
+  no title, focus goes straight to Read aloud as.
+
+## 0.14.1 - 2026-10-14
+
+**Step by step, fixed** (Dave: "Add a 'Back' button, and double check
+the logic").
+
+- **Back.** Every step after the first has a **Back** button (labelled
+  for screen readers with where it goes: "Back to step 2"). It goes to the
+  step before and waits there. It hides for the half second while the
+  next step builds, so it never jumps somewhere unexpected mid-build.
+  **Start again** moved to the left, so the reading order (Start again,
+  then Back) matches what is seen.
+- **Next step moves one step, every time.** In 0.14.0 each Next step
+  button used "Go to marker and play" on the next step's marker: that
+  jumped straight to the next step and then played on, past it, to the
+  one after (a step went by on its own). Now there is one Next step
+  button for every step, and its action is plain **Play**: from the
+  "Pause here" marker it is waiting at, it builds the next step and stops
+  at the next marker. One button also means keyboard focus never has to
+  move.
+- **Why it only happened sometimes: a player bug, now fixed for every
+  lesson.** The browser's time for a frame can be a touch earlier than
+  the moment Play is pressed, which put the play head one frame back.
+  Playing from a "Pause here" marker, it then met that same marker again
+  and stopped there, so Play (or a button that plays) sometimes did
+  nothing. That race is also why the template sometimes worked. The play
+  head never goes backwards now (in lessons and in the editor).
+
+
+**The rest of phase 3** (Dave: "Let's go with the rest of Phase 3!").
+
+- **Colour schemes, as in DSKEDTR.** A lesson has six colours that go
+  together, each with a job (DSKEDTR's six: Text, Main, Accent 1, Accent
+  2, Pale, Light). The **Colour scheme** button (the Lesson section of the
+  Inspector, nothing picked) opens a card for each scheme, showing this
+  frame in its colours; pick one and the whole lesson is recoloured in
+  one undo step: everything in the old scheme's colours, and lighter or
+  darker shades of them (DSKEDTR's colour mapper, the same way), takes
+  the new scheme's. That covers the stage's background, every object's
+  colour and outline in every keyframe, the inside of clips, and colours
+  that behaviours Set. White, black, pictures and your own colours stay.
+  Fourteen schemes: **Studio** (ANIMEDTR's own, its usual colours, so
+  older lessons start in it) and DSKEDTR's thirteen. Or change any of the
+  six to make it your own, with a warning when text would be hard to read
+  (DSKEDTR's four checks). **Every colour field** offers the six as
+  swatches (one Tab stop, arrows along it), and new text, rectangles,
+  ellipses and outlines start in Text, Main, Accent 1 and Accent 2.
+- **Animated GIFs come in as flipbooks.** Add a GIF that moves (the
+  Picture tool, a drop, a paste) and ANIMEDTR asks: **As a flipbook** (it
+  moves) or **Just its first picture**. A flipbook gets one page for each
+  of the GIF's pictures (at most 120: more are thinned out evenly), each
+  showing for the GIF's own speed on average, and it keeps moving while
+  the lesson waits, as a GIF does (one that plays once, plays once).
+  Pictures over 960 pixels are scaled down. Its own decoder follows
+  IMGEDTR's GIF spec on hostile files: the size is checked before anything
+  is made (4000 a side at most, and a memory budget for all the pictures),
+  at most 1000 pictures are read, the LZW decoder checks its code size,
+  never grows its table past 4096, never writes past a picture's box and
+  stops at the data's end, and a cut-off file keeps the pictures that were
+  whole (and says so). Transparency, interlacing and all three disposal
+  methods are handled.
+- **Three more templates:**
+  - **Step by step (process):** the scientific method as a flowchart that
+    builds one step at a time and waits at each, with a card of words
+    for each step and a Next step button. It is in the Studio scheme's own
+    colours, so another scheme recolours all of it.
+  - **Flip cards:** three vocabulary cards (Photosynthesis, Habitat,
+    Predator). Activate a card to turn it over; again to turn it back.
+  - **Match them (drag and drop):** four animals to their habitats, as a
+    test: they stay wherever they are dropped until **Check my answers**;
+    right ones score (with a chime), wrong ones slide back (with a bonk),
+    and all four matched brings a fanfare. Set up for an LMS (out of 4),
+    in the Meadow scheme.
+- **Getting started (Help) says how to put a lesson in Brightspace:** as
+  a page (Upload / Create, Upload Files), as a SCORM package with a grade
+  item (Upload / Create, New SCORM Object / xAPI Object), or as a video
+  with its captions (Video or Audio, then Advanced Editing, Closed
+  Captions, Upload). Menu names can differ a little between colleges, and
+  it says so.
+
+## 0.13.0 - 2026-10-14
+
+**More ways out** (phase 3 begins, Dave: "multiple modality exports").
+Export now starts with **What to make**, and each choice shows its own
+settings; the main button says what it makes.
+
+- **Lesson** (one HTML file): as before.
+- **For an LMS (SCORM 1.2 package, a .zip)**, for Brightspace, Moodle,
+  Canvas or Blackboard: imsmanifest.xml and the lesson. Inside an LMS the
+  lesson finds the LMS's SCORM API on the windows around it and:
+  - marks itself "incomplete" when it opens;
+  - sends its **score** as it changes (one variable, picked in Export,
+    out of a number ANIMEDTR works out from what its behaviours add);
+  - reports **"completed"** when the learner reaches the end or the last
+    marker, or a behaviour runs the new action **Mark the lesson complete
+    (for an LMS)**; with a **pass mark**, "passed" or "failed" instead (the
+    manifest carries it as the mastery score);
+  - sends how long it was open, and says goodbye, when the page closes.
+  Only those values are sent; nothing about the learner is read. Outside
+  an LMS (or as a plain lesson) it works as usual and sends nothing. The
+  LMS settings are saved with the lesson; the quiz (out of 3) and Sort
+  these (out of 6) templates come set up.
+- **Video (WebM)**: VP9 video with Opus sound, full or half size, made with
+  the browser's own video encoder (WebCodecs), frame by frame (it takes
+  about as long as the lesson, often less), and
+  written into a WebM file by ANIMEDTR itself (with cue points, so players
+  can jump about). Beside it, a **.vtt captions file** from the captions of
+  the sounds on the timeline, for Brightspace, YouTube or any player. The
+  video plays straight through, the way the lesson plays before anyone
+  clicks: behaviours do not run, nothing waits at a marker, things hidden
+  at the start stay hidden, and only sounds on the timeline are heard.
+  Browsers without WebCodecs (older Safari) are told so.
+- **Animated GIF**: 320, 480, 640 or full width; 8 to 25 frames a second;
+  plays over and over, once, or 3 times (the dialog notes WCAG 2.2.2: a
+  GIF has no pause button); optional dithering for smoother gradients.
+  One palette for the whole GIF (median cut, so no colour flicker), and
+  each frame holds only the part that changed, with unchanged pixels
+  see-through, so it stays small. The encoder is ANIMEDTR's own, written
+  for beginners, and can grow into the family's planned GIF block.
+- **Picture of this frame (PNG)**: as before, now one of the choices.
+- A video or GIF shows a **progress bar** while it is made, and **Cancel
+  becomes Stop** (Escape stops it too).
+- Needed items still stop a lesson or an LMS package (learners use those),
+  but not a video, GIF or picture.
+
 ## 0.12.0 - 2026-10-14
 
 **Sounds**, the last of phase 2 (Dave's picks: a timeline track as well
