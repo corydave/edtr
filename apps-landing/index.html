@@ -40,7 +40,7 @@
 <meta name="referrer" content="no-referrer">
 
 <title>EDTR Apps</title>
-<meta name="description" content="EDTR Apps: nine free, private editors that run in your browser - text and code, PDFs, images, sound, video, screen recording, vector art, 3D models and page layout. No account, no uploads. Free and open source.">
+<meta name="description" content="EDTR Apps: ten free, private editors that run in your browser - text and code, PDFs, images, sound, video, screen recording, vector art, 3D models and page layout. No account, no uploads. Free and open source.">
 <meta property="og:title" content="EDTR Apps">
 <meta property="og:description" content="Small, private editors for everyday making. Free, open source, and your files stay on your device.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect width='8' height='8' rx='2' fill='%23a23108'/%3E%3Crect x='11' width='8' height='8' rx='2' fill='%238a1c5c'/%3E%3Crect x='22' width='8' height='8' rx='2' fill='%23305305'/%3E%3Crect y='11' width='8' height='8' rx='2' fill='%234b5563'/%3E%3Crect x='11' y='11' width='8' height='8' rx='2' fill='%230046ad'/%3E%3Crect x='22' y='11' width='8' height='8' rx='2' fill='%2300565d'/%3E%3Crect y='22' width='8' height='8' rx='2' fill='%235b21b6'/%3E%3Crect x='11' y='22' width='8' height='8' rx='2' fill='%237a4100'/%3E%3Crect x='22' y='22' width='8' height='8' rx='2' fill='%23065f46'/%3E%3C/svg%3E">
@@ -425,7 +425,7 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
 <header class="topbar">
   <div class="wrap">
     <a class="brand" href="#top" aria-label="EDTR Apps, back to the top">
-      <!-- A tiny 3 x 3 grid of the app colours: nine apps, one family. -->
+      <!-- A tiny 3 x 3 grid of the app colours: one family. -->
       <svg class="brand-mark" viewBox="0 0 30 30" aria-hidden="true">
         <rect x="0" y="0" width="8" height="8" rx="2" fill="#a23108"/><rect x="11" y="0" width="8" height="8" rx="2" fill="#8a1c5c"/><rect x="22" y="0" width="8" height="8" rx="2" fill="#305305"/>
         <rect x="0" y="11" width="8" height="8" rx="2" fill="#4b5563"/><rect x="11" y="11" width="8" height="8" rx="2" fill="#0046ad"/><rect x="22" y="11" width="8" height="8" rx="2" fill="#00565d"/>
@@ -459,7 +459,7 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
   <div class="wrap hero-inner">
     <p class="eyebrow">EDTR Apps</p>
     <h1 id="hero-title">Small, private editors for everyday making.</h1>
-    <p class="lede">Nine free tools that run right in your browser: text and code, PDFs, images, sound, video,
+    <p class="lede">Ten free tools that run right in your browser: text and code, PDFs, images, sound, video,
       screen recording, vector art, 3D models and page layout. No account, no uploads, no installer.
       Open one and start making.</p>
     <div class="hero-actions">
@@ -531,7 +531,7 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
   </section>
 
   <!-- ==============================================================
-       THE STORY: how a text editor for one class became nine apps.
+       THE STORY: how a text editor for one class became ten apps.
        ============================================================== -->
   <section class="story" id="story" aria-labelledby="story-title" tabindex="-1">
     <div class="wrap">
@@ -705,49 +705,60 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
    ================================================================== */
 const APPS = [
   {
-    id: 'txtedtr', name: 'TXTEDTR', url: 'https://txtedtr.app',
-    fill: '#b8400c', light: '#a23108', dark: '#f7a57a',
-    blurb: 'A clean, fast text and code editor with tabs, syntax highlighting for over ten languages, and a live preview for HTML and Markdown.',
-    thumb: 'shots/txtedtr-thumb.webp',
+    id: '3dedtr', name: '3DEDTR', url: 'https://3dedtr.app',
+    fill: '#7a4100', light: '#7a4100', dark: '#f0b46e',
+    blurb: 'Build 3D models from simple shapes, cut and merge them, and export them ready for the 3D printer - all measured in millimeters.',
+    thumb: 'shots/3dedtr-thumb.webp',
     slides: [
-      { src: 'shots/txtedtr-1.webp', title: 'Live HTML preview',
-        text: "Edit a web page's code on the left and see the finished page update on the right as you type.",
-        alt: "TXTEDTR split view. On the left is the HTML source of an 'AI Tools Workshop' page for the FLX AI Hub. On the right is the rendered page: a blue header and three session cards." },
-      { src: 'shots/txtedtr-2.webp', title: 'Color-coded code',
-        text: 'Several files are open in the sidebar, and the code is colored by type - keywords, text, numbers and comments - so it is easier to read.',
-        alt: 'TXTEDTR with index.html, styles.css, app.js and README.md in the file list. The open JavaScript file has purple keywords, green strings, orange numbers and gray comments.' },
-      { src: 'shots/txtedtr-3.webp', title: 'Smart find and replace',
-        text: 'Search with a pattern instead of exact words. Every match is highlighted, and you can replace them one at a time or all at once.',
-        alt: 'TXTEDTR find and replace bar with regular expressions turned on, showing 2 of 3 matches highlighted in orange in app.js.' },
-      { src: 'shots/txtedtr-4.webp', title: 'Catches hidden characters',
-        text: 'Code pasted from a word processor often brings in curly quotes and invisible spaces that break it. TXTEDTR outlines each one and counts them.',
-        alt: 'A JavaScript file where curly quotes, a zero-width space and a no-break space are each boxed in orange. The status bar counts them.' },
-      { src: 'shots/txtedtr-5.webp', title: 'Dark mode',
-        text: 'A dark theme that is easy on the eyes, shown here with a Markdown file beside its formatted preview.',
-        alt: 'TXTEDTR in dark mode with README.md in Markdown on the left and its formatted preview, with headings, a list and a table, on the right.' }
+      { src: 'shots/3dedtr-1.webp', title: 'Cut shapes to build',
+        text: 'Make hollow cups and keyrings by cutting one shape out of another with a single click.',
+        alt: '3DEDTR showing a teal pencil cup with three pencils in it, a red apple on two books, and an orange tag with a round cutter over one end. The Merge Shapes panel shows Union, Subtract and Intersect buttons.' },
+      { src: 'shots/3dedtr-2.webp', title: 'Build from simple shapes',
+        text: 'Put models together from ready-made shapes, and move or resize any piece by dragging or by typing exact millimeters.',
+        alt: 'A toy rocket made of a white cylinder, red fins, a blue porthole and a gray launch pad. The red cone nose has move arrows on it, and the Inspector shows its position, turn and size in millimeters.' },
+      { src: 'shots/3dedtr-3.webp', title: 'Colors and finishes',
+        text: 'One click on a swatch or a finish like Glossy or Metal changes how any part looks.',
+        alt: 'The desk scene from a lower angle with the red apple picked. The Look panel shows color swatches and Matte, Satin, Glossy and Metal finish buttons, with Glossy chosen.' },
+      { src: 'shots/3dedtr-4.webp', title: 'Ready for 3D printing',
+        text: "Export a model as an STL file for the school's 3D printer, and the app checks that it will print cleanly.",
+        alt: 'The Export dialog with STL chosen, Selection only on and Z is up ticked. A note reads that the object is 44 x 64 x 44 mm and every solid is closed (watertight).' },
+      { src: 'shots/3dedtr-5.webp', title: 'Dark mode and lighting',
+        text: 'A dark theme and a choice of Studio, Soft or Bright lighting keep models easy to see on any classroom screen.',
+        alt: '3DEDTR in dark mode showing the white and red rocket on its launch pad over a dark millimeter grid, with Lighting set to Bright.' }
     ]
   },
   {
-    id: 'pdfedtr', name: 'PDFEDTR', url: 'https://pdfedtr.app',
-    fill: '#8a1c5c', light: '#8a1c5c', dark: '#f4b3d8',
-    blurb: 'Turn any PDF into a fillable form, fill it in and sign it, and rearrange or merge pages - without uploading it anywhere.',
-    thumb: 'shots/pdfedtr-thumb.webp',
+    id: 'animedtr', name: 'ANIMEDTR', url: 'https://animedtr.app',
+    fill: '#655800', light: '#655800', dark: '#e8d46a',
+    blurb: 'Make animated, interactive lessons: draw a stage, add a timeline of keyframes, and turn it into something students can click through - no code needed.',
+    thumb: 'shots/animedtr-thumb.webp',
     slides: [
-      { src: 'shots/pdfedtr-1.webp', title: 'Add fillable text fields',
-        text: "Draw fillable boxes right on top of a form's blank lines, then name each one so it becomes a real form field in the saved PDF.",
-        alt: 'A workshop registration form with fillable text fields placed on the Full name, Email, Phone, Department, Date, Campus and Employee ID lines. The Email field is selected and the Inspector shows its name and text size.' },
-      { src: 'shots/pdfedtr-2.webp', title: 'Clickable checkboxes',
-        text: 'Add checkboxes next to each option so people can tick their choices, like picking which workshop sessions they will attend.',
-        alt: 'A list of workshop sessions and format options on a registration form, each with a fillable checkbox. Four boxes are checked.' },
-      { src: 'shots/pdfedtr-3.webp', title: 'Fill, annotate and sign',
-        text: "Type answers, highlight key sentences, leave sticky-note reminders, drop in today's date and sign the form, all without printing it.",
-        alt: 'Page 2 of the form with ticked checkboxes, a typed note, a yellow highlight, a sticky note, a handwritten blue signature and a date.' },
-      { src: 'shots/pdfedtr-4.webp', title: 'Rearrange and merge pages',
-        text: 'Bring in pages from another PDF and drag the thumbnails along the page strip to put them in the order you want.',
-        alt: 'The page filmstrip along the bottom showing five pages, including a feedback survey and certificate imported from a second PDF. The survey is being dragged into third place.' },
-      { src: 'shots/pdfedtr-5.webp', title: 'Draw your signature',
-        text: 'Sign with a mouse, finger or stylus (or just type your name), pick an ink color and place the signature anywhere on the page.',
-        alt: "The Add a signature window with a handwritten signature in blue ink, ink color and thickness controls, and a Place signature button." }
+      { src: 'shots/animedtr-1.webp', title: 'Animate a lesson',
+        text: 'Place shapes and words on a stage, then keyframe them on a timeline so they move, fade and appear in step.',
+        alt: 'ANIMEDTR showing a water cycle lesson: a stage with four labeled steps (Evaporation, Condensation, Precipitation, Collection), a timeline with keyframes along the bottom, and the Inspector on the right.' }
+    ]
+  },
+  {
+    id: 'dskedtr', name: 'DSKEDTR', url: 'https://dskedtr.app',
+    fill: '#065f46', light: '#065f46', dark: '#6ee7b7',
+    blurb: 'Lay out newsletters, flyers and booklets: text flows from box to box and page to page, with shapes, pictures, master pages and a PDF ready to print.',
+    thumb: 'shots/dskedtr-thumb.webp',
+    slides: [
+      { src: 'shots/dskedtr-1.webp', title: 'Lay out a newsletter',
+        text: 'Place text boxes, pictures and shapes on the page, with columns, margins and guides to line everything up.',
+        alt: 'DSKEDTR showing a school newsletter called The Lakeside Ledger: a bold title, a green rule, two columns of articles about a spring concert and a pale green Dates to remember box, with column guides over the page.' },
+      { src: 'shots/dskedtr-2.webp', title: 'Text that flows between boxes',
+        text: 'Link text boxes and the story flows from one into the next, even onto another page. A round tab shows where the text goes on.',
+        alt: 'The newsletter with the first column picked. A round arrow tab sits above it and a green chain-link tab below it, a dotted line runs to the next column, and a floating bar offers Link, Arrange, Duplicate, Copy and Delete.' },
+      { src: 'shots/dskedtr-3.webp', title: 'Shapes for every job',
+        text: 'Pick from more than a hundred shapes in sections like Publisher\'s: arrows, flowchart pieces, callouts, stars, banners and shields.',
+        alt: 'The Shapes gallery open beside the page, with sections of flowchart shapes, callouts, stars and banners, shields and signs. Behind it, page 2 of the newsletter shows a colorful outdoor concert picture.' },
+      { src: 'shots/dskedtr-4.webp', title: 'Master pages and page numbers',
+        text: 'Put a footer or a masthead on a master page and every page that uses it shows it, with the right page number filled in.',
+        alt: 'The bottom of page 1 with its footer reading The Lakeside Ledger, October 2026, Page 1 of 2. A small menu above the page thumbnails shows None and Master A, with Master A ticked.' },
+      { src: 'shots/dskedtr-5.webp', title: 'Made for every reader',
+        text: 'A built-in checker points out missing picture descriptions and hard-to-read text before you share. Shown in dark mode.',
+        alt: 'DSKEDTR in dark mode on page 2 of the newsletter. The Accessibility tab is open with one tip: an empty picture frame will not print until it has a picture.' }
     ]
   },
   {
@@ -777,49 +788,26 @@ const APPS = [
     ]
   },
   {
-    id: 'sndedtr', name: 'SNDEDTR', url: 'https://sndedtr.app',
-    fill: '#4b5563', light: '#4b5563', dark: '#cbd1d9',
-    blurb: 'Record, trim and clean up audio on several tracks, with noise reduction, EQ and export to WAV, MP3 or Opus.',
-    thumb: 'shots/sndedtr-thumb.webp',
+    id: 'pdfedtr', name: 'PDFEDTR', url: 'https://pdfedtr.app',
+    fill: '#8a1c5c', light: '#8a1c5c', dark: '#f4b3d8',
+    blurb: 'Turn any PDF into a fillable form, fill it in and sign it, and rearrange or merge pages - without uploading it anywhere.',
+    thumb: 'shots/pdfedtr-thumb.webp',
     slides: [
-      { src: 'shots/sndedtr-1.webp', title: 'Multitrack editing',
-        text: "Three tracks - a host's voice, a music bed and a chime - start at different times, with part of the voice selected for editing.",
-        alt: 'SNDEDTR with three colored tracks named Host voice, Music bed and Chime, each showing a waveform, and a highlighted selection across the voice clip.' },
-      { src: 'shots/sndedtr-2.webp', title: 'Clean up noisy audio',
-        text: 'A noisy interview is cleaned up by learning what the background noise sounds like and removing it, with hum removal and a noise gate turned on too.',
-        alt: 'Two copies of an interview: the original, with a band of background noise, and the cleaned one with clear speech. The Inspector shows Background noise, Hum removal and Noise gate switched on.' },
-      { src: 'shots/sndedtr-3.webp', title: 'EQ and compression',
-        text: "The host's voice gets a tone adjustment (EQ) and a compressor that evens out loud and quiet moments.",
-        alt: 'The Inspector showing the EQ and Compressor panels switched on, with their settings.' },
-      { src: 'shots/sndedtr-4.webp', title: 'Duck music under voice',
-        text: 'A volume line drawn on the music track lowers the music while the host is talking, then brings it back up.',
-        alt: 'The music track with an orange volume line that dips while the host voice plays and rises after it ends.' },
-      { src: 'shots/sndedtr-5.webp', title: 'Export your mix',
-        text: 'Save the whole mix as one audio file - WAV, MP3 or Opus - and match it to podcast loudness.',
-        alt: 'The Export mix dialog listing WAV, MP3 and Opus formats, a loudness setting for podcasts and a Render and download button.' }
-    ]
-  },
-  {
-    id: 'videdtr', name: 'VIDEDTR', url: 'https://videdtr.app',
-    fill: '#0046ad', light: '#0046ad', dark: '#9cc2ff',
-    blurb: 'A real multitrack video editor in the browser: cut clips, blur what needs hiding, add titles, effects and transitions, and export.',
-    thumb: 'shots/videdtr-thumb.webp',
-    slides: [
-      { src: 'shots/videdtr-1.webp', title: 'Blur private information',
-        text: "Soft blur boxes cover a student's name, email, phone number and photo in a screen recording.",
-        alt: 'VIDEDTR showing a screen recording of a fictional student profile, with a blur box over the name, email and phone and a round blur over the photo. The Inspector shows the blur settings.' },
-      { src: 'shots/videdtr-2.webp', title: 'Multitrack timeline',
-        text: 'A lesson video built from layers: a title card, a screen recording, a picture-in-picture clip, on-screen titles, a voiceover and music.',
-        alt: 'The VIDEDTR timeline with Text, Video 2, Main video, Voiceover and Music tracks. The preview shows the title "Module 3 recap" and a small picture-in-picture video.' },
-      { src: 'shots/videdtr-3.webp', title: 'Effects and transitions',
-        text: 'A camcorder-style effect adds a REC light, a counter and a date stamp, and a menu of transitions is open where two clips meet.',
-        alt: 'A colorful video with a camcorder overlay showing REC, a counter and a date. A menu on the timeline lists transitions such as cross dissolve, wipe and zoom.' },
-      { src: 'shots/videdtr-4.webp', title: 'Split a clip',
-        text: 'The screen recording has been cut in two, and the second piece is selected so it can be moved, trimmed or deleted.',
-        alt: 'The Main video track with a clip split into two at 0:14. The right-hand clip is selected and the Inspector shows its start time and length.' },
-      { src: 'shots/videdtr-5.webp', title: 'Export your video',
-        text: 'Choose the resolution, frame rate and quality, then save a standard video file. Everything is made on your own computer.',
-        alt: 'The Export video dialog with resolution, frame rate, file name and quality settings, and a Start export button.' }
+      { src: 'shots/pdfedtr-1.webp', title: 'Add fillable text fields',
+        text: "Draw fillable boxes right on top of a form's blank lines, then name each one so it becomes a real form field in the saved PDF.",
+        alt: 'A workshop registration form with fillable text fields placed on the Full name, Email, Phone, Department, Date, Campus and Employee ID lines. The Email field is selected and the Inspector shows its name and text size.' },
+      { src: 'shots/pdfedtr-2.webp', title: 'Clickable checkboxes',
+        text: 'Add checkboxes next to each option so people can tick their choices, like picking which workshop sessions they will attend.',
+        alt: 'A list of workshop sessions and format options on a registration form, each with a fillable checkbox. Four boxes are checked.' },
+      { src: 'shots/pdfedtr-3.webp', title: 'Fill, annotate and sign',
+        text: "Type answers, highlight key sentences, leave sticky-note reminders, drop in today's date and sign the form, all without printing it.",
+        alt: 'Page 2 of the form with ticked checkboxes, a typed note, a yellow highlight, a sticky note, a handwritten blue signature and a date.' },
+      { src: 'shots/pdfedtr-4.webp', title: 'Rearrange and merge pages',
+        text: 'Bring in pages from another PDF and drag the thumbnails along the page strip to put them in the order you want.',
+        alt: 'The page filmstrip along the bottom showing five pages, including a feedback survey and certificate imported from a second PDF. The survey is being dragged into third place.' },
+      { src: 'shots/pdfedtr-5.webp', title: 'Draw your signature',
+        text: 'Sign with a mouse, finger or stylus (or just type your name), pick an ink color and place the signature anywhere on the page.',
+        alt: "The Add a signature window with a handwritten signature in blue ink, ink color and thickness controls, and a Place signature button." }
     ]
   },
   {
@@ -846,6 +834,52 @@ const APPS = [
     ]
   },
   {
+    id: 'sndedtr', name: 'SNDEDTR', url: 'https://sndedtr.app',
+    fill: '#4b5563', light: '#4b5563', dark: '#cbd1d9',
+    blurb: 'Record, trim and clean up audio on several tracks, with noise reduction, EQ and export to WAV, MP3 or Opus.',
+    thumb: 'shots/sndedtr-thumb.webp',
+    slides: [
+      { src: 'shots/sndedtr-1.webp', title: 'Multitrack editing',
+        text: "Three tracks - a host's voice, a music bed and a chime - start at different times, with part of the voice selected for editing.",
+        alt: 'SNDEDTR with three colored tracks named Host voice, Music bed and Chime, each showing a waveform, and a highlighted selection across the voice clip.' },
+      { src: 'shots/sndedtr-2.webp', title: 'Clean up noisy audio',
+        text: 'A noisy interview is cleaned up by learning what the background noise sounds like and removing it, with hum removal and a noise gate turned on too.',
+        alt: 'Two copies of an interview: the original, with a band of background noise, and the cleaned one with clear speech. The Inspector shows Background noise, Hum removal and Noise gate switched on.' },
+      { src: 'shots/sndedtr-3.webp', title: 'EQ and compression',
+        text: "The host's voice gets a tone adjustment (EQ) and a compressor that evens out loud and quiet moments.",
+        alt: 'The Inspector showing the EQ and Compressor panels switched on, with their settings.' },
+      { src: 'shots/sndedtr-4.webp', title: 'Duck music under voice',
+        text: 'A volume line drawn on the music track lowers the music while the host is talking, then brings it back up.',
+        alt: 'The music track with an orange volume line that dips while the host voice plays and rises after it ends.' },
+      { src: 'shots/sndedtr-5.webp', title: 'Export your mix',
+        text: 'Save the whole mix as one audio file - WAV, MP3 or Opus - and match it to podcast loudness.',
+        alt: 'The Export mix dialog listing WAV, MP3 and Opus formats, a loudness setting for podcasts and a Render and download button.' }
+    ]
+  },
+  {
+    id: 'txtedtr', name: 'TXTEDTR', url: 'https://txtedtr.app',
+    fill: '#b8400c', light: '#a23108', dark: '#f7a57a',
+    blurb: 'A clean, fast text and code editor with tabs, syntax highlighting for over ten languages, and a live preview for HTML and Markdown.',
+    thumb: 'shots/txtedtr-thumb.webp',
+    slides: [
+      { src: 'shots/txtedtr-1.webp', title: 'Live HTML preview',
+        text: "Edit a web page's code on the left and see the finished page update on the right as you type.",
+        alt: "TXTEDTR split view. On the left is the HTML source of an 'AI Tools Workshop' page for the FLX AI Hub. On the right is the rendered page: a blue header and three session cards." },
+      { src: 'shots/txtedtr-2.webp', title: 'Color-coded code',
+        text: 'Several files are open in the sidebar, and the code is colored by type - keywords, text, numbers and comments - so it is easier to read.',
+        alt: 'TXTEDTR with index.html, styles.css, app.js and README.md in the file list. The open JavaScript file has purple keywords, green strings, orange numbers and gray comments.' },
+      { src: 'shots/txtedtr-3.webp', title: 'Smart find and replace',
+        text: 'Search with a pattern instead of exact words. Every match is highlighted, and you can replace them one at a time or all at once.',
+        alt: 'TXTEDTR find and replace bar with regular expressions turned on, showing 2 of 3 matches highlighted in orange in app.js.' },
+      { src: 'shots/txtedtr-4.webp', title: 'Catches hidden characters',
+        text: 'Code pasted from a word processor often brings in curly quotes and invisible spaces that break it. TXTEDTR outlines each one and counts them.',
+        alt: 'A JavaScript file where curly quotes, a zero-width space and a no-break space are each boxed in orange. The status bar counts them.' },
+      { src: 'shots/txtedtr-5.webp', title: 'Dark mode',
+        text: 'A dark theme that is easy on the eyes, shown here with a Markdown file beside its formatted preview.',
+        alt: 'TXTEDTR in dark mode with README.md in Markdown on the left and its formatted preview, with headings, a list and a table, on the right.' }
+    ]
+  },
+  {
     id: 'vctredtr', name: 'VCTREDTR', url: 'https://vctredtr.app',
     fill: '#5b21b6', light: '#5b21b6', dark: '#c4b5fd',
     blurb: 'Draw vector art and merge shapes the way PowerPoint does - union, subtract, fragment and more - with perfect shapes that tile and a live view of the SVG code.',
@@ -869,49 +903,26 @@ const APPS = [
     ]
   },
   {
-    id: '3dedtr', name: '3DEDTR', url: 'https://3dedtr.app',
-    fill: '#7a4100', light: '#7a4100', dark: '#f0b46e',
-    blurb: 'Build 3D models from simple shapes, cut and merge them, and export them ready for the 3D printer - all measured in millimeters.',
-    thumb: 'shots/3dedtr-thumb.webp',
+    id: 'videdtr', name: 'VIDEDTR', url: 'https://videdtr.app',
+    fill: '#0046ad', light: '#0046ad', dark: '#9cc2ff',
+    blurb: 'A real multitrack video editor in the browser: cut clips, blur what needs hiding, add titles, effects and transitions, and export.',
+    thumb: 'shots/videdtr-thumb.webp',
     slides: [
-      { src: 'shots/3dedtr-1.webp', title: 'Cut shapes to build',
-        text: 'Make hollow cups and keyrings by cutting one shape out of another with a single click.',
-        alt: '3DEDTR showing a teal pencil cup with three pencils in it, a red apple on two books, and an orange tag with a round cutter over one end. The Merge Shapes panel shows Union, Subtract and Intersect buttons.' },
-      { src: 'shots/3dedtr-2.webp', title: 'Build from simple shapes',
-        text: 'Put models together from ready-made shapes, and move or resize any piece by dragging or by typing exact millimeters.',
-        alt: 'A toy rocket made of a white cylinder, red fins, a blue porthole and a gray launch pad. The red cone nose has move arrows on it, and the Inspector shows its position, turn and size in millimeters.' },
-      { src: 'shots/3dedtr-3.webp', title: 'Colors and finishes',
-        text: 'One click on a swatch or a finish like Glossy or Metal changes how any part looks.',
-        alt: 'The desk scene from a lower angle with the red apple picked. The Look panel shows color swatches and Matte, Satin, Glossy and Metal finish buttons, with Glossy chosen.' },
-      { src: 'shots/3dedtr-4.webp', title: 'Ready for 3D printing',
-        text: "Export a model as an STL file for the school's 3D printer, and the app checks that it will print cleanly.",
-        alt: 'The Export dialog with STL chosen, Selection only on and Z is up ticked. A note reads that the object is 44 x 64 x 44 mm and every solid is closed (watertight).' },
-      { src: 'shots/3dedtr-5.webp', title: 'Dark mode and lighting',
-        text: 'A dark theme and a choice of Studio, Soft or Bright lighting keep models easy to see on any classroom screen.',
-        alt: '3DEDTR in dark mode showing the white and red rocket on its launch pad over a dark millimeter grid, with Lighting set to Bright.' }
-    ]
-  },
-  {
-    id: 'dskedtr', name: 'DSKEDTR', url: 'https://dskedtr.app',
-    fill: '#065f46', light: '#065f46', dark: '#6ee7b7',
-    blurb: 'Lay out newsletters, flyers and booklets: text flows from box to box and page to page, with shapes, pictures, master pages and a PDF ready to print.',
-    thumb: 'shots/dskedtr-thumb.webp',
-    slides: [
-      { src: 'shots/dskedtr-1.webp', title: 'Lay out a newsletter',
-        text: 'Place text boxes, pictures and shapes on the page, with columns, margins and guides to line everything up.',
-        alt: 'DSKEDTR showing a school newsletter called The Lakeside Ledger: a bold title, a green rule, two columns of articles about a spring concert and a pale green Dates to remember box, with column guides over the page.' },
-      { src: 'shots/dskedtr-2.webp', title: 'Text that flows between boxes',
-        text: 'Link text boxes and the story flows from one into the next, even onto another page. A round tab shows where the text goes on.',
-        alt: 'The newsletter with the first column picked. A round arrow tab sits above it and a green chain-link tab below it, a dotted line runs to the next column, and a floating bar offers Link, Arrange, Duplicate, Copy and Delete.' },
-      { src: 'shots/dskedtr-3.webp', title: 'Shapes for every job',
-        text: 'Pick from more than a hundred shapes in sections like Publisher\'s: arrows, flowchart pieces, callouts, stars, banners and shields.',
-        alt: 'The Shapes gallery open beside the page, with sections of flowchart shapes, callouts, stars and banners, shields and signs. Behind it, page 2 of the newsletter shows a colorful outdoor concert picture.' },
-      { src: 'shots/dskedtr-4.webp', title: 'Master pages and page numbers',
-        text: 'Put a footer or a masthead on a master page and every page that uses it shows it, with the right page number filled in.',
-        alt: 'The bottom of page 1 with its footer reading The Lakeside Ledger, October 2026, Page 1 of 2. A small menu above the page thumbnails shows None and Master A, with Master A ticked.' },
-      { src: 'shots/dskedtr-5.webp', title: 'Made for every reader',
-        text: 'A built-in checker points out missing picture descriptions and hard-to-read text before you share. Shown in dark mode.',
-        alt: 'DSKEDTR in dark mode on page 2 of the newsletter. The Accessibility tab is open with one tip: an empty picture frame will not print until it has a picture.' }
+      { src: 'shots/videdtr-1.webp', title: 'Blur private information',
+        text: "Soft blur boxes cover a student's name, email, phone number and photo in a screen recording.",
+        alt: 'VIDEDTR showing a screen recording of a fictional student profile, with a blur box over the name, email and phone and a round blur over the photo. The Inspector shows the blur settings.' },
+      { src: 'shots/videdtr-2.webp', title: 'Multitrack timeline',
+        text: 'A lesson video built from layers: a title card, a screen recording, a picture-in-picture clip, on-screen titles, a voiceover and music.',
+        alt: 'The VIDEDTR timeline with Text, Video 2, Main video, Voiceover and Music tracks. The preview shows the title "Module 3 recap" and a small picture-in-picture video.' },
+      { src: 'shots/videdtr-3.webp', title: 'Effects and transitions',
+        text: 'A camcorder-style effect adds a REC light, a counter and a date stamp, and a menu of transitions is open where two clips meet.',
+        alt: 'A colorful video with a camcorder overlay showing REC, a counter and a date. A menu on the timeline lists transitions such as cross dissolve, wipe and zoom.' },
+      { src: 'shots/videdtr-4.webp', title: 'Split a clip',
+        text: 'The screen recording has been cut in two, and the second piece is selected so it can be moved, trimmed or deleted.',
+        alt: 'The Main video track with a clip split into two at 0:14. The right-hand clip is selected and the Inspector shows its start time and length.' },
+      { src: 'shots/videdtr-5.webp', title: 'Export your video',
+        text: 'Choose the resolution, frame rate and quality, then save a standard video file. Everything is made on your own computer.',
+        alt: 'The Export video dialog with resolution, frame rate, file name and quality settings, and a Start export button.' }
     ]
   }
 ];
