@@ -1,5 +1,46 @@
 # ANIMEDTR changelog
 
+## 0.18.0 - 2026-10-15
+
+**Groups inside groups** (Dave's pick for the next build: "as deep as you
+like", up to 10; SVG drawings keep their nesting; not inside clips yet).
+
+- **Ctrl+G now works anywhere:** on the stage, or inside a group (the new
+  group goes inside it). A group can hold groups, up to ten deep: a body,
+  its arm, the arm's hand, the hand's fingers. Each level animates on its
+  own, and everything inside follows (the finger turns with the hand, the
+  hand swings with the arm). The eleventh level is refused, and the
+  status line says why.
+- **Finding your way:** a click on the stage picks the thing on the stage;
+  inside a group, a click picks what is in that group (even if you
+  clicked something deep inside it). Double-click, or Enter, goes one
+  level in, with the part you double-clicked picked; Escape goes one level
+  out, with the group you left picked; a click outside goes back out to
+  wherever it is. It says where you are: "Inside Hand group, in Arm group,
+  in Body group". The layers tree shows every level, indented, as before.
+- **Ungroup** puts the parts in the group around it (or on the stage),
+  where they are now. **Copy, Duplicate, Delete and Move to layer** take
+  everything inside, however deep. Pasting a group while inside another
+  puts it inside (or a level further out, if it would go too deep).
+- **For screen readers:** a group with a name (or a button, or decoration)
+  speaks for everything inside it, however deep; otherwise its parts are
+  read where they are, in the order they are drawn.
+- **SVG drawings** (0.15.0) now keep their own groups inside the drawing's
+  group (VCTREDTR's layers: a head, the arms, the legs), up to the depth
+  limit. A group holding just one thing is not kept; the thing takes its
+  name ("Wing"). So the "a group for each of its groups" choice is gone:
+  one group now does both. Inside a group, a drawing goes in as a group of
+  its own.
+- **Opening a lesson** checks the groups: none more than ten deep, no loops
+  (a group inside itself), parts on the layer of the group at the top.
+- **Fixed:** double-clicking a group, a clip or a text box with a mouse did
+  nothing (the stage holds on to the pointer while it is pressed, so the
+  double-click seemed to land on the stage itself). Enter always worked;
+  now both do.
+- **Not yet:** groups inside clips. Things learners drag, and answers to
+  questions, still have to be on their own (not in a group); grouping
+  them says so.
+
 ## 0.17.0 - 2026-10-14
 
 **MP4 video** (the second of the night's two builds: started only once
