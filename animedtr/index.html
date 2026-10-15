@@ -863,9 +863,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash-family { margin-top: 20px; padding-top: 14px;
   border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
 .suite-splash-family h3 { margin: 0 0 10px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
-/* An even grid: with nine apps, the eight others fit one line on a computer
-   (the splash is 660px wide so each gets about 70px, room for the longest
-   names, SCRNCSTR and VCTREDTR) and wrap into two rows on a phone (4 + 4). */
+/* An even grid of ten apps (the current one included): it wraps onto
+   two lines on a computer and into rows of four on a phone. */
 ul.suite-splash-list { list-style: none; margin: 0; padding: 0; display: grid;
   grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 4px; }
 ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
@@ -878,6 +877,10 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 .suite-splash-app:hover { background: color-mix(in srgb, currentColor 8%, transparent);
   border-color: color-mix(in srgb, currentColor 18%, transparent); }
 .suite-splash-app-name { font-size: 11.5px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; }
+.suite-splash-app.is-here { border: 2px solid currentColor; padding: 9px 1px; cursor: default;
+  background: color-mix(in srgb, currentColor 12%, transparent); }
+.suite-splash-here { font-size: 9.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  text-align: center; line-height: 1.2; }
 .suite-credits-line { margin: 16px 0 0; font-size: 11.5px; opacity: .8; text-align: center; }
 .suite-credits-line a, .suite-credits-made a { color: inherit; }
 
@@ -1515,7 +1518,8 @@ var ANIRuntime = (function () {
   var EASES = ['linear', 'in', 'out', 'inOut', 'hold', 'curve'];   // 'curve': your own curve (0.7.0)
   var DEFAULT_CURVE = [0.34, 1.56, 0.64, 1];     // a new custom curve starts as a small overshoot
   // The kinds of object: shapes, text, gallery shapes (path), pictures and
-  // groups (one level: a group holds objects, never another group).
+  // groups. A group holds objects, and (0.18.0) other groups too, up to
+  // GROUP_DEPTH groups deep (a body, its arm, the arm's hand, its fingers...).
   var TYPES = ['rect', 'ellipse', 'text', 'path', 'image', 'group', 'clip', 'field'];
   // Questions (0.16.0). A lesson keeps a list of questions (p.questions), each with
   // its name, its kind, the points a right answer earns (added to a variable, the
@@ -1530,6 +1534,7 @@ var ANIRuntime = (function () {
   //           Enter (or a "Check the answers" button). Numbers may be off by o.tol.
   // A right answer gets a tick mark, a wrong one a cross, and both are said aloud.
   var QUESTION_KINDS = ['choice', 'spot', 'type'];
+  var GROUP_DEPTH = 10;              // groups inside groups (0.18.0): at most ten groups deep
   var TRIES = ['one', 'many'];
   // What can go INSIDE a clip (0.8.0): no groups and no clips (one level only).
   var CLIP_PART_TYPES = ['rect', 'ellipse', 'text', 'path', 'image'];
@@ -1846,10 +1851,24 @@ var ANIRuntime = (function () {
     });
     var objIds = {}, markerIds = {}, groups = {};
     p.objects.forEach(function (o) { objIds[o.id] = true; if (o.type === 'group') groups[o.id] = o; });
-    // One level of groups: a part's group must exist, be a group, and not be inside a group itself.
-    p.objects.forEach(function (o) { if (o.type === 'group' || o.type === 'clip') o.parent = ''; });   // (a clip on the stage is never inside a group)
-    p.objects.forEach(function (o) { if (o.type !== 'group' && !groups[o.parent]) o.parent = ''; });
-    p.objects.forEach(function (o) { if (o.parent) o.layer = groups[o.parent].layer; });   // parts live on their group's layer
+    // Groups (0.18.0: inside groups too). A part's group must exist and be a group; a clip
+    // on the stage is never inside one. Going up from anything, no group may come round
+    // again (a loop), and there are at most GROUP_DEPTH groups: a group is at most that
+    // many levels deep, counting itself. Anything that breaks these goes on its own.
+    p.objects.forEach(function (o) { if (o.type === 'clip' || !groups[o.parent] || o.parent === o.id) o.parent = ''; });
+    p.objects.forEach(function (o) {
+      // (A group's own level counts: so a group may have GROUP_DEPTH - 1 groups above it, anything else GROUP_DEPTH.)
+      var met = {}, above = 0, most = o.type === 'group' ? GROUP_DEPTH - 1 : GROUP_DEPTH, g = o.parent;
+      while (g) {
+        above++;
+        if (met[g] || above > most) { o.parent = ''; break; }
+        met[g] = true;
+        g = groups[g].parent;
+      }
+    });
+    // Everything in a group lives on the layer of the group at the top.
+    function topOf(o) { var t = o, guard = 0; while (t.parent && groups[t.parent] && guard++ < GROUP_DEPTH + 2) t = groups[t.parent]; return t; }
+    p.objects.forEach(function (o) { if (o.parent) o.layer = topOf(o).layer; });
     p.markers.forEach(function (m) { markerIds[m.id] = true; });
     checkPaths(p.objects);
     // Sounds on the timeline: which sound, from which frame (each a sound that exists).
@@ -2178,9 +2197,11 @@ var ANIRuntime = (function () {
    */
   function readAs(o, p) {
     if (o.guide) return null;                          // a guide never shows in a lesson
-    if (o.parent) {
-      var g = null; p.objects.forEach(function (x) { if (x.id === o.parent) g = x; });
-      if (g && (isInteractive(g) || g.decorative || g.label)) return null;    // the group speaks (or hides) for its parts
+    // A group that is a button, is decoration, or has a name of its own speaks (or hides) for
+    // everything in it, however deep (0.18.0: groups inside groups, so every group above counts).
+    var byId = {}; p.objects.forEach(function (x) { byId[x.id] = x; });
+    for (var up = byId[o.parent], guard = 0; up && guard < GROUP_DEPTH + 1; up = byId[up.parent], guard++) {
+      if (isInteractive(up) || up.decorative || up.label) return null;
     }
     if (o.type === 'field') return 'field';            // a box to type in (0.16.0): always read, by its label
     if (isInteractive(o)) return 'button';
@@ -2196,12 +2217,14 @@ var ANIRuntime = (function () {
    */
   function autoOrder(p) {
     var out = [];
+    // An object, then (for a group) everything in it, in the order it is drawn: groups inside
+    // groups are read where they are (0.18.0). depth stops a broken lesson from going round.
+    function visit(o, depth) {
+      if (readAs(o, p)) out.push(o.id);
+      if (o.type === 'group' && depth < GROUP_DEPTH) p.objects.forEach(function (k) { if (k.parent === o.id) visit(k, depth + 1); });
+    }
     p.layers.forEach(function (l) {
-      p.objects.forEach(function (o) {
-        if (o.layer !== l.id || o.parent) return;
-        if (readAs(o, p)) out.push(o.id);
-        if (o.type === 'group') p.objects.forEach(function (k) { if (k.parent === o.id && readAs(k, p)) out.push(k.id); });
-      });
+      p.objects.forEach(function (o) { if (o.layer === l.id && !o.parent) visit(o, 0); });
     });
     return out;
   }
@@ -4003,6 +4026,7 @@ var ANIRuntime = (function () {
     varValues: varValues, fillVars: fillVars, placeholdersIn: placeholdersIn, compare: compare,
     SOUND_RE: SOUND_RE, SOUND_KINDS: SOUND_KINDS, captionCues: captionCues, captionWords: captionWords, soundBank: soundBank,
     findLmsApi: findLmsApi,
+    GROUP_DEPTH: GROUP_DEPTH,                                                            // (groups inside groups: 0.18.0)
     QUESTION_KINDS: QUESTION_KINDS, TRIES: TRIES, plainAnswer: plainAnswer, numberIn: numberIn, answerRight: answerRight,   // (questions: 0.16.0)
     CLIP_MODES: CLIP_MODES, CLIP_PART_TYPES: CLIP_PART_TYPES, clipOf: clipOf, clipFrame: clipFrame
   };
@@ -4120,41 +4144,39 @@ const SUITE_APPS = [
   //        the other apps show (More apps, the splash's row, the links in
   //        help text). The app itself still finds its own entry, for its
   //        splash. Leave it off (or true) once the app is ready to share.
-  { id: 'txtedtr',  name: 'TXTEDTR',  color: '#d4400b', url: 'https://txtedtr.app/',
-    blurb: 'Code and text editor with highlighting, split view and live preview.',
-    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 12.5-2 2.5 2 2.5"/><path d="m14 12.5 2 2.5-2 2.5"/>' },
-  { id: 'pdfedtr',  name: 'PDFEDTR',  color: '#8a1c5c', url: 'https://pdfedtr.app/',
-    blurb: 'Edit, annotate and rearrange PDFs without uploading them anywhere.',
-    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>' },
-  { id: 'imgedtr',  name: 'IMGEDTR',  color: '#305305', url: 'https://imgedtr.app/',
-    blurb: 'Mark up screenshots and photos with spotlights, cursors and text.',
-    icon: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>' },
-  { id: 'sndedtr',  name: 'SNDEDTR',  color: '#4b5563', url: 'https://sndedtr.app/',
-    blurb: 'Multitrack audio editor with effects, recording and export.',
-    icon: '<path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"/>' },
-  { id: 'videdtr',  name: 'VIDEDTR',  color: '#0046ad', url: 'https://videdtr.app/',
-    blurb: 'Multitrack video editor with a timeline, effects and exact export.',
-    icon: '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>' },
-  { id: 'scrncstr', name: 'SCRNCSTR', color: '#00565d', url: 'https://scrncstr.app/',
-    blurb: 'Record your screen and webcam together, all on this machine.',
-    icon: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>' },
-  { id: 'vctredtr', name: 'VCTREDTR', color: '#5b21b6', url: 'https://vctredtr.app/',
-    blurb: 'Vector drawing with shape merging: union, subtract, fragment and more.',
-    icon: '<rect width="12" height="12" x="3" y="9" rx="2"/><circle cx="15" cy="9" r="6"/>' },
   // The id starts with a digit, which is fine as a string key; just never use
   // it bare as a JavaScript name or an unescaped CSS #id.
   { id: '3dedtr',   name: '3DEDTR',   color: '#7a4100', url: 'https://3dedtr.app/',
     blurb: '3D modeling with shape merging, ready for 3D printing.',
     icon: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>' },
+  // Gold, yellower than 3DEDTR's bronze.
+  { id: 'animedtr', name: 'ANIMEDTR', color: '#655800', url: 'https://animedtr.app/',
+    blurb: 'Animated, interactive lessons: a stage, a timeline and keyframes, no code.',
+    icon: '<circle cx="16" cy="7.5" r="4"/><circle cx="9.5" cy="13" r="2.5"/><circle cx="5" cy="18" r="1.5"/><path d="m16 16 3 3-3 3-3-3z"/>' },
   { id: 'dskedtr',  name: 'DSKEDTR',  color: '#065f46', url: 'https://dskedtr.app/',
     blurb: 'Desktop publishing: newsletters, flyers and booklets, with text that flows between boxes.',
     icon: '<path d="M2 5h8a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H2z"/><path d="M22 5h-8a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h8z"/>' },
-  // ANIMEDTR is still being built (2026-10-13): listed: false keeps it out of
-  // the other apps' lists until Dave says it is ready. Its colour is gold
-  // (Dave, 2026-10-13), yellower than 3DEDTR's bronze.
-  { id: 'animedtr', name: 'ANIMEDTR', color: '#655800', url: 'https://animedtr.app/', listed: false,
-    blurb: 'Animated, interactive lessons: a stage, a timeline and keyframes, no code.',
-    icon: '<circle cx="16" cy="7.5" r="4"/><circle cx="9.5" cy="13" r="2.5"/><circle cx="5" cy="18" r="1.5"/><path d="m16 16 3 3-3 3-3-3z"/>' }
+  { id: 'imgedtr',  name: 'IMGEDTR',  color: '#305305', url: 'https://imgedtr.app/',
+    blurb: 'Mark up screenshots and photos with spotlights, cursors and text.',
+    icon: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>' },
+  { id: 'pdfedtr',  name: 'PDFEDTR',  color: '#8a1c5c', url: 'https://pdfedtr.app/',
+    blurb: 'Edit, annotate and rearrange PDFs without uploading them anywhere.',
+    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>' },
+  { id: 'scrncstr', name: 'SCRNCSTR', color: '#00565d', url: 'https://scrncstr.app/',
+    blurb: 'Record your screen and webcam together, all on this machine.',
+    icon: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>' },
+  { id: 'sndedtr',  name: 'SNDEDTR',  color: '#4b5563', url: 'https://sndedtr.app/',
+    blurb: 'Multitrack audio editor with effects, recording and export.',
+    icon: '<path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"/>' },
+  { id: 'txtedtr',  name: 'TXTEDTR',  color: '#d4400b', url: 'https://txtedtr.app/',
+    blurb: 'Code and text editor with highlighting, split view and live preview.',
+    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 12.5-2 2.5 2 2.5"/><path d="m14 12.5 2 2.5-2 2.5"/>' },
+  { id: 'vctredtr', name: 'VCTREDTR', color: '#5b21b6', url: 'https://vctredtr.app/',
+    blurb: 'Vector drawing with shape merging: union, subtract, fragment and more.',
+    icon: '<rect width="12" height="12" x="3" y="9" rx="2"/><circle cx="15" cy="9" r="6"/>' },
+  { id: 'videdtr',  name: 'VIDEDTR',  color: '#0046ad', url: 'https://videdtr.app/',
+    blurb: 'Multitrack video editor with a timeline, effects and exact export.',
+    icon: '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>' }
 ];
 
 /* The apps to SHOW, from where `currentId` is looking: every listed app,
@@ -4690,13 +4712,21 @@ function suiteFamilyRow(currentId) {
   family.setAttribute('aria-labelledby', fh.id);
   const list = suiteEl('ul', 'suite-splash-list');
   for (const other of suiteShownApps(currentId)) {
-    if (other.id === currentId) continue;
     const li = document.createElement('li');
-    const a = suiteLink(other.url, '', 'suite-splash-app');
-    a.title = other.blurb;
-    a.append(suiteTile(other), suiteEl('span', 'suite-splash-app-name', other.name),
-             suiteEl('span', 'suite-sr', ' - ' + other.blurb + ' (opens in a new tab)'));
-    li.append(a);
+    if (other.id === currentId) {
+      const here = suiteEl('span', 'suite-splash-app is-here');
+      here.title = other.name + ' - the app you are in';
+      here.setAttribute('aria-current', 'page');
+      here.append(suiteTile(other), suiteEl('span', 'suite-splash-app-name', other.name),
+                  suiteEl('span', 'suite-splash-here', 'You are here'));
+      li.append(here);
+    } else {
+      const a = suiteLink(other.url, '', 'suite-splash-app');
+      a.title = other.blurb;
+      a.append(suiteTile(other), suiteEl('span', 'suite-splash-app-name', other.name),
+               suiteEl('span', 'suite-sr', ' - ' + other.blurb + ' (opens in a new tab)'));
+      li.append(a);
+    }
     list.append(li);
   }
   family.append(fh, list);
@@ -5950,7 +5980,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* =====================================================================
    1. BASICS
    ===================================================================== */
-const APP_VERSION = '0.17.0';
+const APP_VERSION = '0.18.0';
 const R = ANIRuntime;                 // short name for the shared runtime
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -6511,6 +6541,33 @@ const selObjs = () => sel.map(obj).filter(Boolean);
 const pickedObj = () => (sel.length === 1 ? obj(sel[0]) : null);
 const parentOf = (o) => (o && o.parent ? obj(o.parent) : null);
 const partsOf = (g) => project.objects.filter((o) => o.parent === g.id);
+/* Groups inside groups (0.18.0). The groups an object is in, from its own group up to the
+   one on the stage; everything inside a group, however deep; and how deep things go. */
+/** The groups above an object: its own group first, the one on the stage last. */
+function groupsAbove(o) {
+  const out = [];
+  for (let g = parentOf(o); g && out.length <= R.GROUP_DEPTH; g = parentOf(g)) out.push(g);
+  return out;
+}
+/** The object at the top (on the stage) that this object is part of (or itself). */
+const topOf = (o) => { const up = groupsAbove(o); return up.length ? up[up.length - 1] : o; };
+/** Everything inside a group: its parts, their parts, and so on. */
+function allInside(g) {
+  const out = [];
+  const visit = (x, depth) => partsOf(x).forEach((k) => { out.push(k); if (k.type === 'group' && depth < R.GROUP_DEPTH) visit(k, depth + 1); });
+  visit(g, 0);
+  return out;
+}
+/** How many groups deep a group's contents go (an empty group, or one holding no groups: 1). */
+function groupHeight(g) {
+  let most = 0;
+  partsOf(g).forEach((k) => { if (k.type === 'group') most = Math.max(most, groupHeight(k)); });
+  return most + 1;
+}
+/** The level of a group: 1 on the stage, 2 inside a group on the stage, and so on (0 for "the stage"). */
+const levelOf = (g) => (g ? groupsAbove(g).length + 1 : 0);
+/** Is a inside b (at any depth)? */
+const isInside = (a, b) => groupsAbove(a).some((g) => g === b);
 const isLocked = (o) => { const l = layerById(o.layer); return !!(l && l.locked); };
 const keyAt = (o, f) => o.keys.find((k) => k.f === f) || null;
 /** A list of actions, and the "then" and "otherwise" lists of each "if" in it (0.10.0). */
@@ -6743,11 +6800,15 @@ function updateZoomLabel() {
 }
 
 /* ----- Space for objects: the stage, or inside a group ----- */
-/** A group's inside (where its parts' numbers live), as a matrix to the stage. */
-function innerMatrix(g) {
+/**
+ * A group's inside (where its parts' numbers live), as a matrix: localInner to the space the
+ * group itself is in, innerMatrix all the way to the stage (through every group it is in, 0.18.0).
+ */
+function localInner(g) {
   const v = displayValues(g);
   return new DOMMatrix().translate(v.x + v.w / 2, v.y + v.h / 2).rotate(v.rot).scale(v.w / g.gw, v.h / g.gh).translate(-g.gw / 2, -g.gh / 2);
 }
+function innerMatrix(g) { return containerMatrix(g).multiply(localInner(g)); }
 /** The space an object's x, y, w and h are measured in (the stage, or its group's inside). */
 const containerMatrix = (o) => { const g = parentOf(o); return g ? innerMatrix(g) : new DOMMatrix(); };
 /** From an object's own middle (turned as it is) to the stage. */
@@ -6758,7 +6819,7 @@ const matrixAttr = (m) => 'matrix(' + [m.a, m.b, m.c, m.d, m.e, m.f].join(' ') +
 const scaleOf = (m) => Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)) || 1;
 /** Where new things go: inside the group being edited, or on the active layer. */
 function containerInfo() {
-  if (entered) { const g = obj(entered); return { parent: g.id, layer: g.layer, box: { x: 0, y: 0, w: g.gw, h: g.gh }, m: innerMatrix(g) }; }
+  if (entered) { const g = obj(entered); return { parent: g.id, layer: topOf(g).layer, box: { x: 0, y: 0, w: g.gw, h: g.gh }, m: innerMatrix(g) }; }
   return { parent: '', layer: activeLayer, box: { x: 0, y: 0, w: project.stage.w, h: project.stage.h }, m: new DOMMatrix() };
 }
 /** The box an object covers, straight up and down (a turned object's corners included). */
@@ -6768,13 +6829,12 @@ function boxOf(v) {
   const w = v.w * c + v.h * s, h = v.w * s + v.h * c;
   return { x: v.x + v.w / 2 - w / 2, y: v.y + v.h / 2 - h / 2, w, h };
 }
-/** Is the object drawn at the play head (alive, its layer showing, its group alive)? */
+/** Is the object drawn at the play head (alive, its layer showing, and every group it is in alive)? */
 function isShown(o) {
   const l = layerById(o.layer);
   if (l && l.hidden) return false;
   if (!R.aliveAt(o, frame)) return false;
-  const g = parentOf(o);
-  return !g || R.aliveAt(g, frame);
+  return groupsAbove(o).every((g) => R.aliveAt(g, frame));
 }
 
 function buildStage() {
@@ -6878,9 +6938,9 @@ function drawOverlay() {
 /* ----- Onion skin: faint copies of the picked objects a little before (blue) and after (green) ----- */
 /** An object's matrix and values at any frame (its group's too). */
 function objAt(o, f) {
-  const g = parentOf(o);
+  // Through every group it is in, from the one on the stage down (0.18.0).
   let m = new DOMMatrix();
-  if (g) { const gv = R.valuesAt(g, f, project); m = m.translate(gv.x + gv.w / 2, gv.y + gv.h / 2).rotate(gv.rot).scale(gv.w / g.gw, gv.h / g.gh).translate(-g.gw / 2, -g.gh / 2); }
+  groupsAbove(o).reverse().forEach((g) => { const gv = R.valuesAt(g, f, project); m = m.translate(gv.x + gv.w / 2, gv.y + gv.h / 2).rotate(gv.rot).scale(gv.w / g.gw, gv.h / g.gh).translate(-g.gw / 2, -g.gh / 2); });
   const v = R.valuesAt(o, f, project);
   return { m: m.translate(v.x + v.w / 2, v.y + v.h / 2).rotate(v.rot), v };
 }
@@ -6894,7 +6954,7 @@ function ghostShape(o, v) {
 function renderOnion() {
   if (!settings.onion) return;
   // The picked objects, or (with nothing picked) everything that moves.
-  const moves = (o) => o.keys.length > 1 || (parentOf(o) && parentOf(o).keys.length > 1) || (o.type === 'group' && o.keys.length > 1);
+  const moves = (o) => o.keys.length > 1 || groupsAbove(o).some((g) => g.keys.length > 1);
   let list = selObjs().filter(moves);
   if (!sel.length) list = project.objects.filter((o) => !o.parent && moves(o) && isShown(o));
   const step = Math.max(1, Math.round(project.stage.fps / 6));      // 4 frames apart at 24 frames a second
@@ -7008,15 +7068,27 @@ let longPressTimer = 0;          // a long press with a finger opens the context
 function pickTarget(target) {
   const node = target.closest ? target.closest('.ani-obj') : null;
   if (!node) return null;
-  let o = obj(node.getAttribute('data-id'));
+  const o = obj(node.getAttribute('data-id'));
   if (!o) return null;
-  if (entered) {
-    if (o.parent === entered) return isLocked(o) ? null : o.id;
+  // Inside a group (or several, 0.18.0): a click on something outside the group goes back
+  // out, a level at a time, until the group you are in holds what was clicked.
+  while (entered) {
     if (o.id === entered) return null;                  // the group's own empty space
-    exitGroup(true);                                    // clicked something outside: leave the group
+    if (holderIn(o, entered)) break;
+    exitGroup(true);
   }
-  if (o.parent) o = obj(o.parent);
-  return o && !isLocked(o) ? o.id : null;
+  // What gets picked: the thing in the space you are working in that holds what was clicked
+  // (the clicked object itself, or the group it is part of, however deep).
+  const h = holderIn(o, entered || '');
+  return h && !isLocked(h) ? h.id : null;
+}
+/**
+ * Of the objects directly in container (a group's id, or '' for the stage), the one that is,
+ * or holds, o. Null when o is not in that container at all.
+ */
+function holderIn(o, container) {
+  for (let x = o, guard = 0; x && guard <= R.GROUP_DEPTH + 1; x = parentOf(x), guard++) if ((x.parent || '') === container) return x;
+  return null;
 }
 
 stageWrap.addEventListener('pointerdown', (e) => {
@@ -7221,12 +7293,16 @@ stageWrap.addEventListener('pointerleave', () => { $('stPointer').textContent = 
 stageWrap.addEventListener('dblclick', (e) => {
   if (tool === 'pen') { finishPen(); return; }          // a double-click ends an open outline
   if (tool === 'points') { pointsDouble(e); return; }   // on a point: smooth or corner; on the outline: a new point
-  const node = e.target.closest && e.target.closest('.ani-obj');
+  // (The stage holds on to the pointer while it is pressed, so e.target is the stage itself:
+  // what is under the pointer is found by its position instead. Fixed in 0.18.0.)
+  const under = document.elementsFromPoint ? document.elementsFromPoint(e.clientX, e.clientY) : [e.target];
+  const node = under.map((x) => (x.closest ? x.closest('#stageWrap .ani-obj') : null)).find(Boolean);
   if (!node) return;
   const o = obj(node.getAttribute('data-id'));
   if (!o) return;
-  const top = o.parent && o.parent !== entered ? obj(o.parent) : o;
-  if (top.type === 'group' && entered !== top.id) { enterGroup(top.id, o.parent === top.id ? o.id : null); return; }
+  // A group (at the level you are working at): one level in, with the part that was double-clicked picked.
+  const top = holderIn(o, entered || '') || o;
+  if (top.type === 'group' && entered !== top.id) { const part = holderIn(o, top.id); enterGroup(top.id, part ? part.id : null); return; }
   if (top.type === 'clip') { enterClip(top.clip); return; }                                       // a clip: edit it (section 18h)
   if (o.type === 'path' && sel.includes(o.id) && !isLocked(o)) { setTool('points'); return; }   // an outline: straight into Edit points
   if (o.type === 'text' && sel.includes(o.id)) { settings.open.look = true; focusAfterBuild = 'inspText'; inspectorDirty = true; requestRender(); }
@@ -7479,7 +7555,7 @@ function copySelected(cut) {
   const list = selObjs();
   if (!list.length) { announce('Pick something to ' + (cut ? 'cut' : 'copy') + ' first.'); return; }
   const all = [];
-  list.forEach((o) => { all.push(o); if (o.type === 'group') all.push(...partsOf(o)); });
+  list.forEach((o) => { all.push(o); if (o.type === 'group') all.push(...allInside(o)); });   // (a group comes with everything in it, however deep)
   // A use of a clip comes with its clip (so it can be pasted into another lesson).
   const defs = [...new Set(all.filter((o) => o.type === 'clip').map((o) => o.clip))].map((id) => R.clipOf(project, id)).filter(Boolean);
   clip = { objects: JSON.parse(JSON.stringify(all)), defs: JSON.parse(JSON.stringify(defs)) };
@@ -7489,7 +7565,10 @@ function copySelected(cut) {
 }
 function pasteClip() {
   if (!clip) { announce('Nothing copied yet.'); return; }
-  if (entered && clip.objects.some((o) => o.type === 'group')) exitGroup(true);   // one level of groups: groups go on the stage
+  // Groups go inside the open group too (0.18.0), if they fit under the depth limit; if not, up a level until they do.
+  const copiedHeight = () => { const ids = new Set(clip.objects.map((o) => o.id)); const h = (o) => 1 + Math.max(0, ...clip.objects.filter((k) => k.parent === o.id && k.type === 'group').map(h));
+    return Math.max(0, ...clip.objects.filter((o) => o.type === 'group' && !ids.has(o.parent)).map(h)); };
+  while (entered && levelOf(obj(entered)) + copiedHeight() > R.GROUP_DEPTH) exitGroup(true);
   if (inClip() && clip.objects.some((o) => o.type === 'group' || o.type === 'clip')) { announce('Groups and clips cannot go inside a clip.'); return; }
   const ci = containerInfo();
   const layer = layerById(ci.layer);
@@ -7555,12 +7634,12 @@ function deleteSelected(quiet) {
   const list = selObjs();
   if (!list.length) return;
   const gone = new Set();
-  list.forEach((o) => { gone.add(o.id); if (o.type === 'group') partsOf(o).forEach((c) => gone.add(c.id)); });
+  list.forEach((o) => { gone.add(o.id); if (o.type === 'group') allInside(o).forEach((c) => gone.add(c.id)); });   // (everything inside goes too)
   commit();
   project.objects = project.objects.filter((o) => !gone.has(o.id));
   // Behaviours that pointed at them go too (they would have nothing to do).
   dropActions((a) => gone.has(a.target));
-  if (entered && gone.has(entered)) entered = null;
+  while (entered && !obj(entered)) entered = null;
   sel = []; pending.clear(); beforeMove.clear(); inspectorDirty = true;
   if (!quiet) announce((list.length === 1 ? list[0].name : plural(list.length, 'object')) + ' deleted. Undo brings ' + (list.length === 1 ? 'it' : 'them') + ' back.');
   requestRender();
@@ -7591,29 +7670,37 @@ function moveToLayer(ids, layerId) {
   list.forEach((o) => {
     project.objects.splice(project.objects.indexOf(o), 1);
     o.layer = layerId; project.objects.push(o);
-    if (o.type === 'group') partsOf(o).forEach((c) => { c.layer = layerId; });
+    if (o.type === 'group') allInside(o).forEach((c) => { c.layer = layerId; });
   });
   activeLayer = layerId; stageKey = ''; inspectorDirty = true;
   announce(plural(list.length, 'object') + ' moved to the layer ' + layerById(layerId).name + '.');
   requestRender();
 }
 
-/* ----- Groups (one level) ----- */
-/** Ctrl+G: put the picked objects in a group. Their keyframes go with them. */
+/* ----- Groups (and, from 0.18.0, groups inside groups) -----
+   Ctrl+G groups the picked objects where they are: on the stage, or inside
+   the group you are working in. Groups can hold groups, up to R.GROUP_DEPTH
+   (10) deep: a body, its arm, the arm's hand, its fingers. Enter (or a
+   double-click) goes one level in; Escape comes one level out. */
+/** Ctrl+G: put the picked objects in a group, in the space they are in. Their keyframes go with them. */
 function groupSelected() {
   const list = selObjs();
   if (list.length < 2) { announce('Pick two or more objects to group (Shift-click them).'); return; }
-  if (entered || list.some((o) => o.parent)) { announce('Groups cannot go inside groups yet. Leave the group first (Escape).'); return; }
   if (inClip()) { announce('A clip cannot hold groups. Its objects move together already: the clip is one thing on the stage.'); return; }
   if (list.some((o) => o.type === 'clip')) { announce('A clip cannot go inside a group yet. Leave it out of the group.'); return; }
-  if (list.some((o) => o.type === 'group')) { announce('One of them is already a group. Ungroup it first (one level of groups for now).'); return; }
+  // How deep it would go: the new group's level, plus the deepest group among the picked.
+  const container = parentOf(list[0]);
+  const deepest = Math.max(0, ...list.filter((o) => o.type === 'group').map(groupHeight));
+  if (levelOf(container) + 1 + deepest > R.GROUP_DEPTH) { announce('That would be more than ' + R.GROUP_DEPTH + ' groups deep. Group them further out (Escape leaves this group), or ungroup one first.'); return; }
   const boxes = list.map((o) => boxOf(displayValues(o)));
   const x = Math.min(...boxes.map((b) => b.x)), y = Math.min(...boxes.map((b) => b.y));
   const w = Math.max(1, Math.max(...boxes.map((b) => b.x + b.w)) - x), h = Math.max(1, Math.max(...boxes.map((b) => b.y + b.h)) - y);
-  // The group sits where the front-most of them was, on that layer.
+  // The group sits where the front-most of them was, on that layer (or in that group).
   const front = list.reduce((a, b) => (project.objects.indexOf(b) > project.objects.indexOf(a) ? b : a));
   commit();
-  const g = makeObject('group', { parent: '', layer: front.layer }, { x, y, w, h }, { name: nextName('Group'), gw: w, gh: h });
+  const g = makeObject('group', { parent: front.parent || '', layer: front.layer }, { x, y, w, h }, { name: nextName('Group'), gw: w, gh: h });
+  // Things learners drag, or that answer a question, must be on their own: inside a group they are not any more.
+  const lost = list.filter((o) => o.drag || o.drop || o.q);
   // The parts' numbers become numbers inside the group (measured from its corner).
   list.sort((a, b) => project.objects.indexOf(a) - project.objects.indexOf(b)).forEach((o) => {
     o.parent = g.id; o.layer = front.layer;
@@ -7622,10 +7709,14 @@ function groupSelected() {
   });
   project.objects.splice(project.objects.indexOf(front) + 1, 0, g);
   sel = [g.id]; pending.clear(); beforeMove.clear(); stageKey = ''; inspectorDirty = true;
-  announce(plural(list.length, 'object') + ' grouped as ' + g.name + '. Double-click it, or press Enter on the stage, to work on its parts.');
+  announce(plural(list.length, 'object') + ' grouped as ' + g.name + (container ? ', inside ' + container.name : '') + '. Double-click it, or press Enter on the stage, to work on its parts.' +
+    (lost.length ? ' ' + lost[0].name + ' is in a group now, so it is no longer dragged or an answer (those work on things on their own).' : ''));
   requestRender();
 }
-/** Ctrl+Shift+G: take the parts out of the picked group(s), where they are now on the stage. */
+/**
+ * Ctrl+Shift+G: take the parts out of the picked group(s), where they are now. They go into
+ * the space the group was in: the stage, or the group around it.
+ */
 function ungroupSelected() {
   const groups = selObjs().filter((o) => o.type === 'group');
   if (!groups.length) { announce('Pick a group to ungroup.'); return; }
@@ -7634,7 +7725,7 @@ function ungroupSelected() {
   let lostMotion = false;
   groups.forEach((g) => {
     if (g.keys.length > 1) lostMotion = true;
-    const m = innerMatrix(g), gv = displayValues(g);
+    const m = localInner(g), gv = displayValues(g);                  // (the group's inside, in the space the group is in)
     const sx = gv.w / g.gw, sy = gv.h / g.gh;
     // Each part keeps where it is right now: its numbers go through the group's position, turn and size.
     const place = (v) => {
@@ -7645,31 +7736,37 @@ function ungroupSelected() {
     const at = project.objects.indexOf(g);
     partsOf(g).forEach((o) => {
       place(o.base); o.keys.forEach((k) => place(k.v));
-      o.parent = ''; o.layer = g.layer;
+      o.parent = g.parent || ''; o.layer = g.layer;
+      // (A group freed from its group keeps its own inside as it was: its parts stay measured in it.)
       freed.push(o.id);
     });
     // Behaviours on the group itself are lost with it; ones that pointed at it go too.
     project.objects.splice(at, 1);
     dropActions((a) => a.target === g.id);
+    if (entered === g.id) entered = g.parent || null;
   });
-  if (entered && groups.some((g) => g.id === entered)) entered = null;
-  sel = freed; pending.clear(); beforeMove.clear(); stageKey = ''; inspectorDirty = true;
+  sel = freed.filter((id) => obj(id) && (obj(id).parent || '') === (obj(freed[0]).parent || '')); pending.clear(); beforeMove.clear(); stageKey = ''; inspectorDirty = true;
   announce('Ungrouped.' + (lostMotion ? ' The group\'s own motion is gone (each part kept where it was at this frame); Undo brings it back.' : ''));
   requestRender();
 }
-/** Work on a group's parts (double-click it, or Enter on the stage). */
+/** Where you are, in words: "Hand, in Arm, in Body". */
+const whereWords = (g) => [g, ...groupsAbove(g)].map((x) => x.name).join(', in ');
+/** Work on a group's parts (double-click it, or Enter on the stage): one level in. */
 function enterGroup(id, pickPart) {
   const g = obj(id); if (!g || g.type !== 'group') return;
   entered = id; treeOpen.add(id);
+  groupsAbove(g).forEach((x) => treeOpen.add(x.id));                  // (the layers tree shows the way down)
   sel = pickPart ? [pickPart] : []; pending.clear(); beforeMove.clear(); inspectorDirty = true;
-  announce('Inside ' + g.name + ': clicks pick its parts. Escape leaves the group.');
+  announce('Inside ' + whereWords(g) + ': clicks pick its parts. Escape goes back out' + (parentOf(g) ? ' to ' + parentOf(g).name : '') + '.');
   requestRender();
 }
+/** Escape: one level out (to the group around this one, or the stage), with the group you left picked. */
 function exitGroup(quiet) {
   if (!entered) return;
-  const id = entered;
-  entered = null; sel = [id]; pending.clear(); beforeMove.clear(); inspectorDirty = true;
-  if (!quiet) announce('Left the group ' + obj(id).name + '.');
+  const g = obj(entered);
+  const up = g ? parentOf(g) : null;
+  entered = up ? up.id : null; sel = g ? [g.id] : []; pending.clear(); beforeMove.clear(); inspectorDirty = true;
+  if (!quiet && g) announce('Left ' + g.name + (up ? '. Inside ' + whereWords(up) + '.' : '.'));
   requestRender();
 }
 
@@ -7743,7 +7840,7 @@ function menuItems() {
     add('Paste', 'Ctrl+V', pasteClip, !clip);
     add('Duplicate', 'Ctrl+D', duplicateSelected);
     items.push('sep');
-    if (list.length > 1) add('Group', 'Ctrl+G', groupSelected, entered || list.some((o) => o.type === 'group'));
+    if (list.length > 1) add('Group', 'Ctrl+G', groupSelected, inClip() || list.some((o) => o.type === 'clip'));   // (groups can hold groups: 0.18.0)
     if (mergeCandidates().length >= 2) { Object.entries(MERGE_OPS).forEach(([op, m]) => add('Merge: ' + m.label, 'Alt+Shift+' + m.key, () => mergeShapes(op))); items.push('sep'); }
     if (list.some((o) => o.type === 'group')) add('Ungroup', 'Ctrl+Shift+G', ungroupSelected);
     if (one && one.type === 'group') add('Work on its parts', 'Enter', () => enterGroup(one.id));
@@ -7753,7 +7850,7 @@ function menuItems() {
     if (one && (one.type === 'rect' || one.type === 'ellipse')) add('Turn into an outline', '', () => convertToOutline(one), isLocked(one));
     const pair = followPair();
     if (pair) add('Move ' + pair.mover.name + ' along ' + pair.path.name, '', () => followAlong(pair.mover, pair.path));
-    if (entered) add('Leave the group', 'Escape', () => exitGroup());
+    if (entered) add(parentOf(obj(entered)) ? 'Out to ' + parentOf(obj(entered)).name : 'Leave the group', 'Escape', () => exitGroup());
     if (one) { add('Bring forward', 'Ctrl+]', () => moveInStack(one, 1)); add('Send back', 'Ctrl+[', () => moveInStack(one, -1)); }
     items.push('sep');
     add('Delete', 'Delete', () => deleteSelected());
@@ -7763,7 +7860,7 @@ function menuItems() {
     add('Add a marker here', 'M', addMarker, inClip());
     add('New flipbook', '', newFlipbook);
     if (inClip()) add('Back to the lesson', 'Escape', () => leaveClip());
-    if (entered) add('Leave the group', 'Escape', () => exitGroup());
+    if (entered) add(parentOf(obj(entered)) ? 'Out to ' + parentOf(obj(entered)).name : 'Leave the group', 'Escape', () => exitGroup());
   }
   return items;
 }
@@ -7897,10 +7994,12 @@ function treeRows() {
   project.layers.slice().reverse().forEach((l) => {
     rows.push({ kind: 'layer', id: l.id, level: 1, l });
     if (!treeOpen.has(l.id)) return;
-    project.objects.filter((o) => !o.parent && o.layer === l.id).reverse().forEach((o) => {
-      rows.push({ kind: 'obj', id: o.id, level: 2, o });
-      if (o.type === 'group' && treeOpen.has(o.id)) partsOf(o).reverse().forEach((c) => rows.push({ kind: 'obj', id: c.id, level: 3, o: c }));
-    });
+    // An object, then (an open group) its parts, front first, one level further in each time (0.18.0: groups inside groups).
+    const add = (o, level) => {
+      rows.push({ kind: 'obj', id: o.id, level, o });
+      if (o.type === 'group' && treeOpen.has(o.id) && level <= R.GROUP_DEPTH + 1) partsOf(o).reverse().forEach((c) => add(c, level + 1));
+    };
+    project.objects.filter((o) => !o.parent && o.layer === l.id).reverse().forEach((o) => add(o, 2));
   });
   return rows;
 }
@@ -8061,7 +8160,7 @@ function pickLayer(id) {
 /** Pick an object from the tree (a group's part: you go inside its group). */
 function pickFromTree(id, adding) {
   const o = obj(id); if (!o) return;
-  if (o.parent && entered !== o.parent) { entered = o.parent; sel = []; }
+  if (o.parent && entered !== o.parent) { entered = o.parent; sel = []; groupsAbove(o).forEach((g) => treeOpen.add(g.id)); }
   if (!o.parent && entered) entered = null;
   treeFocus = id;
   if (adding) toggleInSelection(id); else setSelection([id]);
@@ -9726,8 +9825,10 @@ function lessonProblems() {
     // A picture says what it shows, or is marked as decoration.
     // A drawing brought in as shapes (0.15.0): its parts are decoration, so the group is the only
     // thing a screen reader could read. Like a picture, it needs words (or to be decoration).
-    if (o.type === 'group' && !R.isInteractive(o) && !o.label.trim() && !o.decorative) {
-      const parts = project.objects.filter((k) => k.parent === o.id);
+    // (A group on its own, not one inside another: with 0.18.0's groups inside groups, a drawing's
+    // own groups are inside it, and the drawing as a whole is what needs the words.)
+    if (o.type === 'group' && !o.parent && !R.isInteractive(o) && !o.label.trim() && !o.decorative) {
+      const parts = allInside(o).filter((k) => k.type !== 'group');
       if (parts.length && parts.every((k) => k.decorative)) out.push({ level: 'must', text: 'The drawing ' + o.name + ' needs words for screen readers (Read aloud as), or tick Decoration.', fix: () => fixObject(o, 'inspLabel') });
       // (Some of it is text, which is read: then it is a tip, since the words may be enough.)
       else if (parts.some((k) => k.decorative)) out.push({ level: 'tip', text: 'The drawing ' + o.name + ': its text is read, but not what it shows. Say that in Read aloud as, or tick Decoration.', fix: () => fixObject(o, 'inspLabel') });
@@ -9922,7 +10023,7 @@ function buildHelp() {
   $('paneStart').replaceChildren(
     el('h3', { text: 'Getting started' }),
     el('ol', null,
-      el('li', { text: 'Draw a shape, text box or picture from the tool rail, or start from a template (the Templates button: the water cycle, a bouncing ball, a motion path, clips and a flipbook, a labelled diagram, click to reveal, a quiz with a score, sort these, step by step, flip cards, match them, check your understanding, or the sample). A drawing from VCTREDTR (an SVG file: the Picture tool, a drop, or paste its SVG code) comes in as shapes you can animate one by one. Put things on layers to keep them tidy; group things that move together (Ctrl+G). The Lesson\u2019s Colour scheme gives everything six colours that go together.' }),
+      el('li', { text: 'Draw a shape, text box or picture from the tool rail, or start from a template (the Templates button: the water cycle, a bouncing ball, a motion path, clips and a flipbook, a labelled diagram, click to reveal, a quiz with a score, sort these, step by step, flip cards, match them, check your understanding, or the sample). A drawing from VCTREDTR (an SVG file: the Picture tool, a drop, or paste its SVG code) comes in as shapes you can animate one by one. Put things on layers to keep them tidy; group things that move together (Ctrl+G), and groups inside groups (an arm inside a body, a hand inside the arm) to animate each part on its own. The Lesson\u2019s Colour scheme gives everything six colours that go together.' }),
       el('li', { text: 'To animate it: move the play head along the timeline, move or change the object, then press K. It glides from where it was to where it is now. Add more keyframes the same way.' }),
       el('li', { text: 'Add markers (M) for the moments that matter, with a description each: they become the lesson\u2019s text version, and learners can step between them.' }),
       el('li', { text: 'Give an object a behaviour in the Inspector: when it is activated (a click, a tap, Enter or Space), or when it is pointed at or focused (to show a label, say). It becomes a button in the lesson. The whole lesson has behaviours too (Lesson, Behaviours): when it starts, when the play head reaches a marker, when a key is pressed. Say something shows the words under the lesson and reads them out; Open a web page opens it in a new tab.' }),
@@ -10128,7 +10229,7 @@ function renderStatus() {
   else if (tool === 'points') words = o && o.type === 'path' ? 'Edit points: drag a point or a handle. Alt+click: corner or smooth. Double-click the outline: a new point. Escape: Select.' : 'Edit points: click an outline to see its points. Escape goes back to Select.';
   else if (tool !== 'select') words = toolWord(tool) + ': drag on the stage to draw it. Escape goes back to Select.';
   else if (inClip() && !project.objects.length) words = openClip().flip ? 'An empty page: draw on it with the Pencil (B). Escape goes back to the lesson.' : 'This clip is empty: draw in it. Escape goes back to the lesson.';
-  else if (entered) words = 'Inside ' + obj(entered).name + ': click its parts. Escape, or a click outside, leaves the group.';
+  else if (entered) words = 'Inside ' + whereWords(obj(entered)) + ': click its parts' + (obj(entered).type === 'group' && partsOf(obj(entered)).some((k) => k.type === 'group') ? ' (double-click a group in it to go further in)' : '') + '. Escape goes out one level; a click outside goes out to it.';
   else if (!project.objects.length) words = 'Draw a shape, text or picture from the tool rail, or open the sample lesson (the sparkle button).';
   else if (o && !isShown(o)) words = o.name + ' is not on stage at this frame.';
   hint.textContent = words; hint.hidden = !words;
@@ -16218,14 +16319,15 @@ TEMPLATES.splice(TEMPLATES.findIndex((t) => t.id === 'sample'), 0,
 
    HOW IT IS GROUPED (the dialog asks)
      - As one group (the usual): move the whole drawing, or open the
-       group to animate any shape in it.
-     - A group for each of its own top-level groups (when it has two or
-       more: a character's head, arms and legs from VCTREDTR's layers),
-       so each one can be animated on its own.
+       group to animate what is in it. Since 0.18.0 (groups inside
+       groups) the drawing's own groups stay groups inside it (a
+       character's head, arms and legs from VCTREDTR's layers), up to ten
+       groups deep; a group holding just one thing is not kept (the thing
+       moves up instead).
      - As one picture: flat, like a PNG. Always possible, and the only
        choice when there are too many shapes for a lesson.
-   Inside a group or a clip (which cannot hold groups) the shapes are
-   added straight in, loose.
+   Inside a group, the drawing goes in as a group of its own. Inside a
+   clip (which cannot hold groups), the shapes go straight in, loose.
    ===================================================================== */
 const SVG_IN = {
   bytes: 10e6,          // the biggest file read at all
@@ -16509,18 +16611,21 @@ function svgPieces(clean) {
   if (!area) throw new Error('That SVG has nothing in it to draw.');
   root.translate(new sc.Point(-area.x, -area.y));                       // (so the drawing starts at 0, 0)
   const pieces = [], notes = { gradients: 0, tooLong: 0, crossings: 0 };
-  const tops = [];                                                      // the drawing's own top-level groups
-  // A drawing wrapped in one group (VCTREDTR wraps the whole drawing so) has its top-level
-  // groups one step further in: that wrapper does not count as one of them.
+  // The drawing's own groups (0.18.0: kept, as groups inside the drawing's group). Each piece
+  // carries its path: the groups it is in, outermost first ({ key, name }).
+  let groupCount = 0;
+  // A drawing wrapped in one group (VCTREDTR wraps the whole drawing so) has its groups one
+  // step further in: that wrapper is the drawing itself, not one of its groups.
   let base = root;
   while (kids(base).filter((c) => c.visible).length === 1 && kids(base).find((c) => c.visible).className === 'Group') base = kids(base).find((c) => c.visible);
-  const walk = (it, opacity, groupName, top) => {
+  const walk = (it, opacity, groupName, path) => {
     if (!it.visible) return;
     const op = opacity * (Number.isFinite(it.opacity) ? it.opacity : 1);
     if (it.className === 'Group') {
-      let t = top;
-      if (it.parent === base && kids(it).length) { t = tops.length; tops.push(svgCleanName(it.name) || 'Group ' + (tops.length + 1)); }
-      kids(it).forEach((c) => walk(c, op, svgCleanName(it.name) || groupName, t));
+      // (The root, and the wrapper the whole drawing sits in, are not groups of their own.)
+      const own = it !== root && it !== base && !isAbove(it, base) && kids(it).length;
+      const next = own ? path.concat([{ key: ++groupCount, name: svgCleanName(it.name) }]) : path;
+      kids(it).forEach((c) => walk(c, op, svgCleanName(it.name) || groupName, next));
       return;
     }
     if (it.className === 'Path' || it.className === 'CompoundPath') {
@@ -16551,7 +16656,7 @@ function svgPieces(clean) {
       pieces.push({ kind: 'path', d, box: { x: b.x, y: b.y, w: Math.max(b.width, 1), h: Math.max(b.height, 1) },
         fill: fill ? fill.hex : stroke.hex, open: !fill,
         stroke: fill && stroke ? stroke.hex : '', strokeW: stroke ? Math.min(100, it.strokeWidth * k) : 0,
-        opacity: op * (fill ? fill.alpha : stroke.alpha), name: svgCleanName(it.name), group: groupName, top });
+        opacity: op * (fill ? fill.alpha : stroke.alpha), name: svgCleanName(it.name), group: groupName, path });
       return;
     }
     if (it.className === 'PointText' && it.content && it.content.trim()) {
@@ -16566,11 +16671,14 @@ function svgPieces(clean) {
       pieces.push({ kind: 'text', text: it.content.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).join('\n').trim().slice(0, R.LIMITS.text),
         box: { x: c.x - w / 2, y: c.y - h / 2, w, h }, size: Math.max(6, Math.min(400, it.fontSize * k)),
         bold: /bold|[6-9]00/.test(String(it.fontWeight)), italic: /italic/.test(String(it.fontWeight)) || /italic/.test(String(it.fontStyle || '')),
-        align: just, rot, fill: fill.hex, opacity: op * fill.alpha, name: '', group: groupName, top });
+        align: just, rot, fill: fill.hex, opacity: op * fill.alpha, name: '', group: groupName, path });
     }
   };
-  kids(root).forEach((c) => walk(c, 1, '', -1));
-  return { pieces, size: { w: area.w, h: area.h }, tops, notes };
+  // (Is this Paper.js group one of the wrappers around the drawing: above base?)
+  function isAbove(item, below) { for (let x = below.parent; x; x = x.parent) if (x === item) return true; return false; }
+  kids(root).forEach((c) => walk(c, 1, '', []));
+  const groupsUsed = new Set(); pieces.forEach((p) => p.path.forEach((g) => groupsUsed.add(g.key)));
+  return { pieces, size: { w: area.w, h: area.h }, groups: groupsUsed.size, notes };
 }
 /** How much an item's transform stretches it (for stroke widths and text sizes). */
 function scaleOfPaper(it) {
@@ -16611,15 +16719,16 @@ function svgFromPieces(pieces, size, forPicture) {
 
 /* ----- The dialog ----- */
 /**
- * Ask how the drawing comes in. Resolves to 'one' (one group), 'tops' (a group for each
- * of its top-level groups), 'loose' (shapes straight into the group or clip that is open),
- * 'picture', or null (Cancel).
+ * Ask how the drawing comes in. Resolves to 'one' (one group, its own groups inside it),
+ * 'loose' (shapes straight into the clip that is open, or a group ten deep), 'picture',
+ * or null (Cancel).
  */
 function askSvgHow(name, read, room) {
   return new Promise((ok) => {
-    const dlg = $('svgDlg'), { pieces, tops, notes } = read;
+    const dlg = $('svgDlg'), { pieces, notes } = read;
     const paths = pieces.filter((p) => p.kind === 'path').length, texts = pieces.length - paths;
-    const loose = !!entered || inClip();
+    // Straight in, loose, only where a group cannot go: in a clip, or in a group already ten deep (0.18.0).
+    const loose = inClip() || (!!entered && levelOf(obj(entered)) >= R.GROUP_DEPTH);
     const tooMany = pieces.length > Math.min(SVG_IN.parts, room);
     $('svgDlgText').textContent = name + ': ' + (pieces.length ? plural(paths, 'shape') + (texts ? ' and ' + texts + (texts === 1 ? ' text box' : ' text boxes') : '') : 'nothing that ANIMEDTR can draw as shapes') + '.';
     // What changed on the way in.
@@ -16637,11 +16746,9 @@ function askSvgHow(name, read, room) {
     // The choices that make sense here.
     const opts = [];
     if (!tooMany && pieces.length) {
-      if (loose) opts.push(['loose', 'As shapes', inClip() ? 'Straight into this clip (a clip holds shapes, not groups).' : 'Straight into this group (a group cannot hold another group).']);
-      else {
-        opts.push(['one', 'As one group of shapes', 'Move the whole drawing, or open the group (double-click, or Enter) to animate any shape in it.']);
-        if (tops.length >= 2) opts.push(['tops', 'A group for each of its ' + tops.length + ' groups', 'Each of ' + listWords(tops) + ' can be animated on its own.']);
-      }
+      if (loose) opts.push(['loose', 'As shapes', inClip() ? 'Straight into this clip (a clip holds shapes, not groups).' : 'Straight into this group (it is as many groups deep as groups go).']);
+      else opts.push(['one', 'As one group of shapes', (read.groups ? 'Its own ' + plural(read.groups, 'group') + ' stay groups inside it, so a head, an arm or a wing can be animated on its own. ' : '') +
+        'Move the whole drawing, or open the group (double-click, or Enter) to animate what is in it.']);
     }
     opts.push(['picture', 'As one picture', 'Flat, like a PNG: it moves as one thing, and its shapes cannot be changed.']);
     const box = $('svgHow');
@@ -16657,12 +16764,6 @@ function askSvgHow(name, read, room) {
   });
 }
 $('svgAdd').addEventListener('click', () => $('svgDlg').close('add'));
-/** "Head, Arms and Legs" (the first few, then "and 3 more"). */
-function listWords(words) {
-  const w = words.slice(0, 4), more = words.length - w.length;
-  if (more) return w.join(', ') + ' and ' + more + ' more';
-  return w.length > 1 ? w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1] : w[0];
-}
 
 /* ----- Making the objects ----- */
 /**
@@ -16683,7 +16784,7 @@ async function addSvgDrawing(text, name, at) {
   const ci = containerInfo(), layer = layerById(ci.layer);
   if (!ci.parent && layer && layer.locked) { announce('The layer ' + layer.name + ' is locked. Unlock it in the timeline, or pick another layer.'); return; }
   const cap = inClip() ? R.LIMITS.clipObjects : R.LIMITS.objects;
-  const room = cap - project.objects.length - (entered || inClip() ? 0 : Math.max(1, read.tops.length));
+  const room = cap - project.objects.length - (inClip() ? 0 : 1 + read.groups);
   const how = await askSvgHow(name, read, room);
   if (!how) return;
   const label = clean.title ? clean.title + (clean.desc ? '. ' + clean.desc : '') : clean.desc;
@@ -16727,31 +16828,56 @@ async function addSvgDrawing(text, name, at) {
     onThisPage(o);                                                      // (in a flipbook: on the page you are on)
     return o;
   };
-  /** A group from some pieces: its box is theirs, in the drawing's numbers; the group is placed by k. */
-  const groupFor = (list, gname) => {
+  /** The box round some pieces, in the drawing's numbers. */
+  const boxAround = (list) => {
     const x = Math.min(...list.map((p) => p.box.x)), y = Math.min(...list.map((p) => p.box.y));
-    const gw = Math.max(1, Math.max(...list.map((p) => p.box.x + p.box.w)) - x), gh = Math.max(1, Math.max(...list.map((p) => p.box.y + p.box.h)) - y);
-    const g = makeObject('group', { parent: '', layer: ci.layer }, { x: ox + x * k, y: oy + y * k, w: gw * k, h: gh * k }, { name: gname, gw, gh });
-    onThisPage(g);
-    made.push(g);
-    list.forEach((p) => made.push(objectFor(p, g.id, ci.layer, -x, -y, 1, true)));
-    return g;
+    return { x, y, w: Math.max(1, Math.max(...list.map((p) => p.box.x + p.box.w)) - x), h: Math.max(1, Math.max(...list.map((p) => p.box.y + p.box.h)) - y) };
   };
   if (how === 'loose' || read.pieces.length === 1) {
     read.pieces.forEach((p) => { const o = objectFor(p, ci.parent, ci.layer, ox, oy, k, false); if (read.pieces.length === 1 && !p.name) o.name = name; made.push(o); });
-  } else if (how === 'tops') {
-    // One group for each top-level group; shapes outside any group go in a group of their own.
-    const sets = read.tops.map((t, i) => [t, read.pieces.filter((p) => p.top === i)]);
-    const rest = read.pieces.filter((p) => p.top < 0);
-    if (rest.length) sets.push(['Other shapes', rest]);
-    sets.forEach(([t, list]) => {
-      if (!list.length) return;
-      if (list.length === 1) { const o = objectFor(list[0], '', ci.layer, ox, oy, k, false); o.name = t; made.push(o); }
-      else groupFor(list, t);
-    });
   } else {
-    const g = groupFor(read.pieces, name);
+    // The drawing's groups, as a tree (0.18.0): each piece goes into the group its path ends in, as
+    // deep as groups can go from here (deeper ones join the deepest allowed). Order is kept.
+    const levelsLeft = R.GROUP_DEPTH - levelOf(ci.parent ? obj(ci.parent) : null) - 1;    // (below the drawing's own group)
+    const tree = { name, items: [] }, byKey = new Map();
+    read.pieces.forEach((p) => {
+      let node = tree;
+      p.path.slice(0, Math.max(0, levelsLeft)).forEach((step) => {
+        let child = byKey.get(step.key);
+        if (!child) { child = { name: step.name, items: [] }; byKey.set(step.key, child); node.items.push({ group: child }); }
+        node = child;
+      });
+      node.items.push({ piece: p });
+    });
+    // A group with only one thing in it is not worth a group: that one thing moves up instead.
+    // (A shape with no name of its own that moves up takes the group's name: "Sun".)
+    const simplify = (node) => {
+      node.items = node.items.flatMap((it) => {
+        if (!it.group) return [it];
+        simplify(it.group);
+        if (it.group.items.length !== 1) return [it];
+        const only = it.group.items[0];
+        if (only.piece && !only.piece.name && it.group.name) only.piece.name = it.group.name;
+        if (only.group && !only.group.name) only.group.name = it.group.name;
+        return [only];
+      });
+    };
+    simplify(tree);
+    const piecesIn = (node) => node.items.flatMap((it) => (it.piece ? [it.piece] : piecesIn(it.group)));
+    let unnamed = 0;
+    /** Make a node's contents inside group g, whose corner is at (gx, gy) in the drawing's numbers. */
+    const fill = (node, g, gx, gy) => node.items.forEach((it) => {
+      if (it.piece) { made.push(objectFor(it.piece, g.id, ci.layer, -gx, -gy, 1, true)); return; }
+      const b = boxAround(piecesIn(it.group));
+      const sub = makeObject('group', { parent: g.id, layer: ci.layer }, { x: b.x - gx, y: b.y - gy, w: b.w, h: b.h }, { name: it.group.name || 'Group ' + (++unnamed), gw: b.w, gh: b.h });
+      onThisPage(sub); made.push(sub);
+      fill(it.group, sub, b.x, b.y);
+    });
+    const b = boxAround(read.pieces);
+    const g = makeObject('group', { parent: ci.parent, layer: ci.layer }, { x: ox + b.x * k, y: oy + b.y * k, w: b.w * k, h: b.h * k }, { name, gw: b.w, gh: b.h });
     g.label = label;
+    onThisPage(g); made.push(g);
+    fill(tree, g, b.x, b.y);
   }
   if (made.length === 1 && label && !made[0].label) made[0].label = label;
   // In the lesson's stacking order: on top of everything (in the open group: after its last part).
@@ -16761,7 +16887,8 @@ async function addSvgDrawing(text, name, at) {
   stageKey = ''; inspectorDirty = true;
   // Ask what it shows (as for a picture), unless the file said already.
   if (!label && top.length === 1) { settings.open.access = true; saveSettings(); focusAfterBuild = 'inspLabel'; }
-  announce(name + ' added as ' + (top.length === 1 ? (top[0].type === 'group' ? 'a group of ' + plural(made.length - 1, 'part') : 'a shape') : plural(top.length, 'object')) +
+  const inner = made.filter((o) => o.type === 'group').length - 1;
+  announce(name + ' added as ' + (top.length === 1 ? (top[0].type === 'group' ? 'a group of ' + plural(made.length - 1 - Math.max(0, inner), 'part') + (inner > 0 ? ', in ' + plural(inner, 'group') + ' of its own' : '') : 'a shape') : plural(top.length, 'object')) +
     (label ? ', read aloud as "' + label.slice(0, 80) + '"' : '. Say what it shows, in Read aloud as, or tick Decoration if it is just for looks') + '.');
   requestRender();
 }
@@ -17386,6 +17513,11 @@ const APP_FEATURES = [
    straight off a disk. The long form is CHANGELOG.md beside index.html.
    Newest first; the first entry is the version that is running. */
 const CHANGELOG = [
+  { version: '0.18.0', date: '2026-10-15', notes: [
+    'Groups inside groups, up to 10 deep: a body, its arm, the arm\u2019s hand, the hand\u2019s fingers, each animated on its own (the hand waves while the arm swings). Ctrl+G groups the picked things where they are, also inside a group. Double-click (or Enter) goes one level in, Escape one level out, and ANIMEDTR says where you are ("Inside Hand, in Arm, in Body"). The layers tree shows every level. Ungroup puts the parts in the group around it.',
+    'SVG drawings from VCTREDTR keep their own groups (a character\u2019s head, arms and legs) inside the drawing\u2019s group, so the "a group for each" choice is gone. A group holding just one thing is not kept.',
+    'Fixed: double-clicking a group (or a clip, or text) with a mouse did not open it; Enter always did.'
+  ] },
   { version: '0.17.0', date: '2026-10-14', notes: [
     'Video export as MP4 (Export, Video, Format), the one that plays everywhere: PowerPoint and Keynote, phones, QuickTime, Kaltura. H.264 pictures (constrained baseline, which every player reads) and AAC sound, put into the file by ANIMEDTR itself, with its index first so it starts playing at once. WebM is still there (smaller, for browsers, Brightspace and YouTube).',
     'The dialog says what this browser can do: no H.264 encoder (Chromium on Linux, say) means WebM only; no AAC encoder means the MP4\u2019s sound is Opus (browsers and VLC play it, PowerPoint and QuickTime may not). Chrome and Edge on Windows and a Mac make both.'
