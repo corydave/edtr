@@ -1,5 +1,142 @@
 # ANIMEDTR changelog
 
+## 0.20.0 - 2026-10-15
+
+**Masks** (Dave's pick: mask groups, like Illustrator's clipping masks;
+hard edges, with a Soft edge option).
+
+- **Make a mask:** pick a shape and the things that should show through
+  it, then **Make a mask** (the Inspector's Arrange section, or the
+  right-click menu). They become a group (Mask 1) whose **front-most part
+  is the window**: everything else in the group shows only where the
+  window is. Everything outside it is cut away.
+- **The window animates like anything else.** Move it for a torch beam
+  sweeping a dark scene, grow it from nothing for a reveal, slide it for a
+  wipe across a diagram, fade it to fade what shows. Any kind of part can
+  be the window: a shape, an outline, text (words you see the picture
+  through), a picture, even a group. Its colour does not matter; how
+  see-through it is does.
+- **Soft edge** (the Inspector's new **Mask** section) feathers the window,
+  so a spotlight fades out gently (0 is a clean cut). The section also
+  picks which part is the window, and **Release mask** makes it an
+  ordinary group again (the window shows as itself). Any group can become
+  a mask there, with its front part as the window.
+- **While you work inside a mask group** (double-click it), its mask is
+  off, so every part shows in full; a dashed line shows the window's edge.
+  Leave the group and the mask is back. On the stage the window shows
+  faintly, so it can be seen and picked, and its dashed edge shows whenever
+  the group is picked.
+- **Copy, paste and duplicate** keep the mask (the copy looks through its
+  own copy of the window). Deleting the window, or ungrouping, ends the
+  mask.
+- **Screen readers** never read the window (it only shapes what shows);
+  the other parts are read as in any group, and a named mask group is read
+  as one picture, as before.
+- **Everywhere a lesson goes:** the exported lesson, SCORM, the video, the
+  GIF and the picture of a frame all show the mask, using SVG's own
+  `<mask>` (with each stage on a page given its own ids, so a template's
+  card and the stage never mix theirs up).
+- **A new template, A torch in the deep (masks):** a dark sea that shows
+  only through a round torch beam with a soft edge, which sweeps across to
+  find fish, a crab and a treasure chest.
+- In the project file a mask group has `maskBy` (its window's id) and
+  `maskSoft`. A window that is not one of the group's own parts is ignored.
+
+## 0.19.1 - 2026-10-15
+
+**Inkscape's rotation centres become pivots** (Dave: work on the Inkscape
+rotations, the first thing 0.19.0 left out).
+
+- In Inkscape, the rotation centre is the little cross you can drag when
+  something is in rotate mode. When it has been moved, Inkscape keeps it in
+  the file (`inkscape:transform-center-x` and `-y`: how far it is from the
+  middle of the thing's box, in the file's own units, with y counted
+  upwards). ANIMEDTR now reads it when an SVG comes in as shapes, and makes
+  it that part's **pivot**: an arm whose centre sits on its shoulder swings
+  from the shoulder here too.
+- It works for **groups** (an arm group, a head group), **shapes**,
+  **text** (turned text too), and **the drawing as a whole** (when the
+  drawing is one group in Inkscape, its centre becomes the drawing's
+  pivot). A group that holds just one shape passes its centre to that
+  shape.
+- **Nothing moves:** each part is drawn exactly where it was without the
+  centres; only what it turns round changes. The message after bringing a
+  drawing in says how many parts kept one.
+- **Safe to read:** only two plain numbers of a sensible size are taken
+  from each part (anything else is ignored), and they reach the drawing
+  engine as numbers ANIMEDTR writes itself.
+- Drawings from VCTREDTR, Illustrator and the rest have no such centres,
+  so their parts turn round their middles, as before. ("As one picture"
+  has a single pivot, the middle.)
+
+## 0.19.0 - 2026-10-15
+
+**Pivot points** (Dave's pick for the next build: one pivot for each
+object, not animated; it is for turning and resizing; a Pivot button and a
+key to drag it on the stage, with a picker and numbers in the Inspector).
+
+- **What it is:** the point something turns (and resizes) round, Flash's
+  transformation point. It starts in the middle, so nothing changes until
+  you move it. Put an arm's pivot on its shoulder and the arm swings from
+  the shoulder; a hand's on its wrist and it waves from the wrist; a door's
+  on its hinge. Each object has one pivot, the same at every keyframe.
+- **On the stage:** the picked object shows its pivot as a small dot.
+  Press **Q** (Flash's Free Transform key), or the new **Pivot** button on
+  the quick bar, and the dot can be dragged. It snaps to the corners, the
+  middles of the edges and the middle (hold Alt for no snapping). The
+  **arrow keys** move it 1% of the object's size (Shift: 10%), and it says
+  where it is ("Pivot at its top left"). Q or Escape when done.
+- **In the Inspector** (Position and size): a 3 by 3 picker (nine radio
+  buttons; the arrow keys move between them), **Across** and **Down** in
+  percent (the pivot may sit outside the object, up to four times its size
+  away, like the top of a pendulum's string), and a button that does what
+  Q does.
+- **Moving the pivot never moves the object:** at every keyframe (and in
+  a change not kept yet) X and Y change so that it is drawn exactly where
+  it was. Only the turning between keyframes changes, which is the point.
+- **Resizing round the pivot** (Dave: turning and resizing, like Flash):
+  typing **W or H** grows or shrinks it from its pivot (from the middle,
+  unless you moved the pivot), and so does **Alt + dragging a corner**.
+  Dragging a corner without Alt still keeps the opposite corner where it
+  is. Older lessons look exactly as they did: a size change between two
+  keyframes was already kept as numbers at each keyframe, and those numbers
+  are not touched.
+- **The turn knob** turns things round the pivot. **Along a motion path**,
+  the pivot is what travels along the path (a paper plane can fly by its
+  nose).
+- **Groups** turn round their own pivot, and the parts inside round
+  theirs. Ungrouping keeps each part where it is drawn.
+- **A new template, A waving robot (pivots):** a robot of groups inside
+  groups. Its arm swings up from the shoulder, the hand (a group inside the
+  arm) waves from the wrist, and the head tilts from the neck, on a loop.
+- In the project file each object has `pivot: [across, down]` (shares of
+  its box). Projects and lessons without one turn round the middle, as
+  before. The Features tour's Start from a template card now says thirteen.
+
+## 0.18.1 - 2026-10-15
+
+**The tour plays the real thing** (Dave: swap some of the tour's drawings
+for the templates that really pop, like the bouncing ball and Click to
+reveal).
+
+- **Animate with keyframes** (now first) plays the bouncing ball template:
+  the ball drops, stretches, squashes and bounces across the toy world.
+- **Interactive, with no code** (second) plays Click to reveal (neon): the
+  scanner types its question, a pointer presses Show the answer, and
+  eleven Earths line up across Jupiter.
+- **Start from a template** is a new card with the water cycle playing all
+  the way round. It takes the place of Save, open, pick up again.
+- Draw paths, Lessons everyone can use and One file that works anywhere
+  are unchanged.
+- **How:** the lesson's own runtime drew each template frame by frame, and
+  every change was written down as SVG animation tags, so the tour still
+  needs no script, works offline, and pauses (or shows its best still
+  frame when the device asks for less motion) like every other card.
+  The soft colour fades are shrunk to small pictures, and a straight-line
+  stretch of movement keeps only its ends, so the three come to about
+  250 KB. They keep the templates' own colours in light and dark mode.
+  The tool that makes them is `_edtr-suite/features-src/captures/animedtr-capture.js`.
+
 ## 0.18.0 - 2026-10-15
 
 **Groups inside groups** (Dave's pick for the next build: "as deep as you
