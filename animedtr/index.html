@@ -232,6 +232,9 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
    (filled when picked), curve handles are round, on a thin stem. */
 #stageWrap .ani-guide .ani-look { opacity: .55; }
 #stageWrap .ani-guide path { stroke-dasharray: 9 6; }
+/* A spot (0.16.0): learners cannot see it, so while editing it shows as a dashed orange outline, faintly filled. */
+#stageWrap .ani-spot .ani-look { opacity: 1 !important; }
+#stageWrap .ani-spot .ani-look > * { stroke: #f45922; stroke-width: 3px; stroke-dasharray: 9 6; fill-opacity: .18; vector-effect: non-scaling-stroke; }
 .pt-outline, .pen-line { fill: none; stroke: var(--select); stroke-width: 1.5; vector-effect: non-scaling-stroke; pointer-events: none; }
 .pen-preview { fill: none; stroke: var(--select); stroke-width: 1.5; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; pointer-events: none; }
 .pt-anchor { fill: #ffffff; stroke: var(--select); stroke-width: 2; vector-effect: non-scaling-stroke; }
@@ -1394,7 +1397,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <legend>What to make</legend>
       <label class="ex-kind"><input type="radio" name="exKind" value="html" checked> <span><strong>Lesson</strong> (one HTML file: interactive, works anywhere)</span></label>
       <label class="ex-kind"><input type="radio" name="exKind" value="scorm"> <span><strong>For an LMS</strong> (SCORM 1.2 package: completion and score go to the gradebook)</span></label>
-      <label class="ex-kind"><input type="radio" name="exKind" value="video"> <span><strong>Video</strong> (WebM with sound, and a captions file)</span></label>
+      <label class="ex-kind"><input type="radio" name="exKind" value="video"> <span><strong>Video</strong> (MP4 or WebM, with sound, and a captions file)</span></label>
       <label class="ex-kind"><input type="radio" name="exKind" value="gif"> <span><strong>Animated GIF</strong> (silent, loops)</span></label>
       <label class="ex-kind"><input type="radio" name="exKind" value="png"> <span><strong>Picture of this frame</strong> (PNG)</span></label>
     </fieldset>
@@ -1513,7 +1516,21 @@ var ANIRuntime = (function () {
   var DEFAULT_CURVE = [0.34, 1.56, 0.64, 1];     // a new custom curve starts as a small overshoot
   // The kinds of object: shapes, text, gallery shapes (path), pictures and
   // groups (one level: a group holds objects, never another group).
-  var TYPES = ['rect', 'ellipse', 'text', 'path', 'image', 'group', 'clip'];
+  var TYPES = ['rect', 'ellipse', 'text', 'path', 'image', 'group', 'clip', 'field'];
+  // Questions (0.16.0). A lesson keeps a list of questions (p.questions), each with
+  // its name, its kind, the points a right answer earns (added to a variable, the
+  // Score), one try or "until right", and whether the right answer shows after a
+  // wrong one. Three kinds:
+  //   choice  multiple choice: objects marked as its answers (o.q), the right one
+  //           or ones ticked (o.right). Activating one answers the question.
+  //   spot    click the right spot: the same, but the answers are usually SPOTS
+  //           (o.spot), shapes learners cannot see, over a picture.
+  //   type    type the answer: a "field" object, a real text box learners type in,
+  //           checked against its accepted answers (o.accept) when they press
+  //           Enter (or a "Check the answers" button). Numbers may be off by o.tol.
+  // A right answer gets a tick mark, a wrong one a cross, and both are said aloud.
+  var QUESTION_KINDS = ['choice', 'spot', 'type'];
+  var TRIES = ['one', 'many'];
   // What can go INSIDE a clip (0.8.0): no groups and no clips (one level only).
   var CLIP_PART_TYPES = ['rect', 'ellipse', 'text', 'path', 'image'];
   // How a clip plays where it is used: round and round, once (then it holds its last
@@ -1572,7 +1589,7 @@ var ANIRuntime = (function () {
   var COLOUR_RE = /^#[0-9a-f]{6}$/;
   var LANG_RE = /^[a-zA-Z]{2,3}(-[a-zA-Z0-9]{2,8}){0,3}$/;
   var LIMITS = { objects: 500, markers: 200, keys: 2000, actions: 20, frames: 36000, text: 4000, clips: 100, clipObjects: 300, vars: 20, sounds: 50, cues: 200, audioChars: 30000000, allAudioChars: 150000000,
-    layers: 100, assets: 200, assetChars: 20000000, allAssetChars: 150000000, pathChars: 20000 };
+    layers: 100, assets: 200, assetChars: 20000000, allAssetChars: 150000000, pathChars: 20000, questions: 50, accept: 20 };
   // Pictures are kept inside the lesson as data: addresses. Only PNG, JPEG
   // and WebP, written in plain base64 (never SVG, which could carry code).
   var PICTURE_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/]+={0,2}$/;
@@ -1752,8 +1769,18 @@ var ANIRuntime = (function () {
         // Drag and drop (0.11.0). Which places are right is checked once every object exists.
         drag: o.drag === true, drop: o.drop === true && o.drag !== true, stayWrong: o.stayWrong === true,
         goesTo: list(o.goesTo, 50).filter(function (id) { return typeof id === 'string' && ID_RE.test(id); }),
+        // Questions (0.16.0): which question it answers (checked once every question is read),
+        // whether it is a right answer, and whether it is a spot (a shape learners cannot see).
+        q: typeof o.q === 'string' && ID_RE.test(o.q) ? o.q : '',
+        right: o.right === true,
+        spot: o.spot === true && (type === 'rect' || type === 'ellipse' || type === 'path'),
+        // A box to type in (type 'field'): the answers it takes (capitals and extra spaces do
+        // not matter), and how far a number may be off. Its text is the hint shown inside it.
+        accept: type === 'field' ? list(o.accept, LIMITS.accept).map(function (a) { return str(a, 100).trim(); }).filter(function (a) { return a; }) : [],
+        tol: type === 'field' ? num(o.tol, 0, 1000000, 0) : 0,
         on: { activate: [], point: [], dropRight: [], dropWrong: [] }
       };
+      if (type === 'field') out.text = str(o.text, 100);                 // (a hint, one line)
       if (type === 'clip') {
         // A clip used on the stage (0.8.0): which clip, how it plays, from which of its frames,
         // and whether it keeps moving while the lesson waits (at a marker, say).
@@ -1805,6 +1832,7 @@ var ANIRuntime = (function () {
         if (!co) return;
         co.parent = ''; delete co._rawOn;                // (nothing inside a clip has behaviours: the clip on the stage does)
         co.drag = false; co.drop = false; co.goesTo = []; co.stayWrong = false;   // (nor is it dragged or dropped on)
+        co.q = ''; co.right = false; co.spot = false;    // (nor does it answer a question: 0.16.0)
         clip.objects.push(co);
       });
       checkPaths(clip.objects);
@@ -1835,7 +1863,7 @@ var ANIRuntime = (function () {
     // on, and a draggable's right places must be drop targets that exist.
     var dropIds = {};
     p.objects.forEach(function (o) {
-      if (o.parent) { o.drag = false; o.drop = false; }
+      if (o.parent || o.type === 'field') { o.drag = false; o.drop = false; }    // (a box to type in is never dragged: 0.16.0)
       if (o.drop) dropIds[o.id] = true;
     });
     p.objects.forEach(function (o) {
@@ -1897,7 +1925,7 @@ var ANIRuntime = (function () {
       return out;
     }
     p.objects.forEach(function (o) {
-      o.on.activate = o.drag ? [] : cleanActs(o._rawOn.activate);    // (a draggable is picked up, not pressed)
+      o.on.activate = o.drag || o.type === 'field' ? [] : cleanActs(o._rawOn.activate);    // (a draggable is picked up, not pressed)
       o.on.point = cleanActs(o._rawOn.point);
       o.on.dropRight = o.drag ? cleanActs(o._rawOn.dropRight) : [];
       o.on.dropWrong = o.drag ? cleanActs(o._rawOn.dropWrong) : [];
@@ -1905,7 +1933,28 @@ var ANIRuntime = (function () {
     });
     // Behaviours of the whole lesson: when it starts, when the play head reaches a marker, when a key is pressed.
     var on = isObj(raw.on) ? raw.on : {};
-    p.on = { start: cleanActs(on.start), marks: [], keys: [], sorted: cleanActs(on.sorted) };
+    p.on = { start: cleanActs(on.start), marks: [], keys: [], sorted: cleanActs(on.sorted), answered: cleanActs(on.answered) };
+    // Questions (0.16.0): each checked like everything else. Its score goes to a variable
+    // that exists (or nowhere), and its "right" and "wrong" cards are ordinary action lists.
+    p.questions = [];
+    var qKind = {};
+    list(raw.questions, LIMITS.questions).forEach(function (q) {
+      if (!isObj(q)) return;
+      var id = freshId(q.id); if (!id) return;
+      var kind = oneOf(q.kind, QUESTION_KINDS, 'choice');
+      qKind[id] = kind;
+      p.questions.push({ id: id, name: str(q.name, 60) || 'Question', kind: kind, points: int(q.points, 0, 1000, 1),
+        tries: oneOf(q.tries, TRIES, 'one'), reveal: q.reveal !== false, v: varIds[q.v] === true ? q.v : '',
+        onRight: cleanActs(q.onRight), onWrong: cleanActs(q.onWrong) });
+    });
+    // An answer is something on its own (not a part of a group, not dragged or dropped on),
+    // answering a question that exists: a typing box answers a "type" question, anything
+    // else a "choice" or "spot" one.
+    p.objects.forEach(function (o) {
+      var kind = qKind[o.q];
+      if (!kind || o.parent || o.drag || o.drop || (o.type === 'field') !== (kind === 'type')) o.q = '';
+      if (!o.q || o.type === 'field') o.right = false;
+    });
     // For an LMS (0.13.0): which variable is the score, out of what, and the pass mark (0: none).
     // lms is true only in a lesson exported as a SCORM package: then the player talks to the LMS.
     var sc = isObj(raw.scorm) ? raw.scorm : {};
@@ -2033,7 +2082,10 @@ var ANIRuntime = (function () {
   /** Is the object on stage at this frame? (end -1 means "to the end".) */
   function aliveAt(o, f) { return f >= o.start && (o.end < 0 || f <= o.end); }
   /** Does it do something when activated? Then it is a button in the lesson. */
-  function isInteractive(o) { return o.drag === true || o.on.activate.length > 0 || o.on.point.length > 0; }   // (a draggable is a button too)
+  function isInteractive(o) {
+    if (o.type === 'field') return false;              // (a box to type in is a text field, not a button: 0.16.0)
+    return o.drag === true || !!o.q || o.on.activate.length > 0 || o.on.point.length > 0;   // (a draggable, and an answer, are buttons too)
+  }
   /** Words for an action, for the text version's list of keys ("Go to Answer and play"). */
   function describeAction(a, p) {
     var name = function (id) { var n = ''; p.objects.forEach(function (o) { if (o.id === id) n = o.label || o.name; }); return n; };
@@ -2083,6 +2135,31 @@ var ANIRuntime = (function () {
       return (k in values) ? String(values[k]) : all;
     });
   }
+  /* Typed answers (0.16.0). Learners type all sorts of ways, so an answer is compared
+     as plain words: capitals, extra spaces and a full stop at the end do not matter.
+     Numbers are compared as numbers ("3.10" is 3.1), within the box's "off by". */
+  /** A typed answer as plain words: small letters, single spaces, no full stop at the end. */
+  function plainAnswer(t) { return String(t).toLowerCase().replace(/\s+/g, ' ').trim().replace(/[.!]+$/, '').trim(); }
+  /**
+   * The number in an answer, or null when it is not one number. "3.14", "-2" and ".5"
+   * are numbers; so is "1,500" (a thousands comma: 1500) and "3,14" (a decimal comma,
+   * as in much of the world: 3.14).
+   */
+  function numberIn(t) {
+    var x = String(t).trim();
+    if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(x)) x = x.replace(/,/g, '');     // 1,500 or 12,345.6
+    else if (/^-?\d+,\d+$/.test(x)) x = x.replace(',', '.');                   // 3,14
+    return /^-?(\d+\.?\d*|\.\d+)$/.test(x) ? parseFloat(x) : null;
+  }
+  /** Is what was typed in this box one of its accepted answers? */
+  function answerRight(o, typed) {
+    var words = plainAnswer(typed), n = numberIn(typed);
+    return o.accept.some(function (a) {
+      var an = numberIn(a);
+      if (an !== null && n !== null) return Math.abs(an - n) <= o.tol + 1e-9;   // (a tiny bit extra, for rounding)
+      return plainAnswer(a) === words;
+    });
+  }
   /** The names in curly brackets in some text ("You got {Score}" -> ["Score"]). */
   function placeholdersIn(text) {
     var out = [];
@@ -2105,6 +2182,7 @@ var ANIRuntime = (function () {
       var g = null; p.objects.forEach(function (x) { if (x.id === o.parent) g = x; });
       if (g && (isInteractive(g) || g.decorative || g.label)) return null;    // the group speaks (or hides) for its parts
     }
+    if (o.type === 'field') return 'field';            // a box to type in (0.16.0): always read, by its label
     if (isInteractive(o)) return 'button';
     if (o.decorative) return null;
     if (o.label) return 'picture';
@@ -2455,8 +2533,38 @@ var ANIRuntime = (function () {
     else if (o.type === 'path') shape = svgEl(doc, 'path', { d: o.d, 'fill-rule': 'evenodd', 'vector-effect': 'non-scaling-stroke', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
     else if (o.type === 'image') shape = svgEl(doc, 'image', { href: p.assets[o.asset].data, preserveAspectRatio: 'none' });
     else if (o.type === 'group' || o.type === 'clip') kids = svgEl(doc, 'g', { 'class': 'ani-kids' });
+    else if (o.type === 'field') shape = svgEl(doc, 'rect', { 'class': 'ani-fieldbox', fill: '#ffffff', 'stroke-width': 2 });
     else shape = svgEl(doc, 'text', { 'class': 'ani-words', 'font-family': FONT_STACK });   // (not "ani-text": that is the text version's panel)
     look.appendChild(shape || kids);
+    // A box to type in (0.16.0). In a lesson: a real text box (an HTML <input>, inside the SVG
+    // in a <foreignObject>, so it moves, fades and shows with the object, and the keyboard,
+    // a screen reader and spelling tools all treat it as the text box it is). Anywhere else
+    // (the editor, a picture, a video): the box and its hint, drawn.
+    var hint = null, input = null, fo = null;
+    if (o.type === 'field') {
+      if (mode === 'player') {
+        fo = svgEl(doc, 'foreignObject', { 'class': 'ani-fo' });
+        input = doc.createElementNS('http://www.w3.org/1999/xhtml', 'input');
+        input.type = 'text';
+        input.className = 'ani-input';
+        input.setAttribute('aria-label', o.label || o.name);
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('autocapitalize', 'off');
+        input.setAttribute('spellcheck', 'false');                   // (spelling help would give the answer away)
+        input.setAttribute('maxlength', '200');
+        if (o.text) input.setAttribute('placeholder', o.text);
+        // Numbers only expected: a phone shows its number keys.
+        if (o.accept.length && o.accept.every(function (a) { return numberIn(a) !== null; })) input.setAttribute('inputmode', 'decimal');
+        // Its size and font, in the stage's own numbers (the SVG scales them with the stage).
+        input.style.fontSize = o.size + 'px';
+        input.style.fontFamily = fontFamily(o.font);
+        fo.appendChild(input);
+        look.appendChild(fo);
+      } else {
+        hint = svgEl(doc, 'text', { 'class': 'ani-hint', fill: '#6b7280', 'font-family': FONT_STACK });
+        look.appendChild(hint);
+      }
+    }
     var hit = svgEl(doc, 'rect', { 'class': 'ani-hit', fill: 'transparent', 'aria-hidden': 'true' });
     var ring = svgEl(doc, 'g', { 'class': 'ani-ring', 'aria-hidden': 'true' });
     // Two rings, dark outside and white inside: one of them always stands out (WCAG 2.4.11).
@@ -2464,7 +2572,8 @@ var ANIRuntime = (function () {
     var ringIn = svgEl(doc, 'rect', { fill: 'none', stroke: '#ffffff', 'stroke-width': 3, 'vector-effect': 'non-scaling-stroke' });
     ring.appendChild(ringOut); ring.appendChild(ringIn);
     // A group's click-catcher goes under its parts, so the parts can still be picked one by one.
-    if (o.type === 'group' || o.type === 'clip') { g.appendChild(hit); g.appendChild(look); } else { g.appendChild(look); if (mode !== 'part') g.appendChild(hit); }
+    // (A box to type in has none in a lesson: clicks go to the text box itself.)
+    if (o.type === 'group' || o.type === 'clip') { g.appendChild(hit); g.appendChild(look); } else { g.appendChild(look); if (mode !== 'part' && !input) g.appendChild(hit); }
     if (mode !== 'part') g.appendChild(ring);
     if (mode === 'player') {
       g.id = 'ani-o-' + o.id;                         // so the reading order (aria-owns) can name it
@@ -2474,6 +2583,8 @@ var ANIRuntime = (function () {
         g.setAttribute('class', 'ani-obj ani-live' + (o.drag ? ' ani-drag' : ''));
         if (o.drag) g.setAttribute('aria-roledescription', 'draggable item');   // "Whale, draggable item" (0.11.0)
         look.setAttribute('aria-hidden', 'true');
+      } else if (o.type === 'field') {
+        // (A box to type in: the text box inside it is what a screen reader meets, by its label.)
       } else if (o.decorative) {
         g.setAttribute('aria-hidden', 'true');
       } else if (o.label) {
@@ -2483,7 +2594,9 @@ var ANIRuntime = (function () {
       }
     }
     if (mode === 'player' && o.drop) g.setAttribute('class', (g.getAttribute('class') || 'ani-obj') + ' ani-target');   // a place to drop things
-    var node = { g: g, look: look, shape: shape, kids: kids, hit: hit, ringOut: ringOut, ringIn: ringIn, wrapKey: '', dNow: o.d };
+    if (mode === 'player' && input) g.setAttribute('class', 'ani-obj ani-field');
+    var node = { g: g, look: look, shape: shape, kids: kids, hit: hit, ringOut: ringOut, ringIn: ringIn, wrapKey: '', dNow: o.d,
+      hint: hint, input: input, fo: fo, mark: null };
     if (o.type === 'clip') {
       // A clip on the stage: one copy of each of the clip's objects inside it (every use has
       // its own copies, so two uses can be at different frames), bottom layer first.
@@ -2564,7 +2677,7 @@ var ANIRuntime = (function () {
       var on = (opt.vis && opt.vis.has(o.id)) ? opt.vis.get(o.id) : !o.startHidden;
       var shown = alive && (on || opt.editor === true);
       n.g.setAttribute('display', shown ? 'inline' : 'none');
-      if (opt.editor) n.g.setAttribute('class', 'ani-obj' + (alive && !on ? ' ani-ghost' : '') + (o.guide ? ' ani-guide' : ''));
+      if (opt.editor) n.g.setAttribute('class', 'ani-obj' + (alive && !on ? ' ani-ghost' : '') + (o.guide ? ' ani-guide' : '') + (o.spot ? ' ani-spot' : ''));   // (a spot: dashed while editing, 0.16.0)
       if (!shown) return;
       var v = (opt.over && opt.over.get(o.id)) || valuesAt(o, f, p);
       // Values a behaviour has set ("Set") win over the timeline until the lesson restarts.
@@ -2586,7 +2699,10 @@ var ANIRuntime = (function () {
   function paint(stage, n, o, v) {
     var w = Math.max(1, v.w), h = Math.max(1, v.h);
     n.g.setAttribute('transform', 'translate(' + r2(v.x + w / 2) + ' ' + r2(v.y + h / 2) + ') rotate(' + r2(v.rot) + ')');
-    n.look.setAttribute('opacity', r2(v.opacity));
+    // A spot (0.16.0) cannot be seen in a lesson (only its focus ring, and its mark once answered).
+    n.look.setAttribute('opacity', o.spot && stage.mode !== 'editor' ? 0 : r2(v.opacity));
+    // An answer's mark (a tick or a cross, 0.16.0) sits on its top-right corner.
+    if (n.mark) n.mark.setAttribute('transform', 'translate(' + r2(w / 2 - 6) + ' ' + r2(-h / 2 + 6) + ')');
     var s = n.shape;
     if (o.type === 'rect') {
       s.setAttribute('x', r2(-w / 2)); s.setAttribute('y', r2(-h / 2));
@@ -2601,6 +2717,18 @@ var ANIRuntime = (function () {
     } else if (o.type === 'image') {
       s.setAttribute('x', r2(-w / 2)); s.setAttribute('y', r2(-h / 2));
       s.setAttribute('width', r2(w)); s.setAttribute('height', r2(h));
+    } else if (o.type === 'field') {
+      // A box to type in: white, with its colour as the outline (0.16.0).
+      s.setAttribute('x', r2(-w / 2)); s.setAttribute('y', r2(-h / 2));
+      s.setAttribute('width', r2(w)); s.setAttribute('height', r2(h));
+      s.setAttribute('rx', r2(Math.min(10, w / 2, h / 2)));
+      s.setAttribute('stroke', v.fill);
+      if (n.fo) { n.fo.setAttribute('x', r2(-w / 2)); n.fo.setAttribute('y', r2(-h / 2)); n.fo.setAttribute('width', r2(w)); n.fo.setAttribute('height', r2(h)); }
+      if (n.hint) {
+        n.hint.setAttribute('x', r2(-w / 2 + o.size * 0.45)); n.hint.setAttribute('y', r2(o.size * 0.35));
+        n.hint.setAttribute('font-size', o.size);
+        if (n.hint.textContent !== o.text) n.hint.textContent = o.text;     // (textContent: plain words)
+      }
     } else if (o.type === 'group') {
       // The parts are drawn in the group's own size (gw by gh), then stretched to its box now.
       n.kids.setAttribute('transform', 'scale(' + (w / o.gw) + ' ' + (h / o.gh) + ') translate(' + r2(-o.gw / 2) + ' ' + r2(-o.gh / 2) + ')');
@@ -2936,6 +3064,11 @@ var ANIRuntime = (function () {
       textSec.appendChild(h('h3', '', 'Dragging and dropping'));
       textSec.appendChild(h('p', '', 'Drag an item onto its place, or tap it and then tap the place. With a keyboard: Tab to an item, press Space to pick it up, the arrow keys or Tab to choose a place, Space to drop it, and Escape to put it back.'));
     }
+    if ((p.questions || []).length) {
+      // How to answer (0.16.0), the same in every lesson.
+      textSec.appendChild(h('h3', '', 'Questions'));
+      textSec.appendChild(h('p', '', 'This lesson asks ' + p.questions.length + (p.questions.length === 1 ? ' question' : ' questions') + '. Pick an answer by clicking or tapping it, or with Tab and then Enter or Space. In a box to type in, type your answer and press Enter. A right answer gets a tick, a wrong one a cross, and both are read out.'));
+    }
     var heard = (p.sounds || []).filter(function (sd) { return sd.caption.trim(); });
     if (heard.length) {
       // What the sounds say (the captions, in full), for anyone who cannot hear them.
@@ -2970,7 +3103,7 @@ var ANIRuntime = (function () {
         textSec.appendChild(keysBtn);
       }
     }
-    if (!p.desc && !markers.length && !p.on.keys.length) textSec.appendChild(h('p', '', 'This lesson has no text version yet.'));
+    if (!p.desc && !markers.length && !p.on.keys.length && !(p.questions || []).length) textSec.appendChild(h('p', '', 'This lesson has no text version yet.'));
     // A strip for "Say" messages: it stays until the next one, or until it is closed.
     // The caption strip: the words of whatever is playing, under the stage (like a video's captions).
     var cc = h('div', 'ani-cc'); cc.hidden = true;
@@ -3014,6 +3147,8 @@ var ANIRuntime = (function () {
     function markerAtOrBefore(fr) { var m = null; markers.forEach(function (x) { if (x.f <= fr) m = x; }); return m; }
     function prevMarker() { var m = null; markers.forEach(function (x) { if (x.f < f) m = x; }); return m; }
     function nextMarker() { for (var i = 0; i < markers.length; i++) if (markers[i].f > f) return markers[i]; return null; }
+    /** The next "Pause here" marker after the play head (where playing would stop), or null. */
+    function nextStop() { for (var i = 0; i < markers.length; i++) if (markers[i].f > f && markers[i].stop) return markers[i]; return null; }
     function secs(fr) { return (fr / p.stage.fps).toFixed(1); }
     function draw() {
       drawFrame(stage, p, f, { vis: vis, props: props, clock: clockNow(), values: varValues(p, vals) });
@@ -3021,7 +3156,7 @@ var ANIRuntime = (function () {
       if (varsChanged) { varsChanged = false; readChangedText(true); }
       // Text a behaviour revealed is read out the moment it is on screen (now, or when its time comes).
       p.objects.forEach(function (o) {
-        if (revealed[o.id] && onScreen(stage.nodes.get(o.id).g)) { delete revealed[o.id]; say(o.label || o.text); }
+        if (revealed[o.id] && onScreen(stage.nodes.get(o.id).g)) { delete revealed[o.id]; say(nameOf(o)); }   // (0.16.0: with {Score} filled in, as it shows)
       });
       // Pause shows while anything moves: the lesson, or clips that keep moving while it waits.
       var anything = playing || moving();
@@ -3070,6 +3205,7 @@ var ANIRuntime = (function () {
     }
     function keepFocus() {
       var a = doc.activeElement;
+      if (a && a.closest && a.classList && a.classList.contains('ani-input')) a = a.closest('[data-id]');   // (a box to type in: its object, 0.16.0)
       if (a && a.getAttribute && a.getAttribute('data-id') && !onScreen(a)) {
         // 0.10.0: to the first button now on screen, in the reading order (a quiz's next
         // question: its first answer), so the keyboard carries straight on. None: Play.
@@ -3167,6 +3303,7 @@ var ANIRuntime = (function () {
       resetVars();                                    // and every variable goes back to its starting number
       if (bank) bank.stopAll();                       // (and every sound stops)
       if (hasDrag) { endCarry(); drag = null; placed = {}; putOrder = []; done = {}; sortedRan = false; unlockAll(); }   // (and everything dragged goes home)
+      resetQuestions();                               // (and every question is unanswered again: 0.16.0)
       f = reduce.matches ? stillFrame() : 0; draw();
       say('Back to the start.');
       runActs(p.on.start, 0);
@@ -3220,7 +3357,12 @@ var ANIRuntime = (function () {
     function runActs(acts, depth) {
       if (!acts || depth > 4) return;
       acts.forEach(function (a) {
-        if (a.do === 'play') play();
+        if (a.do === 'play') {
+          // With "reduce motion" on (0.16.0), a button that plays goes straight to where the
+          // lesson would stop next (as "Go to marker and play" does), without the movement.
+          if (reduce.matches) { var nx = nextStop(); if (nx) step(nx); else { f = last; draw(); } }
+          else play();
+        }
         else if (a.do === 'pause') pause();
         else if (a.do === 'gotoPlay') goToMarker(a.marker, true, depth);
         else if (a.do === 'gotoPause') goToMarker(a.marker, false, depth);
@@ -3239,7 +3381,10 @@ var ANIRuntime = (function () {
       });
       draw();
     }
-    function activate(o) { runActs(o.on.activate, 0); }
+    function activate(o) {
+      if (o.q && !answer(o, 0)) return;                 // an answer (0.16.0): answered already, so nothing more
+      runActs(o.on.activate, 0);
+    }
 
     /* "When it is pointed at or focused": its actions run when the pointer comes
        over it or it gets keyboard focus (a finger: a tap, and another tap
@@ -3423,15 +3568,172 @@ var ANIRuntime = (function () {
     }
     /** "Check the answers": things on a right place stay for good; the rest slide back home. */
     function checkAnswers(depth) {
+      var typed = checkFields(depth);                    // the boxes to type in, first (0.16.0)
+      if (!hasDrag) { if (!typed) say('Nothing to check yet: type an answer first.'); return; }
       var right = 0, back = 0;
       p.objects.forEach(function (o) {
         if (!o.drag || done[o.id] || !placed[o.id]) return;
         if (rightFor(o, objById(placed[o.id]))) { done[o.id] = true; lockItem(o); right++; runActs(o.on.dropRight, depth + 1); }
         else { goHome(o, 300); back++; runActs(o.on.dropWrong, depth + 1); }
       });
-      say(right || back ? 'Checked: ' + right + ' in the right place' + (back ? ', ' + back + ' went back to try again.' : '.') : 'Nothing to check yet: put things in their places first.');
+      if (right || back || !typed) say(right || back ? 'Checked: ' + right + ' in the right place' + (back ? ', ' + back + ' went back to try again.' : '.') : 'Nothing to check yet: put things in their places first.');
       checkSorted(depth);
     }
+
+    /* ----- Questions (0.16.0) -----
+       qState keeps, for each question: done (answered for good), right (answered
+       right), and tried (the answers already picked, when it has more than one try).
+       An answer is a button: activating it answers its question. Once a question is
+       done, its answers stay buttons (so a screen reader can still find them and hear
+       how it went), but say so and do nothing more. A box to type in is checked when
+       Enter is pressed in it (or by "Check the answers"). */
+    var questions = p.questions || [];
+    var qState = {}, answeredRan = false;
+    var MARK_D = { right: 'M-7 0.5l4.5 4.5l9-10', wrong: 'M-5.5 -5.5l11 11M5.5 -5.5l-11 11', shown: 'M-7 0.5l4.5 4.5l9-10' };
+    function questionOf(o) { for (var i = 0; i < questions.length; i++) if (questions[i].id === o.q) return questions[i]; return null; }
+    function stateOf(q) { return qState[q.id] || (qState[q.id] = { done: false, right: false, tried: {} }); }
+    /** The answers of a question (a box to type in is not one of them: it is the answer). */
+    function answersOf(q) { return p.objects.filter(function (o) { return o.q === q.id && o.type !== 'field'; }); }
+    /**
+     * Put a mark on an answer: 'right' (a white tick on green), 'wrong' (a white cross
+     * on red), 'shown' (a green tick on white: the right answer, shown after a wrong
+     * one), or null to take it off. Colour is never the only sign: tick or cross.
+     */
+    function markObj(o, kind) {
+      var n = stage.nodes.get(o.id); if (!n) return;
+      if (n.mark) { n.mark.parentNode.removeChild(n.mark); n.mark = null; }
+      if (!kind) return;
+      var m = svgEl(doc, 'g', { 'class': 'ani-mark ani-mark-' + kind, 'aria-hidden': 'true' });
+      var bg = kind === 'right' ? '#15803d' : kind === 'wrong' ? '#b91c1c' : '#ffffff', fg = kind === 'shown' ? '#15803d' : '#ffffff';
+      m.appendChild(svgEl(doc, 'circle', { r: 17, fill: bg, stroke: kind === 'shown' ? '#15803d' : '#ffffff', 'stroke-width': 3 }));
+      m.appendChild(svgEl(doc, 'path', { d: MARK_D[kind], fill: 'none', stroke: fg, 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+      n.g.insertBefore(m, n.g.querySelector('.ani-ring'));    // (under the focus ring)
+      n.mark = m;
+    }
+    /** What a screen reader calls an answer now: its name, and how it went (if it has been answered). */
+    function nameAnswer(o, how) {
+      var g = stage.nodes.get(o.id).g;
+      g.setAttribute('aria-label', accessibleName(o) + (how ? ', ' + how : ''));
+    }
+    /** Done with a question: its answers say so (they stay in the Tab order, but do nothing). */
+    function lockAnswer(o) {
+      var g = stage.nodes.get(o.id).g;
+      g.setAttribute('aria-disabled', 'true');
+      g.classList.add('ani-answered');
+    }
+    /** Every question answered for good: the lesson's "when every question is answered" card (once, until it restarts). */
+    function checkAllAnswered(depth) {
+      if (answeredRan || !questions.length) return;
+      if (questions.some(function (q) { return !stateOf(q).done; })) return;
+      answeredRan = true;
+      runActs(p.on.answered, (depth || 0) + 1);
+    }
+    /** The right answer earns its points (added to the question's variable, the Score). */
+    function earn(q) { if (q.v && q.points) changeVar({ v: q.v, op: 'add', n: q.points }); }
+    /**
+     * An answer was picked (activated). Returns false when its question is done already,
+     * or the answer was already tried (then nothing else happens, not even its own actions).
+     */
+    function answer(o, depth) {
+      var q = questionOf(o); if (!q) return true;
+      var st = stateOf(q);
+      if (st.done || st.tried[o.id]) { say((nameOf(o)) + ': ' + (st.done ? 'this question is answered already.' : 'you tried this one already.')); return false; }
+      st.tried[o.id] = true;
+      if (o.right) {
+        st.done = true; st.right = true;
+        markObj(o, 'right'); nameAnswer(o, 'your answer, right');
+        answersOf(q).forEach(lockAnswer);
+        earn(q);
+        say('Right!');
+        runActs(q.onRight, (depth || 0) + 1);
+      } else if (q.tries === 'many') {
+        markObj(o, 'wrong'); nameAnswer(o, 'not right'); lockAnswer(o);
+        say('Not right. Try again.');
+        runActs(q.onWrong, (depth || 0) + 1);
+      } else {
+        st.done = true;
+        markObj(o, 'wrong'); nameAnswer(o, 'your answer, not right');
+        answersOf(q).forEach(lockAnswer);
+        var rights = answersOf(q).filter(function (x) { return x.right; });
+        if (q.reveal) rights.forEach(function (x) { markObj(x, 'shown'); nameAnswer(x, 'the right answer'); });
+        say('Not right.' + (q.reveal && rights.length ? ' The right answer: ' + rights.map(nameOf).join(', or ') + '.' : ''));
+        runActs(q.onWrong, (depth || 0) + 1);
+      }
+      checkAllAnswered(depth);
+      draw();
+      return true;
+    }
+    /**
+     * Check one box to type in. Returns true if it was checked (it had words in it and
+     * its question was not done), so "Check the answers" knows it did something.
+     */
+    function checkField(o, depth) {
+      var q = questionOf(o), n = stage.nodes.get(o.id), input = n && n.input;
+      if (!input) return false;
+      var typed = input.value;
+      if (!typed.trim()) { say('Type an answer first.'); return false; }
+      if (!q) return false;                               // (a box with no question: nothing to check it against)
+      var st = stateOf(q);
+      if (st.done) return false;
+      if (answerRight(o, typed)) {
+        st.done = true; st.right = true;
+        input.readOnly = true; input.setAttribute('aria-invalid', 'false');
+        markObj(o, 'right');
+        earn(q);
+        say('Right!');
+        runActs(q.onRight, (depth || 0) + 1);
+      } else if (q.tries === 'many') {
+        input.setAttribute('aria-invalid', 'true');
+        markObj(o, 'wrong');
+        say('Not right. Try again.');
+        input.select();
+        runActs(q.onWrong, (depth || 0) + 1);
+      } else {
+        st.done = true;
+        input.readOnly = true; input.setAttribute('aria-invalid', 'true');
+        markObj(o, 'wrong');
+        // The right answer, shown in the message strip (and so read aloud) when the question says so.
+        if (q.reveal && o.accept.length) showMessage('Not right. The answer: ' + o.accept[0] + '.');
+        else say('Not right.');
+        runActs(q.onWrong, (depth || 0) + 1);
+      }
+      checkAllAnswered(depth);
+      draw();
+      return true;
+    }
+    /** "Check the answers" checks every box with words in it whose question is not done yet. */
+    function checkFields(depth) {
+      var any = false;
+      p.objects.forEach(function (o) {
+        if (o.type !== 'field' || !o.q) return;
+        var n = stage.nodes.get(o.id), q = questionOf(o);
+        if (n && n.input && n.input.value.trim() && q && !stateOf(q).done && onScreen(n.g) && checkField(o, depth)) any = true;
+      });
+      return any;
+    }
+    /** Back to the start: every question unanswered, marks off, boxes empty. */
+    function resetQuestions() {
+      qState = {}; answeredRan = false;
+      p.objects.forEach(function (o) {
+        var n = stage.nodes.get(o.id); if (!n) return;
+        if (n.mark) markObj(o, null);
+        if (o.q && o.type !== 'field') { n.g.removeAttribute('aria-disabled'); n.g.classList.remove('ani-answered'); nameAnswer(o, ''); }
+        if (n.input) { n.input.value = ''; n.input.readOnly = false; n.input.removeAttribute('aria-invalid'); }
+      });
+    }
+    // Enter in a box to type in checks it (Escape and the rest work as usual).
+    p.objects.forEach(function (o) {
+      var n = stage.nodes.get(o.id);
+      if (o.type !== 'field' || !n || !n.input) return;
+      n.input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); checkField(o, 0); }
+      });
+      // A wrong answer being changed is not wrong any more (the cross goes once typing starts).
+      n.input.addEventListener('input', function () {
+        var q = questionOf(o);
+        if (n.input.getAttribute('aria-invalid') === 'true' && !(q && stateOf(q).done)) { n.input.removeAttribute('aria-invalid'); markObj(o, null); }
+      });
+    });
     /* Carrying: picked up by keyboard or by a tap, waiting for a place. */
     function startCarry(o, by) {
       var list = placesNow();
@@ -3561,15 +3863,19 @@ var ANIRuntime = (function () {
       var order = readingOrder(p);
       stage.svg.setAttribute('aria-owns', order.map(function (id) { return 'ani-o-' + id; }).join(' '));
       var byId = {}; p.objects.forEach(function (o) { byId[o.id] = o; });
-      var inOrder = order.filter(function (id) { return isInteractive(byId[id]); }).map(function (id) { return stage.nodes.get(id).g; });
-      var allButtons = p.objects.filter(isInteractive).map(function (o) { return stage.nodes.get(o.id).g; });
-      var tabbable = function () { return inOrder.filter(function (g) { return onScreen(g) && g.getAttribute('role') === 'button'; }); };   // (not a draggable already in place)
+      // What Tab stops at: a button's own <g>, or (0.16.0) the text box inside a box to type in.
+      var stopOf = function (id) { var n = stage.nodes.get(id); return byId[id].type === 'field' ? n.input : n.g; };
+      var isStop = function (id) { return isInteractive(byId[id]) || (byId[id].type === 'field' && stage.nodes.get(id).input); };
+      var inOrder = order.filter(isStop).map(stopOf);
+      var allButtons = p.objects.filter(function (o) { return isStop(o.id); }).map(function (o) { return stopOf(o.id); });
+      var usable = function (el) { return el.tagName === 'INPUT' || el.getAttribute('role') === 'button'; };   // (not a draggable already in place)
+      var tabbable = function () { return inOrder.filter(function (g) { return onScreen(g) && usable(g); }); };
       var stepAside = function () {
         allButtons.forEach(function (g) { g.setAttribute('tabindex', '-1'); });
         // Back in the Tab order the moment focus lands outside the stage (or soon after, whatever happens).
         var back = function () {
           doc.removeEventListener('focusin', back, true);
-          allButtons.forEach(function (g) { if (g.getAttribute('role') === 'button') g.setAttribute('tabindex', '0'); });
+          allButtons.forEach(function (g) { if (g.tagName === 'INPUT') g.removeAttribute('tabindex'); else if (g.getAttribute('role') === 'button') g.setAttribute('tabindex', '0'); });
         };
         doc.addEventListener('focusin', back, true);
         win.setTimeout(back, 300);
@@ -3697,6 +4003,7 @@ var ANIRuntime = (function () {
     varValues: varValues, fillVars: fillVars, placeholdersIn: placeholdersIn, compare: compare,
     SOUND_RE: SOUND_RE, SOUND_KINDS: SOUND_KINDS, captionCues: captionCues, captionWords: captionWords, soundBank: soundBank,
     findLmsApi: findLmsApi,
+    QUESTION_KINDS: QUESTION_KINDS, TRIES: TRIES, plainAnswer: plainAnswer, numberIn: numberIn, answerRight: answerRight,   // (questions: 0.16.0)
     CLIP_MODES: CLIP_MODES, CLIP_PART_TYPES: CLIP_PART_TYPES, clipOf: clipOf, clipFrame: clipFrame
   };
 })();
@@ -3755,6 +4062,17 @@ body { background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -ap
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @media (forced-colors: active) { .ani-ring rect { stroke: Highlight; } }
 .ani-keys-btn { margin-top: 10px; }
+/* Questions (0.16.0). An answer, once its question is done, stays readable but is not pressed any more.
+   A box to type in: the HTML text box sits on the drawn box (white, outlined), in the stage's own numbers.
+   Its focus ring is drawn inside it (a foreignObject clips anything outside): dark, then white. */
+.ani-answered { cursor: default; }
+.ani-mark { pointer-events: none; }
+.ani-field .ani-input { pointer-events: auto; display: block; width: 100%; height: 100%; margin: 0; padding: 0 .45em; border: 0; border-radius: 10px;
+  background: transparent; color: #111827; font-weight: 400; line-height: 1; }
+.ani-field .ani-input::placeholder { color: #6b7280; opacity: 1; }
+.ani-field .ani-input:focus { outline: 3px solid #111827; outline-offset: -3px; box-shadow: inset 0 0 0 6px #ffffff; }
+.ani-field .ani-input[readonly] { cursor: default; }
+@media (forced-colors: active) { .ani-field .ani-input:focus { outline-color: Highlight; } }
 </script>
 
 <!-- ===== 3. THE FAMILY'S SHARED SUITE BLOCK (splash, help tabs, backups, installing) ===== -->
@@ -5632,7 +5950,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* =====================================================================
    1. BASICS
    ===================================================================== */
-const APP_VERSION = '0.15.0';
+const APP_VERSION = '0.17.0';
 const R = ANIRuntime;                 // short name for the shared runtime
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -5698,6 +6016,9 @@ const ICONS = {
   square: '<rect x="4" y="5" width="16" height="14" rx="2"/>',
   circle: '<circle cx="12" cy="12" r="8"/>',
   text: '<path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>',
+  // A box to type in (0.16.0), and a question (a speech bubble with a question mark).
+  textbox: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 9v6"/>',
+  question: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   shapes: '<path d="M8.3 10a.7.7 0 0 1-.63-1.02l3.7-6.6a.7.7 0 0 1 1.26 0l3.7 6.6A.7.7 0 0 1 15.7 10Z"/><rect x="3" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="17.5" r="3.5"/>',
   image: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>',
   flag: '<path d="M5 22V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
@@ -6202,6 +6523,8 @@ function actionLists() {
   project.on.marks.forEach((m) => out.push(m.acts));
   project.on.keys.forEach((k) => out.push(k.acts));
   if (project.on.sorted) out.push(project.on.sorted);   // (drag and drop: when everything is in a right place)
+  if (project.on.answered) out.push(project.on.answered);   // (questions, section 18u: when every question is answered)
+  (project.questions || []).forEach((q) => out.push(q.onRight, q.onWrong));   // (and each question's right and wrong cards)
   return out.flatMap(withNested);
 }
 /** Take out every action that test() says should go (e.g. ones pointing at something deleted). */
@@ -6605,7 +6928,7 @@ function setTool(t, quiet) {
 }
 
 /* ----- Making objects ----- */
-const TYPE_WORDS = { rect: 'Rectangle', ellipse: 'Ellipse', text: 'Text', path: 'Shape', image: 'Picture', group: 'Group', clip: 'Clip' };
+const TYPE_WORDS = { rect: 'Rectangle', ellipse: 'Ellipse', text: 'Text', path: 'Shape', image: 'Picture', group: 'Group', clip: 'Clip', field: 'Answer box' };
 function nextName(word) {
   let n = 1;
   while (project.objects.some((o) => o.name === word + ' ' + n)) n++;
@@ -6615,6 +6938,7 @@ function nextName(word) {
 function defaultSize(type, shapeKey) {
   if (type === 'text') return { w: Math.min(640, project.stage.w - 80), h: 70 };
   if (type === 'ellipse') return { w: 180, h: 180 };
+  if (type === 'field') return { w: 380, h: 70 };
   if (type === 'path') { const vb = pathBox(SHAPES[shapeKey].d); const k = 180 / Math.max(vb[2], vb[3]); return { w: Math.round(vb[2] * k), h: Math.round(vb[3] * k) }; }
   return { w: 240, h: 160 };
 }
@@ -6633,8 +6957,11 @@ function makeObject(type, ci, box, extra) {
     font: lastTextFont, italic: false, lineHeight: R.LINE_HEIGHT,     // (fonts: section 18j)
     d: '', open: false, vb: [0, 0, 100, 100], asset: '', gw: 100, gh: 100,
     drag: false, drop: false, goesTo: [], stayWrong: false,                // (drag and drop: section 18l)
+    q: '', right: false, spot: false, accept: [], tol: 0,                   // (questions: section 18u)
     on: { activate: [], point: [], dropRight: [], dropWrong: [] }
   };
+  // A box to type in (section 18u): white, outlined in the scheme's Main colour, with a hint inside.
+  if (type === 'field') { o.text = 'Type your answer'; o.size = 32; o.font = R.DEFAULT_FONT; o.base.fill = schemeColour(1); }
   if (type === 'path') { const def = SHAPES[currentShape]; o.d = def.d; o.open = !!def.open; o.vb = pathBox(def.d); if (def.open) o.strokeW = 6; }
   return Object.assign(o, extra || {});
 }
@@ -7577,7 +7904,7 @@ function treeRows() {
   });
   return rows;
 }
-const TYPE_ICONS = { rect: 'square', ellipse: 'circle', text: 'text', path: 'shapes', image: 'image', group: 'group', clip: 'film' };
+const TYPE_ICONS = { rect: 'square', ellipse: 'circle', text: 'text', path: 'shapes', image: 'image', group: 'group', clip: 'film', field: 'textbox' };
 
 function renderTimeline() {
   const rows = treeRows();
@@ -8598,7 +8925,7 @@ function buildObjectInspector(o, head, body) {
 
   // Look
   const look = section('look', 'Look');
-  if (o.type !== 'group' && o.type !== 'image' && o.type !== 'clip') look.body.append(colourField(o.type === 'text' ? 'Text colour' : (o.open ? 'Line colour' : 'Fill'), () => displayValues(o).fill, anim(o, 'fill')));
+  if (o.type !== 'group' && o.type !== 'image' && o.type !== 'clip') look.body.append(colourField(o.type === 'text' ? 'Text colour' : o.type === 'field' ? 'Outline colour' : (o.open ? 'Line colour' : 'Fill'), () => displayValues(o).fill, anim(o, 'fill')));
   look.body.append(numField('Opacity (%)', () => Math.round(displayValues(o).opacity * 100), (n, gr) => editProps(o, { opacity: n / 100 }, gr), { min: 0, max: 100, slider: true, sliderName: 'Opacity', unit: '%' }));
   if (o.type === 'text') {
     const words = textField('Text', () => o.text, (v, gr) => { commit(gr); o.text = v; requestRender(); }, { id: 'inspText', lines: true, rows: 3, max: 4000, stack: true });
@@ -8620,6 +8947,8 @@ function buildObjectInspector(o, head, body) {
       actionBtn('fit', 'Fit the box to the picture', () => fitBoxToPicture(o), 'Give the box the picture\'s own shape', 'pic-fit')));
   } else if (o.type === 'path' && o.open) {
     look.body.append(numField('Line width', () => o.strokeW, (n, gr) => { commit(gr); o.strokeW = n; requestRender(); }, { min: 0.5, max: 100, step: 0.5, popRange: '0.5 40' }));
+  } else if (o.type === 'field') {
+    look.body.append(el('p', { class: 'hint', text: 'A white box for learners to type in. Its hint, text size and the answers it takes are in its Question section.' }));
   } else if (o.type !== 'group') {
     if (o.type === 'rect') look.body.append(numField('Corners', () => o.radius, (n, gr) => { commit(gr); o.radius = n; requestRender(); }, { min: 0, max: 2000, popRange: '0 200' }));
     look.body.append(
@@ -8665,26 +8994,34 @@ function buildObjectInspector(o, head, body) {
   parts.push(mo.d);
 
   // Drag and drop (0.11.0): something learners drag, or a place to drop things (section 18l)
-  if (canDragDrop(o)) {
+  if (canDragDrop(o) && o.type !== 'field') {
     const dd = section('dnd', 'Drag and drop', o.drag ? 'dragged' : o.drop ? 'a place' : '');
     dd.body.append(liveBlock(() => dragDropKey(o), () => dragDropBlock(o)));
     parts.push(dd.d);
   }
 
+  // Question (0.16.0): an answer to a question, or a box to type the answer in (section 18u)
+  if (canAnswer(o) || (o.type === 'field' && !inClip())) {
+    const qs = section('question', 'Question', o.q ? (o.right ? 'right answer' : o.type === 'field' ? 'answer box' : 'an answer') : '');
+    qs.body.append(liveBlock(() => questionKey(o), () => questionBlock(o)));
+    parts.push(qs.d);
+  }
+
   // Behaviour (not inside a clip: the clip on the stage has the behaviours)
   const be = section('behaviour', 'Behaviour');
   be.body.append(liveBlock(() => [o.drag, ...BEHAVIOUR_TRIGGERS.map((t) => actsKey(o.on[t] || []))].join('#') + '|' + (o.label ? 1 : 0) + '|' + namesKey(), () => behaviourBlock(o)));
-  if (!inClip()) parts.push(be.d);
+  if (!inClip() && o.type !== 'field') parts.push(be.d);         // (a box to type in is typed in, not pressed)
 
   // Access: what a screen reader says (inside a clip: the clip on the stage is what is read)
   const ac = section('access', 'Access');
   const helpText = o.type === 'text'
     ? 'Text is read out just as it is written. Fill this in only to give it a different name.'
     : o.type === 'image' ? 'Say what the picture shows, in a sentence or a few words. If it is only for looks, tick Decoration instead.'
+      : o.type === 'field' ? 'What a screen reader says for the box: what to type ("Your answer: the capital of France"). It needs one.'
       : o.type === 'group' ? 'Name it to have the group read as one picture. Leave it empty to have its parts read one by one.'
         : 'Leave it empty if it is just decoration: then a screen reader skips it. If it is a button (it has a behaviour), it needs a name.';
   ac.body.append(textField('Read aloud as', () => o.label, (v, gr) => { commit(gr); o.label = v.slice(0, 300); requestRender(); }, { id: 'inspLabel', max: 300, help: helpText }));
-  if (o.type !== 'text') ac.body.append(checkField('Decoration (a screen reader skips it)', () => o.decorative, (v) => { commit(); o.decorative = v; requestRender(); }));
+  if (o.type !== 'text' && o.type !== 'field') ac.body.append(checkField('Decoration (a screen reader skips it)', () => o.decorative, (v) => { commit(); o.decorative = v; requestRender(); }));
   if (!inClip()) parts.push(ac.d);
 
   // Arrange
@@ -8781,7 +9118,7 @@ function motionTable(o) {
    from a fixed list: a lesson never holds code of its own. */
 const ACTION_WORDS = { gotoPlay: 'Go to a marker and play', gotoPause: 'Go to a marker and pause', play: 'Play', pause: 'Pause',
   show: 'Show an object', hide: 'Hide an object', toggle: 'Show or hide an object', set: 'Change an object (colour, opacity, place, turn)',
-  link: 'Open a web page', say: 'Say something', check: 'Check the answers (drag and drop)',
+  link: 'Open a web page', say: 'Say something', check: 'Check the answers (drag and drop, typed answers)',
   sound: 'Play a sound', stopSounds: 'Stop all sounds', complete: 'Mark the lesson complete (for an LMS)',
   change: 'Change a variable (add, take away, set)', if: 'If a variable is... (then, otherwise)' };
 const OP_WORDS = { add: 'add', sub: 'take away', set: 'set it to' };     // "Score: add 1" (0.10.0)
@@ -9109,6 +9446,11 @@ function buildLessonInspector(head, body) {
     project.on.keys.map((k) => k.key + ':' + actsKey(k.acts)).join(';') + '|' + namesKey(), () => lessonBehavioursBlock()));
   parts.push(lb.d);
 
+  // Questions (0.16.0): multiple choice, click the right spot, type the answer (section 18u)
+  const qn = section('questions', 'Questions', lessonQuestions().length ? String(lessonQuestions().length) : '');
+  qn.body.append(liveBlock(() => questionsKey(), () => questionsBlock()));
+  parts.push(qn.d);
+
   // Sounds (0.12.0): narration, effects and music, with their captions (section 18m)
   const sn = section('sounds', 'Sounds', (project.sounds || []).length ? String(project.sounds.length) : '');
   sn.body.append(liveBlock(() => soundsKey(), () => soundsBlock()));
@@ -9393,6 +9735,8 @@ function lessonProblems() {
     if (o.type === 'image' && !R.isInteractive(o) && !o.label.trim() && !o.decorative) out.push({ level: 'must', text: 'The picture ' + o.name + ' needs words for screen readers (Read aloud as), or tick Decoration.', fix: () => fixObject(o, 'inspLabel') });
     [o.on.activate, o.on.point, o.on.dropRight || [], o.on.dropWrong || []].forEach((acts) => checkActs(acts, o.name, () => fixObject(o), out));
     // A place to drop things needs a name: learners hear "Whale is on Mammals" (section 18l).
+    // A box to type in needs a name: a screen reader says it, so learners know what to type (section 18u).
+    if (o.type === 'field' && !o.label.trim()) out.push({ level: 'must', text: o.name + ' is a box to type in, so it needs a name learners will hear: what to type (Access, Read aloud as).', fix: () => fixObject(o, 'inspLabel') });
     if (o.drop && !o.label.trim()) out.push({ level: 'must', text: o.name + ' is a place to drop things, so it needs a name learners will hear (Access, Read aloud as).', fix: () => fixObject(o, 'inspLabel') });
   });
   // The lesson's own behaviours.
@@ -9401,6 +9745,12 @@ function lessonProblems() {
   project.on.marks.forEach((m) => checkActs(m.acts, 'When the play head reaches a marker', toLesson, out));
   project.on.keys.forEach((k) => checkActs(k.acts, 'When ' + R.keyName(k.key) + ' is pressed', toLesson, out));
   if (project.on.sorted) checkActs(project.on.sorted, 'When everything is in a right place', toLesson, out);
+  // Questions (section 18u): their right and wrong cards, and "when every question is answered".
+  const toQuestions = () => { toLesson(); settings.open.questions = true; saveSettings(); };
+  if (!inClip()) {
+    lessonQuestions().forEach((q) => { checkActs(q.onRight, q.name + ', when answered right', toQuestions, out); checkActs(q.onWrong, q.name + ', when answered wrong', toQuestions, out); });
+    checkActs(project.on.answered || [], 'When every question is answered', toQuestions, out);
+  }
   // Speech needs its words (WCAG 1.2.2: captions), for every sound the lesson plays.
   usedSoundIds().forEach((id) => {
     const sd = soundById(id);
@@ -9572,12 +9922,13 @@ function buildHelp() {
   $('paneStart').replaceChildren(
     el('h3', { text: 'Getting started' }),
     el('ol', null,
-      el('li', { text: 'Draw a shape, text box or picture from the tool rail, or start from a template (the Templates button: the water cycle, a bouncing ball, a motion path, clips and a flipbook, a labelled diagram, click to reveal, a quiz with a score, sort these, step by step, flip cards, match them, or the sample). A drawing from VCTREDTR (an SVG file: the Picture tool, a drop, or paste its SVG code) comes in as shapes you can animate one by one. Put things on layers to keep them tidy; group things that move together (Ctrl+G). The Lesson\u2019s Colour scheme gives everything six colours that go together.' }),
+      el('li', { text: 'Draw a shape, text box or picture from the tool rail, or start from a template (the Templates button: the water cycle, a bouncing ball, a motion path, clips and a flipbook, a labelled diagram, click to reveal, a quiz with a score, sort these, step by step, flip cards, match them, check your understanding, or the sample). A drawing from VCTREDTR (an SVG file: the Picture tool, a drop, or paste its SVG code) comes in as shapes you can animate one by one. Put things on layers to keep them tidy; group things that move together (Ctrl+G). The Lesson\u2019s Colour scheme gives everything six colours that go together.' }),
       el('li', { text: 'To animate it: move the play head along the timeline, move or change the object, then press K. It glides from where it was to where it is now. Add more keyframes the same way.' }),
       el('li', { text: 'Add markers (M) for the moments that matter, with a description each: they become the lesson\u2019s text version, and learners can step between them.' }),
       el('li', { text: 'Give an object a behaviour in the Inspector: when it is activated (a click, a tap, Enter or Space), or when it is pointed at or focused (to show a label, say). It becomes a button in the lesson. The whole lesson has behaviours too (Lesson, Behaviours): when it starts, when the play head reaches a marker, when a key is pressed. Say something shows the words under the lesson and reads them out; Open a web page opens it in a new tab.' }),
+      el('li', { text: 'Ask questions (Lesson, Questions, Add a question): multiple choice, click the right spot on a picture, or type the answer. The answers are checked for you (a tick or a cross, read out too), and each right answer adds its points to the Score. Each question has its own actions for a right and a wrong answer.' }),
       el('li', { text: 'Check it: the Accessibility tab beside the Inspector (or the figure button in the top bar) lists anything that would make the lesson hard to see, hear or use, most serious first, with a button that goes straight to it. Lesson, Reading order sets the order a screen reader reads things.' }),
-      el('li', { text: 'Preview (W) to try it, then Export (Ctrl+S): one HTML file that works offline, a SCORM package for your LMS, a video with captions, an animated GIF, or a picture of a frame.' }),
+      el('li', { text: 'Preview (W) to try it, then Export (Ctrl+S): one HTML file that works offline, a SCORM package for your LMS, a video (MP4 or WebM) with captions, an animated GIF, or a picture of a frame.' }),
       el('li', { text: 'Save the project (Ctrl+Shift+S) to keep editing later: an .animedtr file with everything in it. Open it again with Open (Ctrl+O), or drop it on ANIMEDTR.' })),
     // Brightspace (0.14.0): the three ways in. Menu names can differ a little between Brightspace versions and
     // set-ups, so the words say so, and point to the college's own Brightspace help.
@@ -9594,9 +9945,9 @@ function buildHelp() {
       el('li', { text: 'In Content, open the module: Upload / Create, then New SCORM Object / xAPI Object, and upload the .zip.' }),
       el('li', { text: 'Add it to the module. When Brightspace asks, say Yes to a grade item: the lesson’s score goes to the gradebook as a percentage of its Out of.' }),
       el('li', { text: 'It counts as completed when a learner reaches its end or its last marker (or a behaviour runs Mark the lesson complete).' })),
-    el('h4', { text: 'As a video (Video: a .webm and a .vtt)' }),
+    el('h4', { text: 'As a video (Video: an .mp4 or .webm, and a .vtt)' }),
     el('ol', null,
-      el('li', { text: 'In Content, open the module: Upload / Create, then Video or Audio, and upload the .webm.' }),
+      el('li', { text: 'In Content, open the module: Upload / Create, then Video or Audio, and upload the .mp4 (or .webm).' }),
       el('li', { text: 'Open the video’s Edit, then Advanced Editing, then Closed Captions: Upload the .vtt file ANIMEDTR saved beside it, then save.' }),
       el('li', { text: 'A video plays straight through: for buttons, drag and drop or a score, use the page or the SCORM package instead.' })),
     el('p', { class: 'hint', text: 'An animated GIF goes anywhere a picture does: in a page, a discussion, an announcement or a slide.' }),
@@ -9748,6 +10099,7 @@ function requestRender() {
 }
 function renderAll() {
   tidyDragDrop();                                     // a draggable's right places are places that exist (section 18l)
+  tidyQuestions();                                    // answers answer questions that exist (section 18u)
   snapPaths();                                        // things on motion paths start and end on their paths (section 18f)
   renderStage();
   renderTimeline();
@@ -10462,6 +10814,7 @@ function quickChecks() {
       text: o.name + ' shows {' + odd[0] + '}, but there is no variable called ' + odd[0] + ', so the lesson shows it just as typed. Add it under Variables (the Lesson), or fix the spelling.' });
   });
   out.push(...dragDropChecks());                         // drag and drop (section 18l)
+  out.push(...questionChecks());                         // questions (section 18u)
   out.push(...soundChecks());                            // sounds (section 18m)
   // Keys used twice
   const seenKeys = {};
@@ -13838,7 +14191,8 @@ const allTextIn = (p) => p.objects.concat(...(p.clips || []).map((c) => c.object
 /** The fonts a lesson's text uses: a Map of "key/variant" -> [key, variant], in a steady order. */
 function facesUsed(p) {
   const out = new Map();
-  allTextIn(p).forEach((o) => { const f = faceOf(o); if (f) out.set(f.join('/'), f); });
+  // (Boxes to type in use a font too: what learners type shows in it. Section 18u.)
+  allTextIn(p).concat(p.objects.filter((o) => o.type === 'field')).forEach((o) => { const f = faceOf(o); if (f) out.set(f.join('/'), f); });
   return new Map([...out.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)));
 }
 /** The @font-face rules a lesson needs (only the fonts its text uses). */
@@ -14014,7 +14368,7 @@ function deleteVar(v) {
   requestRender();
 }
 /** How many actions use a variable. */
-const varUses = (id) => allActions().filter((a) => a.v === id).length;
+const varUses = (id) => allActions().filter((a) => a.v === id).length + lessonQuestions().filter((q) => q.v === id).length;   // (questions' points too: section 18u)
 
 /** The middle of a "Change" or "If" row: which variable, and add / take away / set, or the comparison, and a number. */
 function varActionRow(a, f, n1) {
@@ -14718,23 +15072,43 @@ async function encodeOpus(buffer, signal) {
 }
 
 /**
- * Make the video. opts: { scale (1 or 0.5) }. Calls progress(fraction, words).
- * signal.stop = true stops it. Resolves { video (Blob), vtt ('' or text), sound (true/false) }.
+ * Make the video. opts: { scale (1 or 0.5), format ('webm' or 'mp4', 0.17.0) }. Calls
+ * progress(fraction, words). signal.stop = true stops it. Resolves { video (Blob), ext
+ * ('webm' or 'mp4'), vtt ('' or text), sound (true/false), soundCodec ('opus', 'mp4a' or '') }.
  */
 async function makeVideo(opts, progress, signal) {
   const p = mediaProject(), fps = p.stage.fps, total = p.stage.frames;
   const w = evenSize(p.stage.w, opts.scale), h = evenSize(p.stage.h, opts.scale);
-  const vc = await videoCodecFor(w, h, fps);
+  const mp4 = opts.format === 'mp4';
+  // Which encoders: for WebM, VP9 (or VP8) and Opus; for MP4 (section 18v), H.264 and AAC (or Opus).
+  // (opts.testVp9 puts VP9 in an MP4 instead: only the tests use it, where no H.264 encoder is.)
+  let vc, ability = null;
+  if (mp4) {
+    ability = await mp4Ability(w, h, fps);
+    if (opts.testVp9) vc = { codec: 'vp09.00.10.08', id: 'vp09' };
+    else if (ability.video) vc = { codec: ability.video, id: 'avc1' };
+    else throw new Error('This browser cannot make MP4 videos (it has no H.264 encoder). Make a WebM here, or an MP4 in Chrome or Edge on Windows or a Mac, or in Safari.');
+  } else vc = await videoCodecFor(w, h, fps);
   if (!vc) throw new Error('This browser cannot make videos. Chrome, Edge or Firefox can.');
   progress(0, 'Mixing the sounds...');
   let sound = null;
-  try { sound = await encodeOpus(await mixTimelineSounds(p), signal); } catch (err) { sound = null; }
-  const chunks = []; let failed = null;
+  try {
+    const mixed = await mixTimelineSounds(p);
+    sound = mp4 ? await encodeMp4Sound(mixed, ability.audio, signal) : await encodeOpus(mixed, signal);
+  } catch (err) { sound = null; }
+  const chunks = []; let failed = null, description = null;
   const enc = new VideoEncoder({
-    output: (chunk) => { const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data); chunks.push({ ts: chunk.timestamp / 1000, key: chunk.type === 'key', data }); },
+    output: (chunk, meta) => {
+      const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data); chunks.push({ ts: chunk.timestamp / 1000, key: chunk.type === 'key', data });
+      // H.264 in an MP4 needs the encoder's own settings (its avcC): it comes with the first frame.
+      const d = meta && meta.decoderConfig && meta.decoderConfig.description;
+      if (d && !description) description = new Uint8Array(d instanceof ArrayBuffer ? d : d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength));
+    },
     error: (e) => { failed = e; }
   });
-  enc.configure({ codec: vc.codec, width: w, height: h, bitrate: Math.round(2500000 * opts.scale * opts.scale + 500000), framerate: fps, latencyMode: 'quality' });
+  // (H.264 squeezes less than VP9, so it gets a little more room.)
+  const bitrate = Math.round((vc.id === 'avc1' ? 4000000 : 2500000) * opts.scale * opts.scale + 500000);
+  enc.configure(Object.assign({ codec: vc.codec, width: w, height: h, bitrate, framerate: fps, latencyMode: 'quality' }, vc.id === 'avc1' ? { avc: { format: 'avc' } } : {}));
   const r = await frameRenderer(p, w, h);
   for (let f = 0; f < total; f++) {
     if (signal.stop) { enc.close(); throw new Error('stopped'); }
@@ -14749,8 +15123,10 @@ async function makeVideo(opts, progress, signal) {
   await enc.flush(); enc.close();
   if (failed) throw failed;
   progress(1, 'Putting it together...');
-  const video = writeWebM({ codec: vc.id, width: w, height: h, fps, chunks }, sound, total * 1000 / fps);
-  return { video, vtt: captionsVtt(p), sound: !!sound, heardCues: (p.cues || []).length > 0 };
+  if (mp4 && vc.id === 'avc1' && !description) throw new Error('The H.264 encoder gave no settings for the file.');
+  const video = mp4 ? writeMp4({ codec: vc.id, width: w, height: h, fps, description, chunks }, sound)
+    : writeWebM({ codec: vc.id, width: w, height: h, fps, chunks }, sound, total * 1000 / fps);
+  return { video, ext: mp4 ? 'mp4' : 'webm', vtt: captionsVtt(p), sound: !!sound, soundCodec: sound ? (sound.codec || 'opus') : '', heardCues: (p.cues || []).length > 0 };
 }
 
 /* =====================================================================
@@ -14960,7 +15336,7 @@ const EXPORT_KINDS = {
   png: { button: 'Download the picture (PNG)' }
 };
 /** The settings of a video and a GIF, for this session (each lesson's LMS settings are saved with it). */
-const exportOpts = { videoScale: 1, gifWidth: 640, gifFps: 12, gifLoops: 0, gifDither: false };
+const exportOpts = { videoScale: 1, videoFormat: 'mp4', gifWidth: 640, gifFps: 12, gifLoops: 0, gifDither: false };   // (MP4 first: it plays everywhere, 0.17.0)
 let exportBusy = false;              // a video or GIF is being made
 let exportSignal = null;             // { stop } for the one being made
 const exportKind = () => { const r = document.querySelector('input[name="exKind"]:checked'); return r ? r.value : 'html'; };
@@ -14997,7 +15373,8 @@ function htmlOptions() {
 /* ----- For an LMS (SCORM 1.2) ----- */
 /** A good guess at the highest score: everything the lesson ever adds to that variable. */
 function guessMaxScore(id) {
-  const total = allActions().filter((a) => a.do === 'change' && a.v === id && a.op === 'add' && a.n > 0).reduce((n, a) => n + a.n, 0);
+  let total = allActions().filter((a) => a.do === 'change' && a.v === id && a.op === 'add' && a.n > 0).reduce((n, a) => n + a.n, 0);
+  total += lessonQuestions().filter((q) => q.v === id).reduce((n, q) => n + q.points, 0);   // (and what questions earn: section 18u)
   return Math.max(1, total);
 }
 function scormOptions() {
@@ -15057,8 +15434,34 @@ function videoOptions() {
     out.push(el('p', { class: 'warn-note', text: 'This browser cannot make videos. Chrome, Edge or Firefox can.' }));
     return out;
   }
+  // MP4 or WebM (0.17.0, section 18v). Whether this browser can make an MP4 is found out below,
+  // a moment after the options show (the browser has to be asked), and said in the note.
+  const note = el('p', { class: 'hint', id: 'exMp4Note', 'aria-live': 'polite' });
+  const format = optSelect([['mp4', 'MP4 (plays everywhere: PowerPoint, phones, Kaltura, QuickTime)'], ['webm', 'WebM (browsers, Brightspace, YouTube)']],
+    exportOpts.videoFormat, (v) => { exportOpts.videoFormat = v; checkMp4(); });
+  format.id = 'exVideoFormat'; format.setAttribute('aria-describedby', 'exMp4Note');
+  const checkMp4 = async () => {
+    const w = evenSize(s.w, exportOpts.videoScale), h = evenSize(s.h, exportOpts.videoScale);
+    const ab = await mp4Ability(w, h, s.fps);
+    const mp4Option = format.querySelector('option[value="mp4"]');
+    if (!ab.video) {
+      mp4Option.disabled = true;
+      if (exportOpts.videoFormat === 'mp4') { exportOpts.videoFormat = 'webm'; format.value = 'webm'; }
+      note.textContent = 'This browser cannot make MP4 videos (it has no H.264 encoder), so WebM it is. Chrome or Edge on Windows or a Mac, or Safari, can make MP4.';
+    } else {
+      mp4Option.disabled = false;
+      const sounds = (lesson().cues || []).length > 0;
+      note.textContent = exportOpts.videoFormat !== 'mp4' ? 'WebM: smaller, and plays in browsers, Brightspace and YouTube. For PowerPoint or a phone, pick MP4.'
+        : !sounds ? 'MP4 with H.264 pictures: it plays almost anywhere.'
+          : ab.audio === 'mp4a' ? 'MP4 with H.264 pictures and AAC sound: it plays almost anywhere.'
+            : ab.audio === 'opus' ? 'This browser has no AAC sound encoder, so the MP4\u2019s sound will be Opus: browsers and VLC play it, but PowerPoint and QuickTime may not. Chrome or Edge on Windows or a Mac make AAC; or pick WebM.'
+              : 'This browser cannot add sound to an MP4, so it will be silent. WebM keeps the sound.';
+    }
+  };
+  out.push(...optField('Format', format), note);
   out.push(...optField('Size', optSelect([[1, 'Full (' + evenSize(s.w, 1) + ' by ' + evenSize(s.h, 1) + ')'], [0.5, 'Half (' + evenSize(s.w, 0.5) + ' by ' + evenSize(s.h, 0.5) + ')']],
-    exportOpts.videoScale, (v) => { exportOpts.videoScale = Number(v); })));
+    exportOpts.videoScale, (v) => { exportOpts.videoScale = Number(v); checkMp4(); })));
+  checkMp4();
   out.push(el('p', { class: 'hint', text: 'It plays straight through, the way the lesson plays before anyone clicks: behaviours do not run, and nothing waits at a marker. Sounds on the timeline are heard (sounds played by behaviours are not). Their captions go into a .vtt file beside the video, for Brightspace, YouTube or any video player.' }));
   const speechy = (lesson().cues || []).map((c) => soundById(c.s)).filter((sd) => sd && sd.kind === 'speech' && !sd.caption.trim());
   if (speechy.length) out.push(el('p', { class: 'warn-note', text: speechy[0].name + ' is speech with no words yet, so the video’s captions will leave it out. Type its captions first (the Lesson, Sounds).' }));
@@ -15107,11 +15510,18 @@ async function runExport() {
   announce(kind === 'video' ? 'Making the video. This can take a little while.' : 'Making the GIF. This can take a little while.');
   try {
     if (kind === 'video') {
-      const r = await makeVideo({ scale: exportOpts.videoScale }, progress, exportSignal);
-      downloadBlob(r.video, exportName() + '.webm');
+      // MP4 picked, but this browser cannot make one (found out a moment after the dialog opened): WebM, and we say so.
+      let fellBack = false;
+      if (exportOpts.videoFormat === 'mp4') {
+        const s = lesson().stage, ab = await mp4Ability(evenSize(s.w, exportOpts.videoScale), evenSize(s.h, exportOpts.videoScale), s.fps);
+        if (!ab.video) { exportOpts.videoFormat = 'webm'; fellBack = true; }
+      }
+      const r = await makeVideo({ scale: exportOpts.videoScale, format: exportOpts.videoFormat }, progress, exportSignal);
+      downloadBlob(r.video, exportName() + '.' + r.ext);
       if (r.vtt) downloadBlob(new Blob([r.vtt], { type: 'text/vtt' }), exportName() + '.vtt');
-      announce('Saved ' + exportName() + '.webm (' + mbWords(r.video.size) + ')' + (r.vtt ? ' and its captions, ' + exportName() + '.vtt' : '') + '.' +
-        (r.heardCues && !r.sound ? ' This browser could not add the sound, so the video is silent.' : ''));
+      announce('Saved ' + exportName() + '.' + r.ext + ' (' + mbWords(r.video.size) + ')' + (r.vtt ? ' and its captions, ' + exportName() + '.vtt' : '') + '.' +
+        (r.heardCues && !r.sound ? ' This browser could not add the sound, so the video is silent.' : '') +
+        (fellBack ? ' (This browser cannot make MP4, so it is a WebM.)' : ''));
     } else {
       const g = await makeGif({ fps: exportOpts.gifFps, width: exportOpts.gifWidth, loops: exportOpts.gifLoops, dither: exportOpts.gifDither }, progress, exportSignal);
       downloadBlob(g, exportName() + '.gif');
@@ -16384,6 +16794,538 @@ async function addSvgFile(file, at) {
   const text = await file.text();
   await addSvgDrawing(text, file.name.replace(/\.[^.]+$/, '').replace(/[^\w .,'()-]+/g, ' ').trim().slice(0, 60) || 'Drawing', at);
 }
+
+/* =====================================================================
+   18u. QUESTIONS (0.16.0): multiple choice, click the right spot, type
+   the answer
+   A lesson keeps a list of questions (the Lesson, Questions). Each has a
+   name, a kind, the points a right answer earns (added to a variable,
+   the Score, so the score can go to an LMS), one try or "until right",
+   and, with one try, whether the right answer shows after a wrong one.
+   Each has its own two cards of actions too: "when it is answered right"
+   and "when it is answered wrong" (a sound, a Say, Go to a marker...).
+
+     Multiple choice   any object on its own (a button, a picture, a
+                       group...) can be one of its answers (the object's
+                       Question section): tick the right one or ones.
+     Click the spot    the same, but the answers are usually SPOTS:
+                       shapes learners cannot see, laid over the parts of
+                       a picture. While editing they show dashed.
+     Type the answer   an Answer box: a real text box in the lesson, with
+                       the answers it takes. Capitals, extra spaces and a
+                       full stop at the end do not matter; a number may be
+                       "off by" a little. Enter checks it (so does a
+                       button with "Check the answers").
+
+   "Add a question" makes a working starter of each kind (all ordinary
+   objects: change the words, colours and places as you like). The
+   player does the rest (section 3: answer, checkField): a tick or a
+   cross on the answer, read aloud too, points added, cards run, and the
+   lesson's own card "when every question is answered" once all are.
+   ===================================================================== */
+const QUESTION_WORDS = { choice: 'Multiple choice', spot: 'Click the right spot', type: 'Type the answer' };
+const MAX_QUESTIONS = 50;
+/** The lesson's questions (the lesson's own, even while a clip is open). */
+const lessonQuestions = () => { const p = lesson(); if (!p.questions) p.questions = []; return p.questions; };
+const questionById = (id) => lessonQuestions().find((q) => q.id === id) || null;
+/** The objects that answer a question (its answers, or its Answer box). */
+const answersOfQ = (q) => project.objects.filter((o) => o.q === q.id);
+/** Can this object answer a question? Something on its own on the stage: not a part, not in a clip, not dragged. */
+const canAnswer = (o) => !o.parent && !inClip() && !o.drag && !o.drop;
+/** Shapes that can be spots (invisible in a lesson). */
+const canBeSpot = (o) => o.type === 'rect' || o.type === 'ellipse' || o.type === 'path';
+/**
+ * Put a data-fid on the input or select in a field, so focus stays on it when its block
+ * redraws, and fill it in now (a block is built after the Inspector fills its fields in).
+ */
+function withFid(field, fid, get) {
+  const c = field.querySelector('input, select, textarea');
+  if (c) {
+    c.setAttribute('data-fid', fid);
+    if (get) { if (c.type === 'checkbox') c.checked = !!get(); else c.value = String(get()); }
+  }
+  return field;
+}
+
+/**
+ * Keep questions and answers real (runs before each drawing): an answer answers a question
+ * that exists, of the right kind; a question's variable exists. (Mirrors cleanProject.)
+ */
+function tidyQuestions() {
+  if (inClip()) return;
+  const qs = lessonQuestions(), kinds = new Map(qs.map((q) => [q.id, q.kind]));
+  const vars = new Set(lessonVars().map((v) => v.id));
+  qs.forEach((q) => { if (q.v && !vars.has(q.v)) q.v = ''; });
+  project.objects.forEach((o) => {
+    if (o.q === undefined) { o.q = ''; o.right = false; o.spot = false; }
+    if (o.type === 'field' && !Array.isArray(o.accept)) { o.accept = []; o.tol = 0; }
+    if (!o.q) { o.right = false; return; }
+    const k = kinds.get(o.q);
+    if (!k || o.parent || o.drag || o.drop || (o.type === 'field') !== (k === 'type')) { o.q = ''; o.right = false; }
+    if (o.type === 'field') o.right = false;
+  });
+  if (!project.on.answered) project.on.answered = [];
+}
+
+/* ----- Making a question: a working starter of each kind ----- */
+/**
+ * Add a question of this kind (choice, spot or type), with starter objects in the middle
+ * of the stage on the layer you are on. All one undo step. Points go to the Score
+ * (made now if the lesson has no variable yet).
+ */
+function addQuestion(kind) {
+  if (inClip()) leaveClip(true);
+  if (entered) exitGroup(true);
+  if (playing) stopPlayback();
+  const qs = lessonQuestions();
+  if (qs.length >= MAX_QUESTIONS) { announce('A lesson can have ' + MAX_QUESTIONS + ' questions at most.'); return null; }
+  const layer = layerById(activeLayer);
+  if (layer && layer.locked) { announce('The layer ' + layer.name + ' is locked. Unlock it in the timeline, or pick another layer.'); return null; }
+  if (project.objects.length + 12 > R.LIMITS.objects) { announce('There is no room for more objects in this lesson.'); return null; }
+  commit();
+  const v = ensureVar();                                           // (the Score: made now if there are no variables)
+  const n = qs.length + 1;
+  const q = { id: newId('q'), name: 'Question ' + n, kind, points: 1, tries: 'one', reveal: true, v: v.id, onRight: [], onWrong: [] };
+  qs.push(q);
+  // Where it goes: the stage in three columns (on a narrow stage, one), the first question in
+  // the first column, the next in the second... so three starters sit side by side, as in the
+  // "Check your understanding" template. (A fourth goes back to the first column: by then,
+  // questions usually go one to a marker.)
+  const s = project.stage, ci = { parent: '', layer: activeLayer };
+  const cols = s.w >= 1000 ? 3 : 1, gap = 45, colW = Math.round((s.w - 120 - gap * (cols - 1)) / cols);
+  const x0 = 60 + ((n - 1) % cols) * (colW + gap), y0 = Math.max(110, Math.round(s.h * 0.15));
+  const made = [];
+  const mk = (type, box, extra) => { const o = makeObject(type, ci, box, extra); onThisPage(o); made.push(o); return o; };
+  /** A button: a rounded box (what is read and pressed) and its words on it (decoration). */
+  const button = (word, box, extra) => {
+    const b = mk('rect', box, Object.assign({ name: word + ' button', label: word, radius: 16 }, extra));
+    mk('text', box, { name: word + ' words', text: word, size: 30, bold: true, align: 'center', decorative: true,
+      base: { x: box.x + 12, y: box.y + box.h / 2 - 22, w: box.w - 24, h: 44, rot: 0, opacity: 1, fill: '#ffffff' } });
+    return b;
+  };
+  const words = (text) => mk('text', { x: x0, y: y0, w: colW, h: 90 }, { name: q.name + ' words', text, size: 28, bold: true });
+  if (kind === 'choice') {
+    words(n + '. Which of these is a mammal?');
+    [['Whale', true], ['Shark', false], ['Octopus', false]].forEach(([word, right], i) =>
+      button(word, { x: x0, y: y0 + 100 + i * 90, w: colW, h: 76 }, { q: q.id, right }));
+  } else if (kind === 'spot') {
+    words(n + '. Click the right spot. (Your question here.)');
+    const pic = mk('rect', { x: x0, y: y0 + 100, w: colW, h: 340 }, { name: 'Picture goes here', decorative: true, radius: 12 });
+    pic.base.fill = schemeColour(4);                               // (the scheme's Pale)
+    mk('text', { x: x0 + 16, y: y0 + 116, w: colW - 32, h: 100 }, { name: 'Picture hint', decorative: true, text: 'Put your picture here (Picture, F), then move the dashed spots over its parts.', size: 22, align: 'center' });
+    const d = Math.min(110, Math.floor((colW - 40) / 3));
+    [['Left side', true], ['Middle', false], ['Right side', false]].forEach(([word, right], i) =>
+      mk('ellipse', { x: x0 + 10 + i * (d + 10), y: y0 + 260, w: d, h: d }, { name: 'Spot: ' + word, label: word, q: q.id, right, spot: true }));
+  } else {
+    words(n + '. What is 7 times 8?');
+    mk('field', { x: x0, y: y0 + 100, w: colW, h: 70 }, { name: 'Answer box', label: 'Your answer: what is 7 times 8?', q: q.id, accept: ['56'], text: 'Type your answer', size: 28 });
+    button('Check', { x: x0, y: y0 + 190, w: 200, h: 70 }, { on: { activate: [{ do: 'check' }], point: [], dropRight: [], dropWrong: [] } });
+  }
+  project.objects.push(...made);
+  setSelection([made[0].id], true);
+  stageKey = ''; inspectorDirty = true;
+  settings.open.questions = true; settings.open.question = true; saveSettings();
+  announce(QUESTION_WORDS[kind] + ' question added (' + q.name + ', ' + plural(made.length, 'object') + '). Change its words and answers on the stage; its settings are in the Lesson, Questions. A right answer adds ' + q.points + ' to ' + v.name + '.');
+  requestRender();
+  return q;
+}
+/** Delete a question: its answers stay, as ordinary objects (one undo step). */
+function deleteQuestion(q) {
+  commit();
+  const p = lesson();
+  p.questions = p.questions.filter((x) => x !== q);
+  project.objects.forEach((o) => { if (o.q === q.id) { o.q = ''; o.right = false; } });
+  inspectorDirty = true;
+  announce(q.name + ' deleted. Its answers stay on the stage as they are (no longer answers). Undo brings it back.');
+  requestRender();
+}
+
+/* ----- The Lesson's Questions section ----- */
+const TRIES_WORDS = [['one', 'One try'], ['many', 'Until right (wrong answers can be tried again)']];
+/** What changes the shape of the Questions section (typed words are left out, so typing never rebuilds it). */
+const questionsKey = () => lessonQuestions().map((q) => [q.id, q.kind, q.tries, q.reveal, q.v, actsKey(q.onRight), actsKey(q.onWrong),
+  answersOfQ(q).map((o) => o.id + (o.right ? '+' : '') + o.name).join('.')].join(':')).join('|') + '#' + actsKey(project.on.answered || []) + '|' + namesKey();
+/** The answers of a question, in words: "Whale (right), Shark, Octopus". */
+function answersInWords(q) {
+  const list = answersOfQ(q);
+  if (!list.length) return 'none yet';
+  if (q.kind === 'type') return list.map((o) => o.name + ' (takes: ' + (o.accept.length ? o.accept.join(', ') : 'nothing yet') + ')').join('; ');
+  return list.map((o) => (o.label || o.name) + (o.right ? ' (right)' : '')).join(', ');
+}
+function questionsBlock() {
+  const out = [];
+  const qs = lessonQuestions(), vars = lessonVars();
+  if (!qs.length) out.push(el('p', { class: 'hint', text: 'Questions with a built-in answer check: multiple choice, click the right spot on a picture, or type the answer. Each right answer adds its points to a score.' }));
+  qs.forEach((q, i) => {
+    const fid = 'q' + i;
+    const card = el('div', { class: 'card question-card', role: 'group', 'aria-label': q.name });
+    const head = el('div', { class: 'card-head' }, el('span', { text: QUESTION_WORDS[q.kind] }),
+      iconAction('trash', 'Delete ' + q.name, () => deleteQuestion(q), fid + '-del'));
+    const list = answersOfQ(q);
+    card.append(head,
+      withFid(textField('Name', () => q.name, (v, gr) => { commit(gr); q.name = v.slice(0, 60) || 'Question'; }, { max: 60 }), fid + '-name', () => q.name),
+      el('p', { class: 'hint', text: (q.kind === 'type' ? 'Its answer box: ' : 'Its answers: ') + answersInWords(q) + '.' }));
+    if (list.length) card.append(el('div', { class: 'row-btns' }, actionBtn('pointer', q.kind === 'type' ? 'Pick its answer box' : 'Pick its answers', () => {
+      setSelection(list.map((o) => o.id)); inspectorDirty = true; requestRender();
+    }, 'Pick them on the stage', fid + '-pick')));
+    if (q.kind !== 'type' && list.length && !list.some((o) => o.right)) card.append(el('p', { class: 'warn-text', text: 'No right answer is ticked yet: pick the right one and tick "The right answer" (its Question section).' }));
+    card.append(
+      withFid(numField('Points for a right answer', () => q.points, (n, gr) => { commit(gr); q.points = clamp(Math.round(n), 0, 1000); }, { min: 0, max: 1000 }), fid + '-pts', () => q.points),
+      withFid(selectField('Points go to', [['', 'Nowhere']].concat(vars.map((v) => [v.id, v.name])), () => q.v, (v) => { commit(); q.v = v; requestRender(); }), fid + '-var', () => q.v),
+      withFid(selectField('Tries', TRIES_WORDS, () => q.tries, (v) => { commit(); q.tries = v; requestRender(); }), fid + '-tries', () => q.tries));
+    if (q.tries === 'one') card.append(withFid(tickNow('After a wrong answer, show the right one', () => q.reveal, (v) => { commit(); q.reveal = v; requestRender(); }), fid + '-rev'));
+    card.append(el('div', { class: 'card behaviour-card' }, el('div', { class: 'card-head' }, el('span', { text: 'When it is answered right, in order:' })), ...actionsEditor(q.onRight, null, fid + 'r')),
+      el('div', { class: 'card behaviour-card' }, el('div', { class: 'card-head' }, el('span', { text: 'When it is answered wrong, in order:' })), ...actionsEditor(q.onWrong, null, fid + 'w')));
+    out.push(card);
+  });
+  if (qs.length) out.push(el('div', { class: 'card behaviour-card' }, el('div', { class: 'card-head' }, el('span', { text: 'When every question is answered (once), in order:' })),
+    ...actionsEditor(project.on.answered, null, 'qall')));
+  // Add one.
+  const kind = el('select', { 'aria-label': 'Kind of question to add', 'data-fid': 'qadd-kind' });
+  Object.entries(QUESTION_WORDS).forEach(([k, t]) => kind.append(el('option', { value: k, text: t })));
+  out.push(el('div', { class: 'add-behaviour' }, kind, actionBtn('plus', 'Add a question', () => addQuestion(kind.value), 'Add a question, with starter answers on the stage', 'qadd')));
+  out.push(el('p', { class: 'hint', text: 'A right answer gets a tick, a wrong one a cross, and both are read out. Their points go to the variable picked (so the score can go to an LMS: Export, For an LMS). Try it in Preview (W).' }));
+  return out;
+}
+
+/* ----- An object's Question section ----- */
+const questionKey = (o) => [o.q, o.right, o.spot, o.drag, o.drop, o.type === 'field' ? o.accept.some((a) => R.numberIn(a) !== null) : '', lessonQuestions().map((q) => q.id + q.kind + q.name).join()].join('|');
+function questionBlock(o) {
+  const out = [];
+  if (o.drag || o.drop) return [el('p', { class: 'hint', text: 'Things learners drag, and places they drop them, cannot be answers to a question too.' })];
+  const fits = lessonQuestions().filter((q) => (q.kind === 'type') === (o.type === 'field'));
+  if (!fits.length) {
+    out.push(el('p', { class: 'hint', text: o.type === 'field' ? 'An Answer box answers a "Type the answer" question. There is none yet.' : 'There are no multiple choice or spot questions yet.' }),
+      actionBtn('question', 'Questions (the Lesson)', () => { pick(null); settings.open.questions = true; saveSettings(); inspectorDirty = true; requestRender(); }, 'Go to the lesson’s questions', 'q-go'));
+    return out;
+  }
+  out.push(withFid(selectField(o.type === 'field' ? 'Answers the question' : 'An answer to', [['', o.type === 'field' ? 'None' : 'No question (not an answer)']].concat(fits.map((q) => [q.id, q.name])),
+    () => o.q, (v) => { commit(); o.q = v; if (!v) o.right = false; inspectorDirty = true; requestRender(); }), 'q-which', () => o.q));
+  if (o.type === 'field') {
+    // The answers it takes, one a line.
+    const acc = textField('Accepted answers (one a line)', () => o.accept.join('\n'), (v, gr) => {
+      commit(gr); o.accept = v.split('\n').map((a) => a.trim().slice(0, 100)).filter(Boolean).slice(0, R.LIMITS.accept); requestRender();
+    }, { lines: true, rows: 3, max: 2200, stack: true, help: 'Capitals, extra spaces and a full stop at the end do not matter: "Paris", "paris" and " Paris. " are all right. Put each spelling you accept on its own line.' });
+    out.push(withFid(acc, 'q-acc', () => o.accept.join('\n')));
+    if (o.accept.some((a) => R.numberIn(a) !== null)) out.push(withFid(numField('Numbers can be off by', () => o.tol, (n, gr) => { commit(gr); o.tol = clamp(n, 0, 1000000); }, { min: 0, max: 1000000, step: 0.01 }), 'q-tol', () => o.tol),
+      el('p', { class: 'hint', text: 'For a number: 0 means exactly. With 0.01, 3.14 takes anything from 3.13 to 3.15. "3,14" and "1,500" are read the usual ways too.' }));
+    out.push(withFid(textField('Hint inside the box', () => o.text, (v, gr) => { commit(gr); o.text = v.slice(0, 100); requestRender(); }, { max: 100 }), 'q-hint', () => o.text),
+      withFid(numField('Text size', () => o.size, (n, gr) => { commit(gr); o.size = clamp(n, 10, 120); requestRender(); }, { min: 10, max: 120, popRange: '16 64' }), 'q-size', () => o.size),
+      el('p', { class: 'hint', text: 'Learners press Enter to check (or a button with "Check the answers"). Its name in Access (Read aloud as) is what a screen reader says for the box: say what to type.' }));
+    return out;
+  }
+  if (o.q) {
+    out.push(withFid(tickNow('The right answer', () => o.right, (v) => { commit(); o.right = v; inspectorDirty = true; requestRender(); }), 'q-right'));
+    if (canBeSpot(o)) out.push(withFid(tickNow('Spot: learners cannot see it (put it over part of a picture)', () => o.spot, (v) => { commit(); o.spot = v; inspectorDirty = true; requestRender(); }), 'q-spot'));
+    out.push(el('p', { class: 'hint', text: o.spot
+      ? 'A spot is dashed while you edit, and cannot be seen in the lesson (only its focus ring, and its tick or cross once picked). Name it by where it is ("Top left"), not by whether it is right: a screen reader reads its name.'
+      : 'Activating it answers the question. More than one can be ticked right: then any of them is right.' }));
+  }
+  return out;
+}
+
+/* ----- The Accessibility checks for questions (section 18b calls this) ----- */
+function questionChecks() {
+  const out = [];
+  if (inClip()) return out;
+  lessonQuestions().forEach((q) => {
+    const list = answersOfQ(q);
+    if (!list.length) out.push({ level: 'warn', o: null, f: null, lesson: 'questions', text: q.name + ' has no ' + (q.kind === 'type' ? 'Answer box' : 'answers') + ' yet, so it can never be answered.' });
+    else if (q.kind !== 'type' && !list.some((o) => o.right)) out.push({ level: 'warn', o: list[0], f: list[0].start, text: q.name + ' has no right answer ticked, so every answer is wrong.' });
+  });
+  project.objects.forEach((o) => {
+    if (o.type === 'field' && o.q && !o.accept.length) out.push({ level: 'warn', o, f: o.start, text: o.name + ' takes no answers yet, so whatever is typed is wrong. Add them (Question, Accepted answers).' });
+    if (o.type === 'field' && !o.q) out.push({ level: 'tip', o, f: o.start, text: o.name + ' is not the answer box of any question, so nothing checks what is typed in it.' });
+    if (o.spot && o.label && /^(the )?(right|wrong|correct|incorrect)( (answer|one|spot))?[.!]?$/i.test(o.label.trim())) out.push({ level: 'warn', o, f: o.start, text: o.name + ' is read aloud as "' + o.label + '", which gives the answer away. Name a spot by where it is instead.' });
+  });
+  return out;
+}
+
+/* ----- The template: Check your understanding (all three kinds) ----- */
+/**
+ * Three questions on one screen: multiple choice (which is a mammal?), a spot to click
+ * on a plant (which part takes in water?) and a typed answer (what gas do plants take
+ * in?). Each right answer adds 1 to Score, with a chime; a wrong one, a bonk. When all
+ * three are answered, a line says the score. Set up for an LMS (out of 3).
+ */
+function checkUnderstandingProject() {
+  const C = STUDIO, objects = [], add = (...o) => objects.push(...o);
+  const L = 'lq', GREEN = '#15803d', SOIL = '#92400e';
+  // A button that answers a question: the box (read aloud and pressed) and its words (decoration).
+  const answerButton = (id, word, x, y, q, right) => [
+    { id, type: 'rect', layer: L, name: word + ' (answer)', label: word, radius: 16, q, right, base: tv(x, y, 350, 76, C.main) },
+    { id: id + 'w', type: 'text', layer: L, name: word + ' words', decorative: true, text: word, size: 30, bold: true, align: 'center', base: tv(x + 10, y + 16, 330, 44, '#ffffff') }];
+  add({ id: 'otitle', type: 'text', layer: L, name: 'Title', text: 'Check your understanding', size: 46, bold: true, base: tv(60, 26, 800, 60, C.text) },
+    { id: 'oscore', type: 'text', layer: L, name: 'Score', text: 'Score: {Score} of 3', size: 32, bold: true, align: 'right', base: tv(860, 34, 360, 50, C.main) });
+  // 1. Multiple choice.
+  add({ id: 'oq1', type: 'text', layer: L, name: 'Question 1 words', text: '1. Which of these is a mammal?', size: 28, bold: true, base: tv(60, 120, 350, 90, C.text) },
+    ...answerButton('oa1', 'Whale', 60, 222, 'q1', true), ...answerButton('oa2', 'Shark', 60, 312, 'q1', false), ...answerButton('oa3', 'Octopus', 60, 402, 'q1', false));
+  // 2. Click the right spot: a plant drawn in shapes, and four spots over its parts.
+  add({ id: 'oq2', type: 'text', layer: L, name: 'Question 2 words', text: '2. Click the part of the plant that takes in water.', size: 28, bold: true, base: tv(465, 120, 350, 90, C.text) },
+    { id: 'osoil', type: 'rect', layer: L, name: 'Soil', decorative: true, radius: 12, base: tv(465, 480, 350, 120, SOIL) },
+    { id: 'ostem', type: 'rect', layer: L, name: 'Stem', decorative: true, radius: 6, base: tv(632, 280, 16, 205, GREEN) },
+    { id: 'oleaf1', type: 'ellipse', layer: L, name: 'Left leaf', decorative: true, base: tv(552, 350, 86, 38, '#22c55e', { rot: -20 }) },
+    { id: 'oleaf2', type: 'ellipse', layer: L, name: 'Right leaf', decorative: true, base: tv(644, 318, 86, 38, '#22c55e', { rot: 20 }) },
+    { id: 'opetals', type: 'ellipse', layer: L, name: 'Petals', decorative: true, base: tv(600, 222, 80, 80, C.accent1) },
+    { id: 'omiddle', type: 'ellipse', layer: L, name: 'Flower middle', decorative: true, base: tv(624, 246, 32, 32, '#facc15') },
+    { id: 'oroots', type: 'path', layer: L, name: 'Roots', decorative: true, open: true, strokeW: 6, d: 'M640 486L606 566M640 486L640 586M640 486L676 560M622 528L600 540M658 524L684 528',
+      vb: [600, 486, 84, 100], base: tv(600, 486, 84, 100, '#fde68a') },
+    { id: 'osflower', type: 'ellipse', layer: L, name: 'Spot: the flower', label: 'The flower', q: 'q2', spot: true, base: tv(588, 210, 104, 104, C.accent2) },
+    { id: 'osleaves', type: 'rect', layer: L, name: 'Spot: the leaves', label: 'The leaves', q: 'q2', spot: true, base: tv(540, 312, 202, 82, C.accent2) },
+    { id: 'osstem', type: 'rect', layer: L, name: 'Spot: the stem', label: 'The stem', q: 'q2', spot: true, base: tv(616, 398, 48, 82, C.accent2) },
+    { id: 'osroots', type: 'rect', layer: L, name: 'Spot: the roots', label: 'The roots', q: 'q2', right: true, spot: true, base: tv(588, 488, 108, 104, C.accent2) });
+  // 3. Type the answer, with a Check button (Enter checks too).
+  add({ id: 'oq3', type: 'text', layer: L, name: 'Question 3 words', text: '3. What gas do plants take in from the air?', size: 28, bold: true, base: tv(870, 120, 350, 90, C.text) },
+    { id: 'ofield', type: 'field', layer: L, name: 'Answer box', label: 'Your answer: the gas plants take in from the air', q: 'q3', accept: ['carbon dioxide', 'CO2', 'CO₂'],
+      text: 'Type your answer', size: 28, base: tv(870, 222, 350, 70, C.main) },
+    ...tplButton('ocheck', L, 'Check', 870, 312, 200, 70, [{ do: 'check' }]),
+    { id: 'odone', type: 'text', layer: L, name: 'All answered', text: 'All three answered: you got {Score} of 3. Restart to try again.', size: 30, bold: true, startHidden: true, base: tv(60, 630, 1160, 50, C.main) });
+  objects.find((o) => o.id === 'ocheck').base.fill = C.main;
+  const ding = [{ do: 'sound', s: 'schime' }], bonk = [{ do: 'sound', s: 'sbonk' }];
+  return R.cleanProject({
+    format: R.FORMAT, version: R.VERSION, title: 'Check your understanding', lang: 'en',
+    desc: 'Three questions about living things. 1: Which of these is a mammal: whale, shark or octopus? 2: Which part of a plant takes in water: the flower, the leaves, the stem or the roots? 3: What gas do plants take in from the air?',
+    stage: { w: 1280, h: 720, bg: '#ffffff', fps: 24, frames: 24, loop: false, autoplay: false, still: 0 },
+    scheme: { name: 'Studio', colours: SCHEMES[0].colours.slice() },
+    layers: [{ id: L, name: 'Questions' }],
+    vars: [{ id: 'vscore', name: 'Score', start: 0 }],
+    scorm: { v: 'vscore', max: 3, pass: 0 },
+    questions: [
+      { id: 'q1', name: 'Mammal', kind: 'choice', points: 1, tries: 'one', reveal: true, v: 'vscore', onRight: ding, onWrong: bonk },
+      { id: 'q2', name: 'Plant part', kind: 'spot', points: 1, tries: 'one', reveal: true, v: 'vscore', onRight: ding, onWrong: bonk },
+      { id: 'q3', name: 'Gas', kind: 'type', points: 1, tries: 'one', reveal: true, v: 'vscore', onRight: ding, onWrong: bonk }],
+    sounds: [{ id: 'schime', name: 'Chime', kind: 'effect', dur: tplSounds().chime.dur, caption: '[a bright chime]' },
+      { id: 'sbonk', name: 'Bonk', kind: 'effect', dur: tplSounds().bonk.dur, caption: '[a low bonk]' },
+      { id: 'sfanfare', name: 'Fanfare', kind: 'effect', dur: tplSounds().fanfare.dur, caption: '[a happy fanfare]' }],
+    audio: { schime: tplSounds().chime.data, sbonk: tplSounds().bonk.data, sfanfare: tplSounds().fanfare.data },
+    markers: [{ id: 'mstart', name: 'Questions', f: 0, stop: true, desc: 'Three questions to answer, in any order. A right answer adds 1 to the score.' }],
+    on: { answered: [{ do: 'show', target: 'odone' }, { do: 'sound', s: 'sfanfare' }] },
+    objects
+  });
+}
+// Into the Templates dialog, before the sample.
+TEMPLATES.splice(TEMPLATES.findIndex((t) => t.id === 'sample'), 0,
+  { id: 'check', name: 'Check your understanding (questions)', blurb: 'Three kinds of question with the answers checked for you: multiple choice, click the right spot on a picture, and type the answer. Each right answer adds to the score (set up for an LMS, out of 3).',
+    make: () => checkUnderstandingProject() });
+
+/* =====================================================================
+   18v. MP4 VIDEO (0.17.0): a video that plays everywhere
+   WebM (section 18n) plays in browsers, Brightspace and YouTube. MP4,
+   with H.264 pictures and AAC sound, is the one that plays everywhere
+   else too: PowerPoint and Keynote, phones, QuickTime, Kaltura and
+   most video tools. The same four steps as WebM; only the squeezing and
+   the box around it differ:
+     1. Each frame is drawn by the lesson's own runtime (frameRenderer).
+     2. The browser's encoder squeezes the pictures as H.264 ("constrained
+        baseline", which every player reads and which has no frames that
+        point forward, so they are stored in the order they show) and the
+        sound as AAC. A browser with no AAC encoder gets Opus instead
+        (browsers and VLC play it; PowerPoint and QuickTime may not), and
+        the dialog says so before it starts.
+     3. writeMp4 puts both into an .mp4 file: the ISO base media format, a
+        tree of sized, four-letter boxes, written by hand below. The index
+        of where every frame is ("moov") goes first, so a video can start
+        playing before it has all arrived ("fast start").
+     4. The captions file is the same .vtt.
+   Which browsers can: Chrome and Edge on Windows and on a Mac, and
+   Safari, have an H.264 encoder; some (Chromium on Linux, say) do not, and
+   are offered WebM only.
+   ===================================================================== */
+
+/* ----- Writing the boxes ----- */
+const MP4 = {
+  /** Bytes from a list of numbers, each written big-endian in the given number of bytes. */
+  u: (n, bytes) => { const b = new Uint8Array(bytes); let x = n; for (let i = bytes - 1; i >= 0; i--) { b[i] = x & 255; x = Math.floor(x / 256); } return b; },
+  u8: (n) => MP4.u(n, 1), u16: (n) => MP4.u(n, 2), u32: (n) => MP4.u(n, 4),
+  /** Four letters, as bytes. */
+  four: (s) => new TextEncoder().encode(s),
+  /** Join byte arrays (and arrays of them) into one. */
+  join: (parts) => {
+    const flat = parts.flat(Infinity).filter((p) => p && p.length !== undefined);
+    const out = new Uint8Array(flat.reduce((n, p) => n + p.length, 0));
+    let at = 0; flat.forEach((p) => { out.set(p, at); at += p.length; });
+    return out;
+  },
+  /** A box: its size (4 bytes, counting itself), its four letters, then what is in it. */
+  box: (type, ...parts) => { const body = MP4.join(parts); return MP4.join([MP4.u32(body.length + 8), MP4.four(type), body]); },
+  /** A "full" box: a box that starts with a version (1 byte) and flags (3 bytes). */
+  full: (type, version, flags, ...parts) => MP4.box(type, MP4.u8(version), MP4.u(flags, 3), ...parts),
+  zeros: (n) => new Uint8Array(n),
+  /** The usual "no turning, no stretching" matrix every track and movie header carries. */
+  matrix: () => MP4.join([MP4.u32(0x00010000), MP4.u32(0), MP4.u32(0), MP4.u32(0), MP4.u32(0x00010000), MP4.u32(0), MP4.u32(0), MP4.u32(0), MP4.u32(0x40000000)])
+};
+/** Durations as runs: [[count, duration], ...] (the "time to sample" table is written this way). */
+function runsOf(durations) {
+  const out = [];
+  durations.forEach((d) => { const last = out[out.length - 1]; if (last && last[1] === d) last[0]++; else out.push([1, d]); });
+  return out;
+}
+/**
+ * The sample tables of one track (stbl). Every frame is a "chunk" of its own, so the
+ * offsets list (stco, or co64 for files over 4 GB) is simply where each frame starts.
+ * keys: the frame numbers (from 1) a player can start at (video only).
+ */
+function sampleTable(entry, durations, sizes, offsets, keys, big) {
+  const M = MP4;
+  const parts = [
+    M.full('stsd', 0, 0, M.u32(1), entry),
+    M.full('stts', 0, 0, M.u32(runsOf(durations).length), runsOf(durations).map(([n, d]) => [M.u32(n), M.u32(d)])),
+    keys ? M.full('stss', 0, 0, M.u32(keys.length), keys.map((k) => M.u32(k))) : null,
+    M.full('stsc', 0, 0, M.u32(1), M.u32(1), M.u32(1), M.u32(1)),            // (every chunk holds one frame, from sample entry 1)
+    M.full('stsz', 0, 0, M.u32(0), M.u32(sizes.length), sizes.map((s) => M.u32(s))),
+    big ? M.full('co64', 0, 0, M.u32(offsets.length), offsets.map((o) => M.u(o, 8))) : M.full('stco', 0, 0, M.u32(offsets.length), offsets.map((o) => M.u32(o)))
+  ];
+  return M.box('stbl', parts.filter(Boolean));
+}
+/** The sample entry of the pictures: avc1 (H.264, with its avcC) or vp09 (VP9, with its vpcC). */
+function videoEntry(v) {
+  const M = MP4;
+  const visual = [M.zeros(6), M.u16(1),                                        // reserved, data reference 1
+    M.zeros(16), M.u16(v.width), M.u16(v.height),
+    M.u32(0x00480000), M.u32(0x00480000), M.u32(0), M.u16(1),                 // 72 dots an inch, one frame a sample
+    M.u8(8), M.four('ANIMEDTR'), M.zeros(23),                                  // the "compressor name": 32 bytes, its length first
+    M.u16(0x0018), M.u16(0xffff)];                                             // 24-bit colour; no colour table
+  if (v.codec === 'avc1') return M.box('avc1', visual, M.box('avcC', v.description));
+  // VP9's configuration: profile 0, its level, 8-bit 4:2:0, ordinary (studio) range, the usual BT.709 colours.
+  return M.box('vp09', visual, M.full('vpcC', 1, 0, M.u8(0), M.u8(v.level || 31), M.u8((8 << 4) | (1 << 1)), M.u8(1), M.u8(1), M.u8(1), M.u16(0)));
+}
+/** An MPEG-4 descriptor: its tag, its size (in 4 bytes of 7 bits each: what players expect), then its contents. */
+function mp4Descriptor(tag, ...parts) {
+  const body = MP4.join(parts), n = body.length;
+  return MP4.join([MP4.u8(tag), MP4.u8(0x80 | ((n >> 21) & 127)), MP4.u8(0x80 | ((n >> 14) & 127)), MP4.u8(0x80 | ((n >> 7) & 127)), MP4.u8(n & 127), body]);
+}
+/** The sample entry of the sound: mp4a (AAC, with its esds) or Opus (with its dOps). */
+function audioEntry(a) {
+  const M = MP4;
+  const sound = [M.zeros(6), M.u16(1), M.zeros(8), M.u16(a.channels), M.u16(16), M.u16(0), M.u16(0), M.u32(a.rate * 65536)];
+  if (a.codec === 'mp4a') {
+    // The elementary stream descriptor: AAC (object type 0x40), audio (stream type 5), and its AudioSpecificConfig.
+    const dec = mp4Descriptor(0x04, M.u8(0x40), M.u8((0x05 << 2) | 1), M.u(0, 3), M.u32(a.bitrate || 128000), M.u32(a.bitrate || 128000), mp4Descriptor(0x05, a.description));
+    const es = mp4Descriptor(0x03, M.u16(2), M.u8(0), dec, mp4Descriptor(0x06, M.u8(2)));
+    return M.box('mp4a', sound, M.full('esds', 0, 0, es));
+  }
+  // Opus in MP4: its own little header (dOps), written big-endian (unlike OpusHead).
+  return M.box('Opus', sound, M.box('dOps', M.u8(0), M.u8(a.channels), M.u16(a.preSkip || 312), M.u32(a.rate), M.u16(0), M.u8(0)));
+}
+/**
+ * writeMp4 - the pictures and sound as an .mp4 file (a Blob).
+ *   video: { codec: 'avc1' or 'vp09', width, height, fps, description (avc1: the avcC bytes),
+ *            chunks: [{ data, key }] in order, one a frame }
+ *   audio: null, or { codec: 'mp4a' or 'opus', channels, rate, description (mp4a: the
+ *            AudioSpecificConfig), preSkip (opus), chunks: [{ data, dur (in samples) }] }
+ * The pictures are timed in 90,000ths of a second (whole numbers for 12, 24, 30 and 60
+ * frames a second), the sound in its own samples.
+ */
+function writeMp4(video, audio) {
+  const M = MP4;
+  const VT = 90000, vDur = Math.round(VT / video.fps);
+  const vSizes = video.chunks.map((c) => c.data.length);
+  const vKeys = video.chunks.map((c, i) => (c.key ? i + 1 : 0)).filter(Boolean);
+  const aSizes = audio ? audio.chunks.map((c) => c.data.length) : [];
+  const aDurs = audio ? audio.chunks.map((c) => c.dur) : [];
+  const vLen = video.chunks.length * vDur, aLen = aDurs.reduce((n, d) => n + d, 0);
+  const movieMs = Math.max(Math.round(vLen / VT * 1000), audio ? Math.round(aLen / audio.rate * 1000) : 0);
+  // The order frames sit in the file: pictures and sound woven together by time.
+  const order = video.chunks.map((c, i) => ({ t: (i * vDur) / VT, v: true, i }));
+  let at = 0;
+  if (audio) audio.chunks.forEach((c, i) => { order.push({ t: at / audio.rate, v: false, i }); at += c.dur; });
+  order.sort((a, b) => a.t - b.t || (a.v ? -1 : 1));
+  const mdatBytes = vSizes.reduce((n, s) => n + s, 0) + aSizes.reduce((n, s) => n + s, 0);
+  const big = mdatBytes > 0xfffffff0;                                       // (over 4 GB: 8-byte offsets)
+
+  const ftyp = M.box('ftyp', M.four('isom'), M.u32(512), M.four('isom'), M.four('iso2'), M.four(video.codec === 'avc1' ? 'avc1' : 'iso6'), M.four('mp41'));
+  /** The movie's index, given where each frame starts. */
+  const moovWith = (vOff, aOff) => {
+    const mvhd = M.full('mvhd', 0, 0, M.u32(0), M.u32(0), M.u32(1000), M.u32(movieMs), M.u32(0x00010000), M.u16(0x0100), M.zeros(10), M.matrix(), M.zeros(24), M.u32(audio ? 3 : 2));
+    const track = (id, handler, timescale, length, entry, durs, sizes, offs, keys, isAudio) => M.box('trak',
+      M.full('tkhd', 0, 3, M.u32(0), M.u32(0), M.u32(id), M.u32(0), M.u32(Math.round(length / timescale * 1000)), M.zeros(8), M.u16(0), M.u16(isAudio ? 1 : 0),
+        M.u16(isAudio ? 0x0100 : 0), M.u16(0), M.matrix(), M.u32(isAudio ? 0 : video.width * 65536), M.u32(isAudio ? 0 : video.height * 65536)),
+      M.box('mdia',
+        M.full('mdhd', 0, 0, M.u32(0), M.u32(0), M.u32(timescale), M.u32(length), M.u16(0x55c4), M.u16(0)),    // (language: "und", not said)
+        M.full('hdlr', 0, 0, M.u32(0), M.four(handler), M.zeros(12), M.four(isAudio ? 'Sound' : 'Video'), M.u8(0)),
+        M.box('minf',
+          isAudio ? M.full('smhd', 0, 0, M.u16(0), M.u16(0)) : M.full('vmhd', 0, 1, M.zeros(8)),
+          M.box('dinf', M.full('dref', 0, 0, M.u32(1), M.full('url ', 0, 1))),
+          sampleTable(entry, durs, sizes, offs, keys, big))));
+    return M.box('moov', mvhd,
+      track(1, 'vide', VT, vLen, videoEntry(video), video.chunks.map(() => vDur), vSizes, vOff, vKeys, false),
+      audio ? track(2, 'soun', audio.rate, aLen, audioEntry(audio), aDurs, aSizes, aOff, null, true) : null);
+  };
+  // The index's size does not depend on the offsets' values, so measure it first, then fill them in.
+  const zerosV = vSizes.map(() => 0), zerosA = aSizes.map(() => 0);
+  const moovSize = moovWith(zerosV, zerosA).length;
+  const mdatHead = big ? 16 : 8;
+  let pos = ftyp.length + moovSize + mdatHead;
+  const vOff = zerosV.slice(), aOff = zerosA.slice();
+  order.forEach((s) => { if (s.v) { vOff[s.i] = pos; pos += vSizes[s.i]; } else { aOff[s.i] = pos; pos += aSizes[s.i]; } });
+  const moov = moovWith(vOff, aOff);
+  // The frames themselves, in the same woven order.
+  const mdatHeader = big ? M.join([M.u32(1), M.four('mdat'), M.u(mdatBytes + 16, 8)]) : M.join([M.u32(mdatBytes + 8), M.four('mdat')]);
+  const pieces = [ftyp, moov, mdatHeader];
+  order.forEach((s) => pieces.push(s.v ? video.chunks[s.i].data : audio.chunks[s.i].data));
+  return new Blob(pieces, { type: 'video/mp4' });
+}
+
+/* ----- What this browser can make ----- */
+/**
+ * The H.264 level a picture size and speed need (in macroblocks: 16-by-16 squares), as
+ * the last two hex digits of the codec string. Constrained baseline ("42E0") before it.
+ */
+function h264Codec(w, h, fps) {
+  const mbs = Math.ceil(w / 16) * Math.ceil(h / 16), rate = mbs * fps;
+  const LEVELS = [[0x1f, 3600, 108000], [0x20, 5120, 216000], [0x28, 8192, 245760], [0x2a, 8704, 522240], [0x32, 22080, 589824], [0x33, 36864, 983040], [0x34, 36864, 2073600]];
+  const lv = LEVELS.find(([, m, r]) => mbs <= m && rate <= r) || LEVELS[LEVELS.length - 1];
+  return 'avc1.42E0' + lv[0].toString(16).toUpperCase().padStart(2, '0');
+}
+/** Can this browser make an MP4 of this size? Resolves { video: codec string or null, audio: 'mp4a', 'opus' or null }. */
+async function mp4Ability(w, h, fps) {
+  const out = { video: null, audio: null };
+  if (typeof VideoEncoder === 'undefined') return out;
+  const codec = h264Codec(w, h, fps);
+  try { const r = await VideoEncoder.isConfigSupported({ codec, width: w, height: h, bitrate: 4000000, framerate: fps, avc: { format: 'avc' } }); if (r && r.supported) out.video = codec; } catch (err) { /* (none) */ }
+  if (typeof AudioEncoder !== 'undefined') {
+    for (const [c, name] of [['mp4a.40.2', 'mp4a'], ['opus', 'opus']]) {
+      try { const r = await AudioEncoder.isConfigSupported({ codec: c, sampleRate: 48000, numberOfChannels: 2, bitrate: 128000 }); if (r && r.supported) { out.audio = name; break; } } catch (err) { /* (next) */ }
+    }
+  }
+  return out;
+}
+/** A plain AudioSpecificConfig for AAC-LC at 48 kHz in stereo, if the encoder does not give its own. */
+const AAC_48K_STEREO = new Uint8Array([0x11, 0x90]);
+/**
+ * The mixed sound, squeezed for an MP4: AAC if this browser can, else Opus. Resolves
+ * { codec, channels, rate, description, preSkip, bitrate, chunks: [{ data, dur }] }, or null.
+ */
+async function encodeMp4Sound(buffer, codecName, signal) {
+  if (!buffer || !codecName || typeof AudioEncoder === 'undefined' || typeof AudioData === 'undefined') return null;
+  const config = { codec: codecName === 'mp4a' ? 'mp4a.40.2' : 'opus', sampleRate: 48000, numberOfChannels: 2, bitrate: 128000 };
+  const chunks = []; let desc = null, failed = null;
+  const enc = new AudioEncoder({
+    output: (chunk, meta) => {
+      const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data);
+      // Each piece's length, in samples (AAC: 1024; Opus: usually 960, 20 ms).
+      chunks.push({ data, dur: chunk.duration ? Math.round(chunk.duration * 48000 / 1e6) : (codecName === 'mp4a' ? 1024 : 960) });
+      const d = meta && meta.decoderConfig && meta.decoderConfig.description;
+      if (d && !desc) desc = new Uint8Array(d instanceof ArrayBuffer ? d : d.buffer.slice(d.byteOffset, d.byteOffset + d.byteLength));
+    },
+    error: (e) => { failed = e; }
+  });
+  enc.configure(config);
+  const L = buffer.getChannelData(0), Rt = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : L, step = 4800;
+  for (let i = 0; i < buffer.length && !failed; i += step) {
+    if (signal.stop) break;
+    const n = Math.min(step, buffer.length - i), planar = new Float32Array(n * 2);
+    planar.set(L.subarray(i, i + n), 0); planar.set(Rt.subarray(i, i + n), n);
+    const ad = new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / 48 * 1000), data: planar });
+    enc.encode(ad); ad.close();
+  }
+  await enc.flush(); enc.close();
+  if (failed || !chunks.length) return null;
+  if (codecName === 'mp4a') return { codec: 'mp4a', channels: 2, rate: 48000, description: desc && desc.length >= 2 ? desc : AAC_48K_STEREO, bitrate: 128000, chunks };
+  // Opus: the encoder's OpusHead says how much silence it adds at the start (pre-skip).
+  const preSkip = desc && desc.length >= 19 ? new DataView(desc.buffer, desc.byteOffset).getUint16(10, true) : 312;
+  return { codec: 'opus', channels: 2, rate: 48000, preSkip, chunks };
+}
 /* =====================================================================
    19. THE FEATURES TOUR AND THE CHANGELOG
    ===================================================================== */
@@ -16444,6 +17386,16 @@ const APP_FEATURES = [
    straight off a disk. The long form is CHANGELOG.md beside index.html.
    Newest first; the first entry is the version that is running. */
 const CHANGELOG = [
+  { version: '0.17.0', date: '2026-10-14', notes: [
+    'Video export as MP4 (Export, Video, Format), the one that plays everywhere: PowerPoint and Keynote, phones, QuickTime, Kaltura. H.264 pictures (constrained baseline, which every player reads) and AAC sound, put into the file by ANIMEDTR itself, with its index first so it starts playing at once. WebM is still there (smaller, for browsers, Brightspace and YouTube).',
+    'The dialog says what this browser can do: no H.264 encoder (Chromium on Linux, say) means WebM only; no AAC encoder means the MP4\u2019s sound is Opus (browsers and VLC play it, PowerPoint and QuickTime may not). Chrome and Edge on Windows and a Mac make both.'
+  ] },
+  { version: '0.16.0', date: '2026-10-14', notes: [
+    'Questions with the answers checked for you (Lesson, Questions, Add a question): multiple choice (any object can be an answer; tick the right one), click the right spot (shapes learners cannot see, over a picture; dashed while you edit), and type the answer (an Answer box: a real text box, checked when Enter is pressed or by "Check the answers"; capitals, extra spaces and a full stop do not matter, and numbers can be off by a little). Each makes a working starter on the stage.',
+    'Each question has its points (added to the Score, so they reach an LMS), one try or until right, whether the right answer shows after a wrong one, and its own actions for a right and a wrong answer. The lesson can do something when every question is answered. A right answer gets a tick, a wrong one a cross, and both are read out; answered questions say so to a screen reader.',
+    'A new template: Check your understanding (all three kinds, with sounds, set up for an LMS out of 3).',
+    'With reduce motion on, a button that plays (like Step by step\u2019s Next step) now goes straight to where the lesson would stop, as "Go to marker and play" does. Fixed: text a behaviour shows is read out with its {Score} filled in.'
+  ] },
   { version: '0.15.0', date: '2026-10-14', notes: [
     'SVG drawings come in as shapes: a drawing from VCTREDTR (or any SVG) becomes outlines and text boxes you can animate one by one, so a bird\u2019s wing can flap while its body glides. The Picture tool, a drop, or paste SVG code (VCTREDTR\u2019s Copy SVG code). A dialog shows it (drawn from ANIMEDTR\u2019s own numbers) and asks how: as one group, a group for each of its own groups (a character\u2019s head, arms and legs), or as one flat picture. Inside a group or a clip, the shapes go straight in.',
     'Kept: every shape\u2019s fill, outline colour and width, see-through-ness, transforms, names (VCTREDTR\u2019s, Illustrator\u2019s, Inkscape\u2019s labels), text (in ANIMEDTR\u2019s fonts, so it is read), and the drawing\u2019s title as its words for screen readers. Gradients become their average colour; dashes become solid; pictures, masks and filters are left out, and the dialog says so.',

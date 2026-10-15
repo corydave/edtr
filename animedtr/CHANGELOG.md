@@ -1,5 +1,107 @@
 # ANIMEDTR changelog
 
+## 0.17.0 - 2026-10-14
+
+**MP4 video** (the second of the night's two builds: started only once
+0.16.0 passed every check).
+
+- **Export, Video, Format: MP4 or WebM.** MP4 (picked first when this
+  browser can make it) is the one that plays everywhere: PowerPoint and
+  Keynote, phones, QuickTime, Kaltura and most video tools. WebM stays:
+  smaller, for browsers, Brightspace and YouTube. The captions file
+  (.vtt) comes with either.
+- **Inside:** H.264 pictures in "constrained baseline" (every player reads
+  it, and it has no frames that point forward, so they are stored in the
+  order they show), at the level the size and speed need (3.1 for
+  1280x720, 4.0 for 1920x1080, up to 5.1 for 4K), and AAC sound at 48 kHz.
+  ANIMEDTR writes the MP4 itself (writeMp4: the ISO base media format, a
+  tree of four-letter boxes), with the index first ("fast start"), so it
+  starts playing before it has all arrived. No libraries.
+- **The dialog says what this browser can do,** a moment after it opens:
+  - no H.264 encoder (Chromium on Linux, for one): MP4 is greyed out and
+    WebM is picked (and if MP4 was picked anyway, a WebM is made, and the
+    message says so);
+  - H.264 but no AAC encoder: the note warns that the sound will be Opus
+    (browsers and VLC play it; PowerPoint and QuickTime may not);
+  - Chrome and Edge on Windows and on a Mac have both.
+- **Checked with ffmpeg** (this workspace's Chromium has no H.264 encoder,
+  so the boxes were tested with H.264 and AAC made by ffmpeg, then put in
+  an MP4 by writeMp4): ffprobe reads every field, ffmpeg decodes it with
+  no errors, every picture is the same as the original frame by frame,
+  the sound is the same sample by sample, keyframes are listed, and it is
+  laid out ftyp, moov, mdat; at 24, 30 and 60 frames a second, with and
+  without sound. The whole way through this browser's own encoders (VP9
+  and Opus in an MP4, as a stand-in) a lesson came out with every frame,
+  its length and its sound.
+- **To know:** the AAC encoder adds a sliver of quiet at the very start of
+  the sound (about 1/40 of a second), which is not trimmed. Not tried in
+  Safari, nor with a real H.264 encoder (Chrome on a Mac will be the first).
+
+## 0.16.0 - 2026-10-14
+
+**Questions, with the answers checked for you** (Dave: "do all four... or
+is it best to do just one or two?": this is the first of the two builds
+for the night; the choices below were made while Dave slept, to be
+changed in the morning if he likes).
+
+- **The Lesson's new Questions section.** Each question has a name, the
+  points a right answer earns (added to a variable: the Score, made if
+  there is none, so the score reaches an LMS), **One try** or **Until
+  right**, and with one try **After a wrong answer, show the right one**.
+  Each has its own two cards of actions: **When it is answered right**
+  and **When it is answered wrong** (a sound, a Say, Go to a marker...).
+  The lesson can also act **When every question is answered** (once).
+- **Add a question** makes a working starter on the stage (all ordinary
+  objects, to change as you like), in the next of three columns, so three
+  starters sit side by side:
+  - **Multiple choice:** a question and three answer buttons (Whale is
+    right). Any object on its own can be an answer: pick it, then its
+    **Question** section: **An answer to** (which question) and **The right
+    answer**. Tick more than one right, and any of them counts.
+  - **Click the right spot:** a picture placeholder and three **spots**:
+    shapes learners cannot see (only their focus ring, and their tick or
+    cross once picked), dashed orange while you edit. Lay them over the
+    parts of a picture. A screen reader reads each spot's name, so name
+    it by where it is, not by whether it is right (the check says so).
+  - **Type the answer:** a question, an **Answer box** and a Check button.
+    The box is a real text box in the lesson: Enter checks it (so does
+    any button with "Check the answers"). It takes a list of **accepted
+    answers**, one a line; capitals, extra spaces and a full stop at the
+    end do not matter. A number can be **off by** a little (3.14 within
+    0.01), and "3,14" (a decimal comma) and "1,500" (a thousands comma) are
+    read the usual ways. With one try and "show the right one", a wrong
+    answer shows the answer in the message strip.
+- **In the lesson:** a right answer gets a white tick on green, a wrong
+  one a white cross on red, the right one (shown after a wrong one) a
+  green tick on white; colour is never the only sign. "Right!", "Not
+  right. Try again." and "Not right. The right answer: Whale." are read
+  out. Answers stay in the Tab order once their question is done, named
+  with how it went ("Shark, your answer, not right"), and say "this
+  question is answered already". Restart puts everything back. The text
+  version explains how to answer. Answer boxes keep their place in a
+  reading order of your own (Tab goes to them in order).
+- **Safety:** what learners type is only ever compared as words: never
+  put in the page as markup, never run (tested with an `<img onerror>`).
+  The box has no spelling help (it would give answers away), and a phone
+  shows number keys when the answers are numbers.
+- **Checks:** an Answer box needs a name (what to type: Needed); a
+  question with no answers, no right answer ticked, a box that takes no
+  answers, or a spot named "Correct" are warnings.
+- **For an LMS:** "Out of" counts what questions earn.
+- **New template: Check your understanding**: all three kinds on one
+  screen (a mammal, the part of a plant that takes in water, the gas
+  plants take in), with sounds, a score line, and "All three answered"
+  when done. Set up for an LMS, out of 3. Thirteen templates now.
+- **Reduce motion:** a button whose action is plain Play (like Step by
+  step's Next step) now goes straight to where the lesson would stop
+  next, without the movement, as "Go to marker and play" already did.
+- **Fixed:** text that a behaviour shows was read out with "{Score}" as
+  typed instead of the number. It now reads what it shows.
+- **Not tested here:** Safari and Firefox (only Chromium is in this
+  workspace). The Answer box is an HTML text box inside the SVG (a
+  foreignObject); Safari has had bugs with those in the past, so it is
+  worth one try there.
+
 ## 0.15.0 - 2026-10-14
 
 **SVG drawings come in as shapes** (Dave picked this as the next build: it
