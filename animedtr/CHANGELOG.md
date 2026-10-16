@@ -1,5 +1,90 @@
 # ANIMEDTR changelog
 
+## 0.22.0 - 2026-10-15
+
+**Shape tweens: morphing** (Dave's pick, like Flash's shape tween; both
+ways in; the second shape becomes the end).
+
+- **Morph one shape into another:** pick two shapes (rectangles, ellipses
+  or outlines) and choose **Morph Square into Oval** (or the other way
+  round) from the right-click menu or **Arrange** in the Inspector. The
+  first turns into the second over a second from the play head: its
+  outline, place, size and colour all blend. The second shape is used up
+  for the end (behaviours that pointed at it go too); **Undo** brings it
+  back in one step.
+- **Morph into a shape...:** pick one shape and choose it from **Motion**
+  in the Inspector or the right-click menu. The Shapes gallery opens in a
+  dialog (filled shapes for a filled shape, lines for a line); pick one and
+  the shape becomes it, in the same place and at the same size. Escape
+  changes nothing.
+- **It is all keyframes:** a keyframe can now have an outline of its own.
+  At a keyframe, **Edit points** changes the outline there; between two
+  keyframes the outline is worked out for you, so there are no points to
+  edit (it says to go to a keyframe). A keyframe added half-way through a
+  morph keeps the shape it has there, so nothing jumps. The Motion table
+  marks a keyframe that has its own outline.
+- **How it blends:** both outlines are walked round at the same pace and
+  matched point for point (turned to the best starting point, and the same
+  way round), so a square becomes a star without twisting. An outline in
+  two pieces morphing into one in one piece grows the extra piece from a
+  dot. Rectangles and ellipses become outlines first, as **Turn into an
+  outline** does.
+- **Safe and small:** a keyframe's outline is checked like any outline
+  (path data only, and not too long) when a lesson is opened.
+- **A new template, A butterfly's life (morphing):** one shape becomes an
+  egg on a leaf, a caterpillar, a chrysalis, then a butterfly that flaps
+  away, with a label and a marker for each stage.
+
+## 0.21.0 - 2026-10-15
+
+**Effects: motion presets and text effects** (Dave's pick for a bigger
+build; presets make real keyframes; several things can go one after
+another; all four text effects).
+
+- **The gallery:** pick one thing or several and press **E** (or **Add an
+  effect...** on the quick bar, at the top of the Motion section, or in the
+  right-click menu). Twenty-four effects in four groups, each a card with a
+  little picture that plays while you point at it or move to it with the
+  keyboard (not when the device asks for less motion). The arrow keys move
+  between them, Enter adds the one you are on, Escape adds nothing.
+- **Entrances** (the thing appears at the play head): Fade in, Fly in (from
+  the side you pick), Rise up, Zoom in, Pop (springs out a little too big,
+  then settles), Bounce in, Spin in.
+- **Emphasis:** Pulse, Wiggle, Shake, Hop, Spin, Blink (twice a second at
+  most, gently: never a flash) and Colour flash (to the colour you pick and
+  back).
+- **Exits** (the thing leaves once it is gone): Fade out, Fly out, Sink,
+  Zoom out, Pop out, Spin out.
+- **Real keyframes:** an effect is written as ordinary keyframes from the
+  play head, which you can then nudge, retime or delete like any others,
+  and Undo takes it back in one step. Sizes change round the pivot (so a
+  Pulse round a hinge grows from the hinge). Keyframes already in its way
+  make way for it (it says how many); after a Spin, later keyframes are a
+  whole turn on too, so it never spins back. A lesson too short for it
+  grows to fit.
+- **How long, which way, which colour:** each effect starts with a sensible
+  length (0.6 s in and out, 1 s for emphasis; text by how much there is to
+  show: about 25 letters, 3 words or 1.5 lines a second), and you can type
+  your own.
+- **One after another:** with several things picked, they go top to bottom
+  (left to right along a row) with a gap between them (0.3 s at first):
+  bullet points fly in one by one with a single click.
+- **Text effects:** **Typewriter** (letter by letter, with a cursor if you
+  like), **Word by word**, **Line by line** and **Highlight sweep** (a
+  marker-pen highlight behind the words, in the colour you pick). Text
+  boxes have two new values that animate like anything else, **Shown (%)**
+  and **Highlight (%)**, in their Look section, with **Shows by** (letters,
+  words or lines), the cursor, and the highlight colour. The lines stay
+  where they will be as the words appear, and a screen reader always has
+  all of the words.
+- **A new template, Bullet points (effects):** states of matter, with a
+  title that types itself, points that fly in one after another, a
+  highlight sweep, and a star that pops in and pulses. All of it was made
+  with effects.
+- In the project file, values gain `reveal` and `hl` (0 to 1), and text
+  boxes `revealBy`, `revealCursor` and `hlColour`. Lessons made before show
+  everything and highlight nothing, as they always did.
+
 ## 0.20.0 - 2026-10-15
 
 **Masks** (Dave's pick: mask groups, like Illustrator's clipping masks;
