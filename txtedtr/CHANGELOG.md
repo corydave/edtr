@@ -18,6 +18,13 @@ never had.
 
 ---
 
+## 1.23
+
+**Changed** - zoom for a projector.
+
+- **The top of the zoom range went from 286% to 514%.** `ZOOM_STEPS` gains 48, 56, 64 and 72px on top of the old ceiling of 40px. Everything that draws the control - the minus/plus buttons, the percentage readout, the slider's `max`, the Font size dropdown and the clamp in `setZoomIndex()` - is derived from `ZOOM_STEPS.length`, so adding sizes to the end of the array is the whole change. Saved settings keep working too: the stored value is an index, and appending never shifts the indexes that already exist.
+- The small end is untouched, and 14px is still 100%.
+
 ## 1.22
 
 **Changed** - made for fingers.
