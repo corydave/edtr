@@ -314,6 +314,41 @@ body.layer-dragging, body.layer-dragging * { cursor: grabbing !important; user-s
 .busy { position: absolute; inset: 0; display: none; place-items: center; background: color-mix(in srgb, var(--workspace) 70%, transparent); font-weight: 600; }
 .busy.show { display: grid; }
 
+/* ---- The frame filmstrip (section 24) ----
+   It sits along the bottom of the workspace; the canvas area above it gets
+   shorter (the stage notices and re-fits). */
+:root { --strip-h: 118px; }
+.workspace.has-strip #stage { height: calc(100% - var(--strip-h)); }
+/* Messages pop up above the filmstrip, not on top of it. */
+body:has(.workspace.has-strip) .toasts { bottom: calc(var(--strip-h) + 16px); }
+.filmstrip { position: absolute; left: 0; right: 0; bottom: 0; height: var(--strip-h); display: flex; flex-direction: column;
+  background: var(--surface); border-top: 1px solid var(--border); }
+.filmstrip[hidden] { display: none; }
+.strip-head { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid var(--border); min-height: 36px; }
+.strip-head .btn { height: 28px; padding: 0 10px; font-size: 13px; }
+.strip-info { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.strip-spacer { flex: 1; }
+.frame-list { flex: 1; display: flex; gap: 6px; align-items: center; padding: 4px 8px; overflow-x: auto; overflow-y: hidden; outline: none; }
+.frame-list:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.frame { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 3px; border: 2px solid transparent;
+  border-radius: 6px; cursor: pointer; user-select: none; }
+.frame img { display: block; height: 46px; max-width: 110px; object-fit: contain; border: 1px solid var(--border);
+  background: repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 10px 10px; }
+.frame .frame-cap { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Selected frames get a tint AND a thick ring for the current one, so colour is never the only signal. */
+.frame[aria-selected="true"] { background: color-mix(in srgb, var(--brand) 16%, transparent); }
+.frame.current { border-color: var(--brand); }
+.frame.current .frame-cap { color: var(--text); font-weight: 700; }
+.frame-list:focus-visible .frame.current { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--focus); }
+.frame.drop-before { box-shadow: -4px 0 0 var(--brand); }
+@media (max-width: 820px) {
+  :root { --strip-h: 96px; }
+  .frame img { height: 34px; }
+  .strip-head .btn { padding: 0 8px; }
+  .strip-head .wide { display: none; }          /* "+ Duplicate" and "+ Blank" on a phone */
+  .strip-info { font-size: 12px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+}
+
 /* =====================================================================
    5. DIALOGS (native <dialog> - handles focus trapping and Escape)
    ===================================================================== */
@@ -1007,7 +1042,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
           <button class="btn" id="startNew"><span data-icon="filePlus"></span>Blank canvas<span class="hint">pick a size</span></button>
           <button class="btn" id="startHeadshot"><span data-icon="headshot"></span>Headshot<span class="hint">round or square</span></button>
         </div>
-        <p class="hint" style="margin:16px 0 0">PNG, JPEG, WebP, GIF, BMP, SVG, AVIF and iPhone HEIC photos - or an .imgedtr project.</p>
+        <p class="hint" style="margin:16px 0 0">PNG, JPEG, WebP, animated GIFs, BMP, SVG, AVIF and iPhone HEIC photos - or an .imgedtr project.</p>
       </div>
     </div>
 
@@ -1025,6 +1060,18 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     </div>
     <div class="drop-overlay" id="dropOverlay">Drop an image to add it</div>
     <div class="busy" id="busy" role="status" aria-live="polite"><span id="busyText">Working...</span></div>
+    <!-- The frame filmstrip (section 24): only shown for an animated GIF.
+         The list is ONE tab stop (a listbox); arrow keys move between frames. -->
+    <section class="filmstrip" id="filmstrip" aria-label="Frames" hidden>
+      <div class="strip-head">
+        <button type="button" class="icon-btn" id="btnPlay" aria-label="Play" title="Play (Shift+Space)"><span data-icon="play"></span></button>
+        <span class="strip-info" id="stripInfo"></span>
+        <span class="strip-spacer"></span>
+        <button type="button" class="btn" id="btnFrameDup" title="Add a copy of the current frame after it (Ctrl+D in the filmstrip)" aria-label="Duplicate frame">+ Duplicate<span class="wide"> frame</span></button>
+        <button type="button" class="btn" id="btnFrameBlank" title="Add an empty (see-through) frame after the current one" aria-label="Blank frame">+ Blank<span class="wide"> frame</span></button>
+      </div>
+      <div class="frame-list" id="frameList" role="listbox" aria-label="Frames" aria-multiselectable="true" aria-orientation="horizontal" tabindex="0"></div>
+    </section>
   </main>
 
   <!-- ===================================================================
@@ -1123,7 +1170,11 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <div class="field"><label for="expName">File name</label><input type="text" id="expName" value="imgedtr" maxlength="120" autocomplete="off"></div>
       <div class="field"><label for="expFormat">Format</label>
         <select id="expFormat"><option value="image/png">PNG (sharp, supports transparency)</option>
-          <option value="image/jpeg">JPEG (small, for photos)</option><option value="image/webp">WebP (small, modern)</option></select></div>
+          <option value="image/jpeg">JPEG (small, for photos)</option><option value="image/webp">WebP (small, modern)</option>
+          <option value="image/gif">GIF (animated)</option></select></div>
+      <!-- GIF only: how many times it plays (from the document; changing it here changes the document). -->
+      <div class="field" id="expLoopRow" hidden><label for="expLoop">Plays</label>
+        <select id="expLoop"><option value="0">Forever</option><option value="1">Once</option><option value="2">2 times</option><option value="3">3 times</option><option value="5">5 times</option></select></div>
       <div class="field" id="expQualityRow"><label for="expQuality">Quality</label>
         <div class="range-wrap"><input type="range" id="expQuality" min="40" max="100" value="90"><output id="expQualityOut">90</output></div></div>
       <div class="field"><label for="expScale">Scale</label>
@@ -1148,6 +1199,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       </div>
       <p class="note">Metadata removed. Exported images never carry camera details or GPS location.</p>
       <p class="note" id="expJpegNote" hidden>JPEG cannot be transparent. Transparent areas will be filled with white.</p>
+      <p class="note" id="expGifNote" hidden>GIFs have up to 256 colours, and each pixel is either solid or fully see-through, so soft shadows and smooth gradients look a little rougher than in PNG.</p>
     </div>
     <div class="dlg-foot"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" value="ok" id="expGo"><span data-icon="download"></span> Download</button></div>
   </form>
@@ -1305,6 +1357,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     21. Finishing touches: adjustments, alt text, project files (Phase 4b)
     22. Headshot: the guided profile-photo maker
     23. Built-in font files (at the very end, they are long)
+    24. Animated GIFs: frames, filmstrip, playing, GIF export
+        (with the GIF BLOCK just before it: the GIF reader and writer)
     (Sections 18 to 22 sit just before 16 in the file, because the
      shortcut list in 16 refers to the tools they define.)
 
@@ -1320,7 +1374,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.21.0';
+const APP_VERSION = '1.22.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1375,6 +1429,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.22.0', date: '2026-10-15', notes: [
+    'Animated GIFs: open (or drop) a GIF and its frames appear in a filmstrip along the bottom. Play and pause it (Shift+Space), step through frames (, and .), and set how long each frame shows. Duplicate, delete and drag frames to reorder them; Reverse, Ping-pong, Speed and Loop (forever, once or a number of times) are in the canvas settings.',
+    'Arrows, boxes, text and every other layer show on every frame, and crop, canvas size, resize, rotate and flip change every frame at once. Export as GIF (the new format in Export), or export the showing frame as a PNG. Projects keep the animation, and older still projects still open in older copies of IMGEDTR.',
+    'ANIMEDTR, the new animation and interactive-lesson app, is now in More apps and on the splash.',
+    'GIFs are read and written by IMGEDTR itself, on your device, in the background so the page stays responsive. Damaged GIFs keep the frames that could be read, and very long ones are thinned (every 2nd or 3rd frame) so they fit in memory.'
+  ] },
   { version: '1.21.0', date: '2026-10-13', notes: [
     'Shields in the Shapes panel: the same nine styles as VCTREDTR - Classic, Heater, Pointed, Round, Arched, Dipped, Notched, Peaked and Scalloped. A click drops one at its natural proportions; Shift keeps them while you drag.',
     'Cut a picture to a shape: an image layer has a Shape drop-down (Rectangle, Circle, triangle, hexagon, star, heart, speech bubble, seal, the shields and more). Picking one crops the picture to that shape\'s proportions, so a circle comes out round; Crop image chooses which part shows. The border and the shadow follow the shape, and Undo puts the rectangle back.'
@@ -1719,6 +1779,8 @@ const ICONS = {
   clipboard: '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   folder: '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
   headshot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 18.7a6 6 0 0 1 10 0"/>',
+  play: '<path d="M7 4.5v15l12.5-7.5z"/>',
+  pause: '<rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/>',
   filePlus: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/>',
   settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
@@ -1869,6 +1931,9 @@ const state = {
   editingTextId: null,     // id of the text layer being typed into
   view: { zoom: 1, panX: 0, panY: 0, fitted: false, fitGrow: false },  // how the document sits in the workspace
   headshot: null,          // while making a headshot (section 22): { layerId, name, style }; null otherwise
+  frame: 0,                // animated GIFs (section 24): which frame is showing (its position in doc.frames)
+  frameSel: [],            // ids of the frames selected in the filmstrip
+  framePanel: false,       // true = the Inspector shows the selected frames (not a layer or the canvas)
   counters: {}             // for naming layers "Arrow 1", "Arrow 2"...
 };
 // state.selectedId = the ONE selected layer (or null). It is an "accessor": setting it
@@ -1969,6 +2034,7 @@ function snapshot() {
  */
 function commit(key = null) {
   normalizeGroups();                               // keep group members together (section 14)
+  normalizeFrameLayer();                           // the Frame picture stays at the bottom (section 24)
   const snap = snapshot();
   if (snap === history.current) return;          // nothing actually changed
   const now = Date.now();
@@ -2777,6 +2843,8 @@ async function importBlobs(blobs) {
     try {
       // A saved project replaces the canvas (section 21c); anything else is an image.
       if (isProjectFile(blob)) { await openProject(blob); continue; }
+      // An animated GIF opens as an animation (section 24); a one-frame GIF carries on as a picture.
+      if ((blob.type === 'image/gif' || /\.gif$/i.test(blob.name || '')) && await openGif(blob, blob.name)) continue;
       const { canvas, downscaled, converted } = await decodeImage(blob, blob.name);
       const name = cleanName(blob.name, 'Pasted image');
       // Making a headshot: a dropped or pasted photo swaps the photo instead (section 22).
@@ -2882,6 +2950,7 @@ const TOOL_NAMES = { select: 'Select', arrow: 'Arrow', line: 'Line', rect: 'Rect
 function setTool(tool) {
   if (!TOOL_NAMES[tool]) return;
   finishTextEdit();
+  stopPlaying();                     // an animation pauses when you pick a tool (section 24)
   if (state.crop && tool !== 'crop') cancelCrop(false);    // switching tools leaves crop mode
   state.tool = tool;
   document.querySelectorAll('[data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === tool)));
@@ -3951,6 +4020,8 @@ function renderProps() {
   const title = $('propsTitle');
   if (!doc) { title.textContent = 'Properties'; propsBody.append(el('p', { class: 'hint', text: 'Open or paste an image, or start a blank canvas.' })); return; }
   if (state.headshot) { headshotPanel(title); return; }     // making a headshot: the guided panel (section 22)
+  // Frames picked in the filmstrip (section 24), with no layer selected.
+  if (isAnimated() && state.framePanel && state.tool === 'select' && !selected() && !state.multi) { framePanel(title); return; }
 
   const L = selected();
 
@@ -4104,6 +4175,7 @@ function renderProps() {
   // Nothing selected, Select tool: show the canvas itself.
   title.textContent = 'Canvas';
   propsBody.append(el('p', { class: 'hint', style: 'margin-bottom:10px', text: doc.width + ' x ' + doc.height + ' pixels' }));
+  if (isAnimated()) animationSection().forEach((r) => propsBody.append(r));    // section 24
   propsBody.append(el('div', { class: 'subhead', text: 'Canvas tools' }));
   propsBody.append(backgroundRow());
   propsBody.append(el('div', { class: 'tool-grid' },
@@ -4539,6 +4611,7 @@ function setSelection(ids, holeIndex = 0) {
   if (ids.length > 1) { state.selectedId = null; state.multi = ids; }
   else state.selectedId = ids[0] || null;
   state.holeIndex = holeIndex;               // which spotlight hole (only used for spotlights)
+  state.framePanel = false;                  // the Inspector shows layers (or the canvas), not filmstrip frames
   // Selecting anything outside a group you had double-clicked into "leaves" that group.
   if (state.enteredGroup && !selectedLayers().every((l) => l.groupId === state.enteredGroup)) state.enteredGroup = null;
   renderLayers(); renderProps(); requestRender();
@@ -5166,7 +5239,9 @@ function dropRow(item, dropIndex) {
 
 /* ---- Layer actions (work on everything selected) ---- */
 function deleteSelected() {
-  const sel = selectedLayers();
+  // The Frame picture of an animation cannot be deleted (section 24).
+  const all = selectedLayers(), sel = all.filter((l) => !l.frameLayer);
+  if (all.length && !sel.length) { toast('The Frame picture holds the animation\'s frames, so it cannot be deleted. To delete frames, use the filmstrip.'); return; }
   if (!sel.length) return;
   const L = sel[0];
   // In a spotlight with several holes, Delete removes just the selected hole.
@@ -5185,6 +5260,7 @@ function deleteSelected() {
 /** A copy of a layer, nudged 20 px so it is visible. */
 function copyOfLayer(L, offset = 20) {
   const copy = JSON.parse(JSON.stringify(L));        // images share pixels by imageId, so this is cheap
+  delete copy.frameLayer;                            // a copy of the Frame picture is an ordinary picture of that frame
   copy.id = uid(); copy.name = (L.name + ' copy').slice(0, 60); copy.locked = false; copy.autoName = false;
   if (offset) translateLayer(copy, offset, offset);
   if (copy.type === 'step') copy.seq = nextStepSeq();   // a copied step becomes the next number
@@ -5364,6 +5440,9 @@ function onDocumentShapeChanged() {
   // another file opened). When its size changed (picked, or undone), re-fit the view.
   if (state.headshot && !headshotLayer()) leaveHeadshot(false);
   else if (state.headshot && state.headshot.shownSize !== doc.width) { state.headshot.shownSize = doc.width; fitView(true); }
+  // Animated GIFs (section 24): show the right frame, and the filmstrip.
+  if (isAnimated()) syncFrameLayer(); else state.framePanel = false;
+  renderFilmstrip();
   const noDoc = !doc;
   ['btnExport', 'btnCopyImage', 'btnSaveProject', 'btnZoomIn', 'btnZoomOut', 'btnZoom100', 'btnFit'].forEach((id) => { $(id).disabled = noDoc; });
   renderLayers(); renderProps(); requestRender();
@@ -5375,11 +5454,13 @@ function onDocumentShapeChanged() {
    from a canvas never carries over EXIF data, so camera details and GPS
    locations from phone photos are always stripped.
    ----------------------------------------------------------------------- */
-const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+const EXT = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif' };
 
 function openExport() {
   if (!doc) return;
   finishTextEdit();
+  stopPlaying();
+  if (isAnimated()) $('expFormat').value = 'image/gif';     // an animation exports as a GIF unless you pick otherwise
   $('expAlt').value = doc.altText || '';
   $('expAltNote').hidden = !!(doc.altText || '').trim();
   const S = showcaseSettings();
@@ -5391,12 +5472,22 @@ function openExport() {
 }
 function updateExportInfo() {
   const fmt = $('expFormat').value, scale = Number($('expScale').value);
-  $('expQualityRow').hidden = fmt === 'image/png';
+  const gif = fmt === 'image/gif';
+  $('expQualityRow').hidden = fmt === 'image/png' || gif;
+  $('expLoopRow').hidden = !(gif && isAnimated());           // how many times it plays (section 24)
+  if (isAnimated()) {
+    const sel = $('expLoop');
+    // A play count that is not in the list (say 4) gets its own choice.
+    if (![...sel.options].some((o) => Number(o.value) === doc.loop)) sel.append(el('option', { value: doc.loop, text: doc.loop + ' times' }));
+    sel.value = String(doc.loop);
+  }
+  $('expGifNote').hidden = !gif;
   $('expJpegNote').hidden = !(fmt === 'image/jpeg' && hasTransparency());
   $('expQualityOut').textContent = $('expQuality').value;
   const sc = doc.showcase && doc.showcase.on;
   const size = sc ? showcaseSize(scale) : { w: Math.round(doc.width * scale), h: Math.round(doc.height * scale) };
-  $('expSize').textContent = 'Size: ' + size.w + ' x ' + size.h + ' pixels' + (sc ? ' (with showcase)' : '');
+  $('expSize').textContent = 'Size: ' + size.w + ' x ' + size.h + ' pixels' + (sc ? ' (with showcase)' : '') +
+    (gif && isAnimated() ? ', ' + doc.frames.length + ' frames, ' + secs(totalLength()) : '');
   if (sc) queueShowcasePreview();
 }
 /** Could any part of the export be see-through? (Transparent canvas, or a showcase with no background.) */
@@ -5417,6 +5508,7 @@ function exportBlob(type = 'image/png', quality = 0.9, scale = 1) {
 }
 async function doExport() {
   const type = $('expFormat').value;
+  if (type === 'image/gif') { exportGif(Number($('expScale').value)); return; }     // section 24
   try {
     setBusy(true, 'Exporting...');
     const blob = await exportBlob(type, Number($('expQuality').value) / 100, Number($('expScale').value));
@@ -6405,6 +6497,7 @@ function wandClick(p, e) {
     L = topImageAt(p);
     if (!L) { toast('The magic wand works on pictures. Click on an image layer.'); return; }
   }
+  if (L.frameLayer) { toast('The magic wand does not work on an animation\'s frames yet. Duplicate the Frame picture layer (Ctrl+D) to change a still copy.', 5000); return; }
   const opt = toolDefaults.wand;
   const [x, y] = imagePoint(L, p);
   if (opt.action === 'fill' || opt.action === 'recolor') {
@@ -6455,8 +6548,9 @@ function eraserDown(p, e) {
   if (!overSelected) {
     L = topErasableAt(p);
     if (!L) { toast('The eraser works on images, pen and highlighter. Start your stroke on one of them.'); return; }
-    selectLayer(L.id);
   }
+  if (L.frameLayer) { toast('The eraser does not work on an animation\'s frames yet. Duplicate the Frame picture layer (Ctrl+D) to erase a still copy.', 5000); return; }
+  if (!overSelected) selectLayer(L.id);
   const opt = toolDefaults.eraser;
   // Holding Alt (Option on Mac) swaps Erase and Restore for this stroke.
   const mode = e.altKey ? (opt.mode === 'erase' ? 'restore' : 'erase') : opt.mode;
@@ -8162,7 +8256,18 @@ function confirmDialog(title, message, okText = 'OK') {
    a file from a stranger: every part is checked before it is used, and
    anything unexpected is rejected.                                         */
 const PROJECT_FORMAT = 'imgedtr-project';
-const PROJECT_VERSION = 1;
+// Version 2 (1.22.0) adds animations: doc.frames and doc.loop. Still pictures are
+// still saved as version 1, so older copies of IMGEDTR can open them.
+const PROJECT_VERSION = 2;
+/** The version a document needs: 2 only for an animation. */
+const projectVersionFor = (d) => (d && Array.isArray(d.frames) && d.frames.length ? 2 : 1);
+/** Every picture a document uses: image layers AND animation frames. */
+function usedImageIds() {
+  const ids = new Set();
+  for (const L of doc.layers) if (L.type === 'image') ids.add(L.imageId);
+  if (isAnimated()) for (const f of doc.frames) ids.add(f.imageId);
+  return [...ids].filter((id) => imageStore.has(id));
+}
 const PROJECT_MAX_BYTES = 400 * 1024 * 1024;
 const isProjectFile = (f) => /\.imgedtr$/i.test((f && f.name) || '');
 const LAYER_TYPES = new Set(['image', 'rect', 'ellipse', 'shape', 'line', 'arrow', 'text', 'pen', 'highlighter',
@@ -8183,10 +8288,8 @@ async function saveProject() {
   try {
     // Only pictures still used by a layer are saved (undo history is not saved).
     const images = {};
-    for (const L of doc.layers) {
-      if (L.type === 'image' && !images[L.imageId] && imageStore.has(L.imageId)) images[L.imageId] = imageStore.get(L.imageId).toDataURL('image/png');
-    }
-    const data = { format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION, saved: new Date().toISOString(),
+    for (const id of usedImageIds()) images[id] = imageStore.get(id).toDataURL('image/png');
+    const data = { format: PROJECT_FORMAT, version: projectVersionFor(doc), app: APP_VERSION, saved: new Date().toISOString(),
       doc, images, counters: state.counters };
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -8306,6 +8409,25 @@ function validateProject(data) {
   } else delete d.showcase;
   if (d.altText !== undefined) d.altText = typeof d.altText === 'string' ? d.altText.slice(0, 1000) : '';
   if (d.stepStart !== undefined && !(Number.isInteger(d.stepStart) && d.stepStart >= 1 && d.stepStart <= 999)) d.stepStart = 1;
+  // Animations (version 2, section 24): frames with known pictures, sensible durations, one Frame picture layer.
+  if (d.frames !== undefined) {
+    if (!Array.isArray(d.frames) || d.frames.length < 1 || d.frames.length > GIF_MAX_FRAMES) fail('bad frame list');
+    const fids = new Set();
+    for (const f of d.frames) {
+      if (!f || typeof f.id !== 'string' || !/^[a-z0-9]{1,40}$/i.test(f.id) || fids.has(f.id)) fail('bad frame id');
+      fids.add(f.id);
+      if (typeof f.imageId !== 'string' || !images[f.imageId]) fail('a frame\'s picture is missing');
+      if (!Number.isInteger(f.delay) || f.delay < MIN_DELAY || f.delay > MAX_DELAY) fail('bad frame duration');
+      for (const k of Object.keys(f)) if (!['id', 'imageId', 'delay'].includes(k)) delete f[k];
+    }
+    if (!Number.isInteger(d.loop) || d.loop < 0 || d.loop > 65535) d.loop = 0;
+    const fl = d.layers.filter((L) => L.frameLayer === true);
+    if (fl.length !== 1 || fl[0].type !== 'image') fail('the animation\'s Frame picture layer is missing');
+    for (const L of d.layers) if (L.frameLayer !== undefined && L.frameLayer !== true) delete L.frameLayer;
+  } else {
+    delete d.loop;
+    for (const L of d.layers) delete L.frameLayer;          // only animations have a Frame picture
+  }
   for (const k of Object.keys(counters)) if (!num(counters[k])) delete counters[k];
   return { doc: d, images, counters };
 }
@@ -8342,10 +8464,14 @@ async function openProject(file) {
   finishTextEdit(); cancelCrop();
   imageStore.clear(); pictures.forEach((c, id) => imageStore.set(id, c));
   for (const cache of [maskCache, styledCache, tiltCache, belowCache, pixelCache, workCanvases]) cache.clear();
+  thumbCache.clear();                       // filmstrip pictures of the old document (section 24)
+  stopPlaying();
   doc = clean.doc;
   normalizeGroups();                        // members side by side, tiny groups dissolved
+  normalizeFrameLayer();                    // an animation's Frame picture at the bottom (section 24)
   state.counters = clean.counters;
   state.selectedId = null;
+  state.frame = 0; state.frameSel = []; state.framePanel = false;
   resetHistory();
   exportedSnapshot = history.current;
   onDocumentShapeChanged();
@@ -8751,6 +8877,1004 @@ stage.addEventListener('keydown', (e) => {
   e.stopImmediatePropagation();
 }, true);
 
+/* =========================================================================
+   GIF BLOCK v1 - START
+   Reads and writes GIF files, by hand, with no library. The master copy
+   will live in _edtr-suite/gif-block.js (see IMGEDTR-GIF-SPEC.md, section
+   9): paste it whole into an app and never edit it inside one app alone.
+
+   GIF is an old, simple format. A file is:
+     header ("GIF89a") -> screen size and a colour table -> a list of
+     blocks: extensions (timing, looping, comments) and pictures.
+   Each picture's pixels are numbers (indexes into a colour table of up to
+   256 colours), squeezed with LZW compression.
+
+   EVERY GIF IS TREATED AS HOSTILE INPUT. The decoder checks sizes before
+   it allocates anything, caps the frame count, keeps LZW inside its table,
+   never writes outside a frame's box, and stops cleanly at the end of the
+   data. A damaged file keeps the frames that decoded completely.
+
+   Public parts (all plain functions on one object, GifCodec):
+     GifCodec.scan(bytes)          -> { width, height, frames } (fast: no pixels)
+     GifCodec.decode(bytes, opts)  -> { width, height, loop, frames: [{ rgba, delay }], damaged, kept }
+     GifCodec.encode(frames, opts) -> Uint8Array (the GIF file)
+   And GifWorker.run(job, data, onProgress) runs decode or encode in a
+   background Worker so the page stays responsive.
+   ========================================================================= */
+/* The codec is one function that builds it, so the very same code can be
+   started again inside a Worker from its source text (GifWorker, below). */
+function gifCodecFactory() {
+  'use strict';
+
+  /* ---------- Reading bytes ---------- */
+  // A tiny "reader" that walks through the file one byte at a time and
+  // throws a friendly error if the file ends early.
+  function reader(bytes) {
+    let pos = 0;
+    const r = {
+      get pos() { return pos; },
+      left: () => bytes.length - pos,
+      u8() { if (pos >= bytes.length) throw new Error('END'); return bytes[pos++]; },
+      u16() { const lo = r.u8(), hi = r.u8(); return lo | (hi << 8); },   // little-endian
+      bytes(n) { if (pos + n > bytes.length) throw new Error('END'); const b = bytes.subarray(pos, pos + n); pos += n; return b; },
+      // Data "sub-blocks": a length byte, that many bytes, ... ended by a 0.
+      subBlocks() {
+        const parts = []; let total = 0;
+        for (;;) {
+          const n = r.u8();
+          if (n === 0) break;
+          parts.push(r.bytes(n)); total += n;
+        }
+        const out = new Uint8Array(total); let o = 0;
+        for (const p of parts) { out.set(p, o); o += p.length; }
+        return out;
+      },
+      skipSubBlocks() { for (;;) { const n = r.u8(); if (n === 0) break; r.bytes(n); } }
+    };
+    return r;
+  }
+
+  /** Read the header and the logical screen. Throws if this is not a GIF. */
+  function readHeader(r) {
+    const sig = String.fromCharCode(...r.bytes(6));
+    if (sig !== 'GIF87a' && sig !== 'GIF89a') throw new Error('NOT_GIF');
+    const width = r.u16(), height = r.u16();
+    const packed = r.u8(); r.u8(); r.u8();          // packed fields, background index, pixel aspect
+    let global = null;
+    if (packed & 0x80) global = r.bytes(3 * (1 << ((packed & 7) + 1)));   // global colour table
+    return { width, height, global };
+  }
+
+  /** Count the frames without decoding any pixels (used to plan memory). */
+  function scan(bytes) {
+    const r = reader(bytes);
+    const h = readHeader(r);
+    let frames = 0;
+    try {
+      for (;;) {
+        const b = r.u8();
+        if (b === 0x3B) break;                         // trailer: the end
+        if (b === 0x21) { r.u8(); r.skipSubBlocks(); continue; }   // any extension
+        if (b !== 0x2C) break;                         // garbage: stop
+        r.bytes(8); const p = r.u8();
+        if (p & 0x80) r.bytes(3 * (1 << ((p & 7) + 1)));
+        r.u8(); r.skipSubBlocks();
+        frames++;
+      }
+    } catch (e) { /* a cut-off file: count what was complete */ }
+    return { width: h.width, height: h.height, frames };
+  }
+
+  /* ---------- LZW decompression ----------
+     Turns the compressed bytes back into colour indexes. Safety rules:
+       - the starting code size must be 2..8 (anything else is refused)
+       - the code table never grows past 4096 entries
+       - the output never goes past "count" pixels (the frame's box)
+       - running out of data just ends the picture                      */
+  function lzwDecode(minSize, data, count) {
+    if (minSize < 2 || minSize > 8) throw new Error('BAD_LZW');
+    const out = new Uint8Array(count);
+    const clear = 1 << minSize, eoi = clear + 1;
+    // The table: for each code, its previous code (prefix) and last pixel (suffix).
+    const prefix = new Int16Array(4096), suffix = new Uint8Array(4096), first = new Uint8Array(4096);
+    const stack = new Uint8Array(4097);
+    for (let i = 0; i < clear; i++) { prefix[i] = -1; suffix[i] = i; first[i] = i; }
+    let size = minSize + 1, mask = (1 << size) - 1, next = eoi + 1, old = -1;
+    let bits = 0, acc = 0, p = 0, o = 0;
+    while (o < count) {
+      // Collect enough bits for one code.
+      while (bits < size) {
+        if (p >= data.length) return out;          // data ran out: the rest stays index 0
+        acc |= data[p++] << bits; bits += 8;
+      }
+      const code = acc & mask; acc >>>= size; bits -= size;
+      if (code === clear) { size = minSize + 1; mask = (1 << size) - 1; next = eoi + 1; old = -1; continue; }
+      if (code === eoi) break;
+      let c = code, sp = 0;
+      if (old === -1) {                              // the first code after a clear
+        if (code >= clear) break;                    // invalid: stop
+        out[o++] = code; old = code; continue;
+      }
+      if (code > next) break;                        // a code from nowhere: corrupt
+      if (code === next) { stack[sp++] = first[old]; c = old; }   // the tricky "KwKwK" case
+      while (c >= clear) {                           // walk back through the table
+        if (sp >= 4096) return out;
+        stack[sp++] = suffix[c]; c = prefix[c];
+      }
+      stack[sp++] = c;
+      const head = c;
+      while (sp > 0 && o < count) out[o++] = stack[--sp];
+      if (next < 4096) {
+        prefix[next] = old; suffix[next] = head; first[next] = first[old];
+        next++;
+        if (next === mask + 1 && size < 12) { size++; mask = (1 << size) - 1; }
+      }
+      old = code;
+    }
+    return out;
+  }
+
+  /**
+   * Decode a GIF into whole frames (each one the full picture as it
+   * looks at that moment, with earlier frames underneath).
+   *   opts.maxSide    biggest width or height allowed
+   *   opts.maxFrames  most frames kept
+   *   opts.maxPixels  memory budget: kept frames x width x height
+   *   opts.onProgress(fraction)
+   * When the file has more frames than the budget allows, every 2nd (or
+   * 3rd...) frame is kept and the skipped frames' time is added to the
+   * frame kept before them, so the GIF still runs for the same length.
+   */
+  function decode(bytes, opts = {}) {
+    const maxSide = opts.maxSide || 8000, maxFrames = opts.maxFrames || 1000, maxPixels = opts.maxPixels || 1e8;
+    const info = scan(bytes);
+    const W = info.width, H = info.height;
+    // Checked BEFORE allocating anything: a tiny file can claim a giant size.
+    if (!W || !H || W > maxSide || H > maxSide) throw new Error('TOO_BIG');
+    if (!info.frames) throw new Error('NO_FRAMES');
+    const fitByMemory = Math.max(1, Math.floor(maxPixels / (W * H)));
+    const step = Math.max(1, Math.ceil(info.frames / Math.min(maxFrames, fitByMemory)));
+
+    const r = reader(bytes);
+    const head = readHeader(r);
+    const canvas = new Uint8ClampedArray(W * H * 4);   // the picture so far (starts transparent)
+    const frames = [];
+    let loop = 1;                                       // no looping block = play once
+    let gce = null;                                     // timing/transparency for the next picture
+    let index = 0, damaged = false;
+    let pendingDelay = 0;                               // time from skipped frames
+    try {
+      for (;;) {
+        const b = r.u8();
+        if (b === 0x3B) break;
+        if (b === 0x21) {                               // an extension
+          const label = r.u8();
+          if (label === 0xF9) {                         // Graphic Control: delay, transparency, disposal
+            const d = r.subBlocks();
+            if (d.length >= 4) gce = { disposal: (d[0] >> 2) & 7, transparent: (d[0] & 1) ? d[3] : -1, delay: d[1] | (d[2] << 8) };
+          } else if (label === 0xFF) {                  // Application: maybe NETSCAPE2.0 looping
+            const d = r.subBlocks();
+            const id = String.fromCharCode(...d.subarray(0, 11));
+            if ((id === 'NETSCAPE2.0' || id === 'ANIMEXTS1.0') && d.length >= 14 && d[11] === 1) {
+              const n = d[12] | (d[13] << 8);
+              loop = n === 0 ? 0 : n + 1;               // 0 = forever; n repeats = n + 1 plays
+            }
+          } else r.skipSubBlocks();                     // comments, XMP...: never kept
+          continue;
+        }
+        if (b !== 0x2C) { damaged = true; break; }      // not a picture either: stop
+
+        // ---- An image descriptor: one picture.
+        const fx = r.u16(), fy = r.u16(), fw = r.u16(), fh = r.u16(), packed = r.u8();
+        let table = head.global;
+        if (packed & 0x80) table = r.bytes(3 * (1 << ((packed & 7) + 1)));   // its own colour table
+        const interlaced = !!(packed & 0x40);
+        const minSize = r.u8();
+        const data = r.subBlocks();
+        if (!table) { damaged = true; break; }
+        if (fw * fh > W * H * 4) { damaged = true; break; }   // an absurd box: refuse
+        const px = lzwDecode(minSize, data, fw * fh);
+
+        const g = gce || { disposal: 0, transparent: -1, delay: 10 };
+        gce = null;
+        const saved = g.disposal === 3 ? canvas.slice() : null;   // "restore previous" needs a copy
+
+        // Draw the picture's pixels onto the canvas (clipped to the canvas).
+        const nColors = table.length / 3;
+        // Interlaced pictures store rows in the order 0,8,16.. 4,12.. 2,6.. 1,3..
+        const rowOrder = [];
+        if (interlaced) { for (const [start, gap] of [[0, 8], [4, 8], [2, 4], [1, 2]]) for (let y = start; y < fh; y += gap) rowOrder.push(y); }
+        for (let i = 0; i < fh; i++) {
+          const row = interlaced ? rowOrder[i] : i;
+          const y = fy + row;
+          if (y >= H) continue;
+          for (let x = 0; x < fw; x++) {
+            const cx = fx + x;
+            if (cx >= W) break;
+            const ci = px[i * fw + x];
+            if (ci === g.transparent || ci >= nColors) continue;
+            const o = (y * W + cx) * 4;
+            canvas[o] = table[ci * 3]; canvas[o + 1] = table[ci * 3 + 1]; canvas[o + 2] = table[ci * 3 + 2]; canvas[o + 3] = 255;
+          }
+        }
+        // Delay: hundredths of a second. Browsers play 0 or 1 as 100 ms.
+        const delay = g.delay < 2 ? 100 : g.delay * 10;
+        if (index % step === 0) {
+          frames.push({ rgba: canvas.slice(), delay: delay });
+          pendingDelay = 0;
+        } else if (frames.length) {
+          frames[frames.length - 1].delay += delay;   // a skipped frame's time goes to the one before
+        }
+        index++;
+        if (opts.onProgress) opts.onProgress(index / info.frames);
+
+        // How this picture hands over to the next one ("disposal").
+        if (g.disposal === 2) {                         // clear its box to transparent
+          for (let y = fy; y < Math.min(H, fy + fh); y++) canvas.fill(0, (y * W + fx) * 4, (y * W + Math.min(W, fx + fw)) * 4);
+        } else if (g.disposal === 3 && saved) canvas.set(saved);   // put back what was there before
+      }
+    } catch (e) {
+      if (e.message === 'BAD_LZW') throw e;
+      damaged = true;                                   // cut off part way: keep complete frames
+    }
+    if (!frames.length) throw new Error(damaged ? 'DAMAGED' : 'NO_FRAMES');
+    // Delays are kept in steps of 10 ms, and never shorter than 20 ms (browsers slow anything faster down).
+    for (const f of frames) f.delay = Math.max(20, Math.round(f.delay / 10) * 10);
+    return { width: W, height: H, loop, frames, damaged, kept: step };
+  }
+
+  /* ---------- Writing ---------- */
+
+  /**
+   * Choose up to "max" colours that represent the pictures well ("median
+   * cut"): put sampled colours in a box, keep splitting the box with the
+   * widest spread of red, green or blue at its middle colour, then use the
+   * average colour of each box. Only a sample of pixels is used, so it is
+   * quick even for long animations.
+   */
+  function medianCut(frames, max) {
+    let total = 0;
+    for (const f of frames) total += f.length / 4;
+    const every = Math.max(1, Math.floor(total / 120000));   // about 120,000 samples
+    const samples = [];
+    let k = 0;
+    for (const f of frames) {
+      for (let i = 0; i < f.length; i += 4) {
+        if ((k++ % every) !== 0 || f[i + 3] < 128) continue;
+        samples.push((f[i] << 16) | (f[i + 1] << 8) | f[i + 2]);
+      }
+    }
+    if (!samples.length) return [[0, 0, 0]];
+    // Few enough different colours? Use them exactly.
+    const unique = [...new Set(samples)];
+    if (unique.length <= max) return unique.map((c) => [c >> 16, (c >> 8) & 255, c & 255]);
+    const ch = (c, i) => i === 0 ? c >> 16 : i === 1 ? (c >> 8) & 255 : c & 255;
+    let boxes = [samples];
+    while (boxes.length < max) {
+      // Pick the box with the widest spread.
+      let best = -1, bestRange = -1, bestCh = 0;
+      boxes.forEach((b, bi) => {
+        if (b.length < 2) return;
+        for (let i = 0; i < 3; i++) {
+          let lo = 255, hi = 0;
+          for (const c of b) { const v = ch(c, i); if (v < lo) lo = v; if (v > hi) hi = v; }
+          if (hi - lo > bestRange) { bestRange = hi - lo; best = bi; bestCh = i; }
+        }
+      });
+      if (best < 0 || bestRange <= 0) break;
+      const b = boxes[best].sort((a, c) => ch(a, bestCh) - ch(c, bestCh));
+      const mid = b.length >> 1;
+      boxes.splice(best, 1, b.slice(0, mid), b.slice(mid));
+    }
+    return boxes.map((b) => {
+      let r = 0, g = 0, bl = 0;
+      for (const c of b) { r += c >> 16; g += (c >> 8) & 255; bl += c & 255; }
+      return [Math.round(r / b.length), Math.round(g / b.length), Math.round(bl / b.length)];
+    });
+  }
+
+  /** LZW compression: turn colour indexes into the GIF's packed codes. */
+  function lzwEncode(minSize, px) {
+    const out = []; let acc = 0, bits = 0;
+    const clear = 1 << minSize, eoi = clear + 1;
+    let size = minSize + 1, next = eoi + 1;
+    const emit = (code) => {
+      acc |= code << bits; bits += size;
+      while (bits >= 8) { out.push(acc & 255); acc >>>= 8; bits -= 8; }
+    };
+    // The table maps "previous code + next pixel" to a code, as a number key.
+    let dict = new Map();
+    emit(clear);
+    let cur = px[0];
+    for (let i = 1; i < px.length; i++) {
+      const p = px[i], key = cur * 256 + p;
+      const found = dict.get(key);
+      if (found !== undefined) { cur = found; continue; }
+      emit(cur);
+      if (next < 4096) {
+        dict.set(key, next++);
+        if (next > (1 << size) && size < 12) size++;
+      } else {                                         // table full: start again
+        emit(clear); dict = new Map(); size = minSize + 1; next = eoi + 1;
+      }
+      cur = p;
+    }
+    emit(cur); emit(eoi);
+    if (bits > 0) out.push(acc & 255);
+    return out;
+  }
+
+  /**
+   * Write a GIF. frames = [{ rgba: Uint8ClampedArray (width x height x 4), delay: ms }]
+   *   opts.width, opts.height, opts.loop (0 = forever, 1 = once, N = N times)
+   * One colour table for the whole GIF (no flicker, smaller), full frames.
+   * Pixels that are less than half see-through become transparent.
+   */
+  function encode(frames, opts) {
+    const W = opts.width, H = opts.height;
+    const hasClear = frames.some((f) => { for (let i = 3; i < f.rgba.length; i += 4) if (f.rgba[i] < 128) return true; return false; });
+    const palette = medianCut(frames.map((f) => f.rgba), hasClear ? 255 : 256);
+    const clearIndex = hasClear ? palette.length : -1;
+    const nColors = palette.length + (hasClear ? 1 : 0);
+    let bitsNeeded = 1; while ((1 << bitsNeeded) < nColors) bitsNeeded++;
+    const tableSize = 1 << bitsNeeded;
+    // Nearest palette colour, remembered for each (slightly rounded) colour seen.
+    const cache = new Map();
+    const nearest = (r, g, b) => {
+      const key = ((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2);
+      let hit = cache.get(key);
+      if (hit !== undefined) return hit;
+      let best = 0, bestD = Infinity;
+      for (let i = 0; i < palette.length; i++) {
+        const c = palette[i], dr = c[0] - r, dg = c[1] - g, db = c[2] - b;
+        const d = dr * dr * 2 + dg * dg * 4 + db * db * 3;     // eyes are most sensitive to green
+        if (d < bestD) { bestD = d; best = i; }
+      }
+      cache.set(key, best);
+      return best;
+    };
+
+    const bytes = [];
+    const push16 = (v) => { bytes.push(v & 255, (v >> 8) & 255); };
+    for (const ch of 'GIF89a') bytes.push(ch.charCodeAt(0));
+    push16(W); push16(H);
+    bytes.push(0x80 | 0x70 | (bitsNeeded - 1), 0, 0);          // global table, 8-bit colour, its size
+    for (let i = 0; i < tableSize; i++) {
+      const c = palette[i] || [0, 0, 0];
+      bytes.push(c[0], c[1], c[2]);
+    }
+    // Looping: none = play once. "Repeat n times" means n + 1 plays in total.
+    if (opts.loop !== 1) {
+      const repeats = opts.loop === 0 ? 0 : Math.max(1, opts.loop - 1);
+      bytes.push(0x21, 0xFF, 11); for (const ch of 'NETSCAPE2.0') bytes.push(ch.charCodeAt(0));
+      bytes.push(3, 1); push16(repeats); bytes.push(0);
+    }
+    const minSize = Math.max(2, bitsNeeded);
+    frames.forEach((f, n) => {
+      // Graphic Control: disposal 2 (clear) when there is transparency, so
+      // see-through parts never show the frame before; 1 (keep) otherwise.
+      const delay = Math.max(2, Math.round(f.delay / 10));
+      bytes.push(0x21, 0xF9, 4, ((hasClear ? 2 : 1) << 2) | (hasClear ? 1 : 0));
+      push16(delay); bytes.push(hasClear ? clearIndex : 0, 0);
+      bytes.push(0x2C); push16(0); push16(0); push16(W); push16(H); bytes.push(0);
+      const px = new Uint8Array(W * H);
+      const d = f.rgba;
+      for (let i = 0, j = 0; j < px.length; i += 4, j++) px[j] = d[i + 3] < 128 ? clearIndex : nearest(d[i], d[i + 1], d[i + 2]);
+      const lzw = lzwEncode(minSize, px);
+      bytes.push(minSize);
+      for (let i = 0; i < lzw.length; i += 255) {
+        const part = lzw.slice(i, i + 255);
+        bytes.push(part.length); for (const v of part) bytes.push(v);
+      }
+      bytes.push(0);
+      if (opts.onProgress) opts.onProgress((n + 1) / frames.length);
+    });
+    bytes.push(0x3B);
+    return Uint8Array.from(bytes);
+  }
+
+  return { scan, decode, encode };
+}
+const GifCodec = gifCodecFactory();
+
+/* ---- Running the codec in a background Worker ----
+   The Worker is made from this block's own source text (a "blob:" URL), so
+   the app stays one file. Work runs off the main thread, with progress
+   messages, and is stopped if it takes longer than its time limit. If a
+   Worker cannot be made, the work runs on the page instead (slower, but
+   it still works). */
+const GifWorker = (() => {
+  const TIME_LIMIT = { decode: 30000, encode: 180000 };   // milliseconds
+  let url = null;
+  function workerUrl() {
+    if (url) return url;
+    const src = 'const GifCodec = (' + gifCodecFactory.toString() + ')();\n' +
+      'onmessage = (e) => { const { job, data } = e.data; try {\n' +
+      '  const onProgress = (f) => postMessage({ progress: f });\n' +
+      '  const result = job === "decode" ? GifCodec.decode(data.bytes, { ...data.opts, onProgress }) : GifCodec.encode(data.frames, { ...data.opts, onProgress });\n' +
+      '  const transfer = job === "decode" ? result.frames.map((f) => f.rgba.buffer) : [result.buffer];\n' +
+      '  postMessage({ result }, transfer);\n' +
+      '} catch (err) { postMessage({ error: err.message || String(err) }); } };';
+    url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+    return url;
+  }
+  /** Run "decode" or "encode". Resolves with the result; rejects with an Error. */
+  function run(job, data, onProgress) {
+    let w;
+    try { w = new Worker(workerUrl()); } catch (e) { w = null; }
+    if (!w) {                                          // no Worker: do it here
+      return new Promise((resolve, reject) => setTimeout(() => {
+        try { resolve(job === 'decode' ? GifCodec.decode(data.bytes, { ...data.opts, onProgress }) : GifCodec.encode(data.frames, { ...data.opts, onProgress })); }
+        catch (e) { reject(e); }
+      }, 0));
+    }
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { w.terminate(); reject(new Error('TIMEOUT')); }, TIME_LIMIT[job]);
+      w.onmessage = (e) => {
+        if (e.data.progress !== undefined) { if (onProgress) onProgress(e.data.progress); return; }
+        clearTimeout(timer); w.terminate();
+        if (e.data.error) reject(new Error(e.data.error)); else resolve(e.data.result);
+      };
+      w.onerror = (e) => { clearTimeout(timer); w.terminate(); reject(new Error(e.message || 'WORKER')); };
+      const transfer = job === 'decode' ? [data.bytes.buffer] : data.frames.map((f) => f.rgba.buffer);
+      w.postMessage({ job, data }, transfer);
+    });
+  }
+  return { run };
+})();
+/* GIF BLOCK v1 - END */
+
+/* -----------------------------------------------------------------------
+   24. ANIMATED GIFS (milestone 1 of IMGEDTR-GIF-SPEC.md)
+   Open a GIF and see its frames in a filmstrip, play it, change how long
+   each frame shows, duplicate, delete and reorder frames, then export a GIF.
+
+   How it fits the rest of IMGEDTR (the one big idea):
+     - doc.frames = [{ id, imageId, delay }]   every frame is a whole picture
+       in imageStore; delay = how long it shows, in milliseconds
+     - doc.loop = 0 (forever), 1 (once) or N (N times)
+     - The frame pictures are shown by ONE ordinary image layer, the
+       "Frame picture" layer, always at the bottom of the Layers list. It
+       is marked frameLayer: true, and its imageId is switched to the
+       showing frame's picture. Because it is a normal layer, everything
+       that moves, scales, crops, rotates or flips layers (crop, canvas
+       size, pad, halve, resize, rotate, flip) changes every frame at once,
+       with one undo step - no pixels are copied.
+     - Every other layer (arrows, text, boxes...) shows on every frame.
+       Showing a layer on only some frames is milestone 2.
+   A still picture has no doc.frames, and nothing here changes it.
+   ----------------------------------------------------------------------- */
+const GIF_MAX_FRAMES = 1000;          // most frames an animation may have
+const GIF_MEMORY_PIXELS = 100e6;      // frames x width x height (about 400 MB) - lower it for phones if needed
+const MIN_DELAY = 20;                 // ms: browsers slow anything faster than this down to 100 ms
+const MAX_DELAY = 60000;
+
+const isAnimated = () => !!(doc && Array.isArray(doc.frames) && doc.frames.length);
+const frameLayer = () => (isAnimated() ? doc.layers.find((l) => l.frameLayer) || null : null);
+const totalLength = () => (isAnimated() ? doc.frames.reduce((t, f) => t + f.delay, 0) : 0);
+const secs = (ms) => (ms / 1000).toFixed(ms < 10000 ? 2 : 1).replace(/0$/, '') + ' s';
+/** Round a duration to 10 ms (GIF counts in hundredths of a second) and keep it in range. */
+const cleanDelay = (ms) => clamp(Math.round((Number(ms) || 100) / 10) * 10, MIN_DELAY, MAX_DELAY);
+
+/**
+ * Point the Frame picture layer at the showing frame's picture. This is not
+ * a change the user made, so if the undo history was up to date it quietly
+ * stays up to date (no extra undo step, no "unsaved" warning).
+ */
+function syncFrameLayer() {
+  const L = frameLayer();
+  if (!L) return;
+  state.frame = clamp(state.frame, 0, doc.frames.length - 1);
+  const want = doc.frames[state.frame].imageId;
+  if (L.imageId === want) return;
+  const untouched = history.current === snapshot();
+  L.imageId = want;
+  if (untouched) history.current = snapshot();
+}
+
+/** Show frame number i (counting from 0). */
+function showFrame(i, say = false) {
+  if (!isAnimated()) return;
+  const n = doc.frames.length;
+  state.frame = ((i % n) + n) % n;               // wraps round: after the last comes the first
+  syncFrameLayer();
+  requestRender();
+  updateFilmstripCurrent();
+  if (state.framePanel) renderProps();
+  if (say) announce('Frame ' + (state.frame + 1) + ' of ' + n + ', ' + doc.frames[state.frame].delay + ' milliseconds');
+}
+
+/* ---------- Opening a GIF ---------- */
+
+/** Is this file a GIF? (Checks the first bytes, not just the name.) */
+const isGifBytes = (b) => b.length > 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38;
+
+/**
+ * Open a GIF. One frame: returns false, and the normal image code opens it
+ * as a still picture. More: it becomes an animated document (replacing the
+ * one that is open, which Undo brings back).
+ */
+async function openGif(blob, name) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  if (!isGifBytes(bytes)) return false;
+  let info;
+  try { info = GifCodec.scan(bytes); } catch (e) { return false; }   // not readable as a GIF: let the browser try
+  if (info.frames < 2) return false;
+  if (!info.width || !info.height || info.width > MAX_SIDE || info.height > MAX_SIDE) {
+    throw new Error('That GIF says it is ' + info.width + ' x ' + info.height + ' pixels, which is too large to open here.');
+  }
+  setBusy(true, 'Opening GIF...');
+  let res;
+  try {
+    res = await GifWorker.run('decode', { bytes, opts: { maxSide: MAX_SIDE, maxFrames: GIF_MAX_FRAMES, maxPixels: GIF_MEMORY_PIXELS } },
+      (f) => setBusy(true, 'Opening GIF... ' + Math.round(f * 100) + '%'));
+  } catch (e) {
+    throw new Error(e.message === 'TIMEOUT' ? 'That GIF took too long to open, so it was stopped.' : 'That GIF is damaged and could not be opened.');
+  }
+  // Each frame becomes a canvas in imageStore.
+  const frames = res.frames.map((f) => {
+    const c = document.createElement('canvas');
+    c.width = res.width; c.height = res.height;
+    c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(f.rgba), res.width, res.height), 0, 0);
+    const imageId = uid();
+    imageStore.set(imageId, c);
+    return { id: uid(), imageId, delay: cleanDelay(f.delay) };
+  });
+  const layer = { id: uid(), type: 'image', name: 'Frame picture', visible: true, locked: false, opacity: 1, rotation: 0,
+    imageId: frames[0].imageId, x: 0, y: 0, w: res.width, h: res.height, frameLayer: true };
+  ensureImageStyle(layer);
+  const hadDoc = !!doc;
+  if (state.headshot) leaveHeadshot(false);
+  doc = { width: res.width, height: res.height, background: null, layers: [layer], frames, loop: res.loop };
+  state.selectedId = null; state.frame = 0; state.frameSel = []; state.framePanel = false;
+  if (hadDoc) commit(); else resetHistory();     // replacing a document can be undone
+  onDocumentShapeChanged();
+  fitView();
+  const cleanName = String(name || 'animation').replace(/\.[a-z0-9]+$/i, '');
+  $('expName').value = cleanName.slice(0, 100);
+  const n = frames.length;
+  announce('Opened animated GIF, ' + n + ' frames, ' + secs(totalLength()));
+  if (res.damaged) toast('Opened ' + n + ' frames - the rest of the file was damaged.', 6000);
+  else if (res.kept > 1) toast('That GIF has too many frames to edit here, so every ' + (res.kept === 2 ? '2nd' : res.kept === 3 ? '3rd' : res.kept + 'th') +
+    ' frame was kept. It still plays for the same length.', 7000);
+  else toast('Opened ' + n + ' frames. Press Play (Shift+Space) to watch it.');
+  return true;
+}
+
+/* ---------- The filmstrip ---------- */
+const filmstrip = $('filmstrip'), frameList = $('frameList');
+const thumbCache = new Map();        // imageId -> small PNG data URL
+
+/** A small picture of a frame (made once per picture, then remembered). */
+function thumbOf(imageId) {
+  if (thumbCache.has(imageId)) return thumbCache.get(imageId);
+  const src = imageStore.get(imageId);
+  if (!src) return '';
+  const k = Math.min(1, 92 / src.height, 220 / src.width);      // twice the shown size, for sharp screens
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(src.width * k)); c.height = Math.max(1, Math.round(src.height * k));
+  const ctx = c.getContext('2d'); ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(src, 0, 0, c.width, c.height);
+  const url = c.toDataURL('image/png');
+  thumbCache.set(imageId, url);
+  return url;
+}
+
+/** Show or hide the filmstrip, and rebuild it. Called whenever the document changes. */
+function renderFilmstrip() {
+  const on = isAnimated() && !state.headshot;
+  const ws = $('workspace');
+  if (ws.classList.contains('has-strip') !== on) ws.classList.toggle('has-strip', on);
+  filmstrip.hidden = !on;
+  if (!on) { stopPlaying(); frameList.replaceChildren(); return; }
+  const ids = new Set(doc.frames.map((f) => f.id));
+  state.frameSel = state.frameSel.filter((id) => ids.has(id));     // forget frames that are gone
+  frameList.replaceChildren(...doc.frames.map((f, i) => {
+    const opt = el('div', { class: 'frame', role: 'option', id: 'frame-' + f.id, 'data-id': f.id,
+      'aria-selected': String(state.frameSel.includes(f.id)), draggable: 'true' },
+      el('img', { src: thumbOf(f.imageId), alt: '' }),
+      el('span', { class: 'frame-cap', text: (i + 1) + ' · ' + f.delay + ' ms' }));
+    opt.setAttribute('aria-label', 'Frame ' + (i + 1) + ' of ' + doc.frames.length + ', ' + f.delay + ' milliseconds');
+    return opt;
+  }));
+  updateFilmstripCurrent();
+}
+
+/** Mark the showing frame (cheap: used on every frame while playing). */
+function updateFilmstripCurrent() {
+  if (filmstrip.hidden || !isAnimated()) return;
+  const cur = doc.frames[state.frame];
+  frameList.querySelectorAll('.frame.current').forEach((n) => n.classList.remove('current'));
+  const node = cur && $('frame-' + cur.id);
+  if (node) {
+    node.classList.add('current');
+    frameList.setAttribute('aria-activedescendant', node.id);
+    // Keep it in view (without scrolling the whole page).
+    const l = node.offsetLeft, r = l + node.offsetWidth;
+    if (l < frameList.scrollLeft) frameList.scrollLeft = l - 8;
+    else if (r > frameList.scrollLeft + frameList.clientWidth) frameList.scrollLeft = r - frameList.clientWidth + 8;
+  }
+  $('stripInfo').textContent = 'Frame ' + (state.frame + 1) + ' of ' + doc.frames.length + ' · ' + secs(totalLength()) +
+    (state.frameSel.length > 1 ? ' · ' + state.frameSel.length + ' selected' : '');
+}
+
+/** Select frames by id (and show the Frame panel in the Inspector). */
+function selectFrames(ids, current) {
+  state.frameSel = [...new Set(ids)];
+  state.framePanel = true;
+  if (selectedLayers().length) { state.enteredGroup = null; state.selectedId = null; }   // a frame, not a layer, is now selected
+  if (current !== undefined) state.frame = current;
+  syncFrameLayer();
+  frameList.querySelectorAll('.frame').forEach((n) => n.setAttribute('aria-selected', String(state.frameSel.includes(n.dataset.id))));
+  updateFilmstripCurrent(); renderLayers(); renderProps(); requestRender();
+}
+const frameIndex = (id) => doc.frames.findIndex((f) => f.id === id);
+/** The selected frames, in filmstrip order (or just the showing one if none are selected). */
+function selectedFrames() {
+  const sel = doc.frames.filter((f) => state.frameSel.includes(f.id));
+  return sel.length ? sel : [doc.frames[state.frame]];
+}
+
+// Clicking a frame: pick it. Shift+click: a range. Ctrl/Cmd+click: add or remove one.
+let frameAnchor = 0;                 // where a Shift range starts
+frameList.addEventListener('click', (e) => {
+  const node = e.target.closest('.frame'); if (!node) return;
+  stopPlaying();
+  const i = frameIndex(node.dataset.id);
+  if (e.shiftKey) {
+    const [a, b] = [Math.min(frameAnchor, i), Math.max(frameAnchor, i)];
+    selectFrames(doc.frames.slice(a, b + 1).map((f) => f.id), i);
+  } else if (e.ctrlKey || e.metaKey) {
+    const id = node.dataset.id, has = state.frameSel.includes(id);
+    selectFrames(has ? state.frameSel.filter((x) => x !== id) : [...state.frameSel, id], i);
+    frameAnchor = i;
+  } else { selectFrames([node.dataset.id], i); frameAnchor = i; }
+  frameList.focus({ preventScroll: true });
+  announce('Frame ' + (i + 1) + ' of ' + doc.frames.length);
+});
+
+// Keys in the filmstrip (it is one tab stop): arrows move, Shift+arrows extend,
+// Home/End jump, Alt+arrows move the selected frames, Delete, Ctrl+D, Ctrl+A.
+frameList.addEventListener('keydown', (e) => {
+  if (!isAnimated()) return;
+  const n = doc.frames.length, i = state.frame;
+  const handled = () => { e.preventDefault(); e.stopPropagation(); };
+  const step = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[e.key];
+  if (step && e.altKey) { handled(); moveFrames(step); return; }
+  let to = null;
+  if (step) to = clamp(i + step, 0, n - 1);
+  else if (e.key === 'Home') to = 0;
+  else if (e.key === 'End') to = n - 1;
+  if (to !== null) {
+    handled(); stopPlaying();
+    if (e.shiftKey) { const [a, b] = [Math.min(frameAnchor, to), Math.max(frameAnchor, to)]; selectFrames(doc.frames.slice(a, b + 1).map((f) => f.id), to); }
+    else { selectFrames([doc.frames[to].id], to); frameAnchor = to; }
+    announce('Frame ' + (to + 1) + ' of ' + n + ', ' + doc.frames[to].delay + ' milliseconds');
+    return;
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') { handled(); deleteFrames(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { handled(); duplicateFrames(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { handled(); selectFrames(doc.frames.map((f) => f.id), i); announce('All ' + n + ' frames selected'); return; }
+  if (e.key === ' ' && !e.shiftKey) {        // Space toggles the showing frame in the selection
+    handled();
+    const id = doc.frames[i].id;
+    selectFrames(state.frameSel.includes(id) ? state.frameSel.filter((x) => x !== id) : [...state.frameSel, id], i);
+  }
+});
+
+// Drag frames to reorder them (mouse or pen). Several selected frames move together.
+let frameDrag = null;
+frameList.addEventListener('dragstart', (e) => {
+  const node = e.target.closest('.frame'); if (!node) return;
+  stopPlaying();
+  const id = node.dataset.id;
+  if (!state.frameSel.includes(id)) selectFrames([id], frameIndex(id));
+  frameDrag = { ids: [...state.frameSel] };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'frames');      // some browsers need some data to start a drag
+});
+frameList.addEventListener('dragover', (e) => {
+  if (!frameDrag) return;
+  e.preventDefault();
+  frameList.querySelectorAll('.drop-before').forEach((n) => n.classList.remove('drop-before'));
+  const node = e.target.closest('.frame'); if (node) node.classList.add('drop-before');
+});
+frameList.addEventListener('drop', (e) => {
+  if (!frameDrag) return;
+  e.preventDefault();
+  const node = e.target.closest('.frame');
+  const beforeId = node ? node.dataset.id : null;
+  const moving = doc.frames.filter((f) => frameDrag.ids.includes(f.id));
+  if (beforeId && frameDrag.ids.includes(beforeId)) { frameDrag = null; renderFilmstrip(); return; }
+  const rest = doc.frames.filter((f) => !frameDrag.ids.includes(f.id));
+  const at = beforeId ? rest.findIndex((f) => f.id === beforeId) : rest.length;
+  rest.splice(at, 0, ...moving);
+  reorderFrames(rest, moving.length === 1 ? 'Frame moved' : moving.length + ' frames moved');
+  frameDrag = null;
+});
+frameList.addEventListener('dragend', () => { frameDrag = null; frameList.querySelectorAll('.drop-before').forEach((n) => n.classList.remove('drop-before')); });
+
+/* ---------- Frame actions (each one is one undo step) ---------- */
+
+/** Put the frames in a new order, keeping the showing frame showing. */
+function reorderFrames(newOrder, message) {
+  const curId = doc.frames[state.frame].id;
+  doc.frames = newOrder;
+  state.frame = Math.max(0, frameIndex(curId));
+  commit(); onDocumentShapeChanged();
+  if (message) announce(message);
+}
+/** Move the selected frames one place left (-1) or right (1), or to the 'start' / 'end'. */
+function moveFrames(dir) {
+  const sel = new Set(selectedFrames().map((f) => f.id));
+  const list = [...doc.frames];
+  if (dir === 'start' || dir === 'end') {
+    const moving = list.filter((f) => sel.has(f.id)), rest = list.filter((f) => !sel.has(f.id));
+    reorderFrames(dir === 'start' ? [...moving, ...rest] : [...rest, ...moving], 'Moved to the ' + dir);
+    return;
+  }
+  // One step: walk from the far end so neighbouring selected frames move together.
+  const order = dir < 0 ? list.map((_, i) => i) : list.map((_, i) => list.length - 1 - i);
+  let moved = false;
+  for (const i of order) {
+    const j = i + dir;
+    if (!sel.has(list[i].id) || j < 0 || j >= list.length || sel.has(list[j].id)) continue;
+    [list[i], list[j]] = [list[j], list[i]]; moved = true;
+  }
+  if (moved) reorderFrames(list, dir < 0 ? 'Moved left' : 'Moved right');
+}
+/** Copy the selected frames; each copy goes right after its original. Pictures are shared, so it is cheap. */
+function duplicateFrames() {
+  if (!isAnimated()) return;
+  const sel = new Set(selectedFrames().map((f) => f.id));
+  if (doc.frames.length + sel.size > GIF_MAX_FRAMES) { toast('An animation can have up to ' + GIF_MAX_FRAMES + ' frames.'); return; }
+  const out = [], copies = [];
+  for (const f of doc.frames) {
+    out.push(f);
+    if (sel.has(f.id)) { const c = { ...f, id: uid() }; out.push(c); copies.push(c.id); }
+  }
+  doc.frames = out;
+  state.frameSel = copies;
+  state.frame = frameIndex(copies[copies.length - 1]);
+  state.framePanel = true;
+  commit(); onDocumentShapeChanged();
+  announce(copies.length === 1 ? 'Frame duplicated' : copies.length + ' frames duplicated');
+}
+/** Add an empty (see-through) frame after the showing one. */
+function addBlankFrame() {
+  if (!isAnimated()) return;
+  if (doc.frames.length >= GIF_MAX_FRAMES) { toast('An animation can have up to ' + GIF_MAX_FRAMES + ' frames.'); return; }
+  const src = imageStore.get(doc.frames[state.frame].imageId);
+  const c = document.createElement('canvas');
+  c.width = src ? src.width : doc.width; c.height = src ? src.height : doc.height;   // same size as the other pictures
+  const imageId = uid(); imageStore.set(imageId, c);
+  const f = { id: uid(), imageId, delay: doc.frames[state.frame].delay };
+  doc.frames.splice(state.frame + 1, 0, f);
+  state.frame++; state.frameSel = [f.id]; state.framePanel = true;
+  commit(); onDocumentShapeChanged();
+  announce('Blank frame added');
+}
+/** Delete the selected frames (an animation always keeps at least one). */
+function deleteFrames() {
+  if (!isAnimated()) return;
+  const sel = new Set(selectedFrames().map((f) => f.id));
+  if (sel.size >= doc.frames.length) { toast('An animation needs at least one frame. To make it a still picture, use Back to a still picture.'); return; }
+  const first = doc.frames.findIndex((f) => sel.has(f.id));
+  doc.frames = doc.frames.filter((f) => !sel.has(f.id));
+  state.frame = clamp(first, 0, doc.frames.length - 1);
+  state.frameSel = [doc.frames[state.frame].id];
+  commit(); onDocumentShapeChanged();
+  announce(sel.size === 1 ? 'Frame deleted' : sel.size + ' frames deleted');
+}
+/** Set the duration of the given frames. */
+function setFrameDelay(frames, ms) {
+  const d = cleanDelay(ms);
+  frames.forEach((f) => { f.delay = d; });
+  commit('frame-delay');
+  renderFilmstrip();
+  return d;
+}
+/** Speed: 200% = twice as fast (every duration halved), never below MIN_DELAY. */
+function scaleSpeed(percent) {
+  const p = clamp(Number(percent) || 100, 10, 1000);
+  doc.frames.forEach((f) => { f.delay = cleanDelay(f.delay * 100 / p); });
+  commit(); onDocumentShapeChanged();
+  announce('Speed changed. The animation now lasts ' + secs(totalLength()));
+}
+function reverseFrames() { reorderFrames([...doc.frames].reverse(), 'Frames reversed'); }
+/** Ping-pong: add a reversed copy (without repeating the two ends), so it plays forward then back. */
+function pingPong() {
+  const back = doc.frames.slice(1, -1).reverse().map((f) => ({ ...f, id: uid() }));
+  if (!back.length) { toast('Ping-pong needs at least three frames.'); return; }
+  if (doc.frames.length + back.length > GIF_MAX_FRAMES) { toast('That would be more than ' + GIF_MAX_FRAMES + ' frames.'); return; }
+  doc.frames = [...doc.frames, ...back];
+  commit(); onDocumentShapeChanged();
+  announce('Ping-pong added: ' + doc.frames.length + ' frames');
+}
+/** Back to a still picture: keep the showing frame as an ordinary image layer. */
+async function backToStill() {
+  if (!isAnimated()) return;
+  const ok = await confirmDialog('Back to a still picture?', 'This keeps frame ' + (state.frame + 1) + ' and removes the other ' +
+    (doc.frames.length - 1) + '. You can undo it.', 'Keep this frame');
+  if (!ok) return;
+  stopPlaying();
+  const L = frameLayer();
+  if (L) { delete L.frameLayer; L.name = 'Frame ' + (state.frame + 1); }
+  delete doc.frames; delete doc.loop;
+  state.frameSel = []; state.framePanel = false;
+  commit(); onDocumentShapeChanged();
+  announce('Now a still picture');
+}
+
+/* ---------- Playing ---------- */
+let playTimer = null, playCount = 0;
+function startPlaying() {
+  if (!isAnimated() || doc.frames.length < 2 || playTimer) return;
+  playCount = 0;
+  const btn = $('btnPlay');
+  btn.innerHTML = iconSVG('pause'); btn.setAttribute('aria-label', 'Pause'); btn.title = 'Pause (Shift+Space)';
+  const tick = () => {
+    // Stop if the animation went away, or a dialog opened.
+    if (!isAnimated() || document.querySelector('dialog[open]')) { stopPlaying(); return; }
+    let next = state.frame + 1;
+    if (next >= doc.frames.length) {
+      playCount++;
+      if (doc.loop > 0 && playCount >= doc.loop) { stopPlaying(); return; }   // played as many times as set
+      next = 0;
+    }
+    showFrame(next);
+    playTimer = setTimeout(tick, doc.frames[state.frame].delay);
+  };
+  playTimer = setTimeout(tick, doc.frames[state.frame].delay);
+  announce('Playing');
+}
+function stopPlaying() {
+  if (!playTimer) return;
+  clearTimeout(playTimer); playTimer = null;
+  const btn = $('btnPlay');
+  btn.innerHTML = iconSVG('play'); btn.setAttribute('aria-label', 'Play'); btn.title = 'Play (Shift+Space)';
+  if (isAnimated()) announce('Paused on frame ' + (state.frame + 1));
+}
+const togglePlay = () => (playTimer ? stopPlaying() : startPlaying());
+$('btnPlay').addEventListener('click', togglePlay);
+$('btnFrameDup').addEventListener('click', () => { stopPlaying(); duplicateFrames(); });
+$('btnFrameBlank').addEventListener('click', () => { stopPlaying(); addBlankFrame(); });
+// Clicking the canvas pauses (you cannot edit a frame while it flies past).
+stage.addEventListener('pointerdown', () => { if (playTimer) stopPlaying(); }, true);
+
+/* ---------- The Inspector: frames, and the Animation section ---------- */
+
+/** The panel for the selected frames (shown after picking a frame in the filmstrip). */
+function framePanel(title) {
+  const sel = selectedFrames();
+  const one = sel.length === 1;
+  title.textContent = one ? 'Frame ' + (frameIndex(sel[0].id) + 1) + ' of ' + doc.frames.length : sel.length + ' frames selected';
+  // Duration: a number box (mixed durations show "Mixed" until you type) and quick buttons.
+  const same = sel.every((f) => f.delay === sel[0].delay);
+  const box = el('input', { type: 'number', id: 'frameDelay', min: MIN_DELAY, max: MAX_DELAY, step: 10, value: same ? sel[0].delay : '',
+    placeholder: same ? '' : 'Mixed', 'aria-describedby': 'frameDelayHint' });
+  box.addEventListener('change', () => {
+    if (box.value === '') return;
+    const d = setFrameDelay(sel, box.value);
+    box.value = d;
+    announce('Duration ' + d + ' milliseconds');
+  });
+  propsBody.append(el('div', { class: 'field' }, el('label', { for: 'frameDelay', text: 'Duration (ms)' }), box));
+  const quick = el('div', { class: 'seg seg-fit', role: 'group', 'aria-label': 'Quick durations' });
+  for (const ms of [50, 100, 500, 1000]) {
+    quick.append(el('button', { type: 'button', text: String(ms), 'aria-label': ms + ' milliseconds', 'aria-pressed': String(same && sel[0].delay === ms),
+      onclick: () => { setFrameDelay(sel, ms); renderProps(); $('frameDelay') && announce('Duration ' + ms + ' milliseconds'); } }));
+  }
+  propsBody.append(el('div', { class: 'field' }, el('span', { class: 'label', text: 'Quick' }), quick));
+  propsBody.append(el('p', { class: 'hint', id: 'frameDelayHint', text: 'In steps of 10 ms, at least ' + MIN_DELAY + ' ms: browsers play faster frames slower, not faster.' }));
+  propsBody.append(el('div', { class: 'btn-row', style: 'margin-bottom:10px' },
+    el('button', { type: 'button', class: 'btn', text: 'Apply to all frames',
+      onclick: () => { const d = setFrameDelay(doc.frames, same ? sel[0].delay : (box.value || 100)); renderProps(); announce('Every frame now ' + d + ' milliseconds'); } })));
+  propsBody.append(el('div', { class: 'tool-grid' },
+    labelBtn('duplicate', 'Duplicate', duplicateFrames, 'Duplicate the selected frames (Ctrl+D)'),
+    labelBtn('trash', 'Delete', deleteFrames, 'Delete the selected frames (Delete)'),
+    labelBtn('top', 'Move to start', () => moveFrames('start'), 'Move the selected frames to the start'),
+    labelBtn('bottom', 'Move to end', () => moveFrames('end'), 'Move the selected frames to the end')));
+  propsBody.append(el('div', { class: 'btn-row', style: 'margin-top:8px' },
+    el('button', { type: 'button', class: 'btn', text: 'Export this frame as PNG...', onclick: () => {
+      openExport(); $('expFormat').value = 'image/png'; updateExportInfo(); } })));
+  propsBody.append(el('p', { class: 'hint', style: 'margin-top:8px', text: 'In the filmstrip: arrow keys move between frames, Shift+arrows select several, ' +
+    'Alt+arrows move them, Delete removes them, Ctrl+D duplicates. Drag frames to reorder them. Press Escape or click the canvas to see the canvas settings.' }));
+}
+
+/** The Animation section, at the top of the canvas settings (nothing selected). */
+function animationSection() {
+  const rows = [el('div', { class: 'subhead', text: 'Animation' }),
+    el('p', { class: 'hint', style: 'margin-bottom:8px', text: doc.frames.length + ' frames · ' + secs(totalLength()) }),
+    el('div', { class: 'btn-row', style: 'margin-bottom:8px' },
+      el('button', { type: 'button', class: 'btn', id: 'animPlay', text: playTimer ? 'Pause' : 'Play', onclick: () => { togglePlay(); renderProps(); } }))];
+  // Loop: Forever / Play once / Play [N] times.
+  const loopObj = { mode: doc.loop === 0 ? 'forever' : doc.loop === 1 ? 'once' : 'times' };
+  const seg = el('div', { class: 'seg seg-fit', role: 'group', 'aria-label': 'Loop' });
+  for (const [mode, text, full] of [['forever', 'Forever', 'Loop forever'], ['once', 'Once', 'Play once'], ['times', 'Times', 'Play a number of times']]) {
+    seg.append(el('button', { type: 'button', text, 'aria-label': full, 'aria-pressed': String(loopObj.mode === mode),
+      onclick: () => {
+        doc.loop = mode === 'forever' ? 0 : mode === 'once' ? 1 : (doc.loop >= 2 ? doc.loop : 3);
+        commit(); renderProps();
+        const b = propsBody.querySelector('[aria-label="' + full + '"]'); if (b) b.focus();     // the panel was rebuilt
+      } }));
+  }
+  rows.push(el('div', { class: 'field' }, el('span', { class: 'label', text: 'Loop' }), seg));
+  if (doc.loop >= 2) {
+    const times = el('input', { type: 'number', id: 'animTimes', min: 2, max: 100, step: 1, value: doc.loop });
+    times.addEventListener('change', () => { doc.loop = clamp(Math.round(Number(times.value) || 3), 2, 100); times.value = doc.loop; commit(); });
+    rows.push(el('div', { class: 'field' }, el('label', { for: 'animTimes', text: 'Plays' }), times));
+  }
+  // Speed: a percentage plus Apply.
+  const speed = el('input', { type: 'number', id: 'animSpeed', min: 10, max: 1000, step: 10, value: 100 });
+  rows.push(el('div', { class: 'field' }, el('label', { for: 'animSpeed', text: 'Speed (%)' }),
+    el('div', { style: 'display:flex;gap:6px' }, speed, el('button', { type: 'button', class: 'btn', text: 'Apply', 'aria-label': 'Apply speed',
+      onclick: () => scaleSpeed(speed.value) }))));
+  rows.push(el('p', { class: 'hint', text: '200% plays twice as fast, 50% half as fast.' }));
+  rows.push(el('div', { class: 'tool-grid' },
+    labelBtn('flipH', 'Reverse', reverseFrames, 'Reverse the order of the frames'),
+    labelBtn('duplicate', 'Ping-pong', pingPong, 'Ping-pong: add the frames again backwards, so it plays forward then back'),
+    labelBtn('image', 'Still picture', backToStill, 'Back to a still picture: keep the showing frame, remove the others')));
+  return rows;
+}
+
+/* ---------- Exporting a GIF ---------- */
+
+/** One frame as it will be exported (with the Showcase, when that is on). */
+const frameOutput = (scale) => (doc.showcase && doc.showcase.on ? renderShowcase(scale) : renderDocument(scale, null));
+
+/** Export every frame as an animated GIF (a still picture becomes a one-frame GIF). */
+async function exportGif(scale) {
+  stopPlaying();
+  const keep = state.frame;
+  const list = isAnimated() ? doc.frames : [{ delay: 100 }];
+  const frames = [];
+  let W = 0, H = 0;
+  try {
+    setBusy(true, 'Making GIF...');
+    for (let i = 0; i < list.length; i++) {
+      if (isAnimated()) { state.frame = i; syncFrameLayer(); }
+      const c = frameOutput(scale);
+      W = c.width; H = c.height;
+      frames.push({ rgba: c.getContext('2d').getImageData(0, 0, W, H).data, delay: list[i].delay });
+      if (i % 10 === 9) { setBusy(true, 'Making GIF... drawing frame ' + (i + 1) + ' of ' + list.length); await new Promise((r) => setTimeout(r, 0)); }
+    }
+    if (isAnimated()) { state.frame = keep; syncFrameLayer(); }
+    const bytes = await GifWorker.run('encode', { frames, opts: { width: W, height: H, loop: isAnimated() ? doc.loop : 1 } },
+      (f) => setBusy(true, 'Making GIF... ' + Math.round(f * 100) + '%'));
+    const blob = new Blob([bytes], { type: 'image/gif' });
+    const url = URL.createObjectURL(blob);
+    const a = el('a', { href: url, download: safeFileName($('expName').value, 'gif') });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    exportedSnapshot = history.current;
+    backup.markSafe();
+    toast('Exported ' + a.download + ' (' + (blob.size > 1048576 ? (blob.size / 1048576).toFixed(1) + ' MB' : Math.round(blob.size / 1024) + ' KB') + ', ' + list.length + ' frame' + (list.length === 1 ? '' : 's') + ')');
+  } catch (e) {
+    toast(e.message === 'TIMEOUT' ? 'Making the GIF took too long, so it was stopped. Try a smaller scale.' : 'The GIF could not be made. It may be too large for this browser.', 6000);
+  } finally {
+    if (isAnimated()) { state.frame = keep; syncFrameLayer(); requestRender(); }
+    setBusy(false);
+  }
+}
+
+/**
+ * Keep the Frame picture layer in its place (called by commit()): exactly
+ * one, at the very bottom, never in a group. A copy of it (Duplicate, paste)
+ * becomes an ordinary picture of that frame. A still picture has none.
+ */
+function normalizeFrameLayer() {
+  if (!doc) return;
+  if (!isAnimated()) { doc.layers.forEach((l) => { delete l.frameLayer; }); return; }
+  let first = null;
+  for (const l of doc.layers) {
+    if (!l.frameLayer) continue;
+    if (!first) first = l; else delete l.frameLayer;
+  }
+  if (!first) return;
+  delete first.groupId;
+  if (doc.layers[0] !== first) { doc.layers = [first, ...doc.layers.filter((l) => l !== first)]; }
+}
 /* -----------------------------------------------------------------------
    16. KEYBOARD SHORTCUTS
    Each shortcut can be switched off in the Info panel (for example when a
@@ -8809,6 +9933,10 @@ const SHORTCUTS = [
   { id: 'cut-layers', keys: 'Ctrl+X', label: 'Cut selected layers', allowDefault: true,
     test: (e) => mod(e) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'x' && selectedLayers().length > 0, run: () => copyLayers(true) },
   { id: 'copy-image', keys: 'Ctrl+Shift+C', label: 'Copy image to clipboard', test: (e) => mod(e) && e.shiftKey && e.key.toLowerCase() === 'c', run: copyImage },
+  // Animated GIFs (section 24). Plain Space already means pan, so Play is Shift+Space.
+  { id: 'frame-prev', keys: ',', label: 'Animation: previous frame', test: (e) => !mod(e) && !e.altKey && e.key === ',' && isAnimated(), run: () => { stopPlaying(); showFrame(state.frame - 1, true); } },
+  { id: 'frame-next', keys: '.', label: 'Animation: next frame', test: (e) => !mod(e) && !e.altKey && e.key === '.' && isAnimated(), run: () => { stopPlaying(); showFrame(state.frame + 1, true); } },
+  { id: 'play', keys: 'Shift+Space', label: 'Animation: play or pause', test: (e) => e.key === ' ' && e.shiftKey && !mod(e) && isAnimated(), run: () => togglePlay() },
   { id: 'help', keys: '? or F1', label: 'Help panel (shortcuts, about, changelog, more apps)', test: (e) => e.key === '?' || e.key === 'F1', run: () => openInfo('Features') }
 ];
 const shortcutOn = (id) => !settings.disabledShortcuts.includes(id);
@@ -8841,7 +9969,7 @@ function escapeKey() {
 document.addEventListener('keydown', (e) => {
   if (document.querySelector('dialog[open]')) return;     // dialogs handle their own keys
   if (isTypingTarget(e.target)) return;                    // typing in a field: leave it alone
-  if (e.key === ' ' && (e.target === stage || e.target === document.body)) {
+  if (e.key === ' ' && !e.shiftKey && (e.target === stage || e.target === document.body)) {
     // Hold Space to pan with the mouse.
     e.preventDefault();
     if (!spaceDown) { spaceDown = true; stage.style.cursor = 'grab'; }
@@ -8952,6 +10080,8 @@ $('dlgNew').addEventListener('close', () => {
 
 /* ---- Export dialog ---- */
 ['expFormat', 'expScale', 'expQuality'].forEach((id) => $(id).addEventListener('input', updateExportInfo));
+// The GIF's play count is the animation's own Loop setting (section 24).
+$('expLoop').addEventListener('change', () => { if (isAnimated()) { doc.loop = Number($('expLoop').value); commit(); } });
 $('dlgExport').addEventListener('close', () => { if ($('dlgExport').returnValue === 'ok') doExport(); });
 
 /* ---- Color buttons in the New canvas and Settings dialogs ----
@@ -9054,7 +10184,7 @@ const SUITE_APPS = [
   { id: 'animedtr', name: 'ANIMEDTR', color: '#655800', url: 'https://animedtr.app/',
     blurb: 'Animated, interactive lessons: a stage, a timeline and keyframes, no code.',
     icon: '<circle cx="16" cy="7.5" r="4"/><circle cx="9.5" cy="13" r="2.5"/><circle cx="5" cy="18" r="1.5"/><path d="m16 16 3 3-3 3-3-3z"/>' },
-  { id: 'dskedtr',  name: 'DSKEDTR',  color: '#065f46', url: 'https://dskedtr.app/',
+  { id: 'dskedtr',  name: 'DSKEDTR',  color: '#195d61', url: 'https://dskedtr.app/',
     blurb: 'Desktop publishing: newsletters, flyers and booklets, with text that flows between boxes.',
     icon: '<path d="M2 5h8a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H2z"/><path d="M22 5h-8a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h8z"/>' },
   { id: 'imgedtr',  name: 'IMGEDTR',  color: '#305305', url: 'https://imgedtr.app/',
@@ -9097,7 +10227,7 @@ const SUITE_MARKS = {
   videdtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%230046ad"/%3E%3Crect x="6" y="6" width="52" height="52" rx="11" fill="none" stroke="%239ec5ff" stroke-width="3"/%3E%3Cg fill="%239ec5ff"%3E%3Crect x="11" y="14" width="6" height="6" rx="2"/%3E%3Crect x="11" y="29" width="6" height="6" rx="2"/%3E%3Crect x="11" y="44" width="6" height="6" rx="2"/%3E%3Crect x="47" y="14" width="6" height="6" rx="2"/%3E%3Crect x="47" y="29" width="6" height="6" rx="2"/%3E%3Crect x="47" y="44" width="6" height="6" rx="2"/%3E%3C/g%3E%3Cpath d="M27 21.5 L45 32 L27 42.5 Z" fill="%23ffffff"/%3E%3C/svg%3E',
   scrncstr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23ffffff"/%3E%3Cg transform="translate%283.2 3.2%29 scale%280.8%29"%3E%3Crect x="1.6" y="4.4" width="28.8" height="20" rx="3.2" fill="%23eef3f3" stroke="%2300565d" stroke-width="2.4"/%3E%3Ccircle cx="23.4" cy="19.2" r="5.6" fill="%23f45922" stroke="%23fff" stroke-width="2.2"/%3E%3Cpath d="M11 29.2h10" stroke="%2300565d" stroke-width="2.4" stroke-linecap="round"/%3E%3C/g%3E%3C/svg%3E',
   vctredtr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%235b21b6"/%3E%3Crect x="5" y="12" width="14" height="14" rx="2.5" fill="%23ffffff"/%3E%3Ccircle cx="19.5" cy="12.5" r="7.5" fill="%23ffffff"/%3E%3Cpath d="M12.02 12H19V19.98A7.5 7.5 0 0 1 12.02 12Z" fill="%23f45922"/%3E%3C/svg%3E',
-  dskedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23065f46"/%3E%3Crect x="5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="16.5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="7" y="9" width="6.5" height="6" rx="0.8" fill="%23f45922"/%3E%3Crect x="7" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="7" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="18.5" y="9" width="6.5" height="2.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="18.5" y="14" width="6.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="18.5" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="18.5" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3C/svg%3E',
+  dskedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%2337c6d0"/%3E%3Crect x="5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="16.5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="7" y="9" width="6.5" height="6" rx="0.8" fill="%23f45922"/%3E%3Crect x="7" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="7" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="9" width="6.5" height="2.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="14" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3C/svg%3E',
   '3dedtr' : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%237a4100"/%3E%3Cpath d="M16 5.5 26 11 16 16.5 6 11Z" fill="%23ffffff"/%3E%3Cpath d="M6 11 16 16.5V27.5L6 22Z" fill="%23ffffff" opacity="0.82"/%3E%3Cpath d="M26 11 16 16.5V27.5L26 22Z" fill="%23f45922"/%3E%3C/svg%3E',
   animedtr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23655800"/%3E%3Ccircle cx="7.5" cy="21" r="3" fill="%23fff" opacity=".35"/%3E%3Ccircle cx="12" cy="14" r="3.6" fill="%23fff" opacity=".6"/%3E%3Ccircle cx="19.5" cy="9.5" r="4.6" fill="%23fff"/%3E%3Cpath d="M19.5 22l3.2 3.2-3.2 3.2-3.2-3.2z" fill="%23f45922"/%3E%3C/svg%3E',
 };
@@ -11175,14 +12305,10 @@ window.addEventListener('beforeunload', (e) => {
 const backup = SuiteBackup.session('imgedtr', async () => {
   if (!doc || !doc.layers.length) return null;       // nothing worth keeping yet
   const images = {};
-  for (const L of doc.layers) {
-    if (L.type === 'image' && !images[L.imageId] && imageStore.has(L.imageId)) {
-      images[L.imageId] = await new Promise((res) => imageStore.get(L.imageId).toBlob(res, 'image/png'));
-    }
-  }
+  for (const id of usedImageIds()) images[id] = await new Promise((res) => imageStore.get(id).toBlob(res, 'image/png'));
   const n = doc.layers.length;
   return {
-    detail: doc.width + ' x ' + doc.height + ' canvas, ' + n + ' layer' + (n === 1 ? '' : 's'),
+    detail: doc.width + ' x ' + doc.height + ' canvas, ' + (isAnimated() ? doc.frames.length + ' frames, ' : '') + n + ' layer' + (n === 1 ? '' : 's'),
     data: { doc: JSON.parse(JSON.stringify(doc)), counters: { ...state.counters }, images }
   };
 });
@@ -11198,7 +12324,7 @@ async function restoreBackup(found) {
   try {
     const images = {};
     for (const [id, blob] of Object.entries(rec.data.images || {})) images[id] = await blobToDataUrl(blob);
-    const project = { format: PROJECT_FORMAT, version: PROJECT_VERSION, app: APP_VERSION,
+    const project = { format: PROJECT_FORMAT, version: projectVersionFor(rec.data.doc), app: APP_VERSION,
       saved: new Date(rec.savedAt).toISOString(), doc: rec.data.doc, images, counters: rec.data.counters };
     await openProject(new File([JSON.stringify(project)], 'backup.imgedtr', { type: 'application/json' }));
     exportedSnapshot = null;               // restored work is not saved anywhere yet
@@ -11226,7 +12352,7 @@ async function startUp() {
     hero: APP_HERO,
     heroAlt: APP_HERO_ALT,
     actions: [
-      { icon: 'open', label: 'Open an image', detail: 'PNG, JPEG, WebP, HEIC and more, or an .imgedtr project', run: openPicker, primary: true },
+      { icon: 'open', label: 'Open an image', detail: 'PNG, JPEG, WebP, HEIC, animated GIFs and more, or an .imgedtr project', run: openPicker, primary: true },
       { icon: 'paste', label: 'Paste from clipboard', detail: 'A screenshot you just copied', run: pasteFromButton },
       { icon: 'size', label: 'Blank canvas', detail: 'Pick a size and start drawing', run: openNew },
       { icon: 'headshot', label: 'Make a headshot', detail: 'A round or square profile photo with a see-through background', run: startHeadshot }
