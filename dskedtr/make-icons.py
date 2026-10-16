@@ -11,15 +11,16 @@ and SUITE_MARKS in the shared block, so if you edit one, edit them all.
 (Same idea as VCTREDTR's make-icons.py.) Needs Python 3 with Pillow.
 
 The mark, in a 32 x 32 grid:
-  - an emerald rounded plate (DSKEDTR's family colour, #065f46)
+  - a teal rounded plate (DSKEDTR's family colour, #37c6d0, since 0.46.0)
   - an open two-page spread: two white pages, x 5..15.5 and 16.5..27, y 7..25
   - left page: an orange picture block (#f45922) and two text lines
-  - right page: a headline bar and three text lines, in the plate colour
+  - right page: a headline bar and three text lines, in deep teal (#195d61)
 """
 
 from PIL import Image, ImageDraw
 
-PLATE = (6, 95, 70, 255)        # #065f46
+PLATE = (55, 198, 208, 255)     # #37c6d0, the brand teal
+INK = (25, 93, 97, 255)         # #195d61, deep teal: the text lines (7.6:1 on white)
 WHITE = (255, 255, 255, 255)
 ORANGE = (244, 89, 34, 255)     # #f45922, the family's accent
 
@@ -28,12 +29,12 @@ SHAPES = [
     (5, 7, 10.5, 18, 1.2, WHITE),
     (16.5, 7, 10.5, 18, 1.2, WHITE),
     (7, 9, 6.5, 6, 0.8, ORANGE),
-    (7, 17.2, 6.5, 1.6, 0.8, PLATE),
-    (7, 20.4, 4.5, 1.6, 0.8, PLATE),
-    (18.5, 9, 6.5, 2.6, 0.8, PLATE),
-    (18.5, 14, 6.5, 1.6, 0.8, PLATE),
-    (18.5, 17.2, 6.5, 1.6, 0.8, PLATE),
-    (18.5, 20.4, 4.5, 1.6, 0.8, PLATE),
+    (7, 17.2, 6.5, 1.6, 0.8, INK),
+    (7, 20.4, 4.5, 1.6, 0.8, INK),
+    (18.5, 9, 6.5, 2.6, 0.8, INK),
+    (18.5, 14, 6.5, 1.6, 0.8, INK),
+    (18.5, 17.2, 6.5, 1.6, 0.8, INK),
+    (18.5, 20.4, 4.5, 1.6, 0.8, INK),
 ]
 
 

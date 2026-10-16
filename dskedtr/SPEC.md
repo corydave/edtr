@@ -716,8 +716,8 @@ building blocks, the starter template gallery (all done by 0.21.0, below).
   decoration, master objects and N-up copies after the first are
   /Artifact. Tested with pdfinfo -struct-text and a content-stream audit
   (no painting operator outside marked content, MCIDs match the
-  ParentTree). Not yet: lists (L/LI), XMP metadata with a PDF/UA
-  identifier, a check against veraPDF.
+  ParentTree). Lists (L/LI) came in 0.37.0; XMP with the PDF/UA
+  identifier and the PDF/UA-1 audit in 0.45.0 (section "PDF/UA").
 - **Crop to shape and master picture placeholders (0.23.0, done).**
   `cropToShape` (section 10c, beside Merge Shapes): one picture plus one
   or more closed shapes on its page (`cropToShapeParts`; rect, ellipse,
@@ -1248,6 +1248,124 @@ into the first box's overflow, the next boxes emptied (as before).
   bigger, with a matching reach. On pointerdown, when a handle and a port
   are both in reach, the nearer one wins; on narrow boxes the diagonal
   ports sit 26 px out on touch (18).
+
+## Teal (0.46.0)
+
+Dave, 2026-10-16: DSKEDTR's colour becomes `#37c6d0`. Decided with him:
+deep teal with white for filled controls (the suite's 7:1 rule), the
+sample newsletter stays green, and DSKEDTR's entries change everywhere.
+
+- **Tokens:** `--brand #37c6d0` (new: the mark, soft highlights, never
+  under text), `--accent` and `--accent-text #195d61` (light), dark mode
+  `--accent #195d61` with `--accent-text #37c6d0`; `--suite-accent
+  #195d61`; `--sel-on` rgba(55, 198, 208, 0.38); theme-color `#37c6d0`.
+- **On the page** (editing marks, not the document): every `#065f46` is
+  `#195d61`, every `#10b981` is `#37c6d0`, rgba(16,185,129,a) is
+  rgba(55,198,208,a), the focused text selection `#a8e4e9`.
+- **Kept green on purpose:** the sample newsletter's objects and art, the
+  Lakeside scheme, new tables' header fill (`#d1fae5`, Lakeside's pale:
+  `setScheme` recolours it with the scheme, which a teal default would
+  break).
+- **Mark:** plate `#37c6d0`, text lines `#195d61`, white pages, orange
+  block, in icon.svg, make-icons.py (PLATE, INK), the top bar and
+  `SUITE_MARKS`. The suite list's `color` is `#195d61` (white icon on it).
+  The splash hero (`APP_HERO`, 1120 x 630 WebP) was redrawn: the new mark
+  on a deep teal plate beside the app.
+- **Elsewhere** (2026-10-16): every app's copy of the block, the master
+  `_edtr-suite/suite-block.js`, the feature-tour sources, edtrapps-site
+  (colours, its family logo square, `icons/dskedtr.png`) and apps-landing
+  (colours, `og-image.jpg` patched). The screenshots on the two sites
+  still show 0.45's green editing marks.
+
+## PDF/UA (0.45.0)
+
+Decided with Dave 2026-10-15: finish the tagged PDF so it can claim
+PDF/UA-1 (ISO 14289-1).
+
+- **XMP** (`pdfXmp`): an uncompressed `/Metadata` stream (Type Metadata,
+  Subtype XML, UTF-8) with dc:format, dc:title (x-default), dc:language,
+  xmp:CreatorTool / CreateDate / ModifyDate / MetadataDate (`xmpDate`,
+  local time with offset), pdf:Producer, pdfuaid:part 1. Text goes through
+  `xmlEscape`. `exportPDF` uses one `Date` for the Info dates and the XMP.
+- **Headings:** `tagFor(role)` in `pdfTagTree`: a heading's level is at
+  most one deeper than the deepest so far (`deepestHeading`), so the first
+  is H1 and none is skipped (7.4.2). The roles themselves are unchanged.
+- **Nested lists:** the inner L goes in the item's LBody (`top.body`),
+  keyed 1e12 + order so it sorts after the item's words (whose keys are
+  line positions). An LI holds only Lbl and LBody (7.2-20).
+- **Links outside the read words** (7.18.1, 7.18.5): `linkTags` in
+  `pdfPageContent`. Master text: `looseLink(pi, ...)`, a Link element
+  under the Document with /Alt = the link's words and an OBJR, keyed just
+  after page pi's elements (`pageEnd`). Copies of a page (N-up): the
+  annotation joins the original Link element (`kit.allTags`).
+- **.notdef** (7.21.8): in `pdfText`, a glyph with index 0 (`notdef`) is
+  drawn like a letter of a font that can't be embedded: its outline as a
+  shape, in a Span whose ActualText is the letter (the whole of a
+  surrogate pair: the run's end is widened by one when it ends on a high
+  surrogate).
+- **Checking.** veraPDF (the reference checker, Java) could not be
+  downloaded in the build sandbox, so the rules it applies that matter
+  here are re-implemented with pikepdf and fontTools (scratchpad
+  `pdfua/audit.py` and `pdfua/fontaudit.py`): XMP (5-1, 7.1-8), Display
+  DocTitle, Lang, MarkInfo, standard tags, Figure Alt, L/LI/Lbl/LBody and
+  table nesting, Link OBJR, heading order, Tabs /S with annotations,
+  annotation Contents and StructParent, marked content (no paint outside
+  it, no Artifact inside tagged content or the reverse), fonts embedded,
+  CIDToGIDMap, ToUnicode for every code used, widths matching the font
+  (within 1/1000 em), no CID 0. Test t68; the other forty-odd PDFs the
+  tests export are audited too. A third-party checker (pdfua 0.1.3 on
+  PyPI) agrees, but covers only 16 of 106 rules.
+- **To run veraPDF** (on a computer with Java): download it from
+  verapdf.org, then `verapdf --flavour ua1 file.pdf` (or open the GUI
+  and pick "PDF/UA-1"). Worth doing once on the sample before saying
+  "PDF/UA" in public.
+- Not machine-checkable, so still up to the person (the Accessibility
+  tab helps): meaningful alt text, a sensible reading order, real
+  headings rather than big bold paragraphs, a title.
+
+## Touch pass (0.44.0)
+
+Decided with Dave 2026-10-15 (after the number panel and touch handles):
+everything that needs Shift, Ctrl or a mouse should have a finger way.
+
+- **Pick several (objects).** `pickMore` flag. A touch pointerdown on a
+  picked object sets `drag.press` (timer `LONG_PRESS_MS` 500); moving more
+  than 8 px, lifting, or a second finger (`cancelPointerWork`) stops it.
+  `longPressPick(d)` drops the move drag and toggles the object's unit
+  (its group, unless Ctrl) against what was picked before the press
+  (`press.before`), sets `pickMore`, buzzes (`navigator.vibrate`, where
+  there is one) and shows a top toast. While `pickMore`: a tap adds (now)
+  or takes out (on lift without a drag, `drag.unpickUnit`), the marquee
+  keeps what is picked, a tap on the empty page or the grey picks nothing.
+  `selectObjects([])` ends it. The quick bar's `pickMore` button (touch
+  only, `aria-pressed`) toggles it (`setPickMore`). A finger's move drag
+  needs 6 px (not 2) before it starts, so a hold doesn't nudge. The
+  browser's callout and the spelling menu are held back after a hold.
+- **A picked group's member:** on touch, a tap (no drag, not a double
+  tap) on a member of the picked group sets `drag.narrowTo`.
+- **Pages:** the filmstrip's pointerdown (touch) starts a hold; when it
+  fires, `pagesPickMore` is set and the page toggles as Ctrl+click does
+  (the click that ends the hold is swallowed; any new pointerdown clears
+  that). While `pagesPickMore`, a click acts as Ctrl+click. `setPagePill
+  (false)` ends it. Thumbnails are not `draggable` on a touch screen.
+- **No Shift:** on touch, rotation settles on a 15 degree step within 4
+  degrees; a picture's corner keeps its shape (`keepShape`).
+- **Tab stops on the ruler.** `rulerTabs()`: while typing in an upright,
+  uncurved box on the page showing, the column of the cursor's line
+  (`columnLimits(f, ln.col)`) and `styleOf(role).tabs` for the role in
+  `#styleBox`. `drawRuler(..., tabs)` draws the column as a band and each
+  stop (`at` from the column's left; the right-edge stop faint). On the
+  top ruler's pointerdown, a stop within reach (6 px, 14 by finger) starts
+  `tabDrag` (moves settle by `tabStep`: 1/16 in, 1 mm, 0.1 cm or 1 pt;
+  more than 28 px below the ruler marks it for removal); a press over the
+  column remembers `tabAt`, and if it is let go on the ruler (the guide it
+  started is "off"), `addTabFromRuler` adds a left stop. Dragging onto the
+  page makes a guide as before (guides only turn on then).
+- **Toasts at the top:** `toast(msg, ms, 'top')` uses `#toastsTop`, placed
+  just inside the desk, so picking hints never cover the filmstrip.
+- **Quick bar placement:** with no room above or below, the place down
+  the desk covering least of the handle rows and ports (the turn handle
+  weighted three times) instead of the top of the desk.
 
 ## Number fields on touch (0.43.0)
 

@@ -1,5 +1,34 @@
 # DSKEDTR changelog
 
+## 0.46.0 - 2026-10-16
+
+- **DSKEDTR is teal.** The icon is now a teal plate (`#37c6d0`) with the two white pages; their text lines are deep teal. The splash picture, the top bar's mark, the app icons (home screen, browser tab, install) and the browser's toolbar colour follow.
+- **Teal, readable everywhere.** `#37c6d0` is too light for white text (2.1:1) or for marks on the white page, so buttons, pressed tools, the wordmark, links, and the handles, outlines and link ports drawn on the page use a deep teal of the same hue, `#195d61` (7.6:1 with white, and on white). Soft highlights (text being selected, a drop target, a cell being typed in) use the bright teal. In dark mode, teal text is `#37c6d0` itself (8.4:1 on the panels).
+- **The sample newsletter keeps its green.** It is a school's document, not DSKEDTR's colour; the Lakeside colour scheme (and new tables' pale header row, which follows the colour scheme) are unchanged.
+- **The other apps** show DSKEDTR's new tile in More apps and on their splash screens, and edtrapps.app and the apps page show the new colour and icon. Only DSKEDTR's entries changed in them.
+
+## 0.45.0 - 2026-10-15
+
+The PDF follows PDF/UA, the standard for accessible PDFs, and says so.
+
+- **The PDF/UA claim, and XMP metadata.** Every PDF now carries an XMP packet (the small piece of XML that checkers read) with its title, language, dates, the program, and `pdfuaid:part 1`: "this file follows PDF/UA-1". The dates in it and in the document information are the same moment.
+- **Headings never skip a level.** PDF/UA wants the first heading read to be an H1, and no H2 before an H1. A Subheading read before any Heading (a sidebar first in the reading order, or a page with no Heading) is now tagged H1. The page looks the same.
+- **A list inside a list** is tagged inside the words of the item above it (its LBody), not beside them, as PDF/UA asks.
+- **Links that were left out of the structure:** a link in a master page's words (a web address in the footer) gets a Link element of its own, described by its words and read at the end of its page; on two or four copies of a page to a sheet, every copy's link joins the first copy's Link element.
+- **Letters no font has (an emoji, another alphabet)** are no longer the font's "missing letter" glyph as text (PDF/UA forbids it): they are drawn as the same box, as a shape, with the real letter as its ActualText, so they are still read and found. Fixed on the way: such a letter's ActualText held only half of an emoji.
+- Checked with the PDF/UA-1 rules veraPDF uses for structure, marked content, annotations, metadata and fonts (every font embedded, widths matching the font, every letter mapped to Unicode, no missing-letter glyph), across forty test PDFs: the sample, booklets, two and four to a sheet, tables, lists, links, curves, drop caps, masters and placeholders. veraPDF itself couldn't be run here; see the SPEC for how to run it.
+
+## 0.44.0 - 2026-10-15
+
+A touch pass: the things that needed Shift, Ctrl or a mouse now work with a finger.
+
+- **Pick several with a finger.** Press and hold something on the page for half a second to add it to what is picked (or take it out). From then on a tap adds or takes out, as Shift+click does, a drag on a picked one moves them all, and a drag on the empty page adds what the rectangle touches. The quick-action pill shows a pressed **Pick several** button the whole time (tap it to stop, or tap the empty page). The button also works on its own, without a hold. A message at the top of the page says what happened.
+- **Just one thing in a group.** On a touch screen, tap a picked group again (a second tap, not a double tap) to pick just the one you tapped, as Ctrl+click does with a mouse.
+- **Pick several pages.** Hold a page in the filmstrip to add it to the pick; then taps add or take out pages until the page's pill closes. (On a touch screen pages are moved with the pill's arrows, or by holding and dragging in All pages.)
+- **No Shift on a phone, so:** turning something with a finger settles on 15 degree steps when it comes close to one, and a picture's corner handles keep its shape (its side handles still stretch it).
+- **Tab stops on the ruler.** While typing, the top ruler shows the paragraph style's tab stops (left, centre and right marks, as word processors draw them) over the column the cursor is in. Drag one along to move it, drag it down off the ruler to remove it, or click or tap the ruler to add one. With a mouse too. Each change is one undo step; the Inspector's Tab stops list is the keyboard way.
+- **Fixed: the turn handle could be hidden on a phone.** When a box was too tall for the pill to sit above or below it, the pill went to the top of the page area, right over the turn handle, so a tall box couldn't be turned with a finger. The pill now takes the place that covers the fewest handles and link ports.
+
 ## 0.43.2 - 2026-10-12
 
 - The shared SUITE block was pasted in again: the other apps now share DSKEDTR's touch handles and number slider (as `SUITE_TOUCH` and `suiteNumberPop()`). DSKEDTR keeps its own versions of both.
