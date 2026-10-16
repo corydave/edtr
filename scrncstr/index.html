@@ -1174,6 +1174,93 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   .hotspot[aria-pressed="true"] { background: var(--orange); border-color: #fff; }
   @media (prefers-reduced-motion: reduce) { .hotspot { transition: none; } }
 
+  /* --- drawing on the screen (annotations) -------------------------------
+     #inkWet is a see-through canvas laid over the preview. It is NOT what gets
+     recorded - the compositor draws the ink into the real frame. This layer
+     only shows the line you are drawing right now, the instant you draw it,
+     because the preview video runs a few frames behind the canvas.
+     It ignores the mouse until a drawing tool is picked, so the bubble, its
+     resize grip and the hot spots work exactly as before. */
+  #inkWet {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    z-index: 4;                 /* above the hot spots (3) while drawing */
+    pointer-events: none;
+    touch-action: none;         /* a finger draws instead of scrolling the page */
+  }
+  #stage.inking #inkWet { pointer-events: auto; cursor: crosshair; }
+  /* The erasers draw their own ring as a cursor, so hide the arrow. */
+  #stage.inking[data-tool^="erase"] #inkWet { cursor: none; }
+
+  /* The Draw row has more buttons than the others, so it may wrap on a phone
+     rather than push the page sideways. */
+  .ink-cluster { flex-wrap: wrap; position: relative; }
+
+  /* A colour swatch: an ordinary icon button with a blob of colour in it.
+     Selected uses the same teal "on" fill as every other toggle in the app
+     (#liveControls button[aria-pressed="true"]); the blob has its own thin
+     outline, so even a teal or white colour stays visible on it. */
+  .ink-swatch .swatch-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--swatch);
+    /* --ink-soft rather than black, so a black pen still shows in dark mode
+       and a white one in light mode. */
+    box-shadow: 0 0 0 1px var(--ink-soft);
+  }
+  .ink-swatch .swatch-bar {
+    width: 22px; height: 11px; border-radius: 3px;
+    background: var(--swatch); opacity: .8;
+    transform: rotate(-12deg);   /* reads as a highlighter stroke, not a dot */
+    box-shadow: 0 0 0 1px var(--ink-soft);
+  }
+  /* The colour picker is opened from code; it never needs to be seen itself. */
+  #inkColorInput {
+    position: absolute; right: 0; bottom: 0;   /* the picker opens by the pipette */
+    width: 1px; height: 1px; opacity: 0;
+    pointer-events: none; border: 0; padding: 0;
+  }
+  /* --- saved pages ------------------------------------------------------- */
+  .pages-cluster { flex-wrap: wrap; max-width: 100%; }
+  .page-strip {
+    display: flex; gap: 6px; list-style: none; margin: 0; padding: 0;
+    overflow-x: auto; max-width: min(560px, 100%);   /* scrolls, never widens the page */
+  }
+  .page-strip li { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .page-thumb {
+    position: relative; padding: 0; width: 96px; aspect-ratio: 16 / 9;
+    border: 2px solid var(--line); border-radius: 6px; overflow: hidden;
+    background: #000; cursor: pointer;
+  }
+  .page-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .page-thumb:hover, .page-thumb:focus-visible { border-color: var(--blue); }
+  .page-thumb .page-num {
+    position: absolute; left: 3px; top: 3px; padding: 1px 5px; border-radius: 4px;
+    font: 700 11px/1.3 system-ui, sans-serif; background: rgba(0,0,0,.65); color: #fff;
+  }
+  .page-del {
+    border: 0; background: transparent; color: var(--ink-soft); cursor: pointer;
+    font: 600 12px/1 system-ui, sans-serif; padding: 4px 6px; border-radius: 4px;
+    min-height: 24px;
+  }
+  .page-del:hover, .page-del:focus-visible { color: var(--ink); text-decoration: underline; }
+  /* Dark text on the orange: white on #f45922 is only about 3:1. */
+  .page-del.confirming { color: #0b1220; background: var(--orange); text-decoration: none; }
+  .page-export { display: flex; flex-direction: column; gap: 6px; }
+  .page-export-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  /* Inside a cluster, buttons lose their frame - these are text buttons that
+     start a download, so they keep theirs, or they read as plain labels. */
+  .ctl-cluster .page-export-btns .ibtn { border-color: var(--line); background: var(--bg); }
+  /* Must out-rank the global "button:hover:not(:disabled)", which paints a
+     dark teal fill - with .ibtn's teal hover text on top it went unreadable. */
+  .page-export-btns .ibtn:hover:not(:disabled) {
+    background: var(--bg); border-color: var(--blue); color: var(--blue);
+  }
+  .page-status { margin: 0; font-size: 12.5px; color: var(--ink-soft); min-height: 1em; }
+  .page-opt { font-size: 13px; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
+  .ibtn:disabled { opacity: .4; cursor: default; }
+  .ibtn:disabled:hover { border-color: transparent; color: var(--ink); background: transparent; }
+
   .rec-bar {
     display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
     padding: 15px 18px;
@@ -1664,6 +1751,10 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
                to sit on the bubble's edge. -->
           <div id="bubbleResize" role="slider" tabindex="0"
                aria-label="Webcam size" aria-valuemin="8" aria-valuemax="45" aria-valuenow="22"></div>
+          <!-- Drawing layer. Shows only the stroke in progress (instantly);
+               the compositor draws every stroke into the recording itself.
+               See "DRAWING ON THE SCREEN" in the script. -->
+          <canvas id="inkWet" aria-hidden="true"></canvas>
         </div>
 
         <!-- Live shape control. Works identically before and during recording,
@@ -1818,11 +1909,117 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
             </div>
           </div>
 
+          <!-- Row 3: drawing on the screen. Composite only, like the rows
+               above, because the ink is drawn into the canvas we record.
+               Left of the first rule: how the pointer behaves (stop drawing,
+               the two erasers, clear) - four slots, so this rule lines up
+               with the camera and effects rows. Then undo/redo, then the five
+               pen colours, then the four highlighters and the colour picker.
+               The swatches are built by buildInkSwatches(), because their
+               colours are yours to change and are remembered. -->
+          <div class="ctl-row">
+            <!-- lucide: pen-line -->
+            <span class="ctl-lead" title="Draw on the screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg></span>
+            <div class="ctl-cluster ink-cluster" role="group" aria-label="Draw on the screen">
+              <div class="ctl-side">
+              <!-- lucide: mouse-pointer-2 -->
+              <button type="button" class="ibtn square" id="inkOffBtn" aria-pressed="true"
+                      title="Not drawing - the mouse moves your webcam (Esc)"
+                      aria-label="Stop drawing">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg></button>
+
+              <!-- A squiggle with a cross: wipes out a whole line at once -->
+              <button type="button" class="ibtn square" id="inkEraseStrokeBtn" aria-pressed="false"
+                      title="Erases a whole line - click or drag across it (Shift+E)"
+                      aria-label="Erase whole lines">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 14c3-8 6 4 10-4"/><path d="m13 13 8 8"/><path d="m21 13-8 8"/></svg></button>
+
+              <!-- lucide: eraser - rubs out only what you drag over -->
+              <button type="button" class="ibtn square" id="inkEraseAreaBtn" aria-pressed="false"
+                      title="Rubs out only what you drag over (e)"
+                      aria-label="Rub out by dragging">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg></button>
+
+              <!-- lucide: trash-2 -->
+              <button type="button" class="ibtn square" id="inkClearBtn"
+                      title="Clears all the drawing - undo brings it back (x)"
+                      aria-label="Clear all the drawing">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+              </div>
+
+              <span class="ctl-sep"></span>
+
+              <!-- lucide: book-plus. "Clear, but keep it": the drawing (and the
+                   screen behind it) becomes a saved page, then the screen is
+                   cleared for the next slide. See "SAVED PAGES" in the script. -->
+              <button type="button" class="ibtn square" id="inkSaveBtn" disabled
+                      title="Saves this drawing as a page, then clears the screen (n)"
+                      aria-label="Save the drawing as a page and clear the screen">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v6"/><path d="M15 10H9"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg></button>
+
+              <!-- lucide: undo-2 / redo-2 -->
+              <button type="button" class="ibtn square" id="inkUndoBtn" disabled
+                      title="Undo the last drawing change (Ctrl+Z)" aria-label="Undo drawing">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg></button>
+              <button type="button" class="ibtn square" id="inkRedoBtn" disabled
+                      title="Redo (Ctrl+R)" aria-label="Redo drawing">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg></button>
+
+              <span class="ctl-sep"></span>
+
+              <!-- Five pen colours, filled in by buildInkSwatches() -->
+              <div class="ctl-side trailing" id="inkPens" role="group" aria-label="Pen colours"></div>
+
+              <span class="ctl-sep"></span>
+
+              <!-- Four highlighters, filled in by buildInkSwatches() -->
+              <div class="ctl-side trailing" id="inkHighlighters" role="group" aria-label="Highlighter colours"></div>
+
+              <!-- lucide: pipette - changes the colour of the selected swatch -->
+              <button type="button" class="ibtn square" id="inkPickBtn"
+                      title="Change the selected colour to any colour you like (or right-click a swatch)"
+                      aria-label="Change the selected colour">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg></button>
+              <!-- The browser's own colour picker, opened by the button above.
+                   Changing a colour changes the swatch for next time; lines
+                   you already drew keep the colour they were drawn in. -->
+              <input type="color" id="inkColorInput" tabindex="-1" aria-hidden="true">
+            </div>
+          </div>
+
+          <!-- Row 4: your saved pages. Hidden until you save one. Each
+               thumbnail is a button: click it to put that drawing back on
+               screen. The x under it deletes the page (click twice - there is
+               no undo for that, so the first click only asks). -->
+          <div class="ctl-row" id="pagesRow" hidden>
+            <!-- lucide: files -->
+            <span class="ctl-lead" title="Saved pages"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8"/></svg></span>
+            <div class="ctl-cluster pages-cluster" role="group" aria-labelledby="pagesHeading">
+              <h3 id="pagesHeading" class="sr-only">Saved pages</h3>
+              <ol class="page-strip" id="pageStrip"></ol>
+              <span class="ctl-sep"></span>
+              <div class="page-export" data-export>
+                <label class="page-opt" title="On: each page shows the screen with your drawing on it. Off: just the drawing.">
+                  <input type="checkbox" data-export-screen checked> Include the screen
+                </label>
+                <div class="page-export-btns">
+                  <button type="button" class="ibtn" data-export-pdf
+                          title="Downloads every saved page as one PDF, a page each"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>PDF</button>
+                  <button type="button" class="ibtn" data-export-zip
+                          title="Downloads every saved page as a PNG image, together in one ZIP file"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>PNGs (ZIP)</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <p class="hint" hidden>Drag the bubble to move it. Drag the blue handle to resize.
             Keyboard: <kbd>1</kbd>-<kbd>6</kbd> hot spots (these also drop you out of
             full-frame), <kbd>0</kbd> full-frame webcam, <kbd>c</kbd> confetti,
             <kbd>l</kbd> countdown, <kbd>f</kbd> fireworks, <kbd>h</kbd> hearts, <kbd>b</kbd> blank,
-            <kbd>k</kbd> webcam out of the recording, <kbd>r</kbd> reset position.</p>
+            <kbd>k</kbd> webcam out of the recording, <kbd>r</kbd> reset position,
+            <kbd>p</kbd> pen, <kbd>i</kbd> highlighter, <kbd>e</kbd> eraser, <kbd>x</kbd> clear drawing,
+            <kbd>n</kbd> save drawing as a page,
+            <kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>R</kbd> undo / redo drawing.</p>
       </div>
     </div>
 
@@ -1966,6 +2163,23 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   <section id="stageDone" class="panel" hidden>
     <h2 style="color:var(--green)">Recording saved</h2>
     <ul class="files" id="fileList"></ul>
+    <!-- Your saved drawing pages, offered again here: they outlive the take
+         (they are kept until you close the tab), so the last chance to grab
+         them should not be hidden on a screen you have already left. -->
+    <div id="donePages" class="done-pages" hidden>
+      <h3 style="margin:16px 0 6px">Saved drawing pages: <span id="donePagesCount">0</span></h3>
+      <p style="margin:0 0 8px;font-size:14px;color:var(--ink-soft)">Kept until you close
+        this tab - they carry over to your next recording, too.</p>
+      <div class="page-export" data-export>
+        <label class="page-opt">
+          <input type="checkbox" data-export-screen checked> Include the screen
+        </label>
+        <div class="page-export-btns">
+          <button type="button" class="ibtn" data-export-pdf><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>Download PDF</button>
+          <button type="button" class="ibtn" data-export-zip><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>Download PNGs (ZIP)</button>
+        </div>
+      </div>
+    </div>
     <div class="btn-row" style="margin-top:16px">
       <button type="button" id="again">Record another</button>
     </div>
@@ -2036,6 +2250,36 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
         <dd>Blank the screen - hides your screen from the recording without
             stopping it. Your face, watermark and timer stay visible.</dd>
       </dl>
+
+      <h3>Drawing on the screen</h3>
+      <dl class="keys">
+        <dt><kbd>p</kbd></dt>
+        <dd>Pick up the pen. Press it again for the next of your five colours.</dd>
+        <dt><kbd>i</kbd></dt>
+        <dd>Pick up the highlighter. Press it again for the next of your four colours.</dd>
+        <dt><kbd>e</kbd></dt>
+        <dd>Eraser: rub out whatever you drag over.</dd>
+        <dt><kbd>Shift</kbd>+<kbd>E</kbd></dt>
+        <dd>Eraser for whole lines: click or drag across a line to remove all of it.</dd>
+        <dt><kbd>x</kbd></dt>
+        <dd>Clear all the drawing. Undo brings it back.</dd>
+        <dt><kbd>n</kbd></dt>
+        <dd>Save the drawing as a page, then clear the screen for the next slide.
+            Saved pages download as a PDF or as PNG images.</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>Z</kbd></dt>
+        <dd>Undo a drawing change (<kbd>Cmd</kbd>+<kbd>Z</kbd> works too).</dd>
+        <dt><kbd>Ctrl</kbd>+<kbd>R</kbd></dt>
+        <dd>Redo (so do <kbd>Ctrl</kbd>+<kbd>Y</kbd> and <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>).
+            On these screens it does not reload the page.</dd>
+        <dt><kbd>Esc</kbd></dt>
+        <dd>Put the tool down, so the mouse moves your webcam again.</dd>
+      </dl>
+      <p class="keys-scope">Right-click a colour (or long-press it on a touch
+        screen) to change it to any colour you like - it is remembered for next
+        time. The drawing goes over your screen and under your face, and over
+        Blank screen too, so Blank doubles as a whiteboard. Whatever is still
+        drawn when a recording stops is saved as a page for you. Saved pages
+        stay until you close the tab - they are never stored or uploaded.</p>
 
       <h3>Anywhere</h3>
       <dl class="keys">
@@ -2243,7 +2487,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 
 /* Bump this on every upload. It is shown in About, and if a service worker is
    ever added it is what rotates the cache - the same ritual as TXTEDTR. */
-const APP_VERSION = '1.22.2';
+const APP_VERSION = '1.24.0';
 
 /* Short changelog for the help panel's Changelog tab, newest first. The long
    form is CHANGELOG.md beside this file - a new release goes in both. Releases
@@ -2301,6 +2545,16 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.24.0', date: '2026-10-16', notes: [
+    'Save page (n): keeps your drawing - with a snapshot of the screen behind it - as a page, then clears the screen for the next slide. Ctrl+Z puts the drawing back on screen; the page stays saved.',
+    'Saved pages appear as thumbnails under the Draw row: click one to put its drawing back on screen, or delete it (click twice). Download them all as one PDF or as a ZIP of PNG images, with or without the screen behind the drawing.',
+    'A drawing still on screen when you stop recording is saved as a page instead of being cleared, and the Done screen offers the downloads too. Pages are kept in memory until you close the tab - never stored, never uploaded.'
+  ] },
+  { version: '1.23.0', date: '2026-10-16', notes: [
+    'Draw on the screen while you record (Combined, composited in): a new Draw row with five pens, four highlighters, an eraser that rubs out what you drag over, one that removes whole lines, Clear, and Undo / Redo (Ctrl+Z / Ctrl+R).',
+    'Every colour is yours to change: right-click a swatch (or use the pipette) and pick any colour. Your colours are remembered.',
+    'The drawing sits over your screen and under your face, logo and timer - and over Blank screen, so Blank doubles as a whiteboard. Keys: p pen, i highlighter, e eraser, Shift+E whole-line eraser, x clear, Esc to stop drawing.'
+  ] },
   { version: '1.22.2', date: '2026-10-12', notes: [
     'On a phone or tablet a finger catches the bubble\'s resize grip from about 22 px away (the suite\'s touch standard).',
     'The shared SUITE block was pasted in again (new: the touch standard, SUITE_TOUCH and suiteNumberPop).'
@@ -2412,7 +2666,24 @@ const state = {
   cfg:          null,      // frozen copy of the settings at arrange time
   // Webcam bubble geometry, stored as fractions of the stage so it maps onto
   // the composite canvas at whatever resolution the screen happens to be.
-  bubble: { x: 0.80, y: 0.76, size: 0.22, shape: 'circle' }
+  bubble: { x: 0.80, y: 0.76, size: 0.22, shape: 'circle' },
+  // Drawing on the screen. Everything in here is explained in the
+  // "DRAWING ON THE SCREEN" section further down.
+  ink: {
+    tool:     null,        // null (not drawing), 'pen', 'hl', 'erase-stroke', 'erase-area'
+    pens:     null,        // your five pen colours (filled from INK_DEFAULT_PENS)
+    hls:      null,        // your four highlighter colours
+    penIndex: 0,           // which pen colour is selected
+    hlIndex:  0,           // which highlighter colour is selected
+    strokes:  [],          // every finished line, oldest first, in frame fractions
+    active:   null,        // the line being drawn right now, or null
+    undo:     [],          // earlier versions of `strokes`, newest last
+    redo:     [],          // versions you undid, so Redo can bring them back
+    baseDirty: true        // the cached picture of `strokes` needs redrawing
+  },
+  // Saved drawing pages (see "SAVED PAGES"). Memory only - never stored.
+  pages:           [],
+  pagesWithScreen: true    // downloads include the screen behind the drawing
 };
 
 /* ============================================================================
@@ -2669,6 +2940,8 @@ function saveSettings() {
       showTimer: state.showTimer,
       logo: state.logo,
       spotlight: state.spotlight,
+      // Only your favourite colours are remembered - never the drawing itself.
+      ink:      { pens: state.ink.pens, hls: state.ink.hls },
       monitor:  document.querySelector('input[name="monitor"]:checked').value,
       shape:    state.bubble.shape,
       size:     state.bubble.size,
@@ -2731,6 +3004,14 @@ function loadSettings() {
     if (corner) corner.checked = true;
     $('logoSize').value    = Math.round(state.logo.size * 100);
     $('logoOpacity').value = Math.round(state.logo.opacity * 100);
+  }
+
+  // Favourite drawing colours. Each one is checked before it is trusted: a
+  // saved value that is not a plain "#rrggbb" falls back to the default, so a
+  // damaged settings blob can never inject anything odd into a style.
+  if (saved.ink && typeof saved.ink === 'object') {
+    state.ink.pens = cleanInkColours(saved.ink.pens, INK_DEFAULT_PENS);
+    state.ink.hls  = cleanInkColours(saved.ink.hls,  INK_DEFAULT_HLS);
   }
 
   if (Array.isArray(saved.open)) {
@@ -4460,6 +4741,1128 @@ function paintOverlayButtons() {
 }
 
 /* ============================================================================
+   DRAWING ON THE SCREEN (annotations)                                 v1.23.0
+   ----------------------------------------------------------------------------
+   Composite mode only. The ink is drawn INTO the canvas we record, so the
+   other modes - which record the raw screen capture - have nowhere to put it.
+   Same rule as confetti, Blank screen and the rest of the overlay controls.
+
+   How the pieces fit together:
+
+   - A LINE (a "stroke") is a plain object: { tool, color, w, pts }
+       tool   'pen', 'hl' (highlighter) or 'erase' (a rubbed-out path)
+       color  '#rrggbb'
+       w      line width, as a fraction of the frame's WIDTH
+       pts    [x0, y0, x1, y1, ...] as fractions (0-1) of the frame
+     Fractions, exactly like the webcam bubble, so a line lands in the same
+     place whatever the capture resolution or the size of the preview.
+
+   - state.ink.strokes holds every finished line, oldest first.
+
+   - The compositor calls drawInk() on every frame (30 a second). Redrawing
+     every line that often would be wasteful, so finished lines are painted
+     once onto an off-screen canvas (the "base") and that single picture is
+     stamped onto each frame. The base is repainted only when the lines change
+     (state.ink.baseDirty).
+
+   - Rubbing out by dragging is itself a line, drawn with 'destination-out',
+     which punches a see-through hole. That only works on a layer of its own -
+     on the main canvas it would punch through your screen recording too - so
+     that is the second reason the ink lives on its own off-screen canvas.
+
+   - Undo and redo keep whole copies of the strokes LIST. Lines are never
+     edited after they are finished, so the copies share them and stay cheap.
+     Undo swaps the current list for the one before it; redo swaps it back.
+     Every change goes through inkCommit(), so nothing can skip the history.
+
+   - #inkWet, laid over the preview, shows the line you are drawing the
+     instant you draw it. The preview video runs a few frames behind the
+     canvas, and drawing against a line that trails your pen feels awful.
+     It is never recorded.
+   ============================================================================ */
+
+// Your five pens and four highlighters to start with. Each swatch can be
+// changed to any colour (right-click it, or use the pipette button), and the
+// changes are remembered in localStorage with the rest of the settings.
+const INK_DEFAULT_PENS = ['#e11d48', '#2563eb', '#16a34a', '#111111', '#ffffff'];
+const INK_DEFAULT_HLS  = ['#facc15', '#4ade80', '#f472b6', '#38bdf8'];
+
+// Friendly names for the tooltips and the screen reader. A colour you picked
+// yourself has no name, so it is read out as its hex code instead.
+const INK_PEN_NAMES = { '#e11d48': 'red', '#2563eb': 'blue', '#16a34a': 'green',
+                        '#111111': 'black', '#ffffff': 'white' };
+const INK_HL_NAMES  = { '#facc15': 'yellow', '#4ade80': 'green', '#f472b6': 'pink',
+                        '#38bdf8': 'blue' };
+
+// Line widths, as a fraction of the frame width (1920 px wide -> pen ~7 px,
+// highlighter ~35 px, eraser ~58 px across).
+const INK_WIDTH = { pen: 0.0035, hl: 0.018, erase: 0.03 };
+const INK_HL_ALPHA   = 0.4;    // how see-through a highlighter is
+const INK_UNDO_LIMIT = 100;    // undo steps kept; the oldest drop off the end
+const INK_LINGER_MS  = 220;    // see endInkGesture()
+
+const INK_HEX = /^#[0-9a-f]{6}$/i;
+
+/**
+ * Take a saved list of colours and keep only the ones that are plain
+ * "#rrggbb" values. Anything else - missing, the wrong type, or a string that
+ * is not a colour - falls back to the default for that slot. These end up in
+ * a CSS custom property, so only known-good values are allowed through.
+ */
+function cleanInkColours(list, defaults) {
+  return defaults.map((fallback, i) => {
+    const c = Array.isArray(list) ? list[i] : null;
+    return (typeof c === 'string' && INK_HEX.test(c)) ? c.toLowerCase() : fallback;
+  });
+}
+
+/** "red", or "#3a7bd5" for a colour you picked yourself. */
+function inkColourName(tool, colour) {
+  const names = tool === 'hl' ? INK_HL_NAMES : INK_PEN_NAMES;
+  return names[colour] || colour;
+}
+
+/* --- painting one line ------------------------------------------------------ */
+
+/**
+ * Paint one line onto any 2D context. W and H are that canvas's size in
+ * pixels; the line's own coordinates are fractions, so the same line can be
+ * painted onto the full-size recording or onto the small preview overlay.
+ */
+function renderStroke(ctx, s, W, H) {
+  const p = s.pts;
+  if (!p || p.length < 2) return;
+
+  ctx.save();
+  // An eraser line punches a hole; the others paint normally.
+  ctx.globalCompositeOperation = s.tool === 'erase' ? 'destination-out' : 'source-over';
+  // The whole highlighter line is ONE path stroked once, so where the line
+  // crosses itself it does not get darker - just like a real highlighter.
+  ctx.globalAlpha = s.tool === 'hl' ? INK_HL_ALPHA : 1;
+  ctx.strokeStyle = ctx.fillStyle = (s.tool === 'erase') ? '#000' : s.color;
+  ctx.lineWidth = Math.max(1, s.w * W);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+
+  if (p.length === 2) {
+    // A single click or tap: a dot the width of the line.
+    ctx.arc(p[0] * W, p[1] * H, ctx.lineWidth / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Smooth the line by curving through the MIDPOINTS between samples, with
+    // each sample as the curve's control point. Joining the raw samples with
+    // straight lines looks jagged, especially on fast strokes.
+    ctx.moveTo(p[0] * W, p[1] * H);
+    for (let i = 2; i < p.length - 2; i += 2) {
+      const midX = (p[i] + p[i + 2]) / 2 * W;
+      const midY = (p[i + 1] + p[i + 3]) / 2 * H;
+      ctx.quadraticCurveTo(p[i] * W, p[i + 1] * H, midX, midY);
+    }
+    ctx.lineTo(p[p.length - 2] * W, p[p.length - 1] * H);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* --- the off-screen layers the compositor stamps onto each frame ---------- */
+
+let inkBase = null, inkBaseCtx = null;   // every finished line, painted once
+let inkLive = null, inkLiveCtx = null;   // scratch copy, used while rubbing out
+
+/** Return the base layer at the frame's size, repainting it if the lines changed. */
+function inkBaseLayer(W, H) {
+  if (!inkBase) {
+    inkBase = document.createElement('canvas');
+    inkBaseCtx = inkBase.getContext('2d');
+    inkLive = document.createElement('canvas');
+    inkLiveCtx = inkLive.getContext('2d');
+  }
+  if (inkBase.width !== W || inkBase.height !== H) {
+    inkBase.width = inkLive.width = W;     // resizing a canvas also wipes it,
+    inkBase.height = inkLive.height = H;   // so it must be repainted
+    state.ink.baseDirty = true;
+  }
+  if (state.ink.baseDirty) {
+    inkBaseCtx.clearRect(0, 0, W, H);
+    state.ink.strokes.forEach(s => renderStroke(inkBaseCtx, s, W, H));
+    state.ink.baseDirty = false;
+  }
+  return inkBase;
+}
+
+/**
+ * Called by the compositor on every frame, after the screen and before the
+ * webcam. An empty drawing returns straight away, so it costs nothing.
+ */
+function drawInk(ctx, W, H) {
+  const ink = state.ink;
+  if (!ink.strokes.length && !ink.active) return;
+
+  const base = inkBaseLayer(W, H);
+  const a = ink.active;
+
+  if (a && a.tool === 'erase') {
+    // Rubbing out right now: copy the finished lines to the scratch layer,
+    // punch the eraser's path out of the copy, then stamp the copy. The base
+    // itself is untouched until you let go, which keeps undo honest.
+    inkLiveCtx.clearRect(0, 0, W, H);
+    inkLiveCtx.drawImage(base, 0, 0);
+    renderStroke(inkLiveCtx, a, W, H);
+    ctx.drawImage(inkLive, 0, 0);
+  } else {
+    if (ink.strokes.length) ctx.drawImage(base, 0, 0);
+    // The line in progress is painted straight onto the frame. It is a pen
+    // or highlighter here, so there is no hole-punching to worry about.
+    if (a) renderStroke(ctx, a, W, H);
+  }
+}
+
+/**
+ * While a recording is PAUSED the compositor stops drawing (to save CPU), so
+ * the preview would not show a line you draw until you resume. Draw one frame
+ * by hand instead. The recorder is paused, so that frame goes nowhere near
+ * the file - it only refreshes the preview. Throttled to one per screen frame.
+ */
+let inkFrameQueued = false;
+function refreshInkFrame() {
+  if (state.ticker || !state.compositeDraw || inkFrameQueued) return;
+  inkFrameQueued = true;
+  requestAnimationFrame(() => {
+    inkFrameQueued = false;
+    if (!state.ticker && state.compositeDraw) state.compositeDraw();
+  });
+}
+
+/* --- history: every change goes through inkCommit() ------------------------ */
+
+/**
+ * Replace the list of lines with a new one, remembering the old one for Undo.
+ * `before` is the list as it was before the change started. It is usually
+ * the current list, but the whole-line eraser updates the list live as you
+ * drag, so it passes in the list from the moment you pressed down.
+ */
+function inkCommit(newStrokes, before) {
+  const ink = state.ink;
+  ink.undo.push(before || ink.strokes);
+  if (ink.undo.length > INK_UNDO_LIMIT) ink.undo.shift();
+  ink.redo = [];                 // a new change makes the old "future" unreachable
+  ink.strokes = newStrokes;
+  inkChanged();
+}
+
+function inkUndo() {
+  const ink = state.ink;
+  if (!ink.undo.length) return;
+  ink.redo.push(ink.strokes);
+  ink.strokes = ink.undo.pop();
+  inkChanged();
+  announce('Drawing: undone.');
+}
+
+function inkRedo() {
+  const ink = state.ink;
+  if (!ink.redo.length) return;
+  ink.undo.push(ink.strokes);
+  ink.strokes = ink.redo.pop();
+  inkChanged();
+  announce('Drawing: redone.');
+}
+
+/** Wipe every line. Undoable, like any other change. */
+function inkClear(opts) {
+  if (!state.ink.strokes.length) return;
+  inkCommit([]);
+  if (!(opts && opts.quiet)) announce('Drawing cleared. Ctrl+Z brings it back.');
+}
+
+/** Something about the lines changed: repaint everything that shows them. */
+function inkChanged() {
+  state.ink.baseDirty = true;
+  paintInkButtons();
+  refreshInkFrame();
+}
+
+/* --- choosing a tool -------------------------------------------------------- */
+
+/**
+ * Pick a tool: 'pen', 'hl', 'erase-stroke', 'erase-area', or null to stop
+ * drawing (the mouse goes back to moving the webcam). For 'pen' and 'hl',
+ * `index` chooses which of your colours.
+ */
+function setInkTool(tool, index) {
+  const ink = state.ink;
+  if (tool === 'pen' && typeof index === 'number') ink.penIndex = index;
+  if (tool === 'hl'  && typeof index === 'number') ink.hlIndex  = index;
+  ink.tool = tool || null;
+  ink.active = null;             // never carry a half-drawn line across tools
+
+  // The CSS hangs off these: .inking lets the overlay take the mouse, and
+  // data-tool swaps the arrow for an eraser ring.
+  const stage = $('stage');
+  stage.classList.toggle('inking', !!ink.tool);
+  if (ink.tool) stage.dataset.tool = ink.tool;
+  else delete stage.dataset.tool;
+
+  paintInkButtons();
+  drawWet();
+
+  if (!ink.tool) announce('Stopped drawing.');
+  else if (ink.tool === 'pen') announce('Drawing with the ' + inkColourName('pen', ink.pens[ink.penIndex]) + ' pen.');
+  else if (ink.tool === 'hl')  announce('Highlighting in ' + inkColourName('hl', ink.hls[ink.hlIndex]) + '.');
+  else if (ink.tool === 'erase-stroke') announce('Eraser: click a line to remove it.');
+  else announce('Eraser: drag to rub out.');
+}
+
+/** A swatch was clicked. Clicking the one already in hand puts it down. */
+function pickInkSwatch(tool, index) {
+  const ink = state.ink;
+  const current = tool === 'pen' ? ink.penIndex : ink.hlIndex;
+  if (ink.tool === tool && current === index) setInkTool(null);
+  else setInkTool(tool, index);
+}
+
+/** An eraser button was clicked. Same toggle behaviour as the swatches. */
+function pickInkEraser(tool) {
+  setInkTool(state.ink.tool === tool ? null : tool);
+}
+
+/* --- the swatches and buttons ------------------------------------------------ */
+
+/** Build the colour swatches from your saved colours. */
+function buildInkSwatches() {
+  fillInkSwatches('inkPens', 'pen', state.ink.pens);
+  fillInkSwatches('inkHighlighters', 'hl', state.ink.hls);
+  paintInkButtons();
+}
+
+function fillInkSwatches(boxId, tool, colours) {
+  const box = $(boxId);
+  box.textContent = '';
+  colours.forEach((colour, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ibtn square ink-swatch';
+    b.dataset.tool = tool;
+    b.dataset.index = String(i);
+    b.setAttribute('aria-pressed', 'false');
+    // The colour arrives as a CSS custom property, never as raw HTML, and it
+    // has already been checked by cleanInkColours().
+    b.style.setProperty('--swatch', colour);
+
+    const blob = document.createElement('span');
+    blob.className = tool === 'pen' ? 'swatch-dot' : 'swatch-bar';
+    blob.setAttribute('aria-hidden', 'true');
+    b.appendChild(blob);
+
+    b.addEventListener('click', () => pickInkSwatch(tool, i));
+    // Right-click (or a long press on a touch screen) changes this colour.
+    b.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      setInkTool(tool, i);
+      openInkColourPicker();
+    });
+    box.appendChild(b);
+  });
+}
+
+/**
+ * Keep every Draw-row button showing the truth: which tool is in hand,
+ * whether there is anything to undo, redo or clear, and a tooltip that says
+ * what a click will do NOW (an icon-only button has no other label).
+ */
+function paintInkButtons() {
+  const ink = state.ink;
+  const setTip = (el, text) => { el.title = text; el.setAttribute('aria-label', text); };
+
+  document.querySelectorAll('.ink-swatch').forEach(b => {
+    const tool = b.dataset.tool, i = Number(b.dataset.index);
+    const colour = tool === 'pen' ? ink.pens[i] : ink.hls[i];
+    const name = inkColourName(tool, colour);
+    const on = ink.tool === tool && (tool === 'pen' ? ink.penIndex : ink.hlIndex) === i;
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.style.setProperty('--swatch', colour);
+    if (tool === 'pen') {
+      setTip(b, on ? `Drawing in ${name} - click again to stop drawing (Esc)`
+                   : `Draws in ${name} on the recording (p). Right-click to change the colour`);
+    } else {
+      setTip(b, on ? `Highlighting in ${name} - click again to stop (Esc)`
+                   : `Highlights in ${name} on the recording (i). Right-click to change the colour`);
+    }
+  });
+
+  const off = $('inkOffBtn');
+  off.setAttribute('aria-pressed', ink.tool ? 'false' : 'true');
+  setTip(off, ink.tool ? 'Stops drawing, so the mouse moves your webcam again (Esc)'
+                       : 'Not drawing - the mouse moves your webcam (Esc)');
+
+  $('inkEraseStrokeBtn').setAttribute('aria-pressed', ink.tool === 'erase-stroke' ? 'true' : 'false');
+  $('inkEraseAreaBtn').setAttribute('aria-pressed', ink.tool === 'erase-area' ? 'true' : 'false');
+
+  $('inkUndoBtn').disabled  = !ink.undo.length;
+  $('inkRedoBtn').disabled  = !ink.redo.length;
+  $('inkClearBtn').disabled = !ink.strokes.length;
+  $('inkSaveBtn').disabled  = !ink.strokes.length;
+}
+
+/* --- changing a favourite colour ---------------------------------------------- */
+
+/**
+ * Open the browser's colour picker for the swatch in hand: the highlighter if
+ * you are highlighting, otherwise the pen. Whatever you choose replaces that
+ * swatch and is remembered. Lines already drawn keep their colour.
+ */
+function openInkColourPicker() {
+  const ink = state.ink;
+  if (ink.tool !== 'pen' && ink.tool !== 'hl') setInkTool('pen');
+  const tool  = ink.tool;
+  const index = tool === 'hl' ? ink.hlIndex : ink.penIndex;
+
+  const input = $('inkColorInput');
+  input.dataset.tool  = tool;            // remembered so the 'input' handler
+  input.dataset.index = String(index);   // knows which swatch to change
+  input.value = tool === 'hl' ? ink.hls[index] : ink.pens[index];
+
+  // showPicker() is the modern way to open it from code; older browsers only
+  // understand a synthetic click.
+  try { input.showPicker(); } catch (_) { input.click(); }
+}
+
+function initInkColourInput() {
+  const input = $('inkColorInput');
+
+  // 'input' fires as you drag around the picker, so the swatch follows live.
+  input.addEventListener('input', () => {
+    const colour = input.value.toLowerCase();
+    if (!INK_HEX.test(colour)) return;
+    const index = Number(input.dataset.index);
+    if (input.dataset.tool === 'hl') {
+      state.ink.hls = state.ink.hls.map((c, i) => i === index ? colour : c);
+    } else {
+      state.ink.pens = state.ink.pens.map((c, i) => i === index ? colour : c);
+    }
+    paintInkButtons();
+  });
+
+  // 'change' fires once, when you are done - that is the moment to save.
+  input.addEventListener('change', () => {
+    saveSettings();
+    const tool = input.dataset.tool === 'hl' ? 'hl' : 'pen';
+    const list = tool === 'hl' ? state.ink.hls : state.ink.pens;
+    announce('Colour changed to ' + inkColourName(tool, list[Number(input.dataset.index)]) + '.');
+  });
+}
+
+/* --- the drawing overlay over the preview -------------------------------------- */
+
+let inkCursor = null;      // [x, y] fractions, for drawing the eraser ring
+let inkLinger = null;      // a just-finished line, kept on the overlay briefly
+let inkLingerTimer = null;
+
+/** Make the overlay canvas match its on-screen size (sharp on Retina too). */
+function sizeWet() {
+  const wet = $('inkWet');
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.round(wet.clientWidth * dpr), h = Math.round(wet.clientHeight * dpr);
+  if (w && h && (wet.width !== w || wet.height !== h)) { wet.width = w; wet.height = h; }
+}
+
+/** Repaint the overlay: the line being drawn, plus the eraser ring. */
+function drawWet() {
+  const wet = $('inkWet');
+  if (!wet) return;
+  sizeWet();
+  const ctx = wet.getContext('2d');
+  const W = wet.width, H = wet.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const a = state.ink.active || inkLinger;
+  // A rubbing-out line cannot be shown here - there is nothing on this layer
+  // to rub out - so only pens and highlighters are drawn.
+  if (a && a.tool !== 'erase') renderStroke(ctx, a, W, H);
+
+  const tool = state.ink.tool;
+  if (inkCursor && tool && tool.startsWith('erase')) {
+    // A ring shows exactly what the eraser will touch.
+    const dpr = window.devicePixelRatio || 1;
+    const r = tool === 'erase-area' ? (INK_WIDTH.erase * W) / 2 : 7 * dpr;
+    const x = inkCursor[0] * W, y = inkCursor[1] * H;
+    ctx.save();
+    ctx.lineWidth = 3 * dpr;  ctx.strokeStyle = 'rgba(0,0,0,.6)';
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1.5 * dpr; ctx.strokeStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/** Shortest distance from point (px, py) to the segment (ax, ay)-(bx, by). */
+function distToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  // Where along the segment is the closest point? 0 = at a, 1 = at b.
+  let t = len2 ? ((px - ax) * dx + (py - ay) * dy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+
+/**
+ * Does the point (x, y) - fractions - touch this line? Measured in on-screen
+ * pixels (sw x sh is the overlay's size), with a little slack so a thin pen
+ * line is not a pixel-perfect target. A finger gets more slack than a mouse.
+ */
+function inkHits(s, x, y, sw, sh, slack) {
+  if (s.tool === 'erase') return false;          // holes are not lines to remove
+  const p = s.pts, reach = (s.w * sw) / 2 + slack;
+  const px = x * sw, py = y * sh;
+  if (p.length === 2) return Math.hypot(px - p[0] * sw, py - p[1] * sh) <= reach;
+  for (let i = 0; i < p.length - 2; i += 2) {
+    if (distToSegment(px, py, p[i] * sw, p[i + 1] * sh, p[i + 2] * sw, p[i + 3] * sh) <= reach) return true;
+  }
+  return false;
+}
+
+/** Drawing with the mouse, a pen or a finger on the overlay. */
+function initInkPointer() {
+  const wet = $('inkWet');
+  let pointerId = null;      // the one pointer we are following (no multi-touch)
+  let before = null;         // the whole-line eraser's "list before you started"
+  let slack = 6;
+
+  // Pointer position as fractions of the overlay (= fractions of the frame).
+  const toFrac = (e) => {
+    const r = wet.getBoundingClientRect();
+    return [clamp01((e.clientX - r.left) / r.width), clamp01((e.clientY - r.top) / r.height)];
+  };
+
+  // Whole-line eraser: drop every line under the pointer, live, as you drag.
+  const eraseLinesAt = (x, y) => {
+    const ink = state.ink;
+    const kept = ink.strokes.filter(s => !inkHits(s, x, y, wet.clientWidth, wet.clientHeight, slack));
+    if (kept.length !== ink.strokes.length) {
+      ink.strokes = kept;            // not committed yet - see endInkGesture
+      ink.baseDirty = true;
+      refreshInkFrame();
+    }
+  };
+
+  wet.addEventListener('pointerdown', (e) => {
+    const ink = state.ink;
+    if (!ink.tool || pointerId !== null) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;   // left button only
+    e.preventDefault();
+    pointerId = e.pointerId;
+    wet.setPointerCapture(pointerId);   // keep the stroke even if you leave the box
+    slack = e.pointerType === 'touch' ? 14 : 6;
+
+    const [x, y] = toFrac(e);
+    inkCursor = [x, y];
+    if (ink.tool === 'erase-stroke') {
+      before = ink.strokes;
+      eraseLinesAt(x, y);
+    } else {
+      const tool = ink.tool === 'erase-area' ? 'erase' : ink.tool;
+      ink.active = {
+        tool,
+        color: tool === 'pen' ? ink.pens[ink.penIndex]
+             : tool === 'hl'  ? ink.hls[ink.hlIndex] : '#000000',
+        w: INK_WIDTH[tool],
+        pts: [x, y]
+      };
+      refreshInkFrame();
+    }
+    drawWet();
+  });
+
+  wet.addEventListener('pointermove', (e) => {
+    const ink = state.ink;
+    if (!ink.tool) return;
+    inkCursor = toFrac(e);
+    if (e.pointerId === pointerId) {
+      // A fast mouse reports more positions than the page gets events for;
+      // getCoalescedEvents() hands over the in-between ones, for smoother lines.
+      const events = (e.getCoalescedEvents && e.getCoalescedEvents().length)
+                   ? e.getCoalescedEvents() : [e];
+      const sw = wet.clientWidth, sh = wet.clientHeight;
+      events.forEach(ev => {
+        const [x, y] = toFrac(ev);
+        if (ink.tool === 'erase-stroke') { eraseLinesAt(x, y); return; }
+        const p = ink.active && ink.active.pts;
+        if (!p) return;
+        // Skip points less than 1.5 on-screen pixels from the last one: they
+        // add nothing to the shape and only make the line heavier to draw.
+        const lx = p[p.length - 2], ly = p[p.length - 1];
+        if (Math.hypot((x - lx) * sw, (y - ly) * sh) >= 1.5) p.push(x, y);
+      });
+      refreshInkFrame();
+    }
+    drawWet();
+  });
+
+  // Lifting the pen (or losing the pointer) finishes the gesture.
+  const endInkGesture = (e) => {
+    if (e.pointerId !== pointerId) return;
+    const ink = state.ink;
+    try { wet.releasePointerCapture(pointerId); } catch (_) {}
+    pointerId = null;
+
+    if (ink.tool === 'erase-stroke') {
+      // One undo step for the whole drag, however many lines it removed.
+      if (before && ink.strokes !== before) inkCommit(ink.strokes, before);
+      before = null;
+    } else if (ink.active) {
+      const done = ink.active;
+      ink.active = null;
+      inkCommit(ink.strokes.concat([done]));
+      // Keep the finished line on the overlay for a moment. The preview video
+      // is a few frames behind, and clearing the overlay at once made the end
+      // of the line blink out and back in.
+      if (done.tool !== 'erase') {
+        inkLinger = done;
+        clearTimeout(inkLingerTimer);
+        inkLingerTimer = setTimeout(() => { inkLinger = null; drawWet(); }, INK_LINGER_MS);
+      }
+    }
+    drawWet();
+  };
+  wet.addEventListener('pointerup', endInkGesture);
+  wet.addEventListener('pointercancel', endInkGesture);
+  wet.addEventListener('pointerleave', () => {
+    if (pointerId === null) { inkCursor = null; drawWet(); }
+  });
+}
+
+/* --- keyboard ------------------------------------------------------------------ */
+
+/** True when the Draw row is on screen - the same places the other overlay keys work. */
+function inkIsLive() {
+  return !$('liveControls').hidden && !$('stageBlock').hidden &&
+         (!$('stageArrange').hidden || !$('stageRecording').hidden);
+}
+
+function initInkKeys() {
+  document.addEventListener('keydown', (e) => {
+    if (!inkIsLive() || e.altKey) return;
+
+    // Leave keys alone while you type in a box - Ctrl+Z there should undo
+    // your typing, not your drawing.
+    const el = e.target, tag = (el.tagName || '').toLowerCase();
+    if (tag === 'textarea' || tag === 'select' || el.isContentEditable ||
+        (tag === 'input' && !['range', 'checkbox', 'radio', 'button', 'color'].includes(el.type))) return;
+
+    const k = e.key.toLowerCase();
+
+    // Undo / redo. Ctrl+Z and Ctrl+R everywhere, plus the usual alternatives:
+    // Cmd+Z and Cmd+Shift+Z on a Mac, Ctrl+Y and Ctrl+Shift+Z elsewhere.
+    // Cmd+R is left alone - on a Mac that is the browser's Reload, and Cmd+Y
+    // opens History. On Windows, Ctrl+R would normally reload the page; here
+    // it is redo instead, which also means it can no longer cut a recording
+    // short by accident.
+    if (e.ctrlKey || e.metaKey) {
+      if (k === 'z' && !e.shiftKey) { inkUndo(); e.preventDefault(); }
+      else if (k === 'z' && e.shiftKey) { inkRedo(); e.preventDefault(); }
+      else if (e.ctrlKey && (k === 'r' || k === 'y')) { inkRedo(); e.preventDefault(); }
+      return;
+    }
+
+    const ink = state.ink;
+    if (k === 'p') {
+      // p picks up the pen; pressing it again moves to the next colour.
+      const next = ink.tool === 'pen' ? (ink.penIndex + 1) % ink.pens.length : ink.penIndex;
+      setInkTool('pen', next); e.preventDefault();
+    } else if (k === 'i') {
+      const next = ink.tool === 'hl' ? (ink.hlIndex + 1) % ink.hls.length : ink.hlIndex;
+      setInkTool('hl', next); e.preventDefault();
+    } else if (k === 'e') {
+      pickInkEraser(e.shiftKey ? 'erase-stroke' : 'erase-area'); e.preventDefault();
+    } else if (k === 'x') {
+      inkClear(); e.preventDefault();
+    } else if (k === 'n') {
+      savePage(); e.preventDefault();          // save as a page, then clear
+    } else if (e.key === 'Escape' && ink.tool && !document.querySelector('dialog[open]')) {
+      // Esc puts the tool down - unless a dialog is open, when Esc is its.
+      setInkTool(null); e.preventDefault();
+    }
+  });
+}
+
+/** Wire up the whole Draw row. Called once, from init(). */
+function initInk() {
+  const ink = state.ink;
+  if (!ink.pens) ink.pens = INK_DEFAULT_PENS.slice();   // nothing saved yet
+  if (!ink.hls)  ink.hls  = INK_DEFAULT_HLS.slice();
+
+  buildInkSwatches();
+  initInkColourInput();
+  initInkPointer();
+  initInkKeys();
+  initPages();         // Save page, the page strip and the PDF / ZIP downloads
+
+  $('inkOffBtn').addEventListener('click', () => setInkTool(null));
+  $('inkEraseStrokeBtn').addEventListener('click', () => pickInkEraser('erase-stroke'));
+  $('inkEraseAreaBtn').addEventListener('click', () => pickInkEraser('erase-area'));
+  $('inkClearBtn').addEventListener('click', () => inkClear());
+  $('inkUndoBtn').addEventListener('click', inkUndo);
+  $('inkRedoBtn').addEventListener('click', inkRedo);
+  $('inkPickBtn').addEventListener('click', openInkColourPicker);
+
+  // The overlay must follow the stage's size: window resizes, and the stage
+  // moving between the arrange and recording screens.
+  if (window.ResizeObserver) new ResizeObserver(() => drawWet()).observe($('stage'));
+  paintInkButtons();
+}
+
+/* ============================================================================
+   SAVED PAGES - "clear the screen, but keep the drawing"             v1.24.0
+   ----------------------------------------------------------------------------
+   Save page (n) takes a snapshot of the screen as it is right now, keeps it
+   together with your drawing as a PAGE, then clears the drawing off the
+   screen so you can mark up the next slide. Pages download as one PDF or as a
+   ZIP of PNG images, with or without the screen behind the drawing.
+
+   Privacy and lifetime: pages live in memory only (state.pages). Nothing is
+   written to localStorage or IndexedDB and nothing leaves the device; closing
+   the tab throws them away. They do survive from one take to the next, and
+   the Done screen offers them again.
+
+   What a page holds:
+     { id, w, h, strokes, shot, screenBlob, thumb }
+       w, h        the size of the recorded frame when it was saved
+       strokes     the drawing - the same list of lines the screen showed.
+                   Lines never change once drawn, so the page can share them.
+       shot        a full-size canvas of the screen. Kept only until it has
+                   been turned into screenBlob (a 1080p canvas is ~8 MB of
+                   memory; the PNG of it is usually well under 2 MB).
+       screenBlob  that screen snapshot as a PNG
+       thumb       a small JPEG data: URL for the page strip
+
+   The PDF and ZIP files are written by the two small builders below rather
+   than a library, so this keeps working offline and straight off a disk.
+   ============================================================================ */
+
+const PAGE_BLANK_FILL = '#0d1117';   // the same colour drawBlank() uses
+const PAGE_THUMB_W = 192, PAGE_THUMB_H = 108;
+let pageSeq = 0;                     // gives every page a unique id
+
+/** canvas.toBlob, but as a Promise so it can be awaited. */
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) =>
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not encode the image')), type, quality));
+}
+
+/**
+ * Paint a page onto a fresh canvas.
+ *   withScreen  true: the screen snapshot behind the drawing
+ *   fill        a background colour for "drawing only" (null = transparent)
+ *   W, H        output size; defaults to the page's own size
+ */
+async function renderPage(page, withScreen, fill, W, H) {
+  W = W || page.w; H = H || page.h;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+
+  if (withScreen) {
+    // While the PNG is still being made the canvas is still around; after
+    // that, decode the PNG.
+    const img = page.shot || await createImageBitmap(page.screenBlob);
+    ctx.drawImage(img, 0, 0, W, H);
+  } else if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // The drawing goes on a layer of its own first, for the same reason as on
+  // screen: rubbed-out paths punch holes, and they must punch them in the
+  // ink, not in the screen snapshot underneath.
+  const layer = document.createElement('canvas');
+  layer.width = W; layer.height = H;
+  const lctx = layer.getContext('2d');
+  page.strokes.forEach(s => renderStroke(lctx, s, W, H));
+  ctx.drawImage(layer, 0, 0);
+  return c;
+}
+
+/**
+ * Save the drawing as a page, then clear the screen. Clearing goes through
+ * inkCommit() like any other change, so Ctrl+Z puts the drawing back on
+ * screen (the page stays saved either way).
+ */
+function savePage(opts) {
+  const ink = state.ink;
+  if (!ink.strokes.length) {
+    if (!(opts && opts.quiet)) announce('Nothing drawn yet, so there is nothing to save.');
+    return null;
+  }
+
+  // The page is the size of the recorded frame.
+  const frame = $('compositeCanvas');
+  const W = frame.width || 1920, H = frame.height || 1080;
+
+  // Snapshot the SCREEN only - no webcam, logo, timer or effects. This is a
+  // page of notes, not a still from the video. A blanked screen saves as the
+  // blank board, since that is what you were drawing on.
+  const shot = document.createElement('canvas');
+  shot.width = W; shot.height = H;
+  const g = shot.getContext('2d');
+  const screenEl = $('compScreen');
+  if (state.blank || screenEl.readyState < 2) {
+    g.fillStyle = PAGE_BLANK_FILL;
+    g.fillRect(0, 0, W, H);
+  } else {
+    g.drawImage(screenEl, 0, 0, W, H);
+  }
+
+  const page = { id: ++pageSeq, w: W, h: H, strokes: ink.strokes,
+                 shot, screenBlob: null, thumb: '' };
+
+  // The thumbnail, made now while the full-size canvas is at hand. A small
+  // JPEG is plenty for a 96 px wide button.
+  const t = document.createElement('canvas');
+  t.width = PAGE_THUMB_W; t.height = PAGE_THUMB_H;
+  const tctx = t.getContext('2d');
+  tctx.drawImage(shot, 0, 0, PAGE_THUMB_W, PAGE_THUMB_H);
+  const tl = document.createElement('canvas');
+  tl.width = PAGE_THUMB_W; tl.height = PAGE_THUMB_H;
+  const tlctx = tl.getContext('2d');
+  page.strokes.forEach(s => renderStroke(tlctx, s, PAGE_THUMB_W, PAGE_THUMB_H));
+  tctx.drawImage(tl, 0, 0);
+  page.thumb = t.toDataURL('image/jpeg', 0.8);
+
+  // Turn the big canvas into a PNG in the background, then let it go.
+  canvasToBlob(shot, 'image/png').then(blob => {
+    page.screenBlob = blob;
+    page.shot = null;
+  }).catch(() => { /* keep the canvas - it still works, it just uses more memory */ });
+
+  state.pages.push(page);
+  inkCommit([]);                     // clear the screen (undoable)
+  paintPages();
+  if (!(opts && opts.quiet)) {
+    announce(`Saved as page ${state.pages.length}. Screen cleared - Ctrl+Z brings the drawing back.`);
+  }
+  return page;
+}
+
+/** Put a saved page's drawing back on screen (undoable). */
+function restorePage(id) {
+  const n = state.pages.findIndex(p => p.id === id);
+  if (n < 0) return;
+  inkCommit(state.pages[n].strokes);
+  announce(`Page ${n + 1}'s drawing is back on screen.`);
+}
+
+function deletePage(id) {
+  const n = state.pages.findIndex(p => p.id === id);
+  if (n < 0) return;
+  state.pages.splice(n, 1);
+  paintPages();
+  announce(`Page ${n + 1} deleted.`);
+  // Keep keyboard focus somewhere sensible rather than dropping it on <body>.
+  const thumbs = document.querySelectorAll('#pageStrip .page-thumb');
+  if (thumbs.length) thumbs[Math.min(n, thumbs.length - 1)].focus();
+  else $('inkSaveBtn').focus();
+}
+
+/** Rebuild the page strip and show or hide everything that offers pages. */
+function paintPages() {
+  const pages = state.pages;
+  $('pagesRow').hidden  = !pages.length;
+  $('donePages').hidden = !pages.length;
+  $('donePagesCount').textContent = String(pages.length);
+  document.querySelectorAll('[data-export-screen]').forEach(cb => { cb.checked = state.pagesWithScreen; });
+
+  const strip = $('pageStrip');
+  strip.textContent = '';
+  pages.forEach((page, i) => {
+    const li = document.createElement('li');
+
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'page-thumb';
+    b.title = `Page ${i + 1}: click to put this drawing back on screen`;
+    b.setAttribute('aria-label', `Page ${i + 1}. Put this drawing back on screen`);
+    const img = document.createElement('img');
+    img.src = page.thumb;            // a data: URL this app made itself
+    img.alt = '';                    // the button's label already says it
+    const num = document.createElement('span');
+    num.className = 'page-num';
+    num.textContent = String(i + 1);
+    num.setAttribute('aria-hidden', 'true');
+    b.append(img, num);
+    b.addEventListener('click', () => restorePage(page.id));
+
+    // Deleting cannot be undone, so the first click only asks. It goes back
+    // to normal by itself after three seconds - no pop-up dialog needed.
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'page-del';
+    del.textContent = 'Delete';
+    del.setAttribute('aria-label', `Delete page ${i + 1}`);
+    let timer = null;
+    del.addEventListener('click', () => {
+      if (del.classList.contains('confirming')) { clearTimeout(timer); deletePage(page.id); return; }
+      del.classList.add('confirming');
+      del.textContent = 'Sure?';
+      del.setAttribute('aria-label', `Click again to delete page ${i + 1}`);
+      announce(`Press again to delete page ${i + 1}.`);
+      timer = setTimeout(() => {
+        del.classList.remove('confirming');
+        del.textContent = 'Delete';
+        del.setAttribute('aria-label', `Delete page ${i + 1}`);
+      }, 3000);
+    });
+
+    li.append(b, del);
+    strip.appendChild(li);
+  });
+  // Keep the newest page in view when the strip scrolls.
+  strip.scrollLeft = strip.scrollWidth;
+}
+
+/* --- downloading ------------------------------------------------------------ */
+
+/**
+ * Hand a finished file to you. If you chose an output folder for recordings,
+ * it goes there too; otherwise (or if writing there fails) it downloads.
+ */
+async function saveExport(blob, name) {
+  if (state.dirHandle) {
+    try {
+      const handle = await state.dirHandle.getFileHandle(name, { create: true });
+      const w = await handle.createWritable();
+      await w.write(blob);
+      await w.close();
+      return `Saved ${name} to "${state.dirHandle.name}".`;
+    } catch (_) { /* no permission any more, say - fall back to a download */ }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);   // long enough to start
+  return `Downloaded ${name}.`;
+}
+
+/** Build the PDF or the ZIP from every saved page, and save it. */
+async function exportPages(kind, statusEl) {
+  const pages = state.pages.slice();          // a fixed list, even if you keep saving
+  if (!pages.length) return;
+  const withScreen = state.pagesWithScreen;
+  const buttons = document.querySelectorAll('[data-export-pdf], [data-export-zip]');
+  buttons.forEach(b => { b.disabled = true; });
+  const say = (msg) => { if (statusEl) statusEl.textContent = msg; announce(msg); };
+  say(`Preparing ${pages.length} page${pages.length === 1 ? '' : 's'}...`);
+
+  try {
+    let blob, name;
+    if (kind === 'pdf') {
+      // JPEG pages: a PDF can hold a JPEG exactly as it is, with no decoding.
+      // A PDF has no see-through, so "drawing only" goes on white.
+      const images = [];
+      for (const page of pages) {
+        const c = await renderPage(page, withScreen, withScreen ? null : '#ffffff');
+        const jpeg = new Uint8Array(await (await canvasToBlob(c, 'image/jpeg', 0.92)).arrayBuffer());
+        images.push({ jpeg, w: c.width, h: c.height });
+      }
+      blob = new Blob([buildPdf(images)], { type: 'application/pdf' });
+      name = `scrncstr-pages_${stamp()}.pdf`;
+    } else {
+      // PNG pages: sharp text, and "drawing only" keeps a see-through background.
+      const files = [];
+      for (let i = 0; i < pages.length; i++) {
+        const c = await renderPage(pages[i], withScreen, null);
+        const data = new Uint8Array(await (await canvasToBlob(c, 'image/png')).arrayBuffer());
+        files.push({ name: `page-${String(i + 1).padStart(2, '0')}.png`, data });
+      }
+      blob = new Blob([buildZip(files)], { type: 'application/zip' });
+      name = `scrncstr-pages_${stamp()}.zip`;
+    }
+    say(await saveExport(blob, name));
+  } catch (err) {
+    say('Could not make the file: ' + err.message);
+  } finally {
+    buttons.forEach(b => { b.disabled = false; });
+  }
+}
+
+/* --- a tiny PDF writer -------------------------------------------------------
+   A PDF is a list of numbered "objects", then a table (the xref) giving the
+   byte offset of each one, so a reader can jump straight to any of them.
+   Ours has:  1 the catalog  ->  2 the list of pages,  3 the title,
+   then for each page i: (4 + 3i) the page, (5 + 3i) the drawing commands that
+   paint the image across it, and (6 + 3i) the JPEG image itself.
+   Pages are 11 inches wide (792 points), as tall as the frame's shape needs.
+--------------------------------------------------------------------------- */
+function buildPdf(images) {
+  const enc = new TextEncoder();
+  const parts = [];
+  let length = 0;                       // bytes written so far
+  const offsets = [];                   // offsets[n] = where object n starts
+  const add = (x) => {
+    const bytes = typeof x === 'string' ? enc.encode(x) : x;
+    parts.push(bytes);
+    length += bytes.length;
+  };
+  const begin = (n) => { offsets[n] = length; add(`${n} 0 obj\n`); };
+  const end = () => add('\nendobj\n');
+
+  add('%PDF-1.4\n');
+  // A comment with bytes above 127 tells file-transfer tools this is binary.
+  add(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));
+
+  const pageRefs = images.map((_, i) => `${4 + 3 * i} 0 R`).join(' ');
+  begin(1); add('<< /Type /Catalog /Pages 2 0 R >>'); end();
+  begin(2); add(`<< /Type /Pages /Kids [${pageRefs}] /Count ${images.length} >>`); end();
+  const d = new Date();
+  const when = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}` +
+               `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  begin(3); add(`<< /Title (SCRNCSTR drawing pages) /Producer (SCRNCSTR) /CreationDate (D:${when}) >>`); end();
+
+  images.forEach((im, i) => {
+    const pw = 792, ph = Math.round(792 * im.h / im.w * 100) / 100;
+    const pageN = 4 + 3 * i, contentN = 5 + 3 * i, imageN = 6 + 3 * i;
+    begin(pageN);
+    add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] ` +
+        `/Resources << /XObject << /Im0 ${imageN} 0 R >> >> /Contents ${contentN} 0 R >>`);
+    end();
+    // "q ... Q" saves and restores the state; "cm" stretches the 1x1 image
+    // square to the page size; "Do" draws it.
+    const cmds = `q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;
+    begin(contentN); add(`<< /Length ${cmds.length} >>\nstream\n${cmds}\nendstream`); end();
+    begin(imageN);
+    add(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} ` +
+        `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.jpeg.length} >>\nstream\n`);
+    add(im.jpeg);
+    add('\nendstream');
+    end();
+  });
+
+  const count = 4 + 3 * images.length;  // objects 0..(count-1)
+  const xrefAt = length;
+  // Every xref line is exactly 20 bytes: 10-digit offset, space, 5-digit
+  // generation, space, "n" (in use) or "f" (free), space, newline.
+  let xref = `xref\n0 ${count}\n0000000000 65535 f \n`;
+  for (let n = 1; n < count; n++) xref += String(offsets[n]).padStart(10, '0') + ' 00000 n \n';
+  add(xref);
+  add(`trailer\n<< /Size ${count} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${xrefAt}\n%%EOF\n`);
+
+  // Join the pieces into one block of bytes.
+  const out = new Uint8Array(length);
+  let at = 0;
+  parts.forEach(p => { out.set(p, at); at += p.length; });
+  return out;
+}
+
+/* --- a tiny ZIP writer -------------------------------------------------------
+   "Stored" ZIP: the files go in as they are, uncompressed - PNGs are already
+   compressed, so squeezing them again would gain almost nothing. Each file
+   gets a small header, then its bytes; a directory at the end lists them all.
+   Every number is little-endian, and each file needs a CRC-32 checksum.
+--------------------------------------------------------------------------- */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const d = new Date();
+  // ZIP stores times the old MS-DOS way: seconds/2, minutes, hours packed in
+  // 16 bits, and day, month, years-since-1980 in another 16.
+  const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+
+  const locals = [], centrals = [];
+  let offset = 0;
+  files.forEach(f => {
+    const name = enc.encode(f.name);
+    const crc = crc32(f.data);
+
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true);   // "local file header" signature
+    lh.setUint16(4, 20, true);           // version needed (2.0)
+    lh.setUint16(6, 0, true);            // flags
+    lh.setUint16(8, 0, true);            // method 0 = stored
+    lh.setUint16(10, dosTime, true);
+    lh.setUint16(12, dosDate, true);
+    lh.setUint32(14, crc, true);
+    lh.setUint32(18, f.data.length, true);   // compressed size
+    lh.setUint32(22, f.data.length, true);   // uncompressed size (the same)
+    lh.setUint16(26, name.length, true);
+    lh.setUint16(28, 0, true);           // no extra field
+    locals.push(new Uint8Array(lh.buffer), name, f.data);
+
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true);   // "central directory" signature
+    ch.setUint16(4, 20, true);           // made by version 2.0
+    ch.setUint16(6, 20, true);           // version needed
+    ch.setUint16(8, 0, true);
+    ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosTime, true);
+    ch.setUint16(14, dosDate, true);
+    ch.setUint32(16, crc, true);
+    ch.setUint32(20, f.data.length, true);
+    ch.setUint32(24, f.data.length, true);
+    ch.setUint16(28, name.length, true);
+    // 30 extra length, 32 comment length, 34 disk number, 36 internal
+    // attributes, 38 external attributes - all zero
+    ch.setUint32(42, offset, true);      // where this file's local header is
+    centrals.push(new Uint8Array(ch.buffer), name);
+
+    offset += 30 + name.length + f.data.length;
+  });
+
+  const centralSize = centrals.reduce((n, p) => n + p.length, 0);
+  const endRec = new DataView(new ArrayBuffer(22));
+  endRec.setUint32(0, 0x06054b50, true); // "end of central directory" signature
+  endRec.setUint16(8, files.length, true);
+  endRec.setUint16(10, files.length, true);
+  endRec.setUint32(12, centralSize, true);
+  endRec.setUint32(16, offset, true);    // the directory starts after the files
+
+  const all = locals.concat(centrals, [new Uint8Array(endRec.buffer)]);
+  const out = new Uint8Array(all.reduce((n, p) => n + p.length, 0));
+  let at = 0;
+  all.forEach(p => { out.set(p, at); at += p.length; });
+  return out;
+}
+
+/** Wire up the page strip and both sets of download buttons. Called from initInk(). */
+function initPages() {
+  $('inkSaveBtn').addEventListener('click', () => savePage());
+  // There are two export blocks (under the Draw row, and on the Done
+  // screen). They share one "Include the screen" setting.
+  document.querySelectorAll('[data-export]').forEach(block => {
+    let status = block.querySelector('.page-status');
+    if (!status) {
+      status = document.createElement('p');
+      status.className = 'page-status';
+      status.setAttribute('aria-hidden', 'true');   // #live already reads it out
+      block.appendChild(status);
+    }
+    block.querySelector('[data-export-screen]').addEventListener('change', (e) => {
+      state.pagesWithScreen = e.target.checked;
+      paintPages();
+    });
+    block.querySelector('[data-export-pdf]').addEventListener('click', () => exportPages('pdf', status));
+    block.querySelector('[data-export-zip]').addEventListener('click', () => exportPages('zip', status));
+  });
+  paintPages();
+}
+
+/* ============================================================================
    SOUND EFFECTS
    ----------------------------------------------------------------------------
    Three-step fallback, per sound:
@@ -5250,7 +6653,7 @@ const SUITE_APPS = [
   { id: 'animedtr', name: 'ANIMEDTR', color: '#655800', url: 'https://animedtr.app/',
     blurb: 'Animated, interactive lessons: a stage, a timeline and keyframes, no code.',
     icon: '<circle cx="16" cy="7.5" r="4"/><circle cx="9.5" cy="13" r="2.5"/><circle cx="5" cy="18" r="1.5"/><path d="m16 16 3 3-3 3-3-3z"/>' },
-  { id: 'dskedtr',  name: 'DSKEDTR',  color: '#065f46', url: 'https://dskedtr.app/',
+  { id: 'dskedtr',  name: 'DSKEDTR',  color: '#195d61', url: 'https://dskedtr.app/',
     blurb: 'Desktop publishing: newsletters, flyers and booklets, with text that flows between boxes.',
     icon: '<path d="M2 5h8a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H2z"/><path d="M22 5h-8a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h8z"/>' },
   { id: 'imgedtr',  name: 'IMGEDTR',  color: '#305305', url: 'https://imgedtr.app/',
@@ -5293,7 +6696,7 @@ const SUITE_MARKS = {
   videdtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%230046ad"/%3E%3Crect x="6" y="6" width="52" height="52" rx="11" fill="none" stroke="%239ec5ff" stroke-width="3"/%3E%3Cg fill="%239ec5ff"%3E%3Crect x="11" y="14" width="6" height="6" rx="2"/%3E%3Crect x="11" y="29" width="6" height="6" rx="2"/%3E%3Crect x="11" y="44" width="6" height="6" rx="2"/%3E%3Crect x="47" y="14" width="6" height="6" rx="2"/%3E%3Crect x="47" y="29" width="6" height="6" rx="2"/%3E%3Crect x="47" y="44" width="6" height="6" rx="2"/%3E%3C/g%3E%3Cpath d="M27 21.5 L45 32 L27 42.5 Z" fill="%23ffffff"/%3E%3C/svg%3E',
   scrncstr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23ffffff"/%3E%3Cg transform="translate%283.2 3.2%29 scale%280.8%29"%3E%3Crect x="1.6" y="4.4" width="28.8" height="20" rx="3.2" fill="%23eef3f3" stroke="%2300565d" stroke-width="2.4"/%3E%3Ccircle cx="23.4" cy="19.2" r="5.6" fill="%23f45922" stroke="%23fff" stroke-width="2.2"/%3E%3Cpath d="M11 29.2h10" stroke="%2300565d" stroke-width="2.4" stroke-linecap="round"/%3E%3C/g%3E%3C/svg%3E',
   vctredtr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%235b21b6"/%3E%3Crect x="5" y="12" width="14" height="14" rx="2.5" fill="%23ffffff"/%3E%3Ccircle cx="19.5" cy="12.5" r="7.5" fill="%23ffffff"/%3E%3Cpath d="M12.02 12H19V19.98A7.5 7.5 0 0 1 12.02 12Z" fill="%23f45922"/%3E%3C/svg%3E',
-  dskedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23065f46"/%3E%3Crect x="5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="16.5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="7" y="9" width="6.5" height="6" rx="0.8" fill="%23f45922"/%3E%3Crect x="7" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="7" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="18.5" y="9" width="6.5" height="2.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="18.5" y="14" width="6.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="18.5" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3Crect x="18.5" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23065f46"/%3E%3C/svg%3E',
+  dskedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%2337c6d0"/%3E%3Crect x="5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="16.5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="7" y="9" width="6.5" height="6" rx="0.8" fill="%23f45922"/%3E%3Crect x="7" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="7" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="9" width="6.5" height="2.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="14" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3C/svg%3E',
   '3dedtr' : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%237a4100"/%3E%3Cpath d="M16 5.5 26 11 16 16.5 6 11Z" fill="%23ffffff"/%3E%3Cpath d="M6 11 16 16.5V27.5L6 22Z" fill="%23ffffff" opacity="0.82"/%3E%3Cpath d="M26 11 16 16.5V27.5L26 22Z" fill="%23f45922"/%3E%3C/svg%3E',
   animedtr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23655800"/%3E%3Ccircle cx="7.5" cy="21" r="3" fill="%23fff" opacity=".35"/%3E%3Ccircle cx="12" cy="14" r="3.6" fill="%23fff" opacity=".6"/%3E%3Ccircle cx="19.5" cy="9.5" r="4.6" fill="%23fff"/%3E%3Cpath d="M19.5 22l3.2 3.2-3.2 3.2-3.2-3.2z" fill="%23f45922"/%3E%3C/svg%3E',
 };
@@ -7045,11 +8448,21 @@ async function stopRecording() {
 
   const results = await Promise.all(finished);
 
+  // A drawing still on screen at the end of a take is saved as a page rather
+  // than thrown away - done now, while the screen capture can still be
+  // snapshotted. (savePage also clears the screen, undoably.)
+  savePage({ quiet: true });
+
   stopCompositeLoop();
   cleanupStreams();
   state.recorders = [];
   state.paused = false;
   state.compositeDraw = null;
+
+  // Never let one take's scribbles open the next take. Anything left was saved
+  // as a page above; this clear only matters if that could not happen.
+  inkClear({ quiet: true });
+  setInkTool(null);
 
   renderResults(results);
   setStage('Done');
@@ -7183,6 +8596,9 @@ function startCompositeSetup() {
     drawBlank(ctx, W, H);       // covers the screen only; the webcam still draws
     drawSpotlight(ctx, W, H);   // dims the screen only - drawn before the
                                 // webcam, watermark and timer so those stay lit
+    drawInk(ctx, W, H);         // your drawing: over the screen (and over Blank
+                                // screen, so Blank doubles as a whiteboard),
+                                // under your face, the logo and the timer
 
     if (!state.camHidden && camEl.readyState >= 2) {
       // Resting geometry: the bubble.
@@ -7447,6 +8863,7 @@ function init() {
   loadLogoImage();         // async; re-decodes a stored upload or built-in
   loadDevices();
   initBubbleDragging();
+  initInk();           // drawing on the screen: swatches, tools, keys
   restoreFolder();     // may resolve silently, or ask for a Reconnect click
 
   // Accordion open/closed state is part of what gets remembered.

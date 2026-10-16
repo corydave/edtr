@@ -7,6 +7,23 @@ offline and opened straight off a disk. A new release goes in both.
 Releases before 1.18.0 went out without notes. Rather than guess at them, this
 file starts at 1.18.0; `README.md` describes how everything works as of 1.17.0.
 
+## 1.24.0 - 2026-10-16 - Saved pages
+
+- **Save page** (book-plus icon, key `n`): the drawing, plus a snapshot of the screen behind it (no webcam, logo, timer or effects; the blank board if Blank screen is on), is kept as a page, then the screen is cleared. The clear is an ordinary undoable change, so Ctrl+Z puts the drawing back on screen; the page stays saved.
+- **Page strip** under the Draw row, shown once there is a page: click a thumbnail to put its drawing back on screen (undoable); Delete asks for a second click within three seconds, since deleting cannot be undone.
+- **Downloads:** one PDF (a page each, 11 in wide, JPEG at 0.92) or a ZIP of PNGs (`page-01.png`...), with or without the screen. "Drawing only" is see-through in the PNGs and on white in the PDF. Both files are written by small built-in writers (`buildPdf`, `buildZip`), no library, so they work offline. Saved to the output folder if you chose one, otherwise downloaded.
+- **At the end of a take** a drawing still on screen is saved as a page rather than cleared (this replaces 1.23.0's clear-on-stop), and the Done screen shows the page count and the same downloads.
+- **Memory only:** pages live in `state.pages` until the tab closes; nothing goes to localStorage, IndexedDB or the network. Each page's full-size screen canvas is turned into a PNG and released, so a 1080p page costs ~1-2 MB rather than ~8 MB.
+
+## 1.23.0 - 2026-10-16 - Draw on the screen
+
+- **A new Draw row** (Combined mode, composited in - the same place as the other overlay controls, because the ink is drawn into the canvas being recorded): stop drawing, an eraser for whole lines, an eraser that rubs out only what you drag over, Clear, Undo and Redo, five pens and four highlighters.
+- **Your colours:** right-click a swatch (long-press on a touch screen), or select it and press the pipette, to set it to any colour. The nine colours are remembered in `localStorage` with the other settings (`ink.pens`, `ink.hls`), and each one is checked to be a plain `#rrggbb` before it is used. Lines already drawn keep their colour.
+- **Layering:** over the screen and the spotlight, under your face, the logo and the timer - and over Blank screen, so Blank doubles as a whiteboard.
+- **Keys:** `p` pen (again for the next colour), `i` highlighter (same), `e` rub-out eraser, `Shift+E` whole-line eraser, `x` clear, `Esc` stop drawing, `Ctrl+Z` undo, `Ctrl+R` redo. Also `Cmd+Z`, `Cmd+Shift+Z`, `Ctrl+Shift+Z` and `Ctrl+Y`. On the arrange and recording screens `Ctrl+R` no longer reloads the page; `Cmd+R` on a Mac is left alone.
+- Drawing works while paused too: the compositor stays stopped, but each change draws one frame so the preview keeps up.
+- The drawing is cleared when a recording stops (undoable), so one take's scribbles never open the next.
+
 ## 1.22.2 - 2026-10-12 - Made for fingers
 
 - On a phone or tablet a finger catches the bubble's resize grip from about 22 px away (the suite's touch standard).

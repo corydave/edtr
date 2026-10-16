@@ -337,6 +337,89 @@ draw — so the preview does not lie about the output.
 you cut to full-frame camera is not a watermark. The consequence is that a logo
 and the webcam bubble in the same corner will overlap, with the logo on top.
 
+## Drawing on the screen (Composite only, v1.23.0)
+
+The fourth control row (lucide `pen-line`). Left of the first rule, in the
+usual four slots so it lines up with the rows above: **stop drawing**, the
+**whole-line eraser**, the **rub-out eraser** and **Clear**. Then **Undo** and
+**Redo**, the **five pens**, the **four highlighters** and the **pipette**.
+
+| Key | Does |
+|---|---|
+| `p` / `i` | Pen / highlighter. Press again for the next colour. |
+| `e` / `Shift+E` | Rub-out eraser / whole-line eraser |
+| `x` | Clear (undoable) |
+| `Esc` | Put the tool down - the mouse moves the webcam again |
+| `Ctrl+Z` | Undo (`Cmd+Z` too) |
+| `Ctrl+R` | Redo (`Ctrl+Y`, `Ctrl/Cmd+Shift+Z` too). Overrides Reload on these screens; `Cmd+R` is left alone. |
+
+How it works (the long version is the comment block at "DRAWING ON THE SCREEN"
+in the script):
+
+- **A line is data, not pixels:** `{ tool, color, w, pts }`, with points and
+  width as fractions of the frame, like the bubble. `state.ink.strokes` holds
+  them, oldest first.
+- **Finished lines are painted once** onto an off-screen "base" canvas, and the
+  compositor stamps that one picture per frame. It is repainted only when the
+  lines change. An empty drawing costs nothing.
+- **The rub-out eraser is itself a line**, drawn with `destination-out`. That
+  only works on a layer of its own - on the main canvas it would punch a hole
+  in the screen recording - which is the other reason the ink has its own canvas.
+- **Undo keeps copies of the list**, not of the lines (lines never change once
+  finished, so copies are cheap). Everything goes through `inkCommit()`. A
+  whole-line-eraser drag is one undo step however many lines it takes.
+- **`#inkWet` shows the line in progress instantly.** The preview is a video of
+  the canvas and runs a few frames behind, which feels awful to draw against.
+  It holds the finished line for `INK_LINGER_MS` (220 ms) after you lift, or
+  the tail of the line blinked out and back in. It is never recorded.
+- **Layer order:** after the spotlight, before the webcam. Ink is drawn over
+  Blank screen, so Blank doubles as a whiteboard.
+- **Paused:** the ticker stops while paused, so `refreshInkFrame()` draws one
+  frame per change; the recorder is paused, so nothing reaches the file.
+- **The overlay only takes the mouse while a tool is picked**
+  (`#stage.inking`), so the bubble, grip and hot spots behave as before.
+- **Colours are user data:** saved as `ink.pens` / `ink.hls` and run through
+  `cleanInkColours()` on load - anything that is not `#rrggbb` falls back to
+  the default, since the value lands in a CSS custom property.
+- **Saved as a page when a take stops** (v1.24.0; 1.23.0 just cleared it),
+  then cleared - so it never opens the next take.
+
+### Saved pages (v1.24.0)
+
+**Save page** (`n`) is "clear the screen, but keep the drawing". A page is
+`{ id, w, h, strokes, shot, screenBlob, thumb }`: the drawing (the very same
+list of lines - lines never change, so sharing is safe), plus a snapshot of
+**the screen only** - no webcam, logo, timer or effects, since this is a page
+of notes, not a still from the video. With Blank screen on, the snapshot is
+the blank board.
+
+- **Memory only, by design.** `state.pages` is never written to localStorage
+  or IndexedDB and never leaves the device; closing the tab discards it. Pages
+  survive from take to take, and the Done screen offers them again.
+- **The full-size canvas does not stay.** `shot` (a 1080p canvas is ~8 MB of
+  RAM) is turned into a PNG `screenBlob` in the background and dropped.
+  `renderPage()` uses whichever one exists.
+- **Clearing goes through `inkCommit([])`,** so Ctrl+Z restores the drawing to
+  the screen. The page is not part of the undo history and stays saved.
+- **Clicking a thumbnail** puts that page's lines back with `inkCommit`, so it
+  is undoable too. Saving again makes a new page rather than updating the old
+  one - predictable, and the old one can be deleted.
+- **Delete needs a second click within 3 s.** It cannot be undone, and a
+  dialog would be the wrong weight for it (and dialogs are avoided here).
+- **Downloads** go through `saveExport()`: into the output folder if one was
+  chosen for recordings, otherwise an ordinary download.
+  - **PDF** - `buildPdf()`, about 60 lines: catalog, page tree, an Info
+    title, then per page a Page, a one-line content stream and the JPEG as a
+    `/DCTDecode` image (a PDF takes JPEG bytes as they are). Pages are 792 pt
+    wide. No see-through in a PDF, so "drawing only" goes on white.
+  - **ZIP** - `buildZip()`: "stored" (uncompressed - PNGs are already
+    compressed), CRC-32, DOS timestamps. "Drawing only" PNGs stay see-through.
+  - Both were checked with independent tools: `qpdf --check` and `pdfinfo`
+    for the PDF, `unzip -t` for the ZIP.
+- Testing gotcha: Playwright's `click()` scrolls the target into view, so a
+  stage `boundingBox()` taken before clicking a swatch is stale. Measure it
+  again before every drag.
+
 ## The preview IS the canvas (Composite mode)
 
 In Composite mode the preview video is fed by `canvas.captureStream(15)` — it
