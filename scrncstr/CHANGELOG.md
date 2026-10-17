@@ -7,6 +7,12 @@ offline and opened straight off a disk. A new release goes in both.
 Releases before 1.18.0 went out without notes. Rather than guess at them, this
 file starts at 1.18.0; `README.md` describes how everything works as of 1.17.0.
 
+## 1.24.1 - 2026-10-16 - Ready for EDTR Studio
+
+- Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
+- The offline copy now only clears its own old caches, so it can share one website with the other apps without wiping theirs.
+- The shared SUITE block gained its "EDTR STUDIO" section (`suiteInStudio()`).
+
 ## 1.24.0 - 2026-10-16 - Saved pages
 
 - **Save page** (book-plus icon, key `n`): the drawing, plus a snapshot of the screen behind it (no webcam, logo, timer or effects; the blank board if Blank screen is on), is kept as a page, then the screen is cleared. The clear is an ordinary undoable change, so Ctrl+Z puts the drawing back on screen; the page stays saved.

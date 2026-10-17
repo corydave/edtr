@@ -72,7 +72,9 @@ self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     // Drop every cache from a previous version.
     const names = await caches.keys();
-    await Promise.all(names.filter(n => n !== CACHE).map(n => caches.delete(n)));
+    // Only this app's own old caches ("scrncst" covers the old name too): on a site shared
+    // with the other apps (EDTR Studio) their caches must be left alone.
+    await Promise.all(names.filter(n => n.startsWith('scrncst') && n !== CACHE).map(n => caches.delete(n)));
     await self.clients.claim();
   })());
 });
