@@ -1,0 +1,2989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EDTR Studio</title>
+<meta name="description" content="Every EDTR app in one window: text, PDFs, images, sound, video, screen recording, vector art, 3D and page layout. Free, private, and it all runs in your browser.">
+
+<!--
+  ================================================================
+  EDTR STUDIO
+  ================================================================
+  One window for the whole family. A rail of app icons runs down the
+  left; click one and that app opens beside it, inside a frame. Each
+  app keeps running while you switch to another, so nothing you were
+  doing is lost. On a phone the rail tucks away behind a small "Apps"
+  tab on the left edge.
+
+  Where the apps come from
+  ------------------------
+  This page lives in a folder next to the apps' own folders:
+      productivity-suite/create/      <- this page
+      productivity-suite/imgedtr/     <- IMGEDTR, and so on
+  so it opens each app at "../imgedtr/". Served from the same site
+  (edtrapps.com/create/ beside edtrapps.com/imgedtr/), the apps are
+  "same-site" frames, which the browser trusts fully: Open and Save
+  work, and each app works offline. If an app's folder isn't on this
+  site, the Studio falls back to the app's own address (imgedtr.app),
+  which works but with limits (see the About box).
+
+  SECURITY SETTINGS (read these first)
+  ------------------------------------
+  Content-Security-Policy lists what this page may load; anything not
+  listed is blocked.
+  - default-src 'none'      Start from nothing.
+  - script-src / style-src  Only the code and styles inside this file.
+  - img-src 'self' data:    Pictures from this site and built-in data: images.
+  - frame-src               The apps: this same site, or each app's own site.
+  - connect-src 'self'      Only to check whether an app's folder is here.
+  - manifest-src / worker-src 'self'   Installing and working offline.
+  - base-uri / form-action 'none'      Nothing can redirect links or forms.
+  The Studio never reads what is inside an app, and the apps tell it
+  only an app's id ("imgedtr") or a number key - never anything from
+  your files.
+  ================================================================
+-->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; frame-src 'self' https://txtedtr.app https://pdfedtr.app https://imgedtr.app https://sndedtr.app https://videdtr.app https://scrncstr.app https://vctredtr.app https://3dedtr.app https://dskedtr.app https://animedtr.app; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#1f2937">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<style>
+/* ================================================================
+   COLOUR TOKENS
+   Every colour comes from one of these, so the whole look changes in
+   one place. Text colours clear 7:1 (WCAG AAA) on their backgrounds.
+   ================================================================ */
+:root {
+  --bg: #f3f4f6;          /* behind everything */
+  --rail: #ffffff;        /* the rail down the left */
+  --surface: #ffffff;     /* cards and dialogs */
+  --fg: #1f2937;          /* main text */
+  --muted: #4b5563;       /* quieter text (7.5:1 on white) */
+  --line: #d6dae1;        /* thin borders */
+  --hover: rgba(31, 41, 55, .07);
+  --focus: #0046ad;       /* the keyboard focus ring */
+  --btn: #0046ad;         /* main buttons */
+  --shadow: 0 8px 28px rgba(0, 0, 0, .18);
+  /* The SUITE block's own pieces (credits, the GitHub box) read these. */
+  --suite-bg: var(--surface); --suite-fg: var(--fg); --suite-accent: #1f2937;
+  color-scheme: light;
+}
+/* Night mode, part 1: follow the computer's setting... */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1318; --rail: #161b22; --surface: #1b2029; --fg: #e6e8ec; --muted: #aab2be;
+    --line: #2e3542; --hover: rgba(230, 232, 236, .08); --focus: #9cc2ff; --btn: #0046ad;
+    --shadow: 0 8px 28px rgba(0, 0, 0, .55); --suite-accent: #9cc2ff;
+    color-scheme: dark;
+  }
+}
+/* ...part 2: unless the night mode button picked one. */
+:root[data-theme="dark"] {
+  --bg: #0f1318; --rail: #161b22; --surface: #1b2029; --fg: #e6e8ec; --muted: #aab2be;
+  --line: #2e3542; --hover: rgba(230, 232, 236, .08); --focus: #9cc2ff; --btn: #0046ad;
+  --shadow: 0 8px 28px rgba(0, 0, 0, .55); --suite-accent: #9cc2ff;
+  color-scheme: dark;
+}
+
+/* =========================================================================
+   SUITE BLOCK v4 (styles) - START
+   Identical in every app. Styles the "More apps" tab. Colours are worked
+   out from `currentColor` (whatever the text colour is in that theme), so
+   the cards look right in light and dark mode in every app without needing
+   to know any one app's colour names.
+   ========================================================================= */
+.suite-apps { display: flex; flex-direction: column; gap: 12px; }
+.suite-intro { margin: 0; font-size: 13px; line-height: 1.5; opacity: .85; }
+.suite-apps .suite-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px;
+  /* Two columns when there is room, one on a phone. */
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+/* Two class names, so an app's own "dialog ul li" styling cannot indent or
+   bullet the cards. */
+.suite-apps .suite-list > li { margin: 0; padding: 0; }
+.suite-apps .suite-intro { margin: 0; }
+.suite-card {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: 10px; color: inherit; text-decoration: none;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  min-height: 56px;              /* comfortably above the 44px touch minimum */
+}
+a.suite-card:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+/* A thick, obvious ring for keyboard users. Never remove this. */
+a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+/* An app's name in the help text, linked to that app (see suiteLinkApps).
+   The text's own colour, underlined, so it keeps the text's contrast. */
+.suite-app-link { color: inherit; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
+.suite-app-link:hover { text-decoration-thickness: 2px; }
+.suite-app-link:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; border-radius: 2px; }
+@media (prefers-color-scheme: dark) { .suite-app-link:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-app-link:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-app-link:focus-visible { outline-color: #0046ad; }
+@media (prefers-color-scheme: dark) { a.suite-card:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] a.suite-card:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] a.suite-card:focus-visible { outline-color: #0046ad; }
+.suite-card.is-here { border-width: 2px; border-color: #0046ad; }
+@media (prefers-color-scheme: dark) { .suite-card.is-here { border-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-card.is-here { border-color: #8ab4ff; }
+:root[data-theme="light"] .suite-card.is-here { border-color: #0046ad; }
+/* The icon tile: the app's own colour (set from SUITE_APPS in the script;
+   FLCC blue is only the fallback) with a white drawing, the same in both
+   themes. Every app colour carries white at 4.5:1 or better. */
+.suite-tile { flex: none; width: 36px; height: 36px; border-radius: 9px;
+  background: #0046ad; color: #fff; display: grid; place-items: center; }
+.suite-tile svg { width: 20px; height: 20px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.suite-name { font-weight: 700; letter-spacing: .04em; font-size: 13px; }
+.suite-blurb { font-size: 12px; line-height: 1.35; opacity: .8; }
+.suite-tag { flex: none; font-size: 16px; opacity: .8; white-space: nowrap; }
+/* "You are here" is a small pill rather than a bare arrow. */
+.suite-card.is-here .suite-tag { font-size: 10px; font-weight: 700; opacity: 1; letter-spacing: 0;
+  padding: 1px 7px; margin-left: 4px; border-radius: 999px; background: var(--suite-accent, #0046ad); color: #fff;
+  vertical-align: 1px; }
+/* Text for screen readers only (visually hidden, still announced). */
+.suite-sr { position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+/* ---- v2: splash screen, backup icon and dialog, credits ------------------
+   Each app sets these colours, in its own stylesheet:
+     --suite-bg      the panel colour     --suite-fg  the text colour
+     --suite-accent  the app's own colour, for the main button (it must
+                     carry white text at 7:1 - every app colour does)
+   Everything else is worked out from those (and from currentColor). */
+.suite-splash, .suite-backup-dlg {
+  background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 14px; padding: 22px 24px 16px; margin: auto;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .35);
+  font: inherit; font-size: 14px; line-height: 1.45;
+}
+.suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
+  max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
+.suite-backup-dlg { width: min(440px, 92vw); }
+.suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+.suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
+.suite-backup-dlg h2 { font-size: 17px; letter-spacing: 0; margin-bottom: 8px; }
+.suite-backup-dlg p { margin: 0 0 10px; }
+.suite-backup-detail { font-weight: 600; }
+.suite-backup-note { font-size: 12.5px; opacity: .8; }
+
+.suite-splash-x {
+  float: right; margin: -8px -10px 0 0; width: 36px; height: 36px; border-radius: 8px;
+  background: none; border: 1px solid transparent; color: inherit; font-size: 22px; line-height: 1; cursor: pointer;
+}
+.suite-splash-x:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+.suite-splash-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.suite-splash-head .suite-tile { width: 52px; height: 52px; border-radius: 13px; }
+.suite-splash-head .suite-tile svg { width: 28px; height: 28px; }
+.suite-splash-blurb { margin: 2px 0 0; opacity: .8; }
+
+/* The ways to begin: big, clear buttons. */
+.suite-splash-actions { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.suite-backup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.suite-backup-actions .suite-splash-choice { flex: 1 1 110px; align-items: center; }
+.suite-splash-choice {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left;
+  padding: 12px 14px; min-height: 48px; border-radius: 10px; cursor: pointer;
+  font: inherit; color: inherit; background: color-mix(in srgb, currentColor 5%, transparent);
+  white-space: normal; width: auto; justify-content: flex-start;   /* undo any app-wide button styling */
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+.suite-splash-choice:hover { background: color-mix(in srgb, currentColor 11%, transparent); }
+.suite-splash-choice.is-primary { background: var(--suite-accent, #0046ad); border-color: var(--suite-accent, #0046ad); color: #fff; }
+.suite-splash-choice.is-primary:hover { filter: brightness(0.88); }
+.suite-splash-choice.is-resume { grid-column: 1 / -1; }
+.suite-splash-choice.is-danger { background: #b42318; border-color: #b42318; color: #fff; }
+.suite-splash-choice-label { font-weight: 700; }
+.suite-splash-choice-detail { font-size: 12.5px; opacity: .85; }
+.suite-splash-hint { margin: 10px 0 0; font-size: 12.5px; opacity: .75; }
+
+/* Keyboard focus: a thick ring on everything you can press. */
+.suite-splash button:focus-visible, .suite-splash a:focus-visible,
+.suite-backup-dlg button:focus-visible, .suite-credits a:focus-visible {
+  outline: 3px solid #0046ad; outline-offset: 2px;
+}
+@media (prefers-color-scheme: dark) {
+  .suite-splash button:focus-visible, .suite-splash a:focus-visible,
+  .suite-backup-dlg button:focus-visible, .suite-credits a:focus-visible { outline-color: #8ab4ff; }
+}
+:root[data-theme="dark"] .suite-splash button:focus-visible, :root[data-theme="dark"] .suite-splash a:focus-visible,
+:root[data-theme="dark"] .suite-backup-dlg button:focus-visible, :root[data-theme="dark"] .suite-credits a:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-splash button:focus-visible, :root[data-theme="light"] .suite-splash a:focus-visible,
+:root[data-theme="light"] .suite-backup-dlg button:focus-visible, :root[data-theme="light"] .suite-credits a:focus-visible { outline-color: #0046ad; }
+
+/* A tile showing the app's real icon: the icon brings its own colour and shape. */
+.suite-tile.has-mark { background: none !important; overflow: hidden; }
+.suite-tile.has-mark img { width: 100%; height: 100%; display: block; border-radius: inherit; }
+
+/* The family row under the choices. */
+.suite-splash-family { margin-top: 20px; padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
+.suite-splash-family h3 { margin: 0 0 10px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
+/* An even grid: with nine apps, the eight others fit one line on a computer
+   (the splash is 660px wide so each gets about 70px, room for the longest
+   names, SCRNCSTR and VCTREDTR) and wrap into two rows on a phone (4 + 4). */
+ul.suite-splash-list { list-style: none; margin: 0; padding: 0; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 4px; }
+ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
+@media (max-width: 560px) { ul.suite-splash-list { grid-template-columns: repeat(4, 1fr); } }   /* phones: 4 + 4 */
+.suite-splash-app {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 2px;
+  border-radius: 10px; color: inherit; text-decoration: none; min-height: 44px;
+  border: 1px solid transparent;
+}
+.suite-splash-app:hover { background: color-mix(in srgb, currentColor 8%, transparent);
+  border-color: color-mix(in srgb, currentColor 18%, transparent); }
+.suite-splash-app-name { font-size: 11.5px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; }
+.suite-credits-line { margin: 16px 0 0; font-size: 11.5px; opacity: .8; text-align: center; }
+.suite-credits-line a, .suite-credits-made a { color: inherit; }
+
+/* The foot of the splash: version and update check on the left, Install on
+   the right. On a phone the two stack. */
+.suite-splash-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px 16px; margin-top: 12px; padding-top: 10px; font-size: 12px;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
+.suite-splash-update, .suite-splash-install { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.suite-splash-install[hidden], .suite-splash-foot [hidden] { display: none; }
+.suite-splash-status { opacity: .85; }
+.suite-splash-install-hint { opacity: .85; }
+.suite-splash-small {
+  font: inherit; font-size: 12px; font-weight: 600; color: inherit; cursor: pointer;
+  min-height: 32px; padding: 5px 12px; border-radius: 8px; white-space: nowrap; width: auto;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+}
+.suite-splash-small:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.suite-splash-small.is-primary { background: var(--suite-accent, #0046ad); border-color: var(--suite-accent, #0046ad); color: #fff; }
+.suite-splash-small.is-primary:hover { filter: brightness(0.88); }
+.suite-splash-small:disabled { opacity: .6; cursor: default; }
+
+/* The backup icon in the top bar, with an orange dot to catch the eye. */
+.suite-backup-btn { position: relative; }
+.suite-backup-svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; display: block; }
+.suite-backup-dot { position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; border-radius: 50%;
+  background: #f45922; box-shadow: 0 0 0 2px var(--suite-bg, Canvas); }
+
+/* Credits in the About tab. */
+.suite-credits { margin-top: 16px; padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
+.suite-credits p { margin: 0 0 6px; }
+.suite-credits-by { font-size: 12px; opacity: .8; text-transform: uppercase; letter-spacing: .06em; }
+.suite-credits-logos { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+.suite-credits-org { color: inherit; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center; }
+.suite-credits-org img { height: 36px; width: auto; display: block; }
+
+@media (max-width: 480px) {
+  .suite-splash { padding: 18px 16px 12px; }
+  .suite-splash-actions { grid-template-columns: 1fr; }
+  .suite-splash-head .suite-tile { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .suite-splash[open] { animation: suite-pop .16s ease-out; }
+  @keyframes suite-pop { from { opacity: 0; transform: translateY(6px); } }
+}
+/* ---- Features: the animated tour (renderSuiteFeatures and friends) ------
+   Colours come from the app's --suite-fg (text) and --suite-accent (its own
+   colour), so every drawing follows light and dark mode. The accent is mixed
+   a little toward the text colour: darker in light mode, lighter in dark
+   mode, so it always stands out from the background. */
+.suite-feats { display: flex; flex-direction: column; gap: 10px; max-width: 640px; margin: 0 auto; }
+.suite-feat-stage {
+  --fx-fg: var(--suite-fg, currentColor);
+  --fx-acc: color-mix(in oklab, var(--suite-accent, #0046ad) 68%, var(--fx-fg));
+  --fx-pop: color-mix(in oklab, #e8590c 80%, var(--fx-fg));          /* a warm second colour */
+  --fx-ok:  color-mix(in oklab, #2f9e44 78%, var(--fx-fg));          /* "done", "fixed" */
+  color: var(--fx-fg);
+  aspect-ratio: 16 / 10; width: 100%; border-radius: 12px; overflow: hidden;
+  background: color-mix(in srgb, currentColor 5%, var(--suite-bg, Canvas));
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.suite-feat-art { display: block; width: 100%; height: 100%; }
+.suite-feat-words { min-height: 4.6em; }                 /* the controls stay put as the text changes length */
+.suite-feat-title { margin: 2px 0 4px; font-size: 16px; }
+.suite-feat-text { margin: 0; font-size: 14px; line-height: 1.5; opacity: .88; }
+.suite-feat-nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.suite-feat-step, .suite-feat-pause {
+  flex: none; width: 40px; height: 40px; border-radius: 999px; padding: 0; cursor: pointer;
+  display: inline-grid; place-items: center; color: inherit; font: inherit;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+}
+.suite-feat-step:hover, .suite-feat-pause:hover { background: color-mix(in srgb, currentColor 13%, transparent); }
+.suite-feat-step svg, .suite-feat-pause svg { width: 20px; height: 20px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feat-pause svg path[d^="M7 4"] { fill: currentColor; }     /* the play triangle is solid */
+.suite-feat-dots { display: flex; gap: 2px; flex: 1; justify-content: center; }
+/* Each dot is a 32px target (easy to tap) with a small round mark inside. */
+.suite-feat-dot { width: 32px; height: 32px; padding: 0; border: 0; background: none; cursor: pointer;
+  display: inline-grid; place-items: center; border-radius: 999px; }
+.suite-feat-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid currentColor; opacity: .55; box-sizing: border-box; }
+.suite-feat-dot[aria-current="true"]::after { background: var(--suite-accent, #0046ad); border-color: var(--suite-accent, #0046ad);
+  opacity: 1; width: 22px; border-radius: 6px; }
+.suite-feat-count { font-size: 12.5px; opacity: .75; min-width: 3.6em; text-align: center; }
+.suite-feats button:focus-visible, .suite-feats-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { .suite-feats button:focus-visible, .suite-feats-card:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-feats button:focus-visible, :root[data-theme="dark"] .suite-feats-card:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-feats button:focus-visible, :root[data-theme="light"] .suite-feats-card:focus-visible { outline-color: #0046ad; }
+@media (max-width: 420px) { .suite-feat-count { display: none; } }   /* the dots already say where you are */
+
+/* The tour as its own dialog (from the splash card). */
+.suite-feats-dlg {
+  background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 14px; padding: 18px 20px 14px; margin: auto;
+  width: min(620px, 94vw); max-width: 94vw; max-height: 94vh; overflow: auto;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .35); font: inherit; font-size: 14px; line-height: 1.45;
+}
+.suite-feats-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+.suite-feats-dlg h2 { margin: 0 0 12px; font-size: 18px; }
+.suite-feats-dlg .suite-splash-x:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+
+/* The card that opens it: as wide as its row, with a sparkle. */
+.suite-feats-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 10px 0 0; padding: 10px 14px;
+  min-height: 48px; border-radius: 10px; cursor: pointer; text-align: left; font: inherit; color: inherit;
+  background: color-mix(in srgb, var(--suite-accent, #0046ad) 9%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--suite-accent, #0046ad) 55%, currentColor);
+}
+.suite-feats-card:hover { background: color-mix(in srgb, var(--suite-accent, #0046ad) 16%, transparent); }
+.suite-feats-card-icon { flex: none; width: 26px; height: 26px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feats-card-words { display: flex; flex-direction: column; gap: 2px; }
+
+/* The drawings' own colour classes (used inside each APP_FEATURES picture).
+   Tints use color-mix, so `opacity` stays free for the animations. */
+/* Text size and weight are set here on the drawing itself (inherited), so a
+   drawing's own font-size attributes still win where it needs bigger words. */
+.suite-feat-art { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 12px; font-weight: 600; }
+.suite-feat-art .fx-ink   { fill: var(--fx-fg); }
+.suite-feat-art .fx-paper { fill: var(--suite-bg, Canvas); }
+.suite-feat-art .fx-soft  { fill: color-mix(in srgb, var(--fx-fg) 9%, transparent); }
+.suite-feat-art .fx-mute  { fill: color-mix(in srgb, var(--fx-fg) 26%, transparent); }
+.suite-feat-art .fx-acc   { fill: var(--fx-acc); }
+.suite-feat-art .fx-acc-soft { fill: color-mix(in srgb, var(--fx-acc) 22%, transparent); }
+.suite-feat-art .fx-pop   { fill: var(--fx-pop); }
+.suite-feat-art .fx-pop-soft { fill: color-mix(in srgb, var(--fx-pop) 25%, transparent); }
+.suite-feat-art .fx-ok    { fill: var(--fx-ok); }
+.suite-feat-art .fx-accbtn { fill: var(--suite-accent, #0046ad); }   /* the app colour itself: white text on it is 7:1 */
+.suite-feat-art .fx-white { fill: #fff; }
+.suite-feat-art .fx-line, .suite-feat-art .fx-line-acc, .suite-feat-art .fx-line-pop,
+.suite-feat-art .fx-line-mute, .suite-feat-art .fx-line-ok {
+  fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.suite-feat-art .fx-line      { stroke: var(--fx-fg); }
+.suite-feat-art .fx-line-acc  { stroke: var(--fx-acc); }
+.suite-feat-art .fx-line-pop  { stroke: var(--fx-pop); }
+.suite-feat-art .fx-line-ok   { stroke: var(--fx-ok); }
+.suite-feat-art .fx-line-white { fill: none; stroke: #fff; stroke-width: 4; }
+.suite-feat-art .fx-line-mute { stroke: color-mix(in srgb, var(--fx-fg) 30%, transparent); }
+.suite-feat-art .fx-edge  { stroke: color-mix(in srgb, var(--fx-fg) 28%, transparent); stroke-width: 1.5; }
+.suite-feat-art .fx-t     { fill: var(--fx-fg); }
+.suite-feat-art .fx-t-acc { fill: var(--fx-acc); }
+.suite-feat-art .fx-t-pop { fill: var(--fx-pop); }
+.suite-feat-art .fx-t-ok  { fill: var(--fx-ok); }
+.suite-feat-art .fx-t-mute { fill: color-mix(in srgb, var(--fx-fg) 55%, transparent); }
+.suite-feat-art .fx-t-w   { fill: #fff; }
+.suite-feat-art .fx-mono  { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-weight: 500; }
+.suite-feat-art .fx-hl    { fill: color-mix(in srgb, #fcc419 60%, transparent); }   /* highlighter yellow */
+.suite-feat-art .fx-dim   { fill: #000; fill-opacity: .55; }                          /* dims, in either theme */
+.suite-feat-art .fx-dash  { stroke-dasharray: 5 4; }
+.suite-feat-art .fx-thin  { stroke-width: 1.5; }
+.suite-feat-art .fx-thick { stroke-width: 4; }
+.suite-feat-art .fx-stop-acc { stop-color: var(--fx-acc); }
+.suite-feat-art .fx-stop-pop { stop-color: var(--fx-pop); }
+.suite-feat-art .fx-stop-ok  { stop-color: var(--fx-ok); }
+.suite-feat-art .fx-stop-hi  { stop-color: #fff; }
+.suite-feat-art .fx-stop-ink { stop-color: var(--fx-fg); }
+
+/* ---- The splash, 2026-10-11: a picture on top, cards with icons ---------- */
+/* With a picture the splash is wider, and the picture runs edge to edge. */
+.suite-splash.has-hero { width: min(760px, 94vw); padding-top: 0; }
+.suite-splash-hero { position: relative; margin: 0 -24px 16px; aspect-ratio: 16 / 5.8; overflow: hidden;
+  border-radius: 13px 13px 0 0; background: var(--suite-accent, #0046ad); }
+.suite-splash-hero img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; display: block; }
+/* The close button sits on the picture: a solid circle, so it reads on any colour. */
+.suite-splash-hero .suite-splash-x { position: absolute; top: 10px; right: 10px; float: none; margin: 0;
+  background: rgba(255, 255, 255, .92); color: #111; border: 0; border-radius: 999px; box-shadow: 0 1px 4px rgba(0, 0, 0, .3); }
+.suite-splash-hero .suite-splash-x:hover { background: #fff; }
+.suite-splash.has-hero .suite-splash-head { margin-bottom: 14px; }
+
+/* The cards: an icon, then the words. Big enough to tap; one column on a phone. */
+.suite-splash-choice { flex-direction: row; align-items: flex-start; gap: 12px; }
+.suite-splash-choice-words { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.suite-splash-choice-icon { flex: none; width: 28px; height: 28px; margin-top: 1px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--suite-accent, #0046ad); }
+/* In dark mode the app colour is too dark for a line on a dark card: lift it toward the text colour. */
+.suite-splash-choice-icon { color: color-mix(in oklab, var(--suite-accent, #0046ad) 70%, var(--suite-fg, currentColor)); }
+.suite-splash-choice.is-primary .suite-splash-choice-icon { color: #fff; }
+/* Solid parts of a drawing (the front sheet of the templates fan) take the card's own colour. */
+.suite-splash-choice-icon .suite-ico-solid { fill: var(--suite-bg, Canvas); }
+.suite-splash-choice:not(.is-primary) .suite-splash-choice-icon .suite-ico-solid {
+  fill: color-mix(in srgb, var(--suite-fg, CanvasText) 5%, var(--suite-bg, Canvas)); }
+.suite-splash-choice.is-primary .suite-splash-choice-icon .suite-ico-solid { fill: var(--suite-accent, #0046ad); }
+@media (max-width: 520px) {
+  .suite-splash.has-hero { padding-left: 16px; padding-right: 16px; }
+  .suite-splash-hero { margin: 0 -16px 14px; aspect-ratio: 16 / 7.5; }
+  .suite-splash-actions { grid-template-columns: 1fr; }
+  .suite-splash-choice { padding: 10px 12px; }
+}
+
+/* Picking up a backup: a slim, quiet row - there when needed, never in the way. */
+.suite-splash-resume { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; width: 100%; margin: 8px 0 0;
+  padding: 6px 8px; min-height: 36px; border: 0; border-radius: 8px; background: none; color: inherit;
+  font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; opacity: .85; }
+.suite-splash-resume:hover { background: color-mix(in srgb, currentColor 8%, transparent); opacity: 1; }
+.suite-splash-resume svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; }
+.suite-splash-resume-label { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.suite-splash-resume-detail { opacity: .8; }
+
+/* The links under the credits: edtrapps.com and the source on GitHub. */
+.suite-links { display: inline-block; margin-top: 4px; }
+.suite-links a { color: inherit; font-weight: 600; }
+
+.suite-source { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 0 0 18px; padding: 14px 16px;
+  border-radius: 12px; border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent); }
+.suite-source-words { flex: 1 1 260px; margin: 0; font-size: 13.5px; line-height: 1.5; }
+/* The button: the text colour as its fill, so it is the strongest thing in the tab in light and dark mode. */
+.suite-source-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 10px;
+  background: var(--suite-fg, CanvasText); color: var(--suite-bg, Canvas); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.suite-source-btn:hover { filter: brightness(1.15); }
+.suite-source-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.suite-source-btn:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
+@media (prefers-color-scheme: dark) { .suite-source-btn:focus-visible { outline-color: #8ab4ff; } }
+:root[data-theme="dark"] .suite-source-btn:focus-visible { outline-color: #8ab4ff; }
+:root[data-theme="light"] .suite-source-btn:focus-visible { outline-color: #0046ad; }
+
+/* ---- Touch standard (2026-10-12): numbers with a finger ------------------
+   The panel a tap on a number field opens on a phone or tablet (see
+   suiteNumberPop), and the lit field it works on. Big enough to use with a
+   thumb: 44 px buttons and a 44 px tall slider. */
+.suite-num-pop { position: fixed; inset: auto; margin: 0; width: min(360px, calc(100vw - 16px));
+  padding: 10px 12px 12px; border: 1px solid color-mix(in srgb, var(--suite-fg, CanvasText) 22%, transparent);
+  border-radius: 14px; background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .28); font: 14px/1.4 system-ui, sans-serif; }
+.suite-num-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; font-size: 13px; opacity: .85; }
+.suite-num-head output { font-weight: 700; font-variant-numeric: tabular-nums; opacity: 1; }
+.suite-num-row { display: flex; align-items: center; gap: 8px; }
+.suite-num-pop input[type="range"] { flex: 1; min-width: 0; height: 44px; margin: 0; accent-color: var(--suite-accent, #0046ad); }
+.suite-num-pop button { flex: none; display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  border-radius: 10px; border: 1px solid color-mix(in srgb, var(--suite-fg, CanvasText) 22%, transparent);
+  background: color-mix(in srgb, var(--suite-fg, CanvasText) 6%, var(--suite-bg, Canvas)); color: inherit;
+  font-size: 22px; line-height: 1; cursor: pointer; touch-action: manipulation; }
+.suite-num-pop button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75;
+  stroke-linecap: round; stroke-linejoin: round; }
+.suite-num-pop button:focus-visible, .suite-num-pop input:focus-visible { outline: 3px solid var(--suite-accent, #0046ad); outline-offset: 2px; }
+/* The field being changed lights up, so it's clear which one the panel is working on. */
+input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #0046ad); outline-offset: 1px; }
+
+/* ---- EDTR Studio (2026-10-16): an app running inside the Studio ----------
+   The Studio's rail already lists every app and installs as one app, so an
+   app inside it leaves out the splash's "More apps in this family" row and
+   the install hint. (html.suite-in-studio is set by the block's script.) */
+.suite-in-studio .suite-splash-family, .suite-in-studio .suite-splash-install { display: none !important; }
+/* SUITE BLOCK v4 (styles) - END ======================================== */
+
+/* ================================================================
+   BASICS
+   ================================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; overflow: hidden;              /* the apps scroll themselves; the Studio never does */
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* The "skip" link: the first thing a keyboard reaches. */
+.skip { position: absolute; left: 12px; top: -60px; z-index: 50; padding: 10px 14px; border-radius: 8px;
+  background: var(--btn); color: #fff; }
+.skip:focus { top: 12px; }
+/* Small line icons (24 x 24, 2px strokes, round ends - the family's style). */
+.ico { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ================================================================
+   THE LAYOUT: rail on the left, the stage (the open app) beside it
+   ================================================================ */
+.studio { display: flex; height: 100%; height: 100dvh; }
+
+.rail {
+  flex: none; width: 76px; display: flex; flex-direction: column; align-items: stretch;
+  background: var(--rail); border-right: 1px solid var(--line);
+  padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+}
+/* The Studio's own button at the top: back to the Studio home. */
+.rail-home { display: grid; place-items: center; height: 48px; margin-bottom: 6px; border: 0; border-radius: 12px;
+  background: none; cursor: pointer; }
+.rail-home:hover { background: var(--hover); }
+.rail-home svg { width: 30px; height: 30px; }
+.rail-home[aria-current="page"] { background: var(--hover); }
+
+/* The apps. The list scrolls if the window is short. */
+.rail-list { list-style: none; margin: 0; padding: 0; flex: 1; overflow-y: auto; overflow-x: hidden;
+  display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; }
+.rail-app {
+  position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 7px 2px 6px; border: 0; border-radius: 12px; background: none; cursor: pointer;
+}
+.rail-app:hover { background: var(--hover); }
+.rail-app .suite-tile { width: 36px; height: 36px; }
+.rail-label { font-size: 11px; font-weight: 600; line-height: 1.1; color: var(--muted); }
+/* The app on show: a bar on its left edge and a stronger label (not colour alone). */
+.rail-app[aria-current="page"] { background: var(--hover); }
+.rail-app[aria-current="page"] .rail-label { color: var(--fg); font-weight: 700; }
+.rail-app[aria-current="page"]::before { content: ''; position: absolute; left: -6px; top: 10px; bottom: 10px;
+  width: 4px; border-radius: 0 4px 4px 0; background: var(--fg); }
+/* An app that is open (running in the background): a small dot under its icon. */
+.rail-dot { position: absolute; top: 38px; right: 14px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--fg); box-shadow: 0 0 0 2px var(--rail); }
+.rail-dot[hidden] { display: none; }
+
+.rail-foot { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px solid var(--line); }
+.rail-btn { display: grid; place-items: center; height: 40px; border: 0; border-radius: 10px; background: none; cursor: pointer; }
+.rail-btn:hover { background: var(--hover); }
+.rail-btn[hidden] { display: none; }
+
+/* The stage: the home page and every open app's frame, stacked in one place. */
+.stage { position: relative; flex: 1; min-width: 0; outline: none; }
+.app-frame {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg);
+}
+/* Apps in the background keep running and keep their size (so nothing
+   re-lays itself out when you come back), but can't be seen, clicked or
+   reached with the keyboard ("inert" is set on them too). */
+.app-frame.is-away { visibility: hidden; pointer-events: none; }
+.app-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted);
+  pointer-events: none; font-size: 14px; }
+.app-loading[hidden] { display: none; }
+
+/* ================================================================
+   THE STUDIO HOME: shown when no app is open (and from the top button)
+   ================================================================ */
+.home { position: absolute; inset: 0; overflow-y: auto; padding: 40px 32px 48px; }
+.home[hidden] { display: none; }
+.home-inner { max-width: 1040px; margin: 0 auto; }
+.home h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 3.4vw, 2.2rem); letter-spacing: -.01em; }
+.home .lede { margin: 0 0 22px; max-width: 62ch; color: var(--muted); }
+.home-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); }
+.home-card { position: relative; }
+.home-open {
+  width: 100%; height: 100%; display: flex; gap: 12px; align-items: flex-start; text-align: left;
+  padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); cursor: pointer;
+}
+.home-open:hover { box-shadow: var(--shadow); }
+.home-open .suite-tile { width: 44px; height: 44px; border-radius: 11px; }
+.home-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-right: 26px; }
+.home-name { font-weight: 700; }
+.home-kind { font-size: 12.5px; color: var(--muted); }
+.home-blurb { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+/* An open app's card says so, and gets a close button in its corner. */
+.home-state { font-size: 12px; font-weight: 700; }
+.home-close { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 32px; height: 32px;
+  border: 0; border-radius: 8px; background: none; cursor: pointer; color: var(--muted); }
+.home-close:hover { background: var(--hover); color: var(--fg); }
+.home-close svg { width: 18px; height: 18px; }
+.home-close[hidden] { display: none; }
+.home-tips { margin-top: 26px; color: var(--muted); font-size: 13.5px; }
+.home-tips kbd, .about kbd { font: inherit; font-size: 12px; padding: 1px 6px; border: 1px solid var(--line);
+  border-bottom-width: 2px; border-radius: 5px; background: var(--surface); color: var(--fg); }
+
+/* ================================================================
+   MENUS AND DIALOGS
+   ================================================================ */
+/* The menu for an app in the rail (right-click, or Shift+F10). */
+.menu { position: fixed; inset: auto; margin: 0; min-width: 210px; padding: 6px; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+.menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0;
+  border-radius: 8px; background: none; text-align: left; cursor: pointer; }
+.menu button:hover, .menu button:focus-visible { background: var(--hover); outline: none; }
+.menu button[hidden] { display: none; }
+.menu .ico { width: 18px; height: 18px; }
+
+dialog.box { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border: 1px solid var(--line);
+  border-radius: 16px; background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+dialog.box::backdrop { background: rgba(15, 20, 28, .55); }
+.box-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px 8px; }
+.box-head h2 { margin: 0; flex: 1; font-size: 1.15rem; }
+.box-body { padding: 4px 18px 18px; overflow-y: auto; }
+.box-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 0 18px 18px; flex-wrap: wrap; }
+.btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+  font-weight: 600; cursor: pointer; }
+.btn.primary { background: var(--btn); border-color: var(--btn); color: #fff; }
+.btn.danger { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.x-btn { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 10px; background: none; cursor: pointer; }
+.x-btn:hover { background: var(--hover); }
+.about h3 { margin: 18px 0 6px; font-size: 1rem; }
+.about p, .about li { color: var(--muted); }
+.about table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.about td { padding: 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.about td:first-child { width: 42%; white-space: nowrap; padding-right: 12px; }
+
+/* A short message at the bottom of the screen ("IMGEDTR closed."). */
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  max-width: min(520px, calc(100vw - 32px)); padding: 10px 16px; border-radius: 10px; background: #1f2937; color: #fff;
+  box-shadow: var(--shadow); font-size: 14px; z-index: 40; }
+.toast[hidden] { display: none; }
+
+/* ================================================================
+   PHONES: the rail tucks away
+   ================================================================
+   Every app already uses the whole phone screen (and most have their own
+   toolbar along the bottom), so on a phone the rail becomes a small "Apps"
+   tab on the left edge, halfway down - out of the way of the apps' top
+   and bottom bars. Tap it for a sheet of every app. */
+.edge-tab { display: none; }
+.sheet .home-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+.sheet .home-open { flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 12px 8px; }
+.sheet .home-words { padding-right: 0; align-items: center; }
+.sheet .home-blurb { display: none; }
+.sheet-home { width: 100%; margin-bottom: 10px; }
+@media (max-width: 719px) {
+  .rail { display: none; }
+  .edge-tab {
+    display: grid; place-items: center; position: fixed; left: 0; top: 46%; z-index: 30;
+    width: 26px; height: 64px; padding: 0; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 12px 12px 0; background: var(--surface); color: var(--fg);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .2); opacity: .92; cursor: pointer; touch-action: manipulation;
+  }
+  /* An invisible ring around it, so a thumb catches it easily (a 44 px target). */
+  .edge-tab::after { content: ''; position: absolute; inset: -10px -14px -10px 0; }
+  .edge-tab svg { width: 18px; height: 18px; }
+  .home { padding: 24px 16px calc(32px + env(safe-area-inset-bottom)) 36px; }
+  dialog.sheet { width: 100vw; max-width: 100vw; margin: auto 0 0; border-radius: 18px 18px 0 0;
+    max-height: 85dvh; padding-bottom: env(safe-area-inset-bottom); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rail-app, .home-open { transition: background-color .12s, box-shadow .12s; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#stage" id="skipLink">Skip to the open app</a>
+
+<div class="studio">
+  <!-- ===== THE RAIL: every app, top to bottom ===== -->
+  <nav class="rail" aria-label="Apps">
+    <button class="rail-home" id="homeBtn" type="button" title="EDTR Studio home (Ctrl+Shift+0)" aria-label="EDTR Studio home">
+      <svg viewBox="0 0 30 30" aria-hidden="true" id="homeMark"></svg>
+    </button>
+    <!-- Filled in by the code below, one button per app (roving tabindex: Up and Down move between them). -->
+    <ul class="rail-list" id="railList"></ul>
+    <div class="rail-foot">
+      <button class="rail-btn" id="installBtn" type="button" hidden title="Install EDTR Studio" aria-label="Install EDTR Studio">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg></button>
+      <button class="rail-btn" id="themeBtn" type="button"></button>
+      <button class="rail-btn" id="aboutBtn" type="button" title="About EDTR Studio and its keyboard shortcuts" aria-label="About and keyboard shortcuts">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></button>
+    </div>
+  </nav>
+
+  <!-- ===== THE STAGE: the Studio home, then each open app's frame ===== -->
+  <main class="stage" id="stage" tabindex="-1" aria-label="EDTR Studio home">
+    <section class="home" id="home" aria-labelledby="homeTitle">
+      <div class="home-inner">
+        <h1 id="homeTitle">EDTR Studio</h1>
+        <p class="lede">Every app in the family, in one window. Pick one to start; it keeps running while you
+          switch to another, so you can go from a screenshot to a flyer and back without losing your place.
+          Everything stays on this device.</p>
+        <ul class="home-grid" id="homeGrid" aria-label="Apps"></ul>
+        <p class="home-tips">Switch apps with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> to <kbd>9</kbd>, even while you work.
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>0</kbd> comes back to the rail. Right-click an app in the rail (or press
+          <kbd>Shift</kbd>+<kbd>F10</kbd>) to close it, reload it, or open it in its own tab.</p>
+      </div>
+    </section>
+    <div class="app-loading" id="loading" hidden>Opening...</div>
+  </main>
+</div>
+
+<!-- Phones: the Apps tab on the left edge, and the sheet it opens. -->
+<button class="edge-tab" id="edgeTab" type="button" aria-label="Apps" aria-haspopup="dialog" title="Apps (Ctrl+Shift+0)">
+  <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+</button>
+<dialog class="box sheet" id="sheet" aria-labelledby="sheetTitle">
+  <div class="box-head"><h2 id="sheetTitle">Apps</h2>
+    <button class="x-btn" type="button" data-close aria-label="Close"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+  <div class="box-body">
+    <button class="btn sheet-home" id="sheetHome" type="button">EDTR Studio home</button>
+    <ul class="home-grid" id="sheetGrid" aria-label="Apps"></ul>
+  </div>
+</dialog>
+
+<!-- The menu for one app in the rail. -->
+<div class="menu" id="appMenu" popover="manual" role="menu" aria-label="App">
+  <button type="button" role="menuitem" data-act="open"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg><span>Open</span></button>
+  <button type="button" role="menuitem" data-act="tab"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg><span>Open in its own tab</span></button>
+  <button type="button" role="menuitem" data-act="reload"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg><span>Reload</span></button>
+  <button type="button" role="menuitem" data-act="close"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><span>Close</span></button>
+</div>
+
+<!-- Closing (or reloading) an app that is open: ask first. -->
+<dialog class="box" id="closeDlg" aria-labelledby="closeTitle" aria-describedby="closeText">
+  <div class="box-head"><h2 id="closeTitle">Close this app?</h2></div>
+  <div class="box-body"><p id="closeText"></p></div>
+  <div class="box-foot">
+    <button class="btn" type="button" value="keep" id="closeKeep">Keep it open</button>
+    <button class="btn danger" type="button" value="close" id="closeYes">Close</button>
+  </div>
+</dialog>
+
+<!-- About, keyboard shortcuts and credits. -->
+<dialog class="box about" id="aboutDlg" aria-labelledby="aboutTitle">
+  <div class="box-head"><h2 id="aboutTitle">About EDTR Studio</h2>
+    <button class="x-btn" type="button" data-close aria-label="Close"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+  <div class="box-body">
+    <p>Every EDTR app in one window. Each app is the very same app you can open on its own; the Studio just
+      keeps them side by side, so switching is one click and nothing closes behind you.</p>
+    <p id="aboutWhere"></p>
+    <h3>Keyboard</h3>
+    <table>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd> ... <kbd>9</kbd></td><td>Switch to the first ... ninth app in the rail (works inside an app too, unless that app uses the key itself)</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>0</kbd></td><td>Back to the rail (on a phone: the Apps sheet)</td></tr>
+      <tr><td><kbd>Up</kbd> / <kbd>Down</kbd></td><td>Move along the rail; <kbd>Enter</kbd> opens</td></tr>
+      <tr><td><kbd>Shift</kbd>+<kbd>F10</kbd> or right-click</td><td>An app's menu: open it in its own tab, reload it, or close it</td></tr>
+    </table>
+    <h3>Good to know</h3>
+    <ul>
+      <li>Apps you aren't looking at keep running, so memory adds up: close the big ones (VIDEDTR, 3DEDTR) when you're done.</li>
+      <li>Each app saves, exports and keeps its own crash backups exactly as it does on its own.</li>
+      <li>Install the Studio and it gets its own window and icon; it works offline once each app has been opened once.</li>
+    </ul>
+    <div id="studioCredits"></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<div class="sr-only" id="announcer" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =========================================================================
+   SUITE BLOCK v4 - START
+   -------------------------------------------------------------------------
+   This block is IDENTICAL in every app in the family (TXTEDTR, PDFEDTR,
+   IMGEDTR, SNDEDTR, VIDEDTR, SCRNCSTR, VCTREDTR, 3DEDTR, DSKEDTR and ANIMEDTR). To add or change an
+   app, edit SUITE_APPS below, then paste the whole block - START to END - into every
+   app so they all stay in step. Nothing in here depends on the app around
+   it; the app just calls renderSuiteApps() with an empty element to fill.
+
+   What it does:
+     - draws the "More apps" tab of the help panel (renderSuiteApps)
+     - the credits in the About tab (renderSuiteCredits)
+     - the splash screen shown at start-up (suiteSplash)
+     - the animated Features tour (renderSuiteFeatures, suiteFeaturesOpen, suiteFeaturesCard)
+     - crash backups and the backup icon (SuiteBackup, suiteBackupBadge)
+     - installing the app (SuiteInstall) and checking for updates (SuiteUpdate)
+
+   Why the list is baked in rather than downloaded: every app works offline
+   and straight off a disk. Fetching the list from a server would break both,
+   and would tell that server every time someone opened the help panel.
+
+   Security notes:
+     - Cards are built with createElement and textContent, never by pasting
+       strings into innerHTML, so nothing in the list can inject markup.
+     - The one exception is each icon's SVG path data, which is a fixed
+       string written right here in this file (not user data), so it is safe.
+     - Links open in a new tab with rel="noopener noreferrer": the new page
+       cannot reach back into this one (noopener) and is not told which page
+       sent it (noreferrer).
+   ========================================================================= */
+const SUITE_APPS = [
+  // id:    matches the SUITE_CURRENT value each app passes in
+  // name:  shown on the card
+  // url:   the live, installable copy
+  // blurb: one short line saying what it is for
+  // icon:  Lucide-style path data, drawn in a 24x24 box, 2px strokes
+  // color: the app's own colour - its icon tile, like a family of app icons
+  //        that each have their own colour. Every one carries white at 4.5:1
+  //        or better, so the white drawing on the tile is always clear.
+  // listed: false keeps an app that is still being built OUT of every list
+  //        the other apps show (More apps, the splash's row, the links in
+  //        help text). The app itself still finds its own entry, for its
+  //        splash. Leave it off (or true) once the app is ready to share.
+  { id: 'txtedtr',  name: 'TXTEDTR',  color: '#d4400b', url: 'https://txtedtr.app/',
+    blurb: 'Code and text editor with highlighting, split view and live preview.',
+    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 12.5-2 2.5 2 2.5"/><path d="m14 12.5 2 2.5-2 2.5"/>' },
+  { id: 'pdfedtr',  name: 'PDFEDTR',  color: '#8a1c5c', url: 'https://pdfedtr.app/',
+    blurb: 'Edit, annotate and rearrange PDFs without uploading them anywhere.',
+    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>' },
+  { id: 'imgedtr',  name: 'IMGEDTR',  color: '#305305', url: 'https://imgedtr.app/',
+    blurb: 'Mark up screenshots and photos with spotlights, cursors and text.',
+    icon: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>' },
+  { id: 'sndedtr',  name: 'SNDEDTR',  color: '#4b5563', url: 'https://sndedtr.app/',
+    blurb: 'Multitrack audio editor with effects, recording and export.',
+    icon: '<path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"/>' },
+  { id: 'videdtr',  name: 'VIDEDTR',  color: '#0046ad', url: 'https://videdtr.app/',
+    blurb: 'Multitrack video editor with a timeline, effects and exact export.',
+    icon: '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>' },
+  { id: 'scrncstr', name: 'SCRNCSTR', color: '#00565d', url: 'https://scrncstr.app/',
+    blurb: 'Record your screen and webcam together, all on this machine.',
+    icon: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>' },
+  { id: 'vctredtr', name: 'VCTREDTR', color: '#5b21b6', url: 'https://vctredtr.app/',
+    blurb: 'Vector drawing with shape merging: union, subtract, fragment and more.',
+    icon: '<rect width="12" height="12" x="3" y="9" rx="2"/><circle cx="15" cy="9" r="6"/>' },
+  // The id starts with a digit, which is fine as a string key; just never use
+  // it bare as a JavaScript name or an unescaped CSS #id.
+  { id: '3dedtr',   name: '3DEDTR',   color: '#7a4100', url: 'https://3dedtr.app/',
+    blurb: '3D modeling with shape merging, ready for 3D printing.',
+    icon: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>' },
+  { id: 'dskedtr',  name: 'DSKEDTR',  color: '#195d61', url: 'https://dskedtr.app/',
+    blurb: 'Desktop publishing: newsletters, flyers and booklets, with text that flows between boxes.',
+    icon: '<path d="M2 5h8a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H2z"/><path d="M22 5h-8a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h8z"/>' },
+  // ANIMEDTR is still being built (2026-10-13): listed: false keeps it out of
+  // the other apps' lists until Dave says it is ready. Its colour is gold
+  // (Dave, 2026-10-13), yellower than 3DEDTR's bronze.
+  { id: 'animedtr', name: 'ANIMEDTR', color: '#655800', url: 'https://animedtr.app/', listed: false,
+    blurb: 'Animated, interactive lessons: a stage, a timeline and keyframes, no code.',
+    icon: '<circle cx="16" cy="7.5" r="4"/><circle cx="9.5" cy="13" r="2.5"/><circle cx="5" cy="18" r="1.5"/><path d="m16 16 3 3-3 3-3-3z"/>' }
+];
+
+/* The apps to SHOW, from where `currentId` is looking: every listed app,
+   plus the current app itself (so its own card can say "You are here"). */
+function suiteShownApps(currentId) {
+  return SUITE_APPS.filter((a) => a.listed !== false || a.id === currentId);
+}
+
+/* Each app's real icon, as a data: URI (so it works offline and needs no
+   file). Shown on the tiles in More apps and on the splash. These are
+   fixed images drawn right here - an <img> cannot run anything in them. */
+const SUITE_MARKS = {
+  txtedtr  : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGgAAABoCAYAAAAdHLWhAAAHf0lEQVR42u2dTWxcVxXH/+fe+9449tiZsWIiSNpAghMVqkqoC5pVNggiVUhUYkRXfIRuCisWqC0rWiFFAglWwLJiEYEUVVXYpCBVKDsiCgipCg21BDYNaWpce5z5fu/ew+K+55n6M57MvJl5nL80imPPyO/e37nnnHfveceAaKxF+/2QD/i5aGAQ+FAfYIC4Ai1Tl424Ar3XYqDd4KRE+QJMbf70PGZkEocCpq14Fksf0lXY7XO/K6D0DauXzs0W29FLYHzFOiwALK5uGIAANoo+APDbOqnLx64sbW6HRDviTeX0XCPg69MFcz7uOI9WNDRpAkygUG/Zm1HDXixdW672xiWz9c4KFF2Fva/xYrFgztdacRtMAUgShWEqYjBsHBWnzOdr4JcIeIEr0EjcHvW6trcrnwlP6ebbR4w604wZRFAyhRm4OoabMoSWdf+8u64/e/aNpXbKxPS+8VF0jhJQjhkKRAwiHDYDFPWRZBOTdSAClT9esiUA99Kfmj0/52LAWrkTyiBTgNaA3h3F7t9lB5otg6bnAGchlIZIR2lwvQo0Nned552AjAFqGwi+9gLCi98ARx1PWDR4WQsKQrRf/zn415eB4jxg4wdYQWAgLADhFCiYkgU0xOwAREAQ+q8f2MWlH2b2cUhW0JBWUOxjD++diJn9EwzqvkRDSOAOnlu5zxlzCSABJBJAAkgkgEQCSACJBJAAEgkgkQDKjcxIfiu77g4uwx9nsD+8GvnGLLM/pEyLn9LLIQJI5RwQOz9iUuN7xkS05/GzNyrOFJTJFE4yMLdyG+7Ou+DaenJopYCoDf3kF6COn+oeZGW9cojg7izB/u0GEBSSayZQsQx1chHqkXPewHrGkg9ACQT33j/QefWHsLf+CG7VE1cHQGtwbQNHXr6aAHIAZXxImPxO986f0PrZd0Cz5W7RDCnQkRnox55C+K2XoU4uZmZEJiu35u4to/XKs3D3VkDFEmjmaE+qor1FmnD0Li4IQbPzoGIpKZjpjiN+6/dw/76NqR+9DrXwSCYrKZt1SoTOlctw7y+DSgvdQLz9xWNQg7fPtVFpAe79fyH6zU8yc8Fq+G5Dge8tw/7lTW+VUWdyc94oAs0chf3zm+C1u371DNmohgvI+Yu3t26CaxvelU20GNAGbnMN9vZbPS58UgElXsCt/H083NegxuQs3Mo7edhJ8ITcf/8zkpu8YS0ikAKvvpcDQGkgrVcBpZCbQnxS4PvrW19PPCBuNUB5WUFgkCJws/ZRI5zYNJsZ6LR2efpysl0c2s1Jd3EJDRuDbZyv6lQiIO70FLoPz/LMvhPMPa++tnc8oDw+wsLW+rEp3R1rP3OUbsAeGlC69W9M/1YG+ML7rXuF3Pg4PyalHq523QTJXOlDAiICN+vg+mbXSvpaQQS0G93zlTy5OBeDq2tAYbr/jVMXAzrwc7TH53cCimPgyCyia7+E/d2vAOcewjt5S+Na1VtLHm5WmQETgNdX0fzBl5M0m/tfjErBteoItp5mfMAVhGYN3KgOJnZonbsYBHbgjdXBuEzSSSjgw8YgPTiry6PSGDKghLePLA6izAyPRnSjKhrznQSRABJAIgEkEkACSCSABJBIAIkEkAASCSCRABJAIgEkgEQCSCSABNBDydeVkTKjvxRtBNBOPgwKp0DlheQboyvRovLxfftY//8BUgqIO6Bjn4A6sZjM0ggAJY/HqFOPQZWPAzYai4fOsr2C3j7cSiVNvQG+v4HgS98EpqaTStZRACLAOVCxBPPFr4M317our7cGO+Nry7DTCHd79DgLjiPAxqDCNMJnv4/g6eeSgvQRVqCSL1UOn/kusLmG6Pqr4E4T0AHImJ5eQtmByg6QNoDWIBMC03PQCyegFj8H89TTUJ96fDwicjr5WiG89ArMha8ivnkdbumvcKt3gEY1MSy7ax31BAIiAL7FytT3fgE6sQgKC6CZOf9UwNbqcuP3kDE7qDNPIDzzhP9/uwGub4I7bfCdd9H66fMA2yRK8OSvIDp5Fur4oztdHpJ4NG4i5eNh2t2qMA0qTHuTyzAOZefiOs1uDKI06I55Y4tew0kNisiPJXeASCVuzE3mw1xbyYHK1B3LVo9s9YgEkAASCSCRABJAIgEkgEQCSCSABJBIAIkE0PgrwyIwfqAOg2OtrWvnHAIiPRmHdAeNofffXAHqNH33X2cnt8k5O1/Zk58T1W5/z9aPv52ProtEQBx16ymG7O4yW0G8dhf5aUBHg2vmdxhAKwirn6TWh4YwH3njH1zxQBAiVxqkJ2Cw1uDI8vrdDb2xI80mgLkC/fjVWx0GXtOBUiCOmOG2dc/u/5U3DWxe4EAcmUApAK+dfWOpzRXotE8/9UQLAoD1yum5MODrMwVzPo4crLTFHKo0ASZQqLfszahhL5auLVfTRfMRQCkkAnj10rnZYit6kYFnnMMCwCRTOZRYxlphFcC1OqnLx64sbfK2v3JBu+RdW2/4wwWYJz/26TIVnAAaRhhrK5794MQ63bgRb5/7g5Jj4gq0TGFGoCrQe/31BzoIlExfJkm7RPpJ1f8Aww/1RY/vBxkAAAAASUVORK5CYII=',
+  pdfedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%238a1c5c"/%3E%3Cpath d="M10 6h8l6 6v12a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" fill="%23ffffff"/%3E%3Cpath d="M18 6l6 6h-4a2 2 0 0 1-2-2z" fill="%23000000" opacity="0.22"/%3E%3Cpath d="M19 12.8l2.2 2.2-6.2 6.2-2.9.7.7-2.9z" fill="%238a1c5c"/%3E%3C/svg%3E',
+  imgedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="8" fill="%23305305"/%3E%3Crect x="6" y="7" width="20" height="16" rx="2.5" fill="none" stroke="%23fff" stroke-width="2"/%3E%3Cpath d="M7.5 21.5 12.5 15l3.2 3.6 2.6-2.6 4.2 5.5z" fill="%23fff"/%3E%3Ccircle cx="20.5" cy="11.5" r="1.8" fill="%23fff"/%3E%3Cpath d="M17.5 27.5 27.5 17.5" stroke="%23f45922" stroke-width="3" stroke-linecap="round"/%3E%3Cpath d="M27.8 17.2 29 16" stroke="%23fff" stroke-width="3" stroke-linecap="round"/%3E%3C/svg%3E',
+  sndedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%234b5563"/%3E%3Crect x="6" y="6" width="52" height="52" rx="11" fill="none" stroke="%23d1d5db" stroke-width="3"/%3E%3Cg fill="%23d1d5db"%3E%3Crect x="13" y="24" width="6" height="16" rx="3"/%3E%3Crect x="45" y="25" width="6" height="14" rx="3"/%3E%3C/g%3E%3Cg fill="%23ffffff"%3E%3Crect x="24" y="17" width="6" height="30" rx="3"/%3E%3Crect x="34" y="11" width="6" height="42" rx="3"/%3E%3C/g%3E%3C/svg%3E',
+  videdtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="14" fill="%230046ad"/%3E%3Crect x="6" y="6" width="52" height="52" rx="11" fill="none" stroke="%239ec5ff" stroke-width="3"/%3E%3Cg fill="%239ec5ff"%3E%3Crect x="11" y="14" width="6" height="6" rx="2"/%3E%3Crect x="11" y="29" width="6" height="6" rx="2"/%3E%3Crect x="11" y="44" width="6" height="6" rx="2"/%3E%3Crect x="47" y="14" width="6" height="6" rx="2"/%3E%3Crect x="47" y="29" width="6" height="6" rx="2"/%3E%3Crect x="47" y="44" width="6" height="6" rx="2"/%3E%3C/g%3E%3Cpath d="M27 21.5 L45 32 L27 42.5 Z" fill="%23ffffff"/%3E%3C/svg%3E',
+  scrncstr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23ffffff"/%3E%3Cg transform="translate%283.2 3.2%29 scale%280.8%29"%3E%3Crect x="1.6" y="4.4" width="28.8" height="20" rx="3.2" fill="%23eef3f3" stroke="%2300565d" stroke-width="2.4"/%3E%3Ccircle cx="23.4" cy="19.2" r="5.6" fill="%23f45922" stroke="%23fff" stroke-width="2.2"/%3E%3Cpath d="M11 29.2h10" stroke="%2300565d" stroke-width="2.4" stroke-linecap="round"/%3E%3C/g%3E%3C/svg%3E',
+  vctredtr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%235b21b6"/%3E%3Crect x="5" y="12" width="14" height="14" rx="2.5" fill="%23ffffff"/%3E%3Ccircle cx="19.5" cy="12.5" r="7.5" fill="%23ffffff"/%3E%3Cpath d="M12.02 12H19V19.98A7.5 7.5 0 0 1 12.02 12Z" fill="%23f45922"/%3E%3C/svg%3E',
+  dskedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%2337c6d0"/%3E%3Crect x="5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="16.5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="7" y="9" width="6.5" height="6" rx="0.8" fill="%23f45922"/%3E%3Crect x="7" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="7" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="9" width="6.5" height="2.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="14" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3C/svg%3E',
+  '3dedtr' : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%237a4100"/%3E%3Cpath d="M16 5.5 26 11 16 16.5 6 11Z" fill="%23ffffff"/%3E%3Cpath d="M6 11 16 16.5V27.5L6 22Z" fill="%23ffffff" opacity="0.82"/%3E%3Cpath d="M26 11 16 16.5V27.5L26 22Z" fill="%23f45922"/%3E%3C/svg%3E',
+  animedtr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23655800"/%3E%3Ccircle cx="7.5" cy="21" r="3" fill="%23fff" opacity=".35"/%3E%3Ccircle cx="12" cy="14" r="3.6" fill="%23fff" opacity=".6"/%3E%3Ccircle cx="19.5" cy="9.5" r="4.6" fill="%23fff"/%3E%3Cpath d="M19.5 22l3.2 3.2-3.2 3.2-3.2-3.2z" fill="%23f45922"/%3E%3C/svg%3E',
+};
+
+/* Fill `container` with one card per app. `currentId` is this app's id, so
+   its card says "You are here" instead of linking to itself. Safe to call
+   more than once: it empties the container first. */
+function renderSuiteApps(container, currentId) {
+  container.replaceChildren();
+  container.classList.add('suite-apps');
+
+  const intro = document.createElement('p');
+  intro.className = 'suite-intro';
+  intro.textContent = 'Every app in this family runs entirely in your browser. ' +
+    'Nothing you open in them is uploaded, and each one installs and works offline.';
+  container.append(intro);
+
+  const list = document.createElement('ul');
+  list.className = 'suite-list';
+  // A list is announced as "list, 6 items", which tells a screen-reader user
+  // how many apps there are before they start moving through them.
+  list.setAttribute('aria-label', 'Apps in this family');
+
+  for (const app of suiteShownApps(currentId)) {
+    const isHere = app.id === currentId;
+    const item = document.createElement('li');
+
+    // The whole card is the link, so it is one Tab stop and one big target.
+    // This app's own card is a plain block instead - a link to the page you
+    // are already on is just a trap.
+    const card = document.createElement(isHere ? 'div' : 'a');
+    card.className = 'suite-card' + (isHere ? ' is-here' : '');
+    if (isHere) {
+      card.setAttribute('aria-current', 'page');
+    } else {
+      card.href = app.url;
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+    }
+
+    // The icon tile: the app's real icon (see suiteTile further down).
+    const tile = suiteTile(app);
+
+    const text = document.createElement('span');
+    text.className = 'suite-text';
+    const name = document.createElement('span');
+    name.className = 'suite-name';
+    name.textContent = app.name;
+    const blurb = document.createElement('span');
+    blurb.className = 'suite-blurb';
+    blurb.textContent = app.blurb;
+    text.append(name, blurb);
+
+    // The right-hand label: where the link goes, or that you are here.
+    const tag = document.createElement('span');
+    tag.className = 'suite-tag';
+    if (isHere) {
+      // A small pill beside the name, so it does not squeeze the blurb.
+      tag.textContent = 'You are here';
+      name.append(' ', tag);
+    } else {
+      // Just an arrow: the address shows on hover (the title below) and
+      // would only crowd the card.
+      tag.textContent = '↗';
+      tag.setAttribute('aria-hidden', 'true');
+      card.title = app.url;
+      // Screen readers get told about the new tab; sighted users see the arrow.
+      const sr = document.createElement('span');
+      sr.className = 'suite-sr';
+      sr.textContent = ' (opens in a new tab)';
+      name.append(sr);
+    }
+
+    card.append(tile, text);
+    if (!isHere) card.append(tag);
+    item.append(card);
+    list.append(item);
+  }
+  container.append(list);
+  // App names elsewhere in the help panel (Changelog, About, guides) become links too.
+  suiteLinkHelp(container, currentId);
+}
+
+/* Links to the family's apps inside ordinary text. "Draw it in VCTREDTR"
+   in a changelog note becomes a link to vctredtr.app, so every mention of a
+   sister app goes straight to it. This app's own name stays plain text.
+   Safe by construction: only text nodes are read and split, and each link
+   is made with createElement and textContent (never innerHTML), pointing
+   at an address from SUITE_APPS, never at anything in the text itself.
+   Text inside links, buttons, form fields, code and keyboard keys is left
+   alone, so nothing that is already clickable or typed changes. */
+function suiteLinkApps(root, currentId) {
+  if (!root) return;
+  const apps = suiteShownApps(currentId).filter((a) => a.id !== currentId);
+  if (!apps.length) return;
+  const byName = new Map(apps.map((a) => [a.name, a]));
+  // \b on both sides: "IMGEDTR's" links "IMGEDTR"; "XIMGEDTR" does not.
+  const find = new RegExp('\\b(' + apps.map((a) => a.name).join('|') + ')\\b', 'g');
+  const has = new RegExp(find.source);                  // the same, without 'g' (a 'g' pattern remembers where it stopped)
+  const skip = 'a, button, input, textarea, select, option, code, pre, kbd, script, style, svg, [contenteditable], [role="tab"], .suite-apps';
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (has.test(n.nodeValue) && !(n.parentElement && n.parentElement.closest(skip)) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT)
+  });
+  const hits = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) hits.push(n);
+  for (const node of hits) {
+    const text = node.nodeValue, frag = document.createDocumentFragment();
+    let last = 0;
+    find.lastIndex = 0;
+    for (let m = find.exec(text); m; m = find.exec(text)) {
+      if (m.index > last) frag.append(text.slice(last, m.index));
+      const app = byName.get(m[1]);
+      const a = document.createElement('a');
+      a.className = 'suite-app-link';
+      a.href = app.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.title = app.name + ' (opens in a new tab)';
+      a.textContent = m[1];
+      frag.append(a);
+      last = m.index + m[1].length;
+    }
+    if (last < text.length) frag.append(text.slice(last));
+    node.replaceWith(frag);
+  }
+}
+/* Link app names across the whole help panel that holds the More apps list
+   (found from it, so no app needs its own wiring), now and whenever the
+   panel fills in more text later - a changelog drawn when its tab opens, say.
+   Only that panel is touched: never a document someone is editing. */
+function suiteLinkHelp(container, currentId) {
+  const panel = container.closest('dialog, [role="dialog"]');
+  if (!panel) return;
+  suiteLinkApps(panel, currentId);
+  if (panel.dataset.suiteLinks) return;                 // (watching already)
+  panel.dataset.suiteLinks = '1';
+  let queued = false;
+  new MutationObserver(() => {
+    // Wait a frame, so a list drawn in many steps is linked once, at the end.
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => { queued = false; suiteLinkApps(panel, currentId); });
+  }).observe(panel, { childList: true, subtree: true });
+}
+
+/* Wire up a set of tabs the standard way (the WAI-ARIA "tabs" pattern):
+     - click a tab to show its panel
+     - Left/Right arrows move between tabs, Home/End jump to the ends
+     - only the chosen tab is in the Tab order (tabindex 0, the rest -1),
+       so Tab goes from the tabs straight into the panel
+   `tablist` is the element with role="tablist". Each tab needs
+   role="tab" and aria-controls="<id of its panel>".
+   Returns a function select(tabId) for opening a tab from code. */
+function suiteWireTabs(tablist, onChange) {
+  const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+  function select(tab, focus) {
+    if (typeof tab === 'string') tab = tabs.find((t) => t.id === tab) || tabs[0];
+    for (const t of tabs) {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      const panel = document.getElementById(t.getAttribute('aria-controls'));
+      if (panel) panel.hidden = !on;
+    }
+    if (focus) tab.focus();
+    if (onChange) onChange(tab.id);
+  }
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(tab, false));
+    tab.addEventListener('keydown', (e) => {
+      let next = null;
+      if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+      else if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+      else if (e.key === 'Home') next = tabs[0];
+      else if (e.key === 'End') next = tabs[tabs.length - 1];
+      if (next) { e.preventDefault(); select(next, true); }
+    });
+  });
+  return select;
+}
+/* -------------------------------------------------------------------------
+   v2 ADDITIONS: credits, the splash screen, and crash backups.
+   Everything below is shared too - same code in every app.
+   ------------------------------------------------------------------------- */
+
+/* Who made it and who provides it. Shown in every About tab and, in short,
+   at the foot of the splash screen.
+   SUITE_LOGOS: when the logo files arrive they go in here as data: URIs
+   (so they work offline). While a value is empty, the name is shown as
+   plain text instead - nothing breaks. */
+const SUITE_CREDITS = {
+  author: 'Dave Ghidiu',
+  authorUrl: 'https://daveghidiu.com/',
+  providers: [
+    { key: 'flxaihub', name: 'FLX AI Hub', url: 'https://flcc.ai/' },
+    { key: 'flcc', name: 'Finger Lakes Community College', url: 'https://www.flcc.edu/' }
+  ]
+};
+const SUITE_LOGOS = { flxaihub: '', flcc: '' };
+/* Where the family lives: the home page with every app, and the source code
+   (free and open source, MIT license). Shown under the credits everywhere. */
+const SUITE_LINKS = {
+  site: { url: 'https://edtrapps.com/', name: 'edtrapps.com' },
+  source: { url: 'https://github.com/corydave/edtr', name: 'GitHub' },
+  license: 'MIT'
+};
+/* "All the apps at edtrapps.com · Free and open source on GitHub (MIT license)" */
+function suiteLinksLine() {
+  const span = suiteEl('span', 'suite-links');
+  const site = suiteLink(SUITE_LINKS.site.url, SUITE_LINKS.site.name);
+  site.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  const src = suiteLink(SUITE_LINKS.source.url, SUITE_LINKS.source.name);
+  src.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  span.append('All the apps at ', site, ' · Free and open source on ', src, ' (' + SUITE_LINKS.license + ' license)');
+  return span;
+}
+
+/* A small helper: make an element, set its class and text in one go.
+   Used everywhere below so the building code stays short and readable. */
+function suiteEl(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+/* An app's icon tile: its real icon (SUITE_MARKS) when there is one,
+   otherwise its colour with a simple line drawing. The icon is decorative
+   (alt=""), because the app's name always sits right next to it. */
+function suiteTile(app) {
+  const mark = SUITE_MARKS[app.id];
+  if (mark) {
+    const tile = suiteEl('span', 'suite-tile has-mark');
+    const img = document.createElement('img');
+    img.src = mark;
+    img.alt = '';
+    img.width = 36; img.height = 36;
+    tile.append(img);
+    return tile;
+  }
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  svg.innerHTML = app.icon;             // fixed path data from SUITE_APPS (safe)
+  const tile = suiteEl('span', 'suite-tile');
+  tile.style.background = app.color;    // each app has its own colour
+  tile.append(svg);
+  return tile;
+}
+
+/* A link that opens in a new tab and cannot reach back into this page. */
+function suiteLink(url, text, className) {
+  const a = suiteEl('a', className, text);
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  return a;
+}
+
+/* The author's name as a link to his website (used in both credits). The
+   hidden words tell screen reader users the link opens a new tab. */
+function suiteAuthorLink() {
+  const a = suiteLink(SUITE_CREDITS.authorUrl, SUITE_CREDITS.author);
+  a.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  return a;
+}
+
+/* ---- Credits ------------------------------------------------------------
+   Fills `container` with the full credits block (for the About tab). */
+function renderSuiteCredits(container) {
+  container.replaceChildren();
+  container.classList.add('suite-credits');
+  const made = suiteEl('p', 'suite-credits-made');
+  // (The link goes INSIDE the <strong>: suiteEl's third argument is text, so
+  // passing the link there showed its web address as plain words. Fixed 2026-10-13.)
+  const name = suiteEl('strong');
+  name.append(suiteAuthorLink());
+  made.append('Made by ', name, ' with Claude.');
+  const by = suiteEl('p', 'suite-credits-by', 'Provided by');
+  const row = suiteEl('div', 'suite-credits-logos');
+  for (const p of SUITE_CREDITS.providers) {
+    const link = suiteLink(p.url, '', 'suite-credits-org');
+    if (SUITE_LOGOS[p.key]) {
+      // A logo, when one has been supplied. alt text carries the name.
+      const img = document.createElement('img');
+      img.src = SUITE_LOGOS[p.key];
+      img.alt = p.name;
+      link.append(img);
+    } else {
+      link.textContent = p.name;         // until the logo arrives
+    }
+    link.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+    row.append(link);
+  }
+  const links = suiteEl('p', 'suite-credits-links');
+  links.append(suiteLinksLine());
+  container.append(made, by, row, links);
+
+  // The source code, front and centre: a box with a clear GitHub button at
+  // the TOP of the About tab (the credits themselves sit lower down), so
+  // nobody has to hunt for it. Falls back to the top of the credits when
+  // the credits are not inside a tab panel.
+  const source = suiteSourceBox();
+  const pane = container.closest('[role="tabpanel"]');
+  const old = pane && pane.querySelector(':scope > .suite-source');
+  if (old) old.remove();                                  // drawn before: replace it
+  if (pane) pane.prepend(source); else container.prepend(source);
+}
+
+/* "Free and open source" with a big "View the source on GitHub" button. */
+function suiteSourceBox() {
+  const box = suiteEl('section', 'suite-source');
+  box.setAttribute('aria-label', 'Source code');
+  const words = suiteEl('p', 'suite-source-words');
+  words.append(suiteEl('strong', '', 'Free and open source. '),
+    'Every line of this app is on GitHub under the ' + SUITE_LINKS.license + ' license: read how it works, use it, change it, share it. ' +
+    'It runs in your browser, keeps your files on your device, needs no sign-in and works offline.');
+  const btn = suiteLink(SUITE_LINKS.source.url, '', 'suite-source-btn');
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  // The GitHub mark (Lucide's line version) - a fixed drawing, not data.
+  icon.innerHTML = '<path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/>';
+  btn.append(icon, document.createTextNode('View the source on GitHub'), suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+  box.append(btn, words);
+  return box;
+}
+
+/* The one-line version, for the foot of the splash screen. */
+function suiteCreditsLine() {
+  const line = suiteEl('p', 'suite-credits-line');
+  line.append('Made by ', suiteAuthorLink(), ' with Claude · Provided by ');
+  SUITE_CREDITS.providers.forEach((p, i) => {
+    if (i) line.append(' and ');
+    const a = suiteLink(p.url, p.name);
+    a.append(suiteEl('span', 'suite-sr', ' (opens in a new tab)'));
+    line.append(a);
+  });
+  line.append(document.createElement('br'), suiteLinksLine());
+  return line;
+}
+
+/* ---- Time, said the way people say it ------------------------------------
+   "today at 3:42 PM", "yesterday at 9:05 AM", "Sep 21 at 4:10 PM". */
+function suiteWhen(ms) {
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return 'earlier';
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const day = new Date(d); day.setHours(0, 0, 0, 0);
+  const daysAgo = Math.round((today - day) / 86400000);
+  if (daysAgo === 0) return 'today at ' + time;
+  if (daysAgo === 1) return 'yesterday at ' + time;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + time;
+}
+
+/* ---- The splash screen ---------------------------------------------------
+   Shown when the app starts. It asks how to begin (the app supplies the
+   buttons), offers to pick up a backup when there is one, and shows the
+   other apps in the family underneath.
+
+   suiteSplash({
+     appId:   'imgedtr',
+     actions: [ { label, detail, run, primary } ... ],   // the app's ways to begin
+     resume:  { detail, run } or null,                  // only when a backup exists
+     hero:    APP_HERO,                                 // optional: a data: URI picture of the app in use, across the top
+     heroAlt: 'TXTEDTR editing a web page ...',         // optional: words for that picture
+     (each action can also have  icon: 'open'  - a name from SUITE_ACTION_ICONS - or its own SVG drawing)
+     hint:    'You can also drop an image anywhere.',   // optional
+     features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
+     version: APP_VERSION,                              // shown at the foot, with the update check
+     checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+   })
+
+   It closes itself when a button is pressed, on Escape, on the X, and when
+   the app calls suiteSplashClose() - which every app does the moment a file
+   is opened any other way (dropped, pasted, opened from the desktop), so an
+   app launched WITH a file never sits behind a splash. */
+let suiteSplashDialog = null;
+
+/* Pictures for the splash's cards (24 x 24, drawn with lines like every
+   other icon in the family). An app names one with `icon: 'open'`, or
+   passes its own drawing. 'open' is the one everybody knows: a folder
+   opening. */
+const SUITE_ACTION_ICONS = {
+  open:     '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+  new:      '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 12v6"/><path d="M9 15h6"/>',
+  paste:    '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/>',
+  size:     '<path d="M22 6H2"/><path d="M22 18H2"/><path d="M6 2v20"/><path d="M18 2v20"/>',
+  record:   '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  audio:    '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  media:    '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M17 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/>',
+  screen:   '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>',
+  headshot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.7"/>',
+  sample:   '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+  cube:     '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  shapes3d: '<path d="M3 10.5 8 8l5 2.5v6L8 19l-5-2.5z"/><path d="M3 10.5 8 13l5-2.5"/><path d="M8 13v6"/><ellipse cx="17.5" cy="6" rx="3.5" ry="1.5"/><path d="M14 6v9a3.5 1.5 0 0 0 7 0V6"/>',
+  pen:      '<path d="M15.7 15.7a1 1 0 0 0 .2-1.1L14 10.4a1 1 0 0 1 .2-1.1l2-2a2 2 0 0 1 2.8 0l1.7 1.7a2 2 0 0 1 0 2.8l-2 2a1 1 0 0 1-1.1.2l-4.2-1.9a1 1 0 0 0-1.1.2"/><path d="M14.2 9.3 4 19.5V22h2.5l10.2-10.2"/><circle cx="2.5" cy="21.5" r=".5"/>',
+  // Three publications fanned out - a flyer, a newsletter and a card - for templates.
+  templates:'<rect x="3" y="6" width="9" height="13" rx="1.5" transform="rotate(-20 7.5 19)" class="suite-ico-solid"/>'
+          + '<rect x="12" y="6" width="9" height="13" rx="1.5" transform="rotate(20 16.5 19)" class="suite-ico-solid"/>'
+          + '<rect x="7" y="3" width="10" height="15" rx="1.5" class="suite-ico-solid"/><path d="M10 7h4"/><path d="M10 10.5h4"/><path d="M10 14h2"/>',
+  resume:   '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>'
+};
+
+function suiteSplash(opts) {
+  const app = SUITE_APPS.find((a) => a.id === opts.appId);
+  const dlg = suiteEl('dialog', 'suite-splash' + (opts.hero ? ' has-hero' : ''));
+  dlg.setAttribute('aria-labelledby', 'suite-splash-title');
+
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close and go to an empty ' + app.name);
+  close.addEventListener('click', () => suiteSplashClose());
+
+  // The picture at the top: the app's own icon beside a screenshot of it in
+  // use (the same picture as on edtrapps.com). It is a data: URI inside the
+  // app, so it shows offline and straight off a disk. Without one, the
+  // splash falls back to the small icon tile beside the name.
+  if (opts.hero) {
+    const hero = suiteEl('div', 'suite-splash-hero');
+    const img = document.createElement('img');
+    img.src = opts.hero;
+    img.alt = opts.heroAlt || (app.name + ' in use');
+    img.decoding = 'async';
+    hero.append(img, close);
+    dlg.append(hero);
+  } else {
+    dlg.append(close);
+  }
+
+  // Header: the app's name and one-line description (and its icon tile,
+  // only when there is no picture - the picture already shows the icon).
+  const head = suiteEl('div', 'suite-splash-head');
+  const title = suiteEl('h2', '', app.name);
+  title.id = 'suite-splash-title';
+  const words = suiteEl('div');
+  words.append(title, suiteEl('p', 'suite-splash-blurb', app.blurb));
+  if (!opts.hero) head.append(suiteTile(app));
+  head.append(words);
+  dlg.append(head);
+
+  // The ways to begin, as cards with a picture each. `icon` is a name from
+  // SUITE_ACTION_ICONS ('open', 'new', 'paste'...) or an app's own drawing
+  // (24 x 24 SVG markup, fixed text in the app's code - never data).
+  const actions = suiteEl('div', 'suite-splash-actions');
+  for (const c of opts.actions) {
+    const b = suiteEl('button', 'suite-splash-choice' + (c.primary ? ' is-primary' : ''));
+    b.type = 'button';
+    const art = SUITE_ACTION_ICONS[c.icon] || c.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (see above)
+      b.append(icon);
+    }
+    const text = suiteEl('span', 'suite-splash-choice-words');
+    text.append(suiteEl('span', 'suite-splash-choice-label', c.label));
+    if (c.detail) text.append(suiteEl('span', 'suite-splash-choice-detail', c.detail));
+    b.append(text);
+    b.addEventListener('click', () => { suiteSplashClose(); c.run(); });
+    actions.append(b);
+  }
+  dlg.append(actions);
+
+  // Picking up a crash backup: offered, but small and quiet - a slim row
+  // under the cards, since it is rarely needed. (Only shown when the last
+  // session ended without saving or exporting.)
+  if (opts.resume) {
+    const r = suiteEl('button', 'suite-splash-resume');
+    r.type = 'button';
+    const icon = suiteFeatButton('', '', '').querySelector('svg');
+    icon.innerHTML = SUITE_ACTION_ICONS.resume;
+    r.append(icon, suiteEl('span', 'suite-splash-resume-label', 'Pick up where you left off'),
+             suiteEl('span', 'suite-splash-resume-detail', opts.resume.detail));
+    r.addEventListener('click', () => { suiteSplashClose(); opts.resume.run(); });
+    dlg.append(r);
+  }
+
+  if (opts.hint) dlg.append(suiteEl('p', 'suite-splash-hint', opts.hint));
+  // The animated tour of the app's favorite features, when the app has one.
+  if (opts.features && opts.features.length) dlg.append(suiteFeaturesCard(opts.features, opts.appId));
+
+  // The rest of the family, as a row of small cards, then the credits and
+  // the links (edtrapps.com, the source on GitHub), then the version (with
+  // the update check) and the Install choice.
+  const foot = suiteSplashFoot({ version: opts.version || (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''),
+                                 check: opts.checkUpdate, name: app.name });
+  dlg.append(suiteFamilyRow(opts.appId), suiteCreditsLine(), foot);
+  dlg.suiteFoot = foot;
+
+  // Escape closes it like the X does (the app is simply left empty).
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); suiteSplashClose(); });
+
+  document.body.append(dlg);
+  suiteSplashDialog = dlg;
+  dlg.showModal();
+  // Focus the main choice, so Enter does the obvious thing straight away.
+  const first = actions.querySelector('.is-primary') || actions.querySelector('button');
+  if (first) first.focus();
+  return dlg;
+}
+
+/* The row of the OTHER apps in the family, as small icon cards. Used at the
+   foot of the splash, and on any empty screen an app wants to decorate
+   (TXTEDTR's "no files open" pane, for one). */
+function suiteFamilyRow(currentId) {
+  const family = suiteEl('section', 'suite-splash-family');
+  const fh = suiteEl('h3', '', 'More apps in this family');
+  fh.id = 'suite-family-title-' + Math.random().toString(36).slice(2, 8);   // unique on the page
+  family.setAttribute('aria-labelledby', fh.id);
+  const list = suiteEl('ul', 'suite-splash-list');
+  for (const other of suiteShownApps(currentId)) {
+    if (other.id === currentId) continue;
+    const li = document.createElement('li');
+    const a = suiteLink(other.url, '', 'suite-splash-app');
+    a.title = other.blurb;
+    a.append(suiteTile(other), suiteEl('span', 'suite-splash-app-name', other.name),
+             suiteEl('span', 'suite-sr', ' - ' + other.blurb + ' (opens in a new tab)'));
+    li.append(a);
+    list.append(li);
+  }
+  family.append(fh, list);
+  return family;
+}
+
+/* Close the splash if it is showing. Safe to call any time, any number of times. */
+function suiteSplashClose() {
+  if (!suiteSplashDialog) return;
+  const dlg = suiteSplashDialog;
+  suiteSplashDialog = null;
+  if (dlg.suiteFoot && dlg.suiteFoot.suiteCleanup) dlg.suiteFoot.suiteCleanup();
+  if (dlg.open) dlg.close();
+  dlg.remove();
+}
+
+/* ---- Installing the app ----------------------------------------------------
+   Every app in the family can be installed, so it opens in its own window
+   (desktop) or from the home screen (phone), and works with no network.
+
+   How each browser does it:
+     - Chrome, Edge, Samsung Internet, Opera (desktop and Android): the
+       browser fires a "beforeinstallprompt" event when the app qualifies.
+       We keep that event and fire it later from our own Install button -
+       otherwise the only way in is an easy-to-miss icon or menu item.
+     - Safari on iPhone and iPad: no event. You tap Share, then
+       "Add to Home Screen". All we can do is say so.
+     - Safari on a Mac (Sonoma or later): no event either. File > Add to Dock.
+     - Firefox: desktop Firefox does not install web apps, so we stay quiet.
+
+   SuiteInstall.state() answers one of:
+     'installed'  - we are running as the installed app already
+     'ready'      - the browser handed us the event: SuiteInstall.prompt() works
+     'ios'        - iPhone/iPad Safari: show the Share hint
+     'mac-safari' - Safari on a Mac: show the Add to Dock hint
+     'none'       - nothing we can offer (Firefox, a file opened from disk...)
+
+   Apps show a top-bar Install button with SuiteInstall.button(buttonEl), and
+   the splash shows the same choice (or the hint) at its foot. */
+const SuiteInstall = (() => {
+  let deferredEvent = null;              // the saved beforeinstallprompt event
+  const listeners = new Set();           // functions to call when the state changes
+  const tell = () => listeners.forEach((fn) => { try { fn(state()); } catch (_) {} });
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();              // keep the browser's own mini-banner away
+    deferredEvent = event;
+    tell();
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredEvent = null;
+    tell();
+  });
+
+  /* Running as the installed app? (The display-mode matches what the manifest
+     asked for; navigator.standalone is the iPhone's own older flag.) */
+  function isInstalled() {
+    const mode = (m) => window.matchMedia && window.matchMedia('(display-mode: ' + m + ')').matches;
+    return mode('standalone') || mode('window-controls-overlay') || mode('minimal-ui')
+      || window.navigator.standalone === true;
+  }
+
+  /* iPadOS reports itself as a Mac, so a "Mac" with a touch screen is an iPad. */
+  function isIOS() {
+    const ua = navigator.userAgent;
+    return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  }
+  /* Safari (and not a Chrome-family or Firefox browser, which all say "Safari" too). */
+  function isSafari() {
+    const ua = navigator.userAgent;
+    return /Safari\//.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR|Firefox/.test(ua);
+  }
+
+  function state() {
+    if (isInstalled()) return 'installed';
+    if (deferredEvent) return 'ready';
+    if (!/^https?:$/.test(location.protocol)) return 'none';   // opened from disk
+    if (isIOS()) return 'ios';
+    if (isSafari()) return 'mac-safari';
+    return 'none';
+  }
+
+  /* Show the browser's install question. Resolves 'accepted', 'dismissed',
+     or 'unavailable'. An event can only be used once, so it is dropped after. */
+  async function prompt() {
+    if (!deferredEvent) return 'unavailable';
+    const event = deferredEvent;
+    deferredEvent = null;
+    tell();
+    try {
+      event.prompt();
+      const choice = await event.userChoice;
+      return choice && choice.outcome === 'accepted' ? 'accepted' : 'dismissed';
+    } catch (_) {
+      return 'unavailable';
+    }
+  }
+
+  /* Call fn(state) now and whenever the state changes. Returns an "unsubscribe". */
+  function onChange(fn) {
+    listeners.add(fn);
+    fn(state());
+    return () => listeners.delete(fn);
+  }
+
+  /* Wire an app's own top-bar button: shown only while installing is possible
+     with one click, and pressing it asks the browser. `done` (optional) hears
+     the outcome, so the app can say something in its own words. */
+  function button(el, done) {
+    if (!el) return;
+    onChange((s) => { el.hidden = s !== 'ready'; });
+    el.addEventListener('click', async () => {
+      const outcome = await prompt();
+      if (done) done(outcome);
+    });
+  }
+
+  return { state, prompt, onChange, button, isInstalled };
+})();
+
+/* The hint for browsers that install through their own menus. */
+const SUITE_INSTALL_HINTS = {
+  'ios': 'To install: tap Share, then Add to Home Screen.',
+  'mac-safari': 'To install: in the File menu, choose Add to Dock.'
+};
+
+/* ---- Checking for updates -----------------------------------------------------
+   An installed app updates itself: each time it starts with a network, it
+   loads the newest copy from the server (the service worker only uses its
+   stored copy when there is no network). What can go stale is an app that is
+   never really closed - phones keep apps asleep in the background for days -
+   so the splash also asks the server which version it has, and offers an
+   Update now button when it is newer.
+
+   How we ask: the service worker (sw.js) fetches index.html from the server
+   and reads the APP_VERSION line out of it. The service worker is used because
+   it can always reach the network, even in an app whose page is not allowed
+   to (VIDEDTR's security policy forbids the page from making any requests).
+   With no service worker (the very first visit), the page asks directly.
+
+   Privacy: the only thing sent is an ordinary request for this app's own
+   index.html, to the server it came from - the same request opening the app
+   makes. Nothing about you or your files goes with it.
+
+   SuiteUpdate.check(currentVersion) resolves { state, version }, state being:
+     'current' - you have the newest version     'newer' - `version` is waiting
+     'offline' - the server could not be reached  'unknown' - no clear answer
+     'file'    - opened from disk: there is no server to ask */
+const SuiteUpdate = (() => {
+  /* "1.10.2" vs "1.9": compare number by number, so 10 beats 9. */
+  function compare(a, b) {
+    const pa = String(a).split('.').map((n) => parseInt(n, 10) || 0);
+    const pb = String(b).split('.').map((n) => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const d = (pa[i] || 0) - (pb[i] || 0);
+      if (d) return d > 0 ? 1 : -1;
+    }
+    return 0;
+  }
+
+  /* Pull the version out of a copy of index.html. */
+  function versionIn(html) {
+    const found = /const APP_VERSION\s*=\s*["']([^"']{1,32})["']/.exec(html || '');
+    return found ? found[1] : null;
+  }
+
+  /* Ask the service worker, over a private two-ended "MessageChannel", and
+     give up after a while (a sleeping worker has to wake up first). */
+  function askWorker(worker, timeoutMs) {
+    return new Promise((resolve) => {
+      const channel = new MessageChannel();
+      const timer = setTimeout(() => { channel.port1.close(); resolve(null); }, timeoutMs);
+      channel.port1.onmessage = (event) => {
+        clearTimeout(timer);
+        channel.port1.close();
+        resolve(event.data || null);
+      };
+      worker.postMessage({ type: 'suite-check-update' }, [channel.port2]);
+    });
+  }
+
+  async function check(current) {
+    if (!/^https?:$/.test(location.protocol)) return { state: 'file', version: null };
+    if (navigator.onLine === false) return { state: 'offline', version: null };
+
+    let remote = null;
+    const worker = navigator.serviceWorker && navigator.serviceWorker.controller;
+    if (worker) {
+      const reply = await askWorker(worker, 12000);
+      if (!reply) return { state: 'unknown', version: null };       // no answer in time
+      if (reply.status !== 'ok') return { state: 'offline', version: null };
+      remote = reply.version;
+    } else {
+      // No service worker in charge of this page: fetch it ourselves.
+      // cache: 'no-store' skips the browser's own copy and asks the server.
+      try {
+        const res = await fetch(location.pathname, { cache: 'no-store', credentials: 'same-origin' });
+        if (!res.ok) return { state: 'unknown', version: null };
+        remote = versionIn(await res.text());
+      } catch (_) {
+        return { state: 'offline', version: null };
+      }
+    }
+    if (!remote) return { state: 'unknown', version: null };
+    // A server copy OLDER than this one (you are testing a new version
+    // locally) is not an update.
+    return compare(remote, current) > 0
+      ? { state: 'newer', version: remote }
+      : { state: 'current', version: remote };
+  }
+
+  /* Load the new version. The server's copy is fetched fresh on reload
+     (every app's service worker goes to the network first for the page),
+     and asking the worker to look for a new sw.js on the way picks up
+     service-worker changes too. */
+  async function apply() {
+    try {
+      const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update();
+    } catch (_) { /* not fatal: the reload still fetches the new page */ }
+    location.reload();
+  }
+
+  return { check, apply, compare };
+})();
+
+/* The strip along the foot of the splash: the version and whether it is the
+   newest, then Install (or how to install) when that makes sense.
+
+   opts.version    this app's version (APP_VERSION)
+   opts.check      optional: the app's own update check, for an app that
+                   already has one (VIDEDTR). Resolves { state, version }
+                   like SuiteUpdate.check. */
+function suiteSplashFoot(opts) {
+  const foot = suiteEl('div', 'suite-splash-foot');
+
+  // Left: version and update status. aria-live, so a screen reader hears
+  // the answer arrive without anyone having to go looking for it.
+  const upd = suiteEl('div', 'suite-splash-update');
+  const status = suiteEl('span', 'suite-splash-status', 'Version ' + opts.version);
+  status.setAttribute('aria-live', 'polite');
+  const updBtn = suiteEl('button', 'suite-splash-small', 'Check for updates');
+  updBtn.type = 'button';
+  upd.append(status, updBtn);
+
+  let newer = false;                     // true once a newer version has been found
+  async function runCheck() {
+    newer = false;
+    updBtn.disabled = true;
+    status.textContent = 'Version ' + opts.version + ' · Checking for updates...';
+    let found;
+    try { found = await (opts.check ? opts.check() : SuiteUpdate.check(opts.version)); }
+    catch (_) { found = { state: 'unknown' }; }
+    updBtn.disabled = false;
+    const words = {
+      current: 'Version ' + opts.version + ' · Up to date',
+      newer: 'Version ' + found.version + ' is available (you have ' + opts.version + ')',
+      offline: 'Version ' + opts.version + ' · Offline, could not check for updates',
+      unknown: 'Version ' + opts.version + ' · Could not check for updates just now',
+      file: 'Version ' + opts.version + ' · Opened from a file, so there are no updates to fetch'
+    };
+    status.textContent = words[found.state] || words.unknown;
+    newer = found.state === 'newer';
+    updBtn.textContent = newer ? 'Update now' : 'Check again';
+    updBtn.classList.toggle('is-primary', newer);
+    updBtn.hidden = found.state === 'file';
+  }
+  updBtn.addEventListener('click', () => {
+    if (newer) {
+      updBtn.disabled = true;
+      status.textContent = 'Updating...';
+      SuiteUpdate.apply();
+    } else {
+      runCheck();
+    }
+  });
+
+  // Right: Install, or the hint for browsers that install from a menu.
+  const inst = suiteEl('div', 'suite-splash-install');
+  const instBtn = suiteEl('button', 'suite-splash-small is-primary', 'Install app');
+  instBtn.type = 'button';
+  instBtn.title = 'Install ' + (opts.name || 'this app') + ': its own window, and it works offline';
+  instBtn.addEventListener('click', () => SuiteInstall.prompt());
+  const hint = suiteEl('span', 'suite-splash-install-hint');
+  inst.append(instBtn, hint);
+  const unsubscribe = SuiteInstall.onChange((s) => {
+    instBtn.hidden = s !== 'ready';
+    hint.textContent = SUITE_INSTALL_HINTS[s] || '';
+    hint.hidden = !SUITE_INSTALL_HINTS[s];
+    inst.hidden = instBtn.hidden && hint.hidden;
+  });
+
+  foot.append(upd, inst);
+  foot.suiteCleanup = unsubscribe;       // suiteSplashClose stops listening
+  // Check straight away - the splash is the one moment nobody is mid-edit.
+  runCheck();
+  return foot;
+}
+
+/* ---- Crash backups --------------------------------------------------------
+   While you work, the app keeps a copy of your work in this browser (in
+   IndexedDB, which can hold pictures and sound, unlike localStorage). It
+   never leaves this computer.
+
+   The rule, the same in every app:
+     - Every change schedules a backup a few seconds later.
+     - Exporting, or saving a project file, DELETES the backup - you have
+       your work, so there is nothing to protect.
+     - So a backup that still exists when the app next starts means the last
+       session ended some other way: a crash, a power cut, a closed tab.
+       Only then does the app mention it (a Resume button on the splash and
+       a small backup icon in the top bar). No pop-ups, no nagging.
+
+   Each session writes its OWN backup, so starting new work never overwrites
+   an older backup you have not dealt with yet. The newest three are kept.
+
+   Two copies of the same app open at once: each tab ticks a small
+   "heartbeat" in localStorage, and a backup whose tab is still alive is not
+   offered to the other tab.
+
+   Everything here fails quietly. In a private window, or if the browser
+   refuses storage, the app simply works without backups.                   */
+const SuiteBackup = (() => {
+  const DB_NAME = 'edtr-backups';
+  const STORE = 'snapshots';
+  const KEEP = 3;                          // how many old backups to keep at most
+  const BEAT_KEY = 'edtr-beat-';           // + session id
+  const BEAT_EVERY_MS = 10000;
+  const ALIVE_MS = 30000;                  // a heartbeat newer than this = tab still open
+  // A random id for this visit, so this tab's backup has its own slot.
+  const SESSION = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+
+  let dbPromise = null;
+  function db() {
+    if (!dbPromise) {
+      dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: 'id' });
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      }).catch(() => null);            // no IndexedDB here: backups are simply off
+    }
+    return dbPromise;
+  }
+  // One small wrapper so each operation below is one line.
+  async function run(mode, fn) {
+    const d = await db();
+    if (!d) return null;
+    return new Promise((resolve) => {
+      try {
+        const tx = d.transaction(STORE, mode);
+        const req = fn(tx.objectStore(STORE));
+        tx.oncomplete = () => resolve(req ? req.result : null);
+        tx.onerror = tx.onabort = () => resolve(null);
+      } catch (_) { resolve(null); }
+    });
+  }
+  const put = (rec) => run('readwrite', (s) => s.put(rec));
+  const get = (id) => run('readonly', (s) => s.get(id));
+  const del = (id) => run('readwrite', (s) => s.delete(id));
+  const all = async () => (await run('readonly', (s) => s.getAll())) || [];
+
+  // The heartbeat: "this tab is still open".
+  function beat() { try { localStorage.setItem(BEAT_KEY + SESSION, String(Date.now())); } catch (_) {} }
+  function alive(id) {
+    try { return Date.now() - Number(localStorage.getItem(BEAT_KEY + id) || 0) < ALIVE_MS; }
+    catch (_) { return false; }
+  }
+  beat();
+  setInterval(beat, BEAT_EVERY_MS);
+  // Leaving normally: stop the heartbeat, so the backup (if any) is found next time.
+  window.addEventListener('pagehide', () => { try { localStorage.removeItem(BEAT_KEY + SESSION); } catch (_) {} });
+
+  /* Backups left behind by earlier sessions of this app, newest first.
+     Returns [{ id, savedAt, detail }] - small, without the data itself. */
+  async function findLeftovers(appId) {
+    const records = (await all()).filter((r) => r && r.app === appId && r.id !== SESSION && !alive(r.id));
+    records.sort((a, b) => b.savedAt - a.savedAt);
+    for (const old of records.slice(KEEP)) del(old.id);         // tidy: keep the newest few
+    return records.slice(0, KEEP).map((r) => ({ id: r.id, savedAt: r.savedAt, detail: r.detail }));
+  }
+
+  /* Start backing up this session.
+     collect: an async function returning { detail, data } describing the
+     work right now, or null when there is nothing worth saving. */
+  function session(appId, collect, delayMs = 4000) {
+    let timer = 0;
+    let generation = 0;                 // bumped by markSafe, so a slow write cannot undo it
+    async function flush() {
+      clearTimeout(timer); timer = 0;
+      const gen = generation;
+      let snap = null;
+      try { snap = await collect(); } catch (_) { snap = null; }
+      if (gen !== generation) return;   // exported while we were collecting
+      if (!snap) return;
+      await put({ id: SESSION, app: appId, savedAt: Date.now(), detail: snap.detail || '', data: snap.data });
+    }
+    // Leaving the tab (switching away, closing, the laptop lid): write now if one is due.
+    document.addEventListener('visibilitychange', () => { if (document.hidden && timer) flush(); });
+    return {
+      touch() { clearTimeout(timer); timer = setTimeout(flush, delayMs); },
+      flush,
+      markSafe() { clearTimeout(timer); timer = 0; generation++; del(SESSION); }
+    };
+  }
+
+  return { findLeftovers, session, load: get, remove: del };
+})();
+
+/* ---- The backup icon in the top bar ---------------------------------------
+   Shown only when a backup from an earlier session exists. Pressing it
+   explains what was found and offers Restore, Discard or Not now.
+
+   suiteBackupBadge({
+     before:    element to put the icon in front of (usually the theme button),
+     className: the app's own icon-button class, so it matches its neighbours,
+     backup:    { savedAt, detail },
+     restore:   async function,  discard: async function
+   })                                                                        */
+const SUITE_BACKUP_ICON = '<rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h2"/><path d="M20 8v11a2 2 0 0 1-2 2h-2"/><path d="m9 15 3-3 3 3"/><path d="M12 12v9"/>';
+let suiteBackupButton = null;
+
+function suiteBackupBadge(opts) {
+  suiteBackupBadgeRemove();
+  const btn = suiteEl('button', (opts.className || '') + ' suite-backup-btn');
+  btn.type = 'button';
+  const label = 'Unsaved work found from ' + suiteWhen(opts.backup.savedAt);
+  btn.title = label;
+  btn.setAttribute('aria-label', label + ' - restore or discard it');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  svg.setAttribute('class', 'suite-backup-svg');
+  svg.innerHTML = SUITE_BACKUP_ICON;
+  btn.append(svg, suiteEl('span', 'suite-backup-dot'));
+  btn.addEventListener('click', () => suiteBackupDialog(opts));
+  opts.before.parentNode.insertBefore(btn, opts.before);
+  suiteBackupButton = btn;
+  return btn;
+}
+function suiteBackupBadgeRemove() {
+  if (suiteBackupButton) { suiteBackupButton.remove(); suiteBackupButton = null; }
+}
+
+/* The small dialog behind the backup icon. */
+function suiteBackupDialog(opts) {
+  const dlg = suiteEl('dialog', 'suite-backup-dlg');
+  dlg.setAttribute('aria-labelledby', 'suite-backup-title');
+  const h = suiteEl('h2', '', 'Unsaved work found');
+  h.id = 'suite-backup-title';
+  const p = suiteEl('p', '', 'The last session ended without an export or a save - the page may have ' +
+    'crashed or the computer turned off. This backup is from ' + suiteWhen(opts.backup.savedAt) + '.');
+  const detail = opts.backup.detail ? suiteEl('p', 'suite-backup-detail', opts.backup.detail) : null;
+  const note = suiteEl('p', 'suite-backup-note', 'Restoring replaces what is open now. The backup is kept on this computer only.');
+  const row = suiteEl('div', 'suite-backup-actions');
+  const restore = suiteEl('button', 'suite-splash-choice is-primary', 'Restore');
+  const discard = suiteEl('button', 'suite-splash-choice', 'Discard');
+  const later = suiteEl('button', 'suite-splash-choice', 'Not now');
+  for (const b of [restore, discard, later]) b.type = 'button';
+  const finish = () => { dlg.close(); dlg.remove(); };
+  restore.addEventListener('click', async () => { finish(); suiteBackupBadgeRemove(); await opts.restore(); });
+  // Discard asks twice: the first press turns into "Yes, discard it", because
+  // this is the one action here that cannot be undone.
+  let armed = false;
+  discard.addEventListener('click', async () => {
+    if (!armed) { armed = true; discard.textContent = 'Yes, discard it'; discard.classList.add('is-danger'); return; }
+    finish(); suiteBackupBadgeRemove(); await opts.discard();
+  });
+  later.addEventListener('click', finish);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); });
+  row.append(restore, discard, later);
+  dlg.append(h, p);
+  if (detail) dlg.append(detail);
+  dlg.append(note, row);
+  document.body.append(dlg);
+  dlg.showModal();
+  restore.focus();
+}
+
+/* ---- v4 + Features: a short, animated tour of an app's favorite features ----
+   Every app keeps its own list, APP_FEATURES, near its CHANGELOG:
+
+     const APP_FEATURES = [
+       { title: 'Merge Shapes',                       // a few words
+         text:  'Pick overlapping shapes, then ...',  // one or two sentences
+         alt:   'A square and a circle slide ...',    // what the animation shows, for screen readers
+         still: 4,                                    // seconds into the loop that make the best still picture
+         art:   '<svg viewBox="0 0 320 200">...</svg>' }
+     ];
+
+   The block draws them three ways, all with the same slider:
+     renderSuiteFeatures(el, APP_FEATURES)      the Features tab of the help panel
+     suiteFeaturesOpen(APP_FEATURES, appId)     a dialog of its own (the splash card opens this)
+     suiteFeaturesCard(APP_FEATURES, appId)     a big button that opens that dialog
+                                                (suiteSplash adds one by itself when it is given
+                                                `features`; TXTEDTR puts one on its empty pane)
+
+   The pictures are small SVG drawings that move with SVG's own animation
+   tags (<animate>, <animateTransform>), so they need no files, work offline
+   and straight off a disk, and stay sharp at any size. Their colours come
+   from classes (fx-ink, fx-acc ...) styled in the block's CSS from the app's
+   --suite-fg and --suite-accent, so every drawing follows light and dark mode
+   and takes on the app's own colour.
+
+   Safety: the drawings are fixed text written into each app's own code -
+   never anything a person typed or a file brought in - and they are read
+   with DOMParser as SVG (not dropped in with innerHTML). Titles and
+   descriptions go in with textContent.
+
+   Motion: the animation can be paused with a button (it loops forever, and
+   anything that moves for more than five seconds needs a way to stop it).
+   With "reduce motion" switched on in the device's settings, each drawing
+   starts paused on its best still frame. A drawing scrolled out of sight or
+   on a hidden tab stops, so it never costs anything in the background. */
+
+/* Turn one fixed SVG string into an element, or null if it will not parse.
+   Ids inside the drawing (clip paths, gradients ...) get a number added, so
+   two copies on one page - the help tab and the splash's tour, say - never
+   borrow each other's clip paths. */
+let suiteFeatureArtCount = 0;
+function suiteFeatureArt(svgText) {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  const svg = doc.documentElement;
+  if (!svg || svg.nodeName !== 'svg' || doc.querySelector('parsererror')) return null;
+  const tag = '-' + (++suiteFeatureArtCount);
+  const ids = new Set();
+  for (const el of svg.querySelectorAll('[id]')) { ids.add(el.id); el.id += tag; }
+  if (ids.size) {
+    for (const el of svg.querySelectorAll('*')) {
+      for (const attr of [...el.attributes]) {
+        // url(#name) in clip-path, fill, mask ...; #name in href.
+        const v = attr.value.replace(/url\(#([\w-]+)\)/g, (m, id) => ids.has(id) ? 'url(#' + id + tag + ')' : m);
+        const w = /href$/.test(attr.name) && v[0] === '#' && ids.has(v.slice(1)) ? v + tag : v;
+        if (w !== attr.value) el.setAttribute(attr.name, w);
+      }
+    }
+  }
+  return document.importNode(svg, true);
+}
+
+/* True when the person has asked their device for less motion. */
+function suiteWantsLessMotion() {
+  return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+/* Draw the slider into `container`. Returns { show(i), destroy() }. */
+function renderSuiteFeatures(container, features, opts = {}) {
+  if (container.suiteFeatures) container.suiteFeatures.destroy();   // drawn before: start again
+  container.replaceChildren();
+  if (!features || !features.length) return { show() {}, destroy() {} };
+
+  const uid = 'sf' + Math.random().toString(36).slice(2, 8);         // unique ids on this page
+  let index = 0;
+  let paused = suiteWantsLessMotion();      // paused by the person (or by their settings)
+  let offscreen = false;                    // stopped because nobody can see it
+  let svg = null;                           // the drawing on show
+
+  // The carousel pattern: a labelled region holding one slide at a time.
+  const root = suiteEl('section', 'suite-feats');
+  root.setAttribute('aria-roledescription', 'carousel');
+  root.setAttribute('aria-label', opts.label || 'Features');
+
+  const slide = suiteEl('div', 'suite-feat-slide');
+  slide.setAttribute('role', 'group');
+  slide.setAttribute('aria-roledescription', 'slide');
+  const stage = suiteEl('div', 'suite-feat-stage');
+  const words = suiteEl('div', 'suite-feat-words');
+  const title = suiteEl('h3', 'suite-feat-title');
+  title.id = uid + '-title';
+  const text = suiteEl('p', 'suite-feat-text');
+  words.append(title, text);
+  slide.append(stage, words);
+
+  // Controls: back, one dot per feature, "2 of 5", pause, next.
+  const nav = suiteEl('div', 'suite-feat-nav');
+  const prev = suiteFeatButton('suite-feat-step', 'Previous feature', '<path d="m15 18-6-6 6-6"/>');
+  const next = suiteFeatButton('suite-feat-step', 'Next feature', '<path d="m9 18 6-6-6-6"/>');
+  const dots = suiteEl('div', 'suite-feat-dots');
+  const dotButtons = features.map((f, i) => {
+    const d = suiteEl('button', 'suite-feat-dot');
+    d.type = 'button';
+    d.setAttribute('aria-label', 'Feature ' + (i + 1) + ': ' + f.title);
+    d.addEventListener('click', () => show(i, true));
+    dots.append(d);
+    return d;
+  });
+  const count = suiteEl('span', 'suite-feat-count');
+  const pause = suiteFeatButton('suite-feat-pause', '', '');
+  nav.append(prev, dots, count, pause, next);
+
+  // A quiet announcement of the new title when someone changes slide
+  // (kept separate, so nothing is read out when the slider first appears).
+  const live = suiteEl('p', 'suite-sr');
+  live.setAttribute('aria-live', 'polite');
+
+  root.append(slide, nav, live);
+  container.append(root);
+
+  prev.addEventListener('click', () => show(index - 1, true));
+  next.addEventListener('click', () => show(index + 1, true));
+  pause.addEventListener('click', () => { paused = !paused; applyMotion(); });
+
+  // Left/Right anywhere in the slider move between features; Home/End jump.
+  root.addEventListener('keydown', (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    let to = null;
+    if (e.key === 'ArrowLeft') to = index - 1;
+    else if (e.key === 'ArrowRight') to = index + 1;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = features.length - 1;
+    if (to === null) return;
+    e.preventDefault();
+    e.stopPropagation();                       // keep the app's own arrow-key shortcuts out of it
+    show(to, true);
+  });
+
+  // Play only while it can be seen (not on a hidden tab, not scrolled away).
+  let watcher = null;
+  if ('IntersectionObserver' in window) {
+    watcher = new IntersectionObserver((entries) => {
+      offscreen = !entries.some((en) => en.isIntersecting);
+      applyMotion();
+    });
+    watcher.observe(stage);
+  }
+
+  // Start or stop the drawing, and keep the pause button's words in step.
+  function applyMotion() {
+    const label = paused ? 'Play animation' : 'Pause animation';
+    pause.setAttribute('aria-label', label);
+    pause.title = label;
+    pause.setAttribute('aria-pressed', String(paused));
+    pause.querySelector('svg').innerHTML = paused
+      ? '<path d="M7 4v16l13-8z"/>'                                   // play (a fixed icon, not data)
+      : '<path d="M8 4v16"/><path d="M16 4v16"/>';                    // pause
+    if (!svg || !svg.pauseAnimations) return;
+    if (paused || offscreen) svg.pauseAnimations(); else svg.unpauseAnimations();
+  }
+
+  function show(i, announce) {
+    index = (i + features.length) % features.length;               // wraps round at both ends
+    const f = features[index];
+    title.textContent = f.title;
+    text.textContent = f.text;
+    slide.setAttribute('aria-label', (index + 1) + ' of ' + features.length + ': ' + f.title);
+    count.textContent = (index + 1) + ' of ' + features.length;
+    dotButtons.forEach((d, n) => d.setAttribute('aria-current', String(n === index)));
+
+    stage.replaceChildren();
+    svg = suiteFeatureArt(f.art || '');
+    if (svg) {
+      svg.classList.add('suite-feat-art');
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', f.alt || f.title);
+      svg.setAttribute('focusable', 'false');
+      stage.append(svg);
+      // A paused drawing shows its best frame rather than its first.
+      if (paused && svg.setCurrentTime) { svg.pauseAnimations(); svg.setCurrentTime(f.still || 0); }
+    }
+    applyMotion();
+    if (announce) live.textContent = 'Feature ' + (index + 1) + ' of ' + features.length + ': ' + f.title;
+  }
+
+  function destroy() {
+    if (watcher) watcher.disconnect();
+    container.suiteFeatures = null;
+  }
+
+  show(opts.start || 0, false);
+  const api = { show: (i) => show(i, true), destroy };
+  container.suiteFeatures = api;
+  return api;
+}
+
+/* A small round icon button for the slider (the icon is fixed, never data). */
+function suiteFeatButton(className, label, iconPaths) {
+  const b = suiteEl('button', className);
+  b.type = 'button';
+  if (label) { b.setAttribute('aria-label', label); b.title = label; }
+  const ns = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(ns, 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = iconPaths;
+  b.append(icon);
+  return b;
+}
+
+/* The tour in a dialog of its own, over whatever is on screen (the splash,
+   say). Closing it puts focus back where it was. */
+function suiteFeaturesOpen(features, appId) {
+  const app = SUITE_APPS.find((a) => a.id === appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-feats-dlg');
+  const h = suiteEl('h2', '', 'What ' + app.name + ' can do');
+  h.id = 'suite-feats-dlg-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the tour');
+  const body = suiteEl('div');
+  dlg.append(close, h, body);
+  document.body.append(dlg);
+  const slider = renderSuiteFeatures(body, features, { label: app.name + ' features' });
+
+  function finish() {
+    slider.destroy();
+    dlg.close();
+    dlg.remove();
+    if (back && back.isConnected && back.focus) back.focus();
+  }
+  close.addEventListener('click', finish);
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); });   // Escape
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) finish(); });  // a click on the dimmed backdrop
+  dlg.showModal();
+  const first = dlg.querySelector('.suite-feat-step:last-of-type');            // "Next" is the likely first press
+  if (first) first.focus();
+  return dlg;
+}
+
+/* A wide card - "See what PDFEDTR can do" - that opens the tour. */
+function suiteFeaturesCard(features, appId) {
+  const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
+  const b = suiteEl('button', 'suite-feats-card');
+  b.type = 'button';
+  const icon = suiteFeatButton('', '', '').querySelector('svg');   // borrow the icon maker
+  // Sparkles (Lucide): "something worth seeing".
+  icon.innerHTML = '<path d="M9.94 15.5a2 2 0 0 0-1.44-1.44l-6.13-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>';
+  icon.classList.add('suite-feats-card-icon');
+  const words = suiteEl('span', 'suite-feats-card-words');
+  words.append(suiteEl('span', 'suite-splash-choice-label', 'See what ' + app.name + ' can do'),
+               suiteEl('span', 'suite-splash-choice-detail',
+                       'A quick, animated tour of ' + features.length + ' favorite features'));
+  b.append(icon, words);
+  b.addEventListener('click', () => suiteFeaturesOpen(features, appId));
+  return b;
+}
+
+/* ======================================================================
+   TOUCH STANDARD (2026-10-12, from DSKEDTR 0.42.2 - 0.43.1)
+   ======================================================================
+   Two things every app does the same way on a phone or tablet. With a
+   mouse, nothing changes: both only switch on when the main pointer is
+   a finger - the CSS question "(pointer: coarse)".
+
+   1. HANDLES you can catch with a finger. The little squares on the
+      corners and sides of a picked object (and the turn handle above it)
+      are drawn bigger on a touch screen, with softly rounded corners, and
+      a finger can catch one from further away than it looks (a target
+      about 44 px across, as phone makers advise). When two handles are
+      both in reach, the nearer one wins. SUITE_TOUCH holds the numbers
+      so every app draws the same handles.
+
+   2. NUMBERS WITHOUT THE KEYBOARD. On a phone the on-screen keyboard
+      covers half the screen, so a tap on a number field opens a small
+      panel beside it instead: the field's name and value, a slider across
+      a sensible range, and - and + buttons (hold one down to keep going).
+      Tap the lit field again, or the panel's keyboard button, to type an
+      exact number. See suiteNumberPop() below.
+   ====================================================================== */
+
+/** True when the main pointer is a finger (a phone or tablet), not a mouse. */
+function suiteTouchScreen() {
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
+/* The handle numbers, in screen pixels (not page or canvas units - an app
+   that zooms divides by its zoom so a handle looks the same at any zoom). */
+const SUITE_TOUCH = {
+  handlePx: 15,        // a handle's size on a touch screen (a mouse's stay at the app's own size, about 8-9 px)
+  roundFrac: 0.2,      // its corners: rounded by a fifth of its size (3 px on a 15 px handle)
+  reachPx: 22,         // how far from a handle's centre a finger still catches it (a target 44 px across)
+  turnPx: 48           // how far above the top edge the turn handle sits, so it never crowds the top handle
+};
+/** A handle's size on screen: SUITE_TOUCH.handlePx for a finger, else the app's own mouse size. */
+function suiteHandlePx(mousePx) { return suiteTouchScreen() ? SUITE_TOUCH.handlePx : mousePx; }
+/** A handle's corner rounding on screen (0 - square - with a mouse). */
+function suiteHandleRound(mousePx) { return suiteTouchScreen() ? suiteHandlePx(mousePx) * SUITE_TOUCH.roundFrac : 0; }
+/** How far from a handle's centre it can be caught, on screen. */
+function suiteHandleReach(mousePx) { return suiteTouchScreen() ? SUITE_TOUCH.reachPx : mousePx / 2 + 3; }
+
+/* ----------------------------------------------------------------------
+   suiteNumberPop(opts): numbers with a finger
+   ----------------------------------------------------------------------
+   Call it once when the app starts. On a touch screen, every
+   <input type="number"> in the app (now or added later) then works like
+   this:
+     - first tap: the field lights up and a small panel opens just below
+       it (or above it, near the bottom of the screen). No keyboard.
+     - slide, or press - and + (hold to keep going): the field changes and
+       fires its usual "input" events as it goes, then one "change" at the
+       end - exactly what typing a number does - so the app's own code
+       needs no changes, and its undo counts a whole slide as one step.
+     - a second tap on the lit field, or the panel's keyboard button: the
+       field takes typing, and the keyboard comes up because the person
+       asked for it.
+     - a tap anywhere else, or Escape: the panel closes.
+   Arriving at a field by a keyboard (a tablet with a keyboard, a switch,
+   a screen reader's own keys) still types at once. With a mouse, nothing
+   changes at all.
+
+   How the keyboard is kept away: the fields are read-only until the
+   second tap (a read-only field brings up no keyboard). A script can still
+   set its value, which is how the panel changes it.
+
+   opts (all optional):
+     range(el)  -> [min, max] for the slider, or null to use the field's
+                   own min and max. For fields with no max, or a max far
+                   too big to slide through (a width of 10,000 px), give a
+                   sensible everyday range here. The slider always
+                   widens to include the field's current value.
+     step(el)   -> how much one press of - or + changes it (default: the
+                   field's own step, or 1).
+     name(el)   -> the words for the field, if its label can't be found.
+     skip(el)   -> true to leave a field alone (it keeps the keyboard).
+                   A number box with a slider right beside it is left
+                   alone anyway.
+   ---------------------------------------------------------------------- */
+function suiteNumberPop(opts = {}) {
+  if (!suiteTouchScreen()) return;                   // with a mouse, fields stay as they are
+  const NUM = 'input[type="number"]';
+  let field = null;                                  // the number field the panel is working on
+  let typing = null;                                 // the field let loose for typing (second tap)
+  /* A number box with its own slider right beside it (Opacity [slider] [80] %)
+     keeps the keyboard: the slider is already there, so a tap on the box
+     means "let me type". */
+  const besideSlider = (el) => {
+    const box = el.parentElement && (el.parentElement.tagName === 'LABEL' ? el.parentElement.parentElement : el.parentElement);
+    return !!(box && box.querySelector('input[type="range"]'));
+  };
+  const wanted = (el) => el && el.matches && el.matches(NUM) && !besideSlider(el) && !(opts.skip && opts.skip(el));
+
+  // ---- The panel itself (built once, here, so no app needs extra HTML) ----
+  const pop = suiteEl('div', 'suite-num-pop');
+  pop.setAttribute('popover', 'manual');             // shown and hidden by this code only
+  pop.setAttribute('role', 'group');
+  const head = suiteEl('div', 'suite-num-head');
+  const label = suiteEl('span', 'suite-num-name', 'Number');
+  label.id = 'suiteNumName';
+  pop.setAttribute('aria-labelledby', label.id);
+  const value = document.createElement('output');
+  head.append(label, value);
+  const row = suiteEl('div', 'suite-num-row');
+  const minus = suiteEl('button', '', '−');    // a real minus sign
+  minus.type = 'button'; minus.setAttribute('aria-label', 'Less'); minus.title = 'Less (hold to keep going)';
+  const range = document.createElement('input');
+  range.type = 'range';
+  const plus = suiteEl('button', '', '+');
+  plus.type = 'button'; plus.setAttribute('aria-label', 'More'); plus.title = 'More (hold to keep going)';
+  const kb = suiteEl('button', 'suite-num-kb');
+  kb.type = 'button'; kb.setAttribute('aria-label', 'Type a number'); kb.title = 'Type a number (or tap the field again)';
+  // A small keyboard drawing (fixed markup, never data).
+  kb.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>';
+  row.append(minus, range, plus, kb);
+  pop.append(head, row);
+  document.body.append(pop);
+
+  // ---- Reading a field ----
+  /** How much one press of - or + changes the field. */
+  const stepOf = (el) => {
+    const own = opts.step && opts.step(el);
+    if (own > 0) return own;
+    const s = parseFloat(el.step);
+    return isFinite(s) && s > 0 ? s : 1;
+  };
+  /** A number written to the field's step: a step of 0.25 gives two decimals, 1 gives none. */
+  const text = (v, step) => String(Number(v.toFixed(Math.min(4, (String(step).split('.')[1] || '').length))));
+  /** The slider's range: the app's everyday range, else the field's own min and max, widened to hold its value. */
+  const rangeOf = (el) => {
+    const v = parseFloat(el.value);
+    let r = opts.range && opts.range(el);
+    if (!r) {
+      const lo = el.min !== '' ? parseFloat(el.min) : 0;
+      const hi = el.max !== '' ? parseFloat(el.max) : Math.max(100, isFinite(v) ? Math.abs(v) * 2 : 100);
+      r = [lo, hi];
+    }
+    let [min, max] = r;
+    // Never past the field's own limits (an everyday range of -200 to 200 on a field that stops at 1 starts at 1).
+    if (el.min !== '') min = Math.max(min, parseFloat(el.min));
+    if (el.max !== '') max = Math.min(max, parseFloat(el.max));
+    if (isFinite(v)) { min = Math.min(min, v); max = Math.max(max, v); }
+    return { min, max, step: stepOf(el) };
+  };
+  /** The words for a field, in the order a screen reader picks them: aria-labelledby,
+      then aria-label, then its label (without any number inside it), then title or the app's name for it. */
+  const nameOf = (el) => {
+    let words = '';
+    if (el.getAttribute('aria-labelledby')) {
+      words = el.getAttribute('aria-labelledby').split(/\s+/).map((id) => (document.getElementById(id) || {}).textContent || '').join(' ');
+    }
+    if (!words.trim()) words = el.getAttribute('aria-label') || '';
+    const lab = el.labels && el.labels[0];
+    if (!words.trim() && lab) words = [...lab.childNodes].filter((n) => n !== el && !(n.contains && n.contains(el))).map((n) => n.textContent).join(' ');
+    words = words.replace(/\s+/g, ' ').trim();
+    return words || el.title || (opts.name && opts.name(el)) || 'Number';
+  };
+
+  /* Some apps redraw their Inspector when a value changes, swapping the
+     field for a fresh copy. whereIs notes where the field sits (the
+     nearest parent with an id, and which number field it is in there);
+     follow finds the fresh copy and carries on with it, so the panel
+     stays open under the person's finger. */
+  const whereIs = (el) => {
+    const box = el.parentElement && el.parentElement.closest('[id]');
+    return box ? { id: box.id, i: [...box.querySelectorAll(NUM)].indexOf(el) } : null;
+  };
+  const follow = (where) => {
+    if (!field || field.isConnected || !where) return;
+    const box = document.getElementById(where.id);
+    const fresh = box && box.querySelectorAll(NUM)[where.i];
+    if (!fresh) { close(); return; }
+    field = fresh;
+    fresh.readOnly = true;
+    fresh.classList.add('suite-num-active');
+    place();
+  };
+
+  // ---- Showing and changing ----
+  /** Show the field's value in the panel and put the slider there. */
+  const show = () => {
+    if (!field) return;
+    const r = rangeOf(field), v = parseFloat(field.value);
+    range.min = String(r.min); range.max = String(r.max); range.step = String(r.step);
+    if (isFinite(v) && document.activeElement !== range) range.value = String(v);
+    value.textContent = isFinite(v) ? text(v, r.step) : '';
+    range.setAttribute('aria-valuetext', isFinite(v) ? text(v, r.step) : 'none');
+  };
+  /** Put a new value in the field as typing would: "input" now, "change" when done. */
+  const put = (v, done) => {
+    if (!field) return;
+    const step = stepOf(field);
+    const lo = field.min !== '' ? parseFloat(field.min) : -Infinity;
+    const hi = field.max !== '' ? parseFloat(field.max) : Infinity;
+    v = Math.max(lo, Math.min(hi, Math.round(v / step) * step));
+    const where = whereIs(field);
+    field.value = text(v, step);
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    if (done) field.dispatchEvent(new Event('change', { bubbles: true }));
+    follow(where);
+    show();
+  };
+  /** Below the field, or above it when there is no room below; always on screen. */
+  const place = () => {
+    if (!field || !pop.matches(':popover-open')) return;
+    if (!field.isConnected || !field.getClientRects().length) { close(); return; }   // (the field went away)
+    const r = field.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    const below = r.bottom + 6 + h <= window.innerHeight - 8;
+    pop.style.left = Math.round(Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2))) + 'px';
+    pop.style.top = Math.round(below ? r.bottom + 6 : Math.max(8, r.top - h - 6)) + 'px';
+  };
+  /** First tap: open the panel for field el. */
+  const open = (el) => {
+    if (field && field !== el) close();
+    field = el;
+    el.classList.add('suite-num-active');
+    // Inside a dialog the panel must live in the dialog too: an open modal
+    // dialog makes everything outside it untouchable.
+    const home = el.closest('dialog') || document.body;
+    if (pop.parentElement !== home) { if (pop.matches(':popover-open')) pop.hidePopover(); home.append(pop); }
+    label.textContent = nameOf(el);
+    range.setAttribute('aria-label', nameOf(el));
+    if (!pop.matches(':popover-open')) pop.showPopover();
+    show();
+    place();
+  };
+  function close() {
+    if (pop.matches(':popover-open')) pop.hidePopover();
+    if (field) field.classList.remove('suite-num-active');
+    field = null;
+  }
+  /** Second tap, or the keyboard button: let the field take typing. */
+  const startTyping = (el) => {
+    close();
+    el.blur();                                       // (first, so the focusout below doesn't lock it again)
+    typing = el;
+    el.readOnly = false;
+    // A number keypad, unless the app already chose a keyboard for this field.
+    if (!el.hasAttribute('inputmode')) { el.inputMode = 'decimal'; el.dataset.suiteNumKeypad = '1'; }
+    el.focus();
+    el.select();
+  };
+
+  // ---- Wiring ----
+  // Read-only to the keyboard until asked - now, and for every number field added later.
+  const lock = (root) => { for (const el of root.querySelectorAll(NUM)) if (el !== typing && wanted(el)) el.readOnly = true; };
+  lock(document);
+  new MutationObserver((list) => {
+    for (const m of list) for (const n of m.addedNodes) {
+      if (n.nodeType !== 1) continue;
+      if (n.matches(NUM)) { if (n !== typing && wanted(n)) n.readOnly = true; } else lock(n);
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+  // A tap on a number field opens the panel; a second tap on the same field types.
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest && e.target.closest(NUM);
+    if (!wanted(el) || el.disabled || el === typing) return;
+    if (field === el) startTyping(el); else open(el);
+  });
+  // Arriving by the keyboard (no finger just now): typing works at once.
+  let lastPointer = 0;
+  document.addEventListener('pointerdown', () => { lastPointer = Date.now(); }, true);
+  document.addEventListener('focusin', (e) => {
+    const el = e.target;
+    if (wanted(el) && el.readOnly && Date.now() - lastPointer > 600) { typing = el; el.readOnly = false; }
+  });
+  // Typing done (the field let go of the keyboard): read-only again.
+  document.addEventListener('focusout', (e) => {
+    if (e.target === typing) {
+      typing.readOnly = true;
+      if (typing.dataset.suiteNumKeypad) { typing.removeAttribute('inputmode'); delete typing.dataset.suiteNumKeypad; }
+      typing = null;
+    }
+  });
+  // The slider: "input" as it moves, "change" when the finger lifts.
+  range.addEventListener('input', () => put(parseFloat(range.value), false));
+  range.addEventListener('change', () => put(parseFloat(range.value), true));
+  // - and +: one step a press; hold for a quick run of steps; one "change" at the end.
+  for (const [b, dir] of [[minus, -1], [plus, 1]]) {
+    let timer = null, repeat = null;
+    const once = () => { if (field) put(parseFloat(field.value || '0') + dir * stepOf(field), false); };
+    const stop = () => {
+      clearTimeout(timer); clearInterval(repeat); timer = repeat = null;
+      if (!field) return;
+      const where = whereIs(field);
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+      follow(where);
+      show();
+    };
+    b.addEventListener('pointerdown', (e) => {
+      e.preventDefault();                            // (keeps the focus where it is)
+      once();
+      timer = setTimeout(() => { repeat = setInterval(once, 70); }, 400);
+    });
+    for (const t of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(t, () => { if (timer || repeat) stop(); });
+    b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); once(); stop(); } });
+  }
+  kb.addEventListener('click', () => { if (field) startTyping(field); });
+  // Close: a tap anywhere else (another number field opens instead), or Escape.
+  document.addEventListener('pointerdown', (e) => {
+    if (!field || pop.contains(e.target) || e.target === field) return;
+    if (wanted(e.target.closest && e.target.closest(NUM))) return;
+    close();
+  }, true);
+  pop.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); const el = field; close(); if (el) el.focus(); }
+  });
+  // Follow the field when the page or a panel scrolls, or the window changes size.
+  document.addEventListener('scroll', place, true);
+  window.addEventListener('resize', place);
+}
+
+/* ======================================================================
+   EDTR STUDIO: when an app runs inside the Studio (2026-10-16)
+   ======================================================================
+   EDTR Studio (edtrapps.com/create/) is one window with a rail of every
+   app down the left; each app runs inside it in a frame. The Studio names
+   each frame "edtr-studio", which is how an app knows it is in there.
+   Inside the Studio an app:
+     - leaves out what the Studio already gives: the "More apps in this
+       family" row on the splash, and its own Install button (the Studio
+       installs as one app);
+     - opens a sister app IN the Studio when one of its links is clicked
+       (More apps, the splash, a changelog mention) instead of a new tab;
+     - passes Ctrl+Shift+1 ... 9 (switch apps) and Ctrl+Shift+0 (back to
+       the rail) up to the Studio, so they work while you are working in an
+       app - unless the app uses that key itself (DSKEDTR's Ctrl+Shift+7
+       and 8 make lists, say): the app always comes first.
+   On its own (its own site, a disk, any other page), nothing changes.
+
+   Privacy: the only things ever sent to the Studio are an app's id (like
+   "imgedtr") and a number key - never anything from a file or the page -
+   so the message can't leak anything even if someone else framed the app.
+   ====================================================================== */
+/** True when this app is running inside EDTR Studio. (A function, not a
+    constant, so code anywhere in the app can ask, even before this part of
+    the block has run: function declarations are ready from the start.) */
+function suiteInStudio() {
+  try { return window.self !== window.top && window.name === 'edtr-studio'; }
+  catch (_) { return false; }                       // (a page that can't even ask is not the Studio)
+}
+
+/** Tell the Studio something: { edtrStudio: 'open', app: 'imgedtr' } or { edtrStudio: 'key', n: 3 }. */
+function suiteStudioSay(message) {
+  if (!suiteInStudio()) return;
+  // Same site: only our own origin may hear it. From another site (an app
+  // on its own domain inside edtrapps.com) we can't know the Studio's
+  // address, and the message holds nothing private (see above), so any.
+  let sameSite = false;
+  try { sameSite = window.parent.location.origin === location.origin; } catch (_) { sameSite = false; }
+  try { window.parent.postMessage(message, sameSite ? location.origin : '*'); } catch (_) {}
+}
+
+if (suiteInStudio()) {
+  // A hook for each app's CSS, should it ever want one: html.suite-in-studio.
+  document.documentElement.classList.add('suite-in-studio');
+
+  // Links to a sister app (by its address, or its folder on this same site)
+  // open it in the Studio. Caught on the way down, before the link acts.
+  const appFor = (href) => {
+    let u;
+    try { u = new URL(href, location.href); } catch (_) { return null; }
+    return SUITE_APPS.find((a) => {
+      const live = new URL(a.url);
+      if (u.origin === live.origin) return true;                         // https://imgedtr.app/...
+      return u.origin === location.origin && u.pathname.startsWith('/' + a.id + '/');   // /imgedtr/ here
+    }) || null;
+  };
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest && e.target.closest('a[href]');
+    if (!link || e.ctrlKey || e.metaKey || e.shiftKey) return;           // (Ctrl+click: a new tab, as asked)
+    const app = appFor(link.getAttribute('href'));
+    if (!app) return;
+    e.preventDefault();
+    suiteStudioSay({ edtrStudio: 'open', app: app.id });
+  }, true);
+
+  // Ctrl+Shift+1 ... 9 switch apps, Ctrl+Shift+0 goes back to the rail.
+  // (e.code, "Digit3", names the key itself, so it works on any keyboard
+  // layout, even where Shift+3 types a different symbol.) This listens on
+  // the window, which hears a key LAST - after the app's own shortcuts. If
+  // the app has already used the key (it called preventDefault), it's the
+  // app's, and the Studio stays out of it.
+  window.addEventListener('keydown', (e) => {
+    if (!e.ctrlKey || !e.shiftKey || e.altKey || e.metaKey || !/^Digit[0-9]$/.test(e.code)) return;
+    if (e.defaultPrevented) return;
+    e.preventDefault();
+    suiteStudioSay({ edtrStudio: 'key', n: Number(e.code.slice(5)) });
+  });
+}
+
+/* SUITE BLOCK v4 - END ================================================== */
+
+/* ======================================================================
+   EDTR STUDIO - the code
+   ======================================================================
+   Sections:
+     1. Settings (night mode, the last app open), kept in this browser
+     2. Where each app comes from (this site, or the app's own site)
+     3. Opening, switching and closing apps
+     4. The rail, the home page and the phone sheet
+     5. The app menu (right-click / Shift+F10)
+     6. Keyboard shortcuts, and messages from the apps
+     7. Night mode, About, install, offline
+     8. Start
+   ====================================================================== */
+const STUDIO_VERSION = '0.1.0';
+
+/* Short, plain words under each icon - "Image", "Video" - so the rail
+   reads at a glance. The app's full name is in its tooltip and label. */
+const KIND = {
+  txtedtr: 'Text', pdfedtr: 'PDF', imgedtr: 'Image', sndedtr: 'Sound', videdtr: 'Video',
+  scrncstr: 'Screen', vctredtr: 'Vector', '3dedtr': '3D', dskedtr: 'Publish', animedtr: 'Animate'
+};
+/* The apps the Studio shows: every app the family lists (an app still being
+   built, with listed: false, stays out - exactly as in the apps' own lists). */
+const APPS = SUITE_APPS.filter((a) => a.listed !== false);
+const appById = (id) => APPS.find((a) => a.id === id) || null;
+
+const $ = (id) => document.getElementById(id);
+
+/* ---------- 1. Settings ----------
+   Night mode and which app was last on show. localStorage can be switched
+   off or full, so every read and write is wrapped: the Studio still works,
+   it just forgets. */
+const SETTINGS_KEY = 'edtr-studio.settings';
+const settings = (() => {
+  try { return Object.assign({ theme: '', last: '' }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); }
+  catch (_) { return { theme: '', last: '' }; }
+})();
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ theme: settings.theme, last: settings.last })); } catch (_) {}
+}
+
+/* ---------- 2. Where each app comes from ----------
+   Best: the app's folder on this same site ("../imgedtr/"). The browser
+   trusts a same-site frame fully, so Open and Save work and the app works
+   offline. To find out, ask for the app's small manifest file:
+     - it's there        -> use the folder here
+     - "not found"       -> use the app's own site (imgedtr.app)
+     - no answer at all  -> we're offline: use the folder anyway (the app's
+                            own offline copy answers for it)
+   Opened straight from a disk (file:), the folders sit right beside us. */
+const sourceCache = new Map();                 // app id -> the address to open
+async function appSource(app) {
+  if (sourceCache.has(app.id)) return sourceCache.get(app.id);
+  let src;
+  if (location.protocol === 'file:') {
+    src = new URL('../' + app.id + '/index.html', location.href).href;
+  } else {
+    const here = new URL('../' + app.id + '/', location.href).href;
+    try {
+      const res = await fetch(here + 'manifest.webmanifest', { method: 'HEAD', cache: 'no-store' });
+      src = res.ok ? here : app.url;
+    } catch (_) {
+      src = here;                                // offline: let the app's own offline copy answer
+    }
+  }
+  sourceCache.set(app.id, src);
+  return src;
+}
+/** True when an address is on this same site (a fully trusted frame). */
+const sameSite = (src) => { try { return new URL(src).origin === location.origin; } catch (_) { return false; } };
+
+/* ---------- 3. Opening, switching and closing apps ----------
+   Each app opened gets one frame, and keeps it until it is closed, so
+   switching away and back loses nothing. Only the app on show can be
+   seen or reached; the others are "inert" (no clicks, no keyboard focus,
+   hidden from screen readers) but keep running. */
+const open = new Map();                        // app id -> { frame, src }
+let current = '';                              // the app on show ('' = the Studio home)
+
+/* What an app's frame is allowed to do. These are the browser features the
+   family uses: camera and microphone (SNDEDTR, SCRNCSTR), sharing the
+   screen (SCRNCSTR), the clipboard (copy and paste pictures), full screen
+   (VIDEDTR's preview, SCRNCSTR), and keeping the screen awake while
+   recording. Nothing else. */
+const FRAME_ALLOW = 'camera; microphone; display-capture; clipboard-read; clipboard-write; fullscreen; autoplay; screen-wake-lock';
+
+async function openApp(id, { focus = true } = {}) {
+  const app = appById(id);
+  if (!app) return;
+  closeMenu();
+  if ($('sheet').open) $('sheet').close();
+  let entry = open.get(id);
+  if (!entry) {
+    $('loading').hidden = false;
+    const src = await appSource(app);
+    // (Asked for another app while this one was being looked up? Stop.)
+    if (open.has(id)) { entry = open.get(id); }
+    else {
+      const frame = document.createElement('iframe');
+      frame.className = 'app-frame';
+      frame.name = 'edtr-studio';                // how the app knows it is in the Studio
+      frame.title = app.name + ' - ' + (KIND[app.id] || '');
+      frame.allow = FRAME_ALLOW;
+      frame.referrerPolicy = 'no-referrer';
+      frame.addEventListener('load', () => { if (current === id) $('loading').hidden = true; });
+      frame.src = src;
+      $('stage').append(frame);
+      entry = { frame, src };
+      open.set(id, entry);
+      if (!sameSite(src)) notice(app.name + ' is opening from its own site (' + new URL(src).host + '): it works, but its Save button may not. Downloads still work.');
+    }
+  }
+  show(id);
+  if (focus) {
+    // Into the app, so the keyboard works there straight away.
+    requestAnimationFrame(() => { try { entry.frame.focus(); } catch (_) {} });
+  }
+}
+
+/** Put app `id` on show ('' for the Studio home), and everything else away. */
+function show(id) {
+  current = id;
+  for (const [key, { frame }] of open) {
+    const away = key !== id;
+    frame.classList.toggle('is-away', away);
+    frame.inert = away;
+    frame.setAttribute('aria-hidden', String(away));
+  }
+  $('home').hidden = !!id;
+  if (!id) $('loading').hidden = true;
+  const app = appById(id);
+  document.title = app ? app.name + ' - EDTR Studio' : 'EDTR Studio';
+  $('stage').setAttribute('aria-label', app ? app.name : 'EDTR Studio home');
+  $('skipLink').textContent = app ? 'Skip to ' + app.name : 'Skip to the Studio home';
+  // The address shows which app is open (#imgedtr), so a bookmark or a
+  // reload comes back to it. replaceState: switching isn't a page to go "back" to.
+  try { history.replaceState(null, '', id ? '#' + id : location.pathname + location.search); } catch (_) {}
+  settings.last = id; saveSettings();
+  paintRail();
+  announce(app ? app.name + ' is on show.' : 'EDTR Studio home.');
+}
+
+/** Close an app: its frame goes, and anything not saved in it with it (so we ask first). */
+async function closeApp(id, { ask = true } = {}) {
+  const app = appById(id), entry = open.get(id);
+  if (!app || !entry) return;
+  if (ask && !(await confirmClose(app, 'close'))) return;
+  entry.frame.remove();
+  open.delete(id);
+  if (current === id) show('');
+  else paintRail();
+  toast(app.name + ' closed.');
+}
+/** Reload an app (a fresh start; asks first, as closing does). */
+async function reloadApp(id) {
+  const app = appById(id), entry = open.get(id);
+  if (!app) return;
+  if (!entry) { openApp(id); return; }
+  if (!(await confirmClose(app, 'reload'))) return;
+  if (current === id) $('loading').hidden = false;
+  entry.frame.src = entry.src;
+}
+/** Open an app on its own, in a new tab, from the same place the Studio uses. */
+async function openInTab(id) {
+  const app = appById(id);
+  if (!app) return;
+  const src = await appSource(app);
+  window.open(src, '_blank', 'noopener,noreferrer');
+}
+
+/* The "are you sure?" box. Resolves true to go ahead. */
+function confirmClose(app, what) {
+  return new Promise((resolve) => {
+    const dlg = $('closeDlg');
+    $('closeTitle').textContent = (what === 'reload' ? 'Reload ' : 'Close ') + app.name + '?';
+    $('closeText').textContent = 'Anything you haven\'t saved or exported in ' + app.name + ' will be lost' +
+      (what === 'reload' ? ' when it starts again.' : '.') + ' (If the app keeps crash backups, it will offer yours next time.)';
+    $('closeYes').textContent = what === 'reload' ? 'Reload' : 'Close';
+    const done = (yes) => { dlg.close(); resolve(yes); };
+    $('closeYes').onclick = () => done(true);
+    $('closeKeep').onclick = () => done(false);
+    dlg.oncancel = (e) => { e.preventDefault(); done(false); };
+    dlg.showModal();
+    $('closeKeep').focus();                      // the safe choice has the focus
+  });
+}
+
+/* ---------- 4. The rail, the home page and the phone sheet ---------- */
+/** One rail button per app. */
+function buildRail() {
+  const list = $('railList');
+  list.replaceChildren();
+  APPS.forEach((app, i) => {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'rail-app';
+    b.dataset.app = app.id;
+    b.tabIndex = -1;
+    b.title = app.name + ' - ' + app.blurb + (i < 9 ? ' (Ctrl+Shift+' + (i + 1) + ')' : '');
+    const label = suiteEl('span', 'rail-label', KIND[app.id] || app.name);
+    label.setAttribute('aria-hidden', 'true');
+    const dot = suiteEl('span', 'rail-dot');
+    dot.hidden = true;
+    dot.setAttribute('aria-hidden', 'true');
+    const sr = suiteEl('span', 'sr-only', '');      // "IMGEDTR, Image, open" for screen readers
+    b.append(suiteTile(app), label, dot, sr);
+    b.addEventListener('click', () => openApp(app.id));
+    b.addEventListener('contextmenu', (e) => { e.preventDefault(); openMenu(app.id, b, e.clientX, e.clientY); });
+    li.append(b);
+    list.append(li);
+  });
+  wireRailKeys();
+}
+/** Bring the rail, the home cards and the sheet up to date (which app is on show, which are open). */
+function paintRail() {
+  for (const b of document.querySelectorAll('.rail-app')) {
+    const id = b.dataset.app, app = appById(id);
+    const isOpen = open.has(id), here = id === current;
+    if (here) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    b.querySelector('.rail-dot').hidden = !isOpen || here;
+    b.querySelector('.sr-only').textContent = app.name + ', ' + (KIND[id] || '') + (isOpen ? ', open' : '');
+  }
+  if (current) $('homeBtn').removeAttribute('aria-current'); else $('homeBtn').setAttribute('aria-current', 'page');
+  // Keep the rail's one Tab stop on the app on show (or the first).
+  const btns = [...document.querySelectorAll('.rail-app')];
+  const stop = btns.find((b) => b.dataset.app === current) || btns[0];
+  btns.forEach((b) => { b.tabIndex = b === stop ? 0 : -1; });
+  fillGrid($('homeGrid'), false);
+  fillGrid($('sheetGrid'), true);
+}
+/** The home page's (and the phone sheet's) cards: one per app, with Close on the open ones. */
+function fillGrid(list, compact) {
+  list.replaceChildren();
+  for (const app of APPS) {
+    const li = suiteEl('li', 'home-card');
+    const b = suiteEl('button', 'home-open');
+    b.type = 'button';
+    const words = suiteEl('span', 'home-words');
+    words.append(suiteEl('span', 'home-name', app.name), suiteEl('span', 'home-kind', KIND[app.id] || ''));
+    if (!compact) words.append(suiteEl('span', 'home-blurb', app.blurb));
+    const isOpen = open.has(app.id);
+    if (isOpen) words.append(suiteEl('span', 'home-state', app.id === current ? 'On show' : 'Open'));
+    b.append(suiteTile(app), words);
+    b.addEventListener('click', () => openApp(app.id));
+    li.append(b);
+    if (isOpen) {
+      const x = suiteEl('button', 'home-close');
+      x.type = 'button';
+      x.setAttribute('aria-label', 'Close ' + app.name);
+      x.title = 'Close ' + app.name;
+      x.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';   // fixed drawing
+      x.addEventListener('click', () => closeApp(app.id));
+      li.append(x);
+    }
+    list.append(li);
+  }
+}
+/* The rail's keyboard (the "toolbar" pattern): one Tab stop; Up and Down
+   (or Left and Right) move along it, Home and End jump to the ends, Enter
+   or Space opens, Shift+F10 or the menu key opens the app's menu. */
+function wireRailKeys() {
+  $('railList').onkeydown = (e) => {
+    const btns = [...document.querySelectorAll('.rail-app')];
+    const i = btns.indexOf(document.activeElement);
+    if (i < 0) return;
+    let next = -1;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (i + 1) % btns.length;
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (i - 1 + btns.length) % btns.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = btns.length - 1;
+    else if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
+      e.preventDefault();
+      const r = btns[i].getBoundingClientRect();
+      openMenu(btns[i].dataset.app, btns[i], r.right + 4, r.top);
+      return;
+    }
+    if (next < 0) return;
+    e.preventDefault();
+    btns.forEach((b, k) => { b.tabIndex = k === next ? 0 : -1; });
+    btns[next].focus();
+  };
+}
+/** Ctrl+Shift+0: back to the rail (on the app on show), or the Apps sheet on a phone. */
+function goToRail() {
+  if (isPhone()) { openSheet(); return; }
+  const b = document.querySelector('.rail-app[tabindex="0"]') || document.querySelector('.rail-app');
+  if (b) b.focus();
+}
+const isPhone = () => window.matchMedia('(max-width: 719px)').matches;
+function openSheet() { closeMenu(); if (!$('sheet').open) $('sheet').showModal(); }
+
+/* ---------- 5. The app menu ---------- */
+let menuFor = '', menuFrom = null;
+function openMenu(id, fromEl, x, y) {
+  const menu = $('appMenu');
+  menuFor = id; menuFrom = fromEl;
+  const isOpen = open.has(id);
+  menu.setAttribute('aria-label', appById(id).name);
+  menu.querySelector('[data-act="open"] span').textContent = isOpen ? 'Show it' : 'Open';
+  menu.querySelector('[data-act="reload"]').hidden = !isOpen;
+  menu.querySelector('[data-act="close"]').hidden = !isOpen;
+  if (!menu.matches(':popover-open')) menu.showPopover();
+  // Beside the pointer (or the button), but always on screen.
+  const w = menu.offsetWidth, h = menu.offsetHeight;
+  menu.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x)) + 'px';
+  menu.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y)) + 'px';
+  menu.querySelector('button:not([hidden])').focus();
+}
+function closeMenu(returnFocus) {
+  const menu = $('appMenu');
+  if (menu.matches(':popover-open')) menu.hidePopover();
+  if (returnFocus && menuFrom) menuFrom.focus();
+}
+function wireMenu() {
+  const menu = $('appMenu');
+  menu.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-act]');
+    if (!b) return;
+    const id = menuFor, act = b.dataset.act;
+    closeMenu();
+    if (act === 'open') openApp(id);
+    else if (act === 'tab') openInTab(id);
+    else if (act === 'reload') reloadApp(id);
+    else if (act === 'close') closeApp(id);
+  });
+  // Up and Down move through the menu; Escape closes it and goes back to the rail.
+  menu.addEventListener('keydown', (e) => {
+    const items = [...menu.querySelectorAll('button:not([hidden])')];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+    else if (e.key === 'Home') { e.preventDefault(); items[0].focus(); }
+    else if (e.key === 'End') { e.preventDefault(); items[items.length - 1].focus(); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeMenu(true); }
+    else if (e.key === 'Tab') closeMenu();
+  });
+  // A press anywhere else closes it. (The menu is popover="manual" and closes
+  // itself here: the browser's own "click outside" closing would also catch
+  // the end of the very right-click that opened it.)
+  document.addEventListener('pointerdown', (e) => {
+    if (menu.matches(':popover-open') && !menu.contains(e.target)) closeMenu();
+  }, true);
+  window.addEventListener('blur', () => closeMenu());     // (a press inside an app's frame)
+}
+
+/* ---------- 6. Keyboard shortcuts, and messages from the apps ---------- */
+/** Ctrl+Shift+n: the nth app in the rail. Ctrl+Shift+0: back to the rail. */
+function numberKey(n) {
+  if (n === 0) { goToRail(); return; }
+  const app = APPS[n - 1];
+  if (app) openApp(app.id);
+}
+document.addEventListener('keydown', (e) => {
+  // (e.code, "Digit3", is the key itself, whatever Shift+3 types on this keyboard.)
+  if (!e.ctrlKey || !e.shiftKey || e.altKey || e.metaKey || !/^Digit[0-9]$/.test(e.code)) return;
+  e.preventDefault();
+  numberKey(Number(e.code.slice(5)));
+});
+/* The apps tell the Studio two things (see "EDTR STUDIO" in the SUITE
+   block): "open app X" (one of its links to a sister app was clicked) and
+   "number key n" (Ctrl+Shift+n pressed inside it). A message is believed only if
+   it comes from one of OUR frames, from the address that frame was opened
+   at, and is one of those two shapes. */
+window.addEventListener('message', (e) => {
+  let from = null;
+  for (const [id, entry] of open) if (entry.frame.contentWindow === e.source) { from = { id, entry }; break; }
+  if (!from) return;
+  const expected = location.protocol === 'file:' ? 'null' : new URL(from.entry.src).origin;
+  if (e.origin !== expected) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.edtrStudio === 'open' && typeof d.app === 'string' && appById(d.app)) openApp(d.app);
+  else if (d.edtrStudio === 'key' && Number.isInteger(d.n) && d.n >= 0 && d.n <= 9) numberKey(d.n);
+});
+/* The address can name an app (#imgedtr): follow it if it changes. */
+window.addEventListener('hashchange', () => {
+  const id = location.hash.slice(1);
+  if (appById(id) && id !== current) openApp(id);
+});
+
+/* ---------- 7. Night mode, About, install, offline ---------- */
+const MOON = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+const SUN = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>';
+const isDark = () => settings.theme ? settings.theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+function paintTheme() {
+  if (settings.theme) document.documentElement.dataset.theme = settings.theme;
+  else delete document.documentElement.dataset.theme;
+  const dark = isDark(), b = $('themeBtn');
+  b.innerHTML = dark ? SUN : MOON;               // fixed drawings: shows where a press takes you
+  b.setAttribute('aria-label', dark ? 'Day mode' : 'Night mode');
+  b.title = (dark ? 'Day mode' : 'Night mode') + ' for the Studio (each app keeps its own)';
+}
+$('themeBtn').addEventListener('click', () => { settings.theme = isDark() ? 'light' : 'dark'; saveSettings(); paintTheme(); });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintTheme);
+
+/** The Studio's own mark: a 3 x 3 grid of the apps' colours (one family). */
+function drawMark() {
+  const svg = $('homeMark');
+  const colours = APPS.slice(0, 9).map((a) => a.color);
+  let html = '';
+  colours.forEach((c, i) => {
+    const x = (i % 3) * 11, y = Math.floor(i / 3) * 11;
+    html += '<rect x="' + x + '" y="' + y + '" width="8" height="8" rx="2" fill="' + c + '"/>';
+  });
+  svg.innerHTML = html;                           // built from SUITE_APPS' fixed colours, never from data
+}
+
+function wireDialogs() {
+  // Every [data-close] button closes its dialog.
+  for (const b of document.querySelectorAll('dialog [data-close]')) b.addEventListener('click', () => b.closest('dialog').close());
+  // A click on the dark backdrop closes the sheet and About (not the close question).
+  for (const id of ['sheet', 'aboutDlg']) {
+    $(id).addEventListener('click', (e) => { if (e.target === e.currentTarget) e.currentTarget.close(); });
+  }
+  $('aboutBtn').addEventListener('click', () => {
+    $('aboutWhere').textContent = location.protocol === 'file:'
+      ? 'Opened from a disk: the apps open from the folders beside this one.'
+      : 'The apps open from this same site, so Open and Save work just as they do on their own. Any app whose folder isn\'t here opens from its own site instead; there, Open and downloads work but its Save button may not.';
+    $('aboutDlg').showModal();
+  });
+  $('homeBtn').addEventListener('click', () => show(''));
+  $('sheetHome').addEventListener('click', () => { $('sheet').close(); show(''); });
+  $('edgeTab').addEventListener('click', openSheet);
+}
+
+let toastTimer = 0;
+function toast(text) {
+  const t = $('toast');
+  t.textContent = text;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+}
+const said = new Set();
+/** A toast, but only once per visit (for notes that would get tiresome). */
+function notice(text) { if (said.has(text)) return; said.add(text); toast(text); }
+function announce(text) { const a = $('announcer'); a.textContent = ''; setTimeout(() => { a.textContent = text; }, 30); }
+
+/* Offline: a small service worker keeps a copy of the Studio itself. (Each
+   app keeps its own copy, as it always has.) Not from a disk. */
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !/^https?:$/.test(location.protocol)) return;
+  navigator.serviceWorker.register('sw.js?v=' + encodeURIComponent(STUDIO_VERSION)).catch(() => {});
+}
+
+/* ---------- 8. Start ---------- */
+paintTheme();
+drawMark();
+buildRail();
+wireMenu();
+wireDialogs();
+paintRail();
+renderSuiteCredits($('studioCredits'));
+SuiteInstall.button($('installBtn'), (outcome) => { if (outcome === 'accepted') toast('Installing EDTR Studio.'); });
+registerServiceWorker();
+// Come back to where you were: the app in the address (#imgedtr), else the last one on show.
+{
+  const fromHash = location.hash.slice(1);
+  const start = appById(fromHash) ? fromHash : appById(settings.last) ? settings.last : '';
+  if (start) openApp(start, { focus: false }); else show('');
+}
+</script>
+</body>
+</html>
