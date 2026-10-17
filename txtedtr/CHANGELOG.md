@@ -18,6 +18,14 @@ never had.
 
 ---
 
+## 1.24
+
+**Changed** - ready for EDTR Studio.
+
+- Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
+- The offline copy now only clears its own old caches, so it can share one website with the other apps without wiping theirs.
+- The shared SUITE block gained its "EDTR STUDIO" section (`suiteInStudio()`).
+
 ## 1.23
 
 **Changed** - zoom for a projector.

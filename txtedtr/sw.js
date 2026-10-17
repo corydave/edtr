@@ -76,7 +76,9 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
       .then((names) => Promise.all(
-        names.filter((name) => name !== CACHE).map((name) => caches.delete(name))
+        // Only this app's own old caches: on a site shared with the other apps
+        // (EDTR Studio) their caches must be left alone.
+        names.filter((name) => name.startsWith('txtedtr') && name !== CACHE).map((name) => caches.delete(name))
       ))
       .then(() => self.clients.claim())
   );
