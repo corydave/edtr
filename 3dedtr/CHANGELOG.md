@@ -1,5 +1,10 @@
 # 3DEDTR changelog
 
+## 0.22.1 - 2026-10-16 - Ready for EDTR Studio
+
+- Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
+- The shared SUITE block gained its "EDTR STUDIO" section (`suiteInStudio()`).
+
 ## 0.22.0 - 2026-10-13 - Keyframes that keep a group's parts; layered exploded views
 
 - **Parts too** (timeline, on by default, remembered in this browser as `settings.keyParts`): Add keyframe and Remove keyframe on a group now act on the group and every part inside it, at every level (`keyTargets`). Before, only the group was keyed, so parts moved inside it had no keyframes and sat in their last place for the whole animation - Dave's phone, with its app tiles pulled out at the end, showed them pulled out at the start too. Now a group can turn as a whole while its parts move apart or come together: exploding, or assembling a camera.
