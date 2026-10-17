@@ -97,7 +97,9 @@ self.addEventListener("activate", (event) => {
       .then((names) => Promise.all(
         // This also sweeps up the old version-stamped caches from v3.0 and
         // earlier ("videdtr-v3-0" and friends), which are now dead weight.
-        names.filter((n) => n !== CACHE).map((n) => caches.delete(n))
+        // ...but only this app's own: on a site shared with the other apps
+        // (EDTR Studio) their caches must be left alone.
+        names.filter((n) => n.startsWith('videdtr') && n !== CACHE).map((n) => caches.delete(n))
       ))
       .then(() => self.clients.claim())
   );
