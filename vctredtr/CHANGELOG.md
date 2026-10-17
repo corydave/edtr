@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.16.1 - 2026-10-16 - Ready for EDTR Studio
+
+- Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
+- The shared SUITE block gained its "EDTR STUDIO" section (`suiteInStudio()`).
+
 ## 0.16.0 - 2026-10-12 - Made for fingers
 
 - Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (X and Y run across the artboard, Width and Height up to its size, Rotation from -180 to 180, and the shape changes as you slide. Boxes with their own slider beside them still type.)

@@ -924,6 +924,12 @@ ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
 .suite-num-pop button:focus-visible, .suite-num-pop input:focus-visible { outline: 3px solid var(--suite-accent, #0046ad); outline-offset: 2px; }
 /* The field being changed lights up, so it's clear which one the panel is working on. */
 input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #0046ad); outline-offset: 1px; }
+
+/* ---- EDTR Studio (2026-10-16): an app running inside the Studio ----------
+   The Studio's rail already lists every app and installs as one app, so an
+   app inside it leaves out the splash's "More apps in this family" row and
+   the install hint. (html.suite-in-studio is set by the block's script.) */
+.suite-in-studio .suite-splash-family, .suite-in-studio .suite-splash-install { display: none !important; }
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 </style>
 </head>
@@ -1339,7 +1345,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.16.0';
+const APP_VERSION = '0.16.1';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1394,6 +1400,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.16.1', date: '2026-10-16', notes: [
+    'Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.'
+  ] },
   { version: '0.16.0', date: '2026-10-12', notes: [
     'Number fields on a phone or tablet open a slider, not the keyboard: tap one and a small panel opens beside it with its name and value, a slider across a sensible range, and - and + buttons (hold to keep going). Tap the lit field again, or the keyboard button, to type an exact number. A slide is one step to undo. With a mouse, nothing changes. (X and Y run across the artboard, Width and Height up to its size, Rotation from -180 to 180, and the shape changes as you slide. Boxes with their own slider beside them still type.)',
     'Handles you can catch with a finger: on a phone or tablet they are drawn bigger (15 px) with softly rounded corners, a finger catches one from about 22 px away (the nearer handle wins), and the turn handle sits further up, clear of the rest. With a mouse, nothing changes. In Edit points the point squares are bigger (11 px) and easier to catch, too.',
@@ -9053,6 +9062,85 @@ function suiteNumberPop(opts = {}) {
   // Follow the field when the page or a panel scrolls, or the window changes size.
   document.addEventListener('scroll', place, true);
   window.addEventListener('resize', place);
+}
+
+/* ======================================================================
+   EDTR STUDIO: when an app runs inside the Studio (2026-10-16)
+   ======================================================================
+   EDTR Studio (edtrapps.com/create/) is one window with a rail of every
+   app down the left; each app runs inside it in a frame. The Studio names
+   each frame "edtr-studio", which is how an app knows it is in there.
+   Inside the Studio an app:
+     - leaves out what the Studio already gives: the "More apps in this
+       family" row on the splash, and its own Install button (the Studio
+       installs as one app);
+     - opens a sister app IN the Studio when one of its links is clicked
+       (More apps, the splash, a changelog mention) instead of a new tab;
+     - passes Ctrl+Shift+1 ... 9 (switch apps) and Ctrl+Shift+0 (back to
+       the rail) up to the Studio, so they work while you are working in an
+       app - unless the app uses that key itself (DSKEDTR's Ctrl+Shift+7
+       and 8 make lists, say): the app always comes first.
+   On its own (its own site, a disk, any other page), nothing changes.
+
+   Privacy: the only things ever sent to the Studio are an app's id (like
+   "imgedtr") and a number key - never anything from a file or the page -
+   so the message can't leak anything even if someone else framed the app.
+   ====================================================================== */
+/** True when this app is running inside EDTR Studio. (A function, not a
+    constant, so code anywhere in the app can ask, even before this part of
+    the block has run: function declarations are ready from the start.) */
+function suiteInStudio() {
+  try { return window.self !== window.top && window.name === 'edtr-studio'; }
+  catch (_) { return false; }                       // (a page that can't even ask is not the Studio)
+}
+
+/** Tell the Studio something: { edtrStudio: 'open', app: 'imgedtr' } or { edtrStudio: 'key', n: 3 }. */
+function suiteStudioSay(message) {
+  if (!suiteInStudio()) return;
+  // Same site: only our own origin may hear it. From another site (an app
+  // on its own domain inside edtrapps.com) we can't know the Studio's
+  // address, and the message holds nothing private (see above), so any.
+  let sameSite = false;
+  try { sameSite = window.parent.location.origin === location.origin; } catch (_) { sameSite = false; }
+  try { window.parent.postMessage(message, sameSite ? location.origin : '*'); } catch (_) {}
+}
+
+if (suiteInStudio()) {
+  // A hook for each app's CSS, should it ever want one: html.suite-in-studio.
+  document.documentElement.classList.add('suite-in-studio');
+
+  // Links to a sister app (by its address, or its folder on this same site)
+  // open it in the Studio. Caught on the way down, before the link acts.
+  const appFor = (href) => {
+    let u;
+    try { u = new URL(href, location.href); } catch (_) { return null; }
+    return SUITE_APPS.find((a) => {
+      const live = new URL(a.url);
+      if (u.origin === live.origin) return true;                         // https://imgedtr.app/...
+      return u.origin === location.origin && u.pathname.startsWith('/' + a.id + '/');   // /imgedtr/ here
+    }) || null;
+  };
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest && e.target.closest('a[href]');
+    if (!link || e.ctrlKey || e.metaKey || e.shiftKey) return;           // (Ctrl+click: a new tab, as asked)
+    const app = appFor(link.getAttribute('href'));
+    if (!app) return;
+    e.preventDefault();
+    suiteStudioSay({ edtrStudio: 'open', app: app.id });
+  }, true);
+
+  // Ctrl+Shift+1 ... 9 switch apps, Ctrl+Shift+0 goes back to the rail.
+  // (e.code, "Digit3", names the key itself, so it works on any keyboard
+  // layout, even where Shift+3 types a different symbol.) This listens on
+  // the window, which hears a key LAST - after the app's own shortcuts. If
+  // the app has already used the key (it called preventDefault), it's the
+  // app's, and the Studio stays out of it.
+  window.addEventListener('keydown', (e) => {
+    if (!e.ctrlKey || !e.shiftKey || e.altKey || e.metaKey || !/^Digit[0-9]$/.test(e.code)) return;
+    if (e.defaultPrevented) return;
+    e.preventDefault();
+    suiteStudioSay({ edtrStudio: 'key', n: Number(e.code.slice(5)) });
+  });
 }
 
 /* SUITE BLOCK v4 - END ================================================== */
