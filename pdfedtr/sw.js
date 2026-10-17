@@ -55,7 +55,9 @@ self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     // Clear out any other cache this app might have left behind.
     const names = await caches.keys();
-    await Promise.all(names.filter((n) => n !== CACHE).map((n) => caches.delete(n)));
+    // Only this app's own old caches: on a site shared with the other apps (EDTR Studio)
+    // their caches must be left alone.
+    await Promise.all(names.filter((n) => n.startsWith('pdfedtr') && n !== CACHE).map((n) => caches.delete(n)));
     await self.clients.claim();
   })());
 });
