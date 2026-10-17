@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.22.1 - 2026-10-16 - Ready for EDTR Studio
+
+- Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
+- The shared SUITE block gained its "EDTR STUDIO" section (`suiteInStudio()`).
+
 ## 1.22.0 - 2026-10-15 - Animated GIFs (milestone 1: open, play, re-save)
 
 Milestone 1 of `IMGEDTR-GIF-SPEC.md` (project doc).
