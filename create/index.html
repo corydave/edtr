@@ -812,41 +812,39 @@ const SUITE_APPS = [
   //        the other apps show (More apps, the splash's row, the links in
   //        help text). The app itself still finds its own entry, for its
   //        splash. Leave it off (or true) once the app is ready to share.
-  { id: 'txtedtr',  name: 'TXTEDTR',  color: '#d4400b', url: 'https://txtedtr.app/',
-    blurb: 'Code and text editor with highlighting, split view and live preview.',
-    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 12.5-2 2.5 2 2.5"/><path d="m14 12.5 2 2.5-2 2.5"/>' },
-  { id: 'pdfedtr',  name: 'PDFEDTR',  color: '#8a1c5c', url: 'https://pdfedtr.app/',
-    blurb: 'Edit, annotate and rearrange PDFs without uploading them anywhere.',
-    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>' },
-  { id: 'imgedtr',  name: 'IMGEDTR',  color: '#305305', url: 'https://imgedtr.app/',
-    blurb: 'Mark up screenshots and photos with spotlights, cursors and text.',
-    icon: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>' },
-  { id: 'sndedtr',  name: 'SNDEDTR',  color: '#4b5563', url: 'https://sndedtr.app/',
-    blurb: 'Multitrack audio editor with effects, recording and export.',
-    icon: '<path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"/>' },
-  { id: 'videdtr',  name: 'VIDEDTR',  color: '#0046ad', url: 'https://videdtr.app/',
-    blurb: 'Multitrack video editor with a timeline, effects and exact export.',
-    icon: '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>' },
-  { id: 'scrncstr', name: 'SCRNCSTR', color: '#00565d', url: 'https://scrncstr.app/',
-    blurb: 'Record your screen and webcam together, all on this machine.',
-    icon: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>' },
-  { id: 'vctredtr', name: 'VCTREDTR', color: '#5b21b6', url: 'https://vctredtr.app/',
-    blurb: 'Vector drawing with shape merging: union, subtract, fragment and more.',
-    icon: '<rect width="12" height="12" x="3" y="9" rx="2"/><circle cx="15" cy="9" r="6"/>' },
   // The id starts with a digit, which is fine as a string key; just never use
   // it bare as a JavaScript name or an unescaped CSS #id.
   { id: '3dedtr',   name: '3DEDTR',   color: '#7a4100', url: 'https://3dedtr.app/',
     blurb: '3D modeling with shape merging, ready for 3D printing.',
     icon: '<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>' },
+  // Gold, yellower than 3DEDTR's bronze.
+  { id: 'animedtr', name: 'ANIMEDTR', color: '#655800', url: 'https://animedtr.app/',
+    blurb: 'Animated, interactive lessons: a stage, a timeline and keyframes, no code.',
+    icon: '<circle cx="16" cy="7.5" r="4"/><circle cx="9.5" cy="13" r="2.5"/><circle cx="5" cy="18" r="1.5"/><path d="m16 16 3 3-3 3-3-3z"/>' },
   { id: 'dskedtr',  name: 'DSKEDTR',  color: '#195d61', url: 'https://dskedtr.app/',
     blurb: 'Desktop publishing: newsletters, flyers and booklets, with text that flows between boxes.',
     icon: '<path d="M2 5h8a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H2z"/><path d="M22 5h-8a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h8z"/>' },
-  // ANIMEDTR is still being built (2026-10-13): listed: false keeps it out of
-  // the other apps' lists until Dave says it is ready. Its colour is gold
-  // (Dave, 2026-10-13), yellower than 3DEDTR's bronze.
-  { id: 'animedtr', name: 'ANIMEDTR', color: '#655800', url: 'https://animedtr.app/', listed: false,
-    blurb: 'Animated, interactive lessons: a stage, a timeline and keyframes, no code.',
-    icon: '<circle cx="16" cy="7.5" r="4"/><circle cx="9.5" cy="13" r="2.5"/><circle cx="5" cy="18" r="1.5"/><path d="m16 16 3 3-3 3-3-3z"/>' }
+  { id: 'imgedtr',  name: 'IMGEDTR',  color: '#305305', url: 'https://imgedtr.app/',
+    blurb: 'Mark up screenshots and photos with spotlights, cursors and text.',
+    icon: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>' },
+  { id: 'pdfedtr',  name: 'PDFEDTR',  color: '#8a1c5c', url: 'https://pdfedtr.app/',
+    blurb: 'Edit, annotate and rearrange PDFs without uploading them anywhere.',
+    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>' },
+  { id: 'scrncstr', name: 'SCRNCSTR', color: '#00565d', url: 'https://scrncstr.app/',
+    blurb: 'Record your screen and webcam together, all on this machine.',
+    icon: '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/>' },
+  { id: 'sndedtr',  name: 'SNDEDTR',  color: '#4b5563', url: 'https://sndedtr.app/',
+    blurb: 'Multitrack audio editor with effects, recording and export.',
+    icon: '<path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"/>' },
+  { id: 'txtedtr',  name: 'TXTEDTR',  color: '#d4400b', url: 'https://txtedtr.app/',
+    blurb: 'Code and text editor with highlighting, split view and live preview.',
+    icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 12.5-2 2.5 2 2.5"/><path d="m14 12.5 2 2.5-2 2.5"/>' },
+  { id: 'vctredtr', name: 'VCTREDTR', color: '#5b21b6', url: 'https://vctredtr.app/',
+    blurb: 'Vector drawing with shape merging: union, subtract, fragment and more.',
+    icon: '<rect width="12" height="12" x="3" y="9" rx="2"/><circle cx="15" cy="9" r="6"/>' },
+  { id: 'videdtr',  name: 'VIDEDTR',  color: '#0046ad', url: 'https://videdtr.app/',
+    blurb: 'Multitrack video editor with a timeline, effects and exact export.',
+    icon: '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>' }
 ];
 
 /* The apps to SHOW, from where `currentId` is looking: every listed app,
@@ -2546,6 +2544,12 @@ const KIND = {
 /* The apps the Studio shows: every app the family lists (an app still being
    built, with listed: false, stays out - exactly as in the apps' own lists). */
 const APPS = SUITE_APPS.filter((a) => a.listed !== false);
+/* The rail's order: the making apps first, then the two that are less
+   likely in a "create" session - TXTEDTR, then SCRNCSTR at the very bottom
+   (Dave, 2026-10-17). Ctrl+Shift+1 ... 9 follow this order too. To move an
+   app down, add its id here; the list is moved to the end in this order. */
+const RAIL_LAST = ['txtedtr', 'scrncstr'];
+APPS.sort((a, b) => RAIL_LAST.indexOf(a.id) - RAIL_LAST.indexOf(b.id));
 const appById = (id) => APPS.find((a) => a.id === id) || null;
 
 const $ = (id) => document.getElementById(id);
