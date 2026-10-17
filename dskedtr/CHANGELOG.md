@@ -1,5 +1,10 @@
 # DSKEDTR changelog
 
+## 0.46.1 - 2026-10-16
+
+- Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
+- The shared SUITE block gained its "EDTR STUDIO" section (`suiteInStudio()`).
+
 ## 0.46.0 - 2026-10-16
 
 - **DSKEDTR is teal.** The icon is now a teal plate (`#37c6d0`) with the two white pages; their text lines are deep teal. The splash picture, the top bar's mark, the app icons (home screen, browser tab, install) and the browser's toolbar colour follow.
