@@ -1,5 +1,10 @@
 # ANIMEDTR changelog
 
+## 0.22.1 - 2026-10-16
+
+- Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
+- The shared SUITE block gained its "EDTR STUDIO" section (`suiteInStudio()`).
+
 ## 0.22.0 - 2026-10-15
 
 **Shape tweens: morphing** (Dave's pick, like Flash's shape tween; both
