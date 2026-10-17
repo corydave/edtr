@@ -17,7 +17,7 @@
    Keep this in step with APP_VERSION inside index.html.
    ========================================================================== */
 
-const CACHE_VERSION = '0.11.0';
+const CACHE_VERSION = '0.11.1';
 const SHELL_CACHE = `sndedtr-shell-${CACHE_VERSION}`;   // the app itself
 const RUNTIME_CACHE = `sndedtr-runtime-${CACHE_VERSION}`; // fonts, optional bits
 

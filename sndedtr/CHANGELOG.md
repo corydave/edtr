@@ -5,6 +5,11 @@ All notable changes to SNDEDTR. Newest first.
 The version number lives in two places and both must move together on a
 release: `APP_VERSION` in `index.html` and `CACHE_VERSION` in `sw.js`.
 
+## 0.11.1 - 2026-10-16 - Ready for EDTR Studio
+
+- Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
+- The shared SUITE block gained its "EDTR STUDIO" section (`suiteInStudio()`).
+
 ## 0.11.0 - 2026-10-12 - Made for fingers
 
 - Volume envelope points are bigger on a phone or tablet (15 px), a finger catches one from about 22 px away, and the nearest point wins when two are close. With a mouse, nothing changes.
