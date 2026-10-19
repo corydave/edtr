@@ -2,6 +2,14 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.23.0 - 2026-10-18 - Make it a screenshot
+
+- **Make it a screenshot**, one click for a pasted picture: it rounds the corners (15 px), adds a soft drop shadow (the usual image shadow; a shadow you already set up is kept), pads the canvas so the whole shadow fits with a little room around it (Fit contents plus half the shadow's softness plus 8 px), makes the background see-through and **copies the result** to the clipboard, ready to paste.
+  - Where: a new top-bar button next to Copy image, **Ctrl+Shift+X**, a **Make it a screenshot** button at the top of the Canvas settings (whenever there is a picture), and **Screenshot** in a picture's properties.
+  - Which picture: the selected one, or else the biggest picture on the canvas. Annotations (arrows, boxes, text) come along, because the canvas is fitted to everything on it.
+  - It is ordinary settings (Corners, Drop shadow, the canvas size and background), so **Ctrl+Z** undoes it in one step and each part can still be changed afterwards. A picture cut to a shape goes back to a rectangle.
+- `copyImage()` takes an optional message, used for the "Screenshot copied" note. (Buttons and shortcuts that call it pass an event, which it ignores.)
+
 ## 1.22.1 - 2026-10-16 - Ready for EDTR Studio
 
 - Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.

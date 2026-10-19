@@ -985,6 +985,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <div class="sep" aria-hidden="true"></div>
     <div class="group">
       <button class="icon-btn" id="btnCopyImage" title="Copy image to clipboard (Ctrl+Shift+C)" aria-label="Copy image to clipboard"><span data-icon="copy"></span></button>
+      <!-- One click: rounded corners, a shadow and padding, then copied (makeScreenshot, section 15). -->
+      <button class="icon-btn" id="btnScreenshot" title="Make it a screenshot: rounded corners, a shadow and padding, then copy (Ctrl+Shift+X)" aria-label="Make it a screenshot and copy it"><span data-icon="screenshot"></span></button>
       <button class="btn primary" id="btnExport" title="Export (Ctrl+S)"><span data-icon="download"></span> Export</button>
     </div>
     <div class="spacer"></div>
@@ -1380,7 +1382,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.22.1';
+const APP_VERSION = '1.23.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1435,6 +1437,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.23.0', date: '2026-10-18', notes: [
+    'Make it a screenshot: one click (or Ctrl+Shift+X) rounds a pasted picture\'s corners (15 px), gives it a soft drop shadow, pads the canvas so the whole shadow fits, makes the background see-through and copies the result, ready to paste. It is in the top bar next to Copy, in the Canvas settings and in a picture\'s properties. One undo step puts it all back.'
+  ] },
   { version: '1.22.1', date: '2026-10-16', notes: [
     'Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.'
   ] },
@@ -1784,6 +1789,8 @@ const ICONS = {
   zoomOut: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>',
   fit: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  // A picture with rounded corners and a shadow along two sides: "Make it a screenshot".
+  screenshot: '<rect x="3" y="3" width="15" height="13" rx="3"/><path d="M21 8v10a3 3 0 0 1-3 3H8"/>',
   copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   clipboard: '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   folder: '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
@@ -4185,6 +4192,14 @@ function renderProps() {
   title.textContent = 'Canvas';
   propsBody.append(el('p', { class: 'hint', style: 'margin-bottom:10px', text: doc.width + ' x ' + doc.height + ' pixels' }));
   if (isAnimated()) animationSection().forEach((r) => propsBody.append(r));    // section 24
+  // One click for a pasted picture: rounded corners, a shadow, padding, copied.
+  if (doc.layers.some((l) => l.type === 'image' && l.visible)) {
+    const shot = el('button', { type: 'button', class: 'btn primary', 'aria-describedby': 'shotHint', onclick: makeScreenshot });
+    shot.innerHTML = iconSVG('screenshot');          // our own fixed icon markup
+    shot.append(' Make it a screenshot');
+    propsBody.append(el('div', { class: 'btn-row', style: 'margin-bottom:10px' }, shot));
+    propsBody.append(el('p', { class: 'hint', id: 'shotHint', style: 'margin:-4px 0 10px', text: 'Rounds the corners (15 px), adds a shadow and padding, and copies it, ready to paste. Ctrl+Shift+X.' }));
+  }
   propsBody.append(el('div', { class: 'subhead', text: 'Canvas tools' }));
   propsBody.append(backgroundRow());
   propsBody.append(el('div', { class: 'tool-grid' },
@@ -4505,6 +4520,7 @@ function imageFields(L) {
   const rows = [];
   const src = imageStore.get(L.imageId);
   rows.push(el('div', { class: 'tool-grid' },
+    labelBtn('screenshot', 'Screenshot', makeScreenshot, 'Make it a screenshot: rounded corners, a shadow and padding, then copy (Ctrl+Shift+X)'),
     labelBtn('crop', 'Crop image', () => startLayerCrop(L.id)),
     Object.assign(labelBtn('x', 'Reset crop', () => {
       // Back to the whole picture, keeping the same zoom level and center.
@@ -5453,7 +5469,7 @@ function onDocumentShapeChanged() {
   if (isAnimated()) syncFrameLayer(); else state.framePanel = false;
   renderFilmstrip();
   const noDoc = !doc;
-  ['btnExport', 'btnCopyImage', 'btnSaveProject', 'btnZoomIn', 'btnZoomOut', 'btnZoom100', 'btnFit'].forEach((id) => { $(id).disabled = noDoc; });
+  ['btnExport', 'btnCopyImage', 'btnScreenshot', 'btnSaveProject', 'btnZoomIn', 'btnZoomOut', 'btnZoom100', 'btnFit'].forEach((id) => { $(id).disabled = noDoc; });
   renderLayers(); renderProps(); requestRender();
 }
 
@@ -5532,8 +5548,9 @@ async function doExport() {
     toast('Export failed. The image may be too large for this browser.');
   } finally { setBusy(false); }
 }
-async function copyImage() {
+async function copyImage(message = null) {
   if (!doc) return;
+  if (typeof message !== 'string') message = null;     // buttons and shortcuts pass an event here: not a message
   finishTextEdit();
   if (!navigator.clipboard || !window.ClipboardItem) { toast('This browser cannot copy images. Use Export instead.'); return; }
   try {
@@ -5541,11 +5558,53 @@ async function copyImage() {
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': exportBlob('image/png') })]);
     exportedSnapshot = history.current;
     backup.markSafe();
-    toast(doc.showcase && doc.showcase.on ? 'Showcase image copied. Paste it anywhere with Ctrl+V.' : 'Image copied. Paste it anywhere with Ctrl+V.');
+    toast(message || (doc.showcase && doc.showcase.on ? 'Showcase image copied. Paste it anywhere with Ctrl+V.' : 'Image copied. Paste it anywhere with Ctrl+V.'));
   } catch (e) {
     toast('Copy was blocked by the browser. Use Export instead.');
   }
 }
+
+/* ---- Make it a screenshot (one click) ----
+   For a picture you just pasted: round its corners (15 px), give it a soft
+   drop shadow, pad the canvas so the whole shadow fits (with a little
+   breathing room), make the background see-through, and copy the result.
+   It is all ordinary settings, so it is one undo step and every part can
+   still be changed afterwards (Corners, Shadow, Canvas size...).        */
+const SCREENSHOT_RADIUS = 15;        // corner rounding, in canvas pixels
+const SCREENSHOT_ROOM = 8;           // extra space around the shadow, in pixels
+
+/** Which picture to style: the selected one, or else the biggest picture on the canvas. */
+function screenshotTarget() {
+  const L = selected();
+  if (L && L.type === 'image' && L.visible) return L;
+  const pics = doc.layers.filter((l) => l.type === 'image' && l.visible);
+  if (!pics.length) return null;
+  return pics.reduce((a, b) => (b.w * b.h > a.w * a.h ? b : a));
+}
+function makeScreenshot() {
+  if (!doc) return;
+  finishTextEdit();
+  cancelCrop(false);
+  const L = screenshotTarget();
+  if (!L) { toast('Paste or open a picture first, then press this to make it a screenshot.'); return; }
+  ensureImageStyle(L);
+  L.radius = SCREENSHOT_RADIUS;
+  delete L.maskShape;                // a rectangle with rounded corners, not a cut-out shape
+  if (!L.shadowOn) {                 // a shadow you already set up is kept as it is
+    L.shadowOn = true;
+    L.shadowBlur = IMAGE_STYLE_DEFAULTS.shadowBlur;
+    L.shadowY = IMAGE_STYLE_DEFAULTS.shadowY;
+    L.shadowOpacity = IMAGE_STYLE_DEFAULTS.shadowOpacity;
+    L.shadowColor = IMAGE_STYLE_DEFAULTS.shadowColor;
+  }
+  doc.background = null;             // see-through, so the shadow sits nicely on any page
+  // fitToContents already leaves room for the shadow's size and drop; a canvas
+  // blur fades out about 1.5 x its size, so add the last half plus a little room.
+  fitToContents(Math.ceil(L.shadowBlur / 2) + SCREENSHOT_ROOM);    // also saves the undo step
+  copyImage('Screenshot copied: rounded corners, a shadow and padding. Paste it anywhere with Ctrl+V. (Undo with Ctrl+Z.)');
+  announce('Screenshot made and copied');
+}
+$('btnScreenshot').addEventListener('click', makeScreenshot);
 
 /* -----------------------------------------------------------------------
    18. IMAGE TOOLS (Phase 2)
@@ -9941,6 +10000,8 @@ const SHORTCUTS = [
     test: (e) => mod(e) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'c' && selectedLayers().length > 0, run: () => copyLayers() },
   { id: 'cut-layers', keys: 'Ctrl+X', label: 'Cut selected layers', allowDefault: true,
     test: (e) => mod(e) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'x' && selectedLayers().length > 0, run: () => copyLayers(true) },
+  { id: 'screenshot', keys: 'Ctrl+Shift+X', label: 'Make it a screenshot (rounded corners, shadow, padding) and copy it',
+    test: (e) => mod(e) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'x', run: makeScreenshot },
   { id: 'copy-image', keys: 'Ctrl+Shift+C', label: 'Copy image to clipboard', test: (e) => mod(e) && e.shiftKey && e.key.toLowerCase() === 'c', run: copyImage },
   // Animated GIFs (section 24). Plain Space already means pan, so Play is Shift+Space.
   { id: 'frame-prev', keys: ',', label: 'Animation: previous frame', test: (e) => !mod(e) && !e.altKey && e.key === ',' && isAnimated(), run: () => { stopPlaying(); showFrame(state.frame - 1, true); } },
