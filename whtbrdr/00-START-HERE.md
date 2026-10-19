@@ -5,6 +5,12 @@
 > (copied into the app and the extension by `_edtr-suite/paste_whtbrdr_bar.py`),
 > and the master SUITE block. The extension is 1.3.0. Waiting for Dave's
 > review of 0.1.1; then milestone 2 (0.2.0). See "Where 0.1.1 stands" below.
+>
+> **Later the same day: 0.2.0 built** (Select and the eraser; milestone 2 is
+> split into 0.2.0-0.2.3, listed in the spec's Milestones). The extension is
+> 1.3.1 (its eraser follows S/M/L). Waiting for Dave's review of 0.2.0.
+> How it works: sections 8b (picking, the frame, moving, stretching, turning)
+> and 8c (the eraser) of `index.html`.
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**

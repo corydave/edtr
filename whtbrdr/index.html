@@ -244,6 +244,22 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
    cannot blend. Either way the whole layer fades at once, so where two
    highlights cross it gets no darker. */
 .hl-layer.on-dark, .no-blend .hl-layer { mix-blend-mode: normal; opacity: .55; }
+/* The frame round what is picked, and its handles (drawn in screen pixels). */
+.sel-layer { pointer-events: none; }
+.sel-frame { fill: none; stroke: var(--brand); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.sel-handle { fill: #ffffff; stroke: var(--brand); stroke-width: 1.5; }
+.sel-stem { stroke: var(--brand); stroke-width: 1.5; }
+.sel-box { fill: var(--brand); fill-opacity: .08; stroke: var(--brand); stroke-width: 1; stroke-dasharray: 4 3; }
+@media (forced-colors: active) { .sel-frame, .sel-stem, .sel-box { stroke: Highlight; } .sel-handle { stroke: Highlight; fill: Canvas; } }
+/* The board's pointer for each tool (crosshair for drawing; handles set their own). */
+#board[data-tool="select"] { cursor: default; }
+/* The dot on the Inspector button: something is picked but the Inspector is hidden. */
+#btnInspector.has-dot::after { content: ''; position: absolute; top: 4px; right: 4px; width: 9px; height: 9px;
+  border-radius: 50%; background: var(--brand); border: 2px solid var(--surface); }
+.check { display: flex; align-items: center; gap: 8px; min-height: 32px; margin-bottom: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--brand); margin: 0; }
+.hint.tips { padding-left: 18px; }
+.hint.tips li { margin-bottom: 4px; }
 /* The ring that shows the pen's size under a mouse or stylus (never a finger). */
 .brush-ring { fill: none; stroke: #111827; stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; opacity: .55; }
 .brush-ring.light { stroke: #ffffff; }
@@ -949,6 +965,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   <span class="st-info">Page <strong id="stPage">1 of 1</strong></span>
   <span class="st-info" id="stSize"></span>
   <span class="st-info" id="stTool"></span>
+  <span class="st-info" id="stSel"></span>
   <span class="spacer"></span>
   <div class="zoom-ctl" role="group" aria-label="Zoom">
     <button class="icon-btn" id="btnZoomOut" title="Zoom out (Ctrl+minus)" aria-label="Zoom out"><span data-icon="zoomOut"></span></button>
@@ -2841,6 +2858,9 @@ const WB_SIZES = {
   L: { name: 'Large',  pen: 8, highlighter: 32, text: 44 }
 };
 const WB_SIZE_ORDER = ['S', 'M', 'L'];
+// The eraser's size follows the same setting: how far from the pointer it
+// reaches, in CSS pixels on the screen (Medium is the extension's old size).
+const WB_ERASER_RADIUS = { S: 6, M: 10, L: 18 };
 
 // Sticky note paper colors (a note's color button steps through them).
 const WB_NOTE_COLORS = ['#fef08a', '#fbcfe8', '#bfdbfe', '#bbf7d0'];
@@ -2866,7 +2886,7 @@ const WB_TOOLS = [
   { id: 'ellipse',     key: 'o', icon: 'ellipse',     group: 'shapes',  name: 'Ellipse',   tip: 'hold Shift for a circle' },
   { id: 'text',        key: 't', icon: 'text',        group: 'write',   name: 'Text',      tip: 'click to type, drag text to move it' },
   { id: 'jot',         key: 'j', icon: 'note',        group: 'write',   name: 'Sticky note', tip: 'J for "jot"' },
-  { id: 'eraser',      key: 'e', icon: 'eraser',      group: 'write',   name: 'Eraser',    tip: 'removes whole strokes' },
+  { id: 'eraser',      key: 'e', icon: 'eraser',      group: 'write',   name: 'Eraser',    tip: 'removes whole strokes; [ and ] size it' },
   { id: 'laser',       key: 'k', icon: 'laser',       group: 'present', name: 'Laser pointer' },
   { id: 'spotlight',   key: 's', icon: 'spotlight',   group: 'present', name: 'Spotlight', tip: 'dims everything but a circle around the pointer' },
   { id: 'magnifier',   key: 'm', icon: 'magnifier',   group: 'present', name: 'Magnifying glass', tip: '+ and - zoom it' }
@@ -2884,7 +2904,7 @@ const WB_GROUPS = [
 // The tools that draw in the pen's color (their icons take that color too).
 const WB_PEN_COLORED = ['pen', 'arrow', 'line', 'rect', 'ellipse', 'text', 'laser'];
 // The tools that use the size setting.
-const WB_SIZED = ['pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'spotlight', 'magnifier'];
+const WB_SIZED = ['pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'eraser', 'spotlight', 'magnifier'];
 
 /** A tool's definition by its id (or undefined). */
 function wbTool(id) {
@@ -3231,6 +3251,8 @@ function wbFontButton(onClick) {
  *                 is listed appears in the bar's own order (WB_TOOLS).
  *   opts.names    { toolId: 'Its words here' } - a home's own name for a tool
  *                 (the extension calls Select "Interact with page")
+ *   opts.tips     { toolId: 'its tip' } - a home's own tip after the key, when
+ *                 its tool works differently (the app's eraser has two modes)
  *   opts.lead     buttons put first in the first group (the extension's grip and dock)
  *   opts.after    whole groups added at the end (the extension's undo, export...)
  *   opts.strip    (rail) the element that holds the tool's colors and sizes
@@ -3261,7 +3283,8 @@ function wbBuildBar(opts) {
     let label = name + ' (' + tool.key.toUpperCase() + (tool.id === 'select' && names.select ? ' or Esc' : '') + ')';
     if (layout === 'rail' && tool.id === 'pen') label = 'Pen (P), then 1 to 5 for its colors';
     if (layout === 'rail' && tool.id === 'highlighter') label = 'Highlighter (H), then 6 to 9 for its colors';
-    if (tool.tip) label += ' - ' + tool.tip;
+    const tip = (opts.tips && opts.tips[tool.id]) || tool.tip;
+    if (tip) label += ' - ' + tip;
     const b = wbButton(label, wbIcon(tool.icon), function () { pick('tool', tool.id); });
     b.setAttribute('aria-label', name);
     b.setAttribute('aria-pressed', 'false');
@@ -3445,7 +3468,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.1.1';
+const APP_VERSION = '0.2.0';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -3588,7 +3611,9 @@ function loadSettings() {
     open: {},                                                                    // Inspector sections that are open
     fingerPans: ['auto', 'on', 'off'].includes(raw.fingerPans) ? raw.fingerPans : 'auto',
     units: raw.units === 'mm' ? 'mm' : 'in',                                     // for a custom page size
-    tool: raw.tool === 'highlighter' ? 'highlighter' : 'pen',
+    tool: ['select', 'pen', 'highlighter', 'eraser'].includes(raw.tool) ? raw.tool : 'pen',
+    eraserMode: raw.eraserMode === 'part' ? 'part' : 'whole',                    // whole strokes, or part of a stroke
+    keepShape: raw.keepShape !== false,                                          // Inspector: width and height change together
     penIndex: Number.isInteger(raw.penIndex) ? clamp(raw.penIndex, 0, DEFAULT_PENS.length - 1) : 0,
     hlIndex: Number.isInteger(raw.hlIndex) ? clamp(raw.hlIndex, 0, DEFAULT_HIGHLIGHTERS.length - 1) : 0,
     size: WB_SIZE_ORDER.includes(raw.size) ? raw.size : 'M',                    // Small, Medium or Large, for every tool
@@ -3602,7 +3627,7 @@ function loadSettings() {
     s.exact.highlighter = exactOk(raw.exact.highlighter, 'highlighter');
   }
   if (raw.open && typeof raw.open === 'object') {
-    for (const key of ['tool', 'page', 'colors']) if (raw.open[key] === true) s.open[key] = true;
+    for (const key of ['tool', 'page', 'colors', 'sel', 'geom']) if (raw.open[key] === true) s.open[key] = true;
   }
   // A saved preset keeps its color if it is a real color. Settings from
   // 0.1.0 (no "bar" mark) held that version's stand-in colors, so they are
@@ -3710,9 +3735,17 @@ let savedState = JSON.stringify(board);  // the board as it stood after the last
  * Keep a change, so it can be undone. Call this AFTER changing `board`.
  * label says what it was, for "Undid pen stroke" and the buttons' tooltips.
  */
-function commit(label) {
-  history.undo.push({ label, state: savedState });
-  if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
+function commit(label, mergeKey) {
+  // mergeKey: quick repeats of the same small change (arrow-key nudges of
+  // the same things, within a second) are joined into ONE undo step.
+  const now = performance.now();
+  const merge = mergeKey && history.mergeKey === mergeKey && now - history.mergeAt < 1000 && history.undo.length;
+  if (!merge) {
+    history.undo.push({ label, state: savedState });
+    if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
+  }
+  history.mergeKey = mergeKey || null;
+  history.mergeAt = now;
   history.redo.length = 0;               // a new change makes the old "redo" path disappear
   savedState = JSON.stringify(board);
   updateUndoButtons();
@@ -3723,6 +3756,8 @@ function stepHistory(dir) {
   const to = dir < 0 ? history.redo : history.undo;
   if (!from.length) { announce(dir < 0 ? 'Nothing to undo' : 'Nothing to redo'); return; }
   cancelStroke();                        // a stroke being drawn right now is dropped first
+  cancelObjectGesture();                 // (and anything being moved or erased)
+  history.mergeKey = null;               // the next nudge starts a new undo step
   const entry = from.pop();
   to.push({ label: entry.label, state: savedState });
   board = JSON.parse(entry.state);       // our own copy, made by commit(): safe to read back
@@ -3801,7 +3836,10 @@ function buildBoardSvg() {
   brushRing = svgEl('circle', { class: 'brush-ring', r: 1, visibility: 'hidden' });
   // Order matters: later things are drawn on top.
   viewG.append(pageHalo, pageRect, hlLayer, inkLayer, liveInk, pageEdge, brushRing);
-  svg.append(viewG);
+  // The frame round what is picked is drawn on top, in screen pixels (not
+  // zoomed), so its lines and handles stay the same size at any zoom.
+  selG = svgEl('g', { class: 'sel-layer' });
+  svg.append(viewG, selG);
   // A browser that cannot blend gets see-through highlights instead.
   if (!(window.CSS && CSS.supports && CSS.supports('mix-blend-mode', 'multiply'))) document.body.classList.add('no-blend');
 }
@@ -3818,7 +3856,12 @@ function renderPage() {
   // fully dark); on a dark page they are see-through instead (see the CSS).
   hlLayer.classList.toggle('on-dark', isDarkColor(p.color));
   const hl = [], ink = [];
-  for (const item of p.items) (item.type === 'highlight' ? hl : ink).push(itemElement(item));
+  elById.clear();
+  for (const item of p.items) {
+    const node = itemElement(item);
+    elById.set(item.id, node);                     // (so a move can redraw just the picked items)
+    (item.type === 'highlight' ? hl : ink).push(node);
+  }
   hlLayer.replaceChildren(...hl);
   if (live && live.el && live.item.type === 'highlight') hlLayer.append(live.el);   // (a highlight being drawn stays on top)
   inkLayer.replaceChildren(...ink);
@@ -3826,6 +3869,7 @@ function renderPage() {
   if (isHex(board.staging)) $('workspace').style.setProperty('--staging', board.staging);
   else $('workspace').style.removeProperty('--staging');
   describeBoard();
+  renderSelection();
 }
 
 /** Tell screen readers what is on the page, in one line. */
@@ -3837,11 +3881,13 @@ function describeBoard() {
   if (p.items.length) {
     what = [inks ? plural(inks, 'pen stroke') : '', hls ? plural(hls, 'highlight') : ''].filter(Boolean).join(' and ');
   }
-  $('board').setAttribute('aria-label', 'Page ' + (pageIndex + 1) + ' of ' + board.pages.length + ', ' + sizeWords(p) + ': ' + what);
+  const picked = sel.ids.size ? '. Picked: ' + selectionWords() : '';
+  $('board').setAttribute('aria-label', 'Page ' + (pageIndex + 1) + ' of ' + board.pages.length + ', ' + sizeWords(p) + ': ' + what + picked);
 }
 
 /** Redraw everything that shows the board (after undo, a new board, a new size...). */
 function renderAll() {
+  pruneSelection();                    // (undo or a new board may have taken picked items away)
   renderPage();
   renderInspector();
   renderStatus();
@@ -3891,6 +3937,7 @@ function applyView() {
   const s = scale();
   viewG.setAttribute('transform', 'matrix(' + s + ' 0 0 ' + s + ' ' + round2(view.tx) + ' ' + round2(view.ty) + ')');
   syncZoomMenu();
+  renderSelection();                   // the frame is drawn in screen pixels, so it follows the view
 }
 
 /** Fit the page ('page': all of it; 'width': its width) into the board. */
@@ -3969,19 +4016,23 @@ function syncZoomMenu() {
 }
 
 /* =====================================================================
-   8. POINTERS: DRAWING, SLIDING, PINCHING
+   8. POINTERS: DRAWING, PICKING, ERASING, SLIDING, PINCHING
    ---------------------------------------------------------------------
    One set of "pointer events" covers a mouse, a stylus and fingers.
-   - One pointer pressed on the board draws (or slides, when Space is
-     held, with the middle mouse button, or with a finger when "a finger
-     slides the page" is on).
+   - One pointer pressed on the board does what the tool does: draws,
+     picks and moves (Select, section 8b) or erases (section 8c). A
+     handle of the frame round picked things works with any tool, and
+     Ctrl/Cmd+click picks without leaving a pen.
+   - It slides the page instead when Space is held, with the middle mouse
+     button, or with a finger when "a finger slides the page" is on.
    - Two fingers pinch to zoom and slide together.
    - Palm rejection: once a stylus has been used on this device, a
      finger slides the page instead of drawing (unless the person chose
      otherwise in the Inspector). So a resting hand leaves no marks.
    ===================================================================== */
 const pointers = new Map();        // the pointers that are down: id -> { x, y, type }
-let gesture = null;                // what they are doing: { kind: 'draw' | 'pan' | 'pinch', ... }
+// What they are doing: { kind: 'draw' | 'pan' | 'pinch' | 'transform' | 'box' | 'press' | 'tap' | 'erase', ... }
+let gesture = null;
 let live = null;                   // the stroke being drawn: { item, el, pointerId, started, shift }
 let penSeen = false;               // has a stylus touched this board?
 let spaceDown = false;             // is Space held (Space + drag slides the board)?
@@ -4017,25 +4068,34 @@ function wireBoardPointers() {
         const young = performance.now() - live.started < 250 || live.item.pts.length < 6;
         if (young) cancelStroke(); else finishStroke();
       }
+      cancelObjectGesture();                         // (a move or erase the first finger began is undone)
       startPinch();
       return;
     }
     if (pointers.size > 1) return;                   // a second pointer of another kind: ignore it
 
-    const wantsPan = e.button === 1 || spaceDown || (e.pointerType === 'touch' && fingerPans());
+    // (With Select, a finger picks and moves things; it slides the page from an empty spot.)
+    const wantsPan = e.button === 1 || spaceDown || (e.pointerType === 'touch' && fingerPans() && tool !== 'select');
     if (wantsPan) {
       e.preventDefault();                            // (stops the middle button's auto-scroll)
       gesture = { kind: 'pan', x: e.clientX, y: e.clientY };
       boardEl.classList.add('panning');
       return;
     }
-    if (e.button !== 0) return;                      // right button: nothing yet (menus come in milestone 2)
+    if (e.button !== 0) return;                      // right button: nothing yet (menus come later in milestone 2)
+    // A handle of the frame round what is picked (with any tool): stretch or turn.
+    const handle = sel.ids.size ? handleAt(e.clientX, e.clientY) : null;
+    if (handle) { beginTransform(e, handle); return; }
+    // The Select tool, or Ctrl/Cmd+click with any other tool: pick.
+    if (tool === 'select' || e.ctrlKey || e.metaKey) { pointerDownSelect(e); return; }
+    if (tool === 'eraser') { startErase(e); return; }
+    if (sel.ids.size) setSelection([], false);       // drawing lets go of what was picked
     startStroke(e);
   });
 
   boardEl.addEventListener('pointermove', (e) => {
     const known = pointers.get(e.pointerId);
-    if (!known) { showRing(e); return; }             // just hovering: show the size ring
+    if (!known) { showRing(e); hoverCursor(e); return; }   // just hovering: the size ring, and the right pointer
     known.x = e.clientX; known.y = e.clientY;
     if (!gesture) return;
     if (gesture.kind === 'pan') {
@@ -4050,6 +4110,11 @@ function wireBoardPointers() {
       for (const ev of (events.length ? events : [e])) addPoint(ev, e.shiftKey);
       scheduleLiveDraw();
       showRing(e);
+    } else if (e.pointerId === gesture.pointerId) {
+      if (gesture.kind === 'transform') moveTransform(e);
+      else if (gesture.kind === 'box') moveBox(e);
+      else if (gesture.kind === 'press') movePress(e);
+      else if (gesture.kind === 'erase') moveErase(e);
     }
   });
 
@@ -4058,6 +4123,16 @@ function wireBoardPointers() {
     pointers.delete(e.pointerId);
     if (gesture && gesture.kind === 'draw' && live && e.pointerId === live.pointerId) {
       if (e.type === 'pointercancel') cancelStroke(); else finishStroke(e);
+    }
+    // Picking, moving and erasing end here (a canceled pointer puts things back).
+    if (gesture && e.pointerId === gesture.pointerId) {
+      const kind = gesture.kind;
+      if (e.type === 'pointercancel' && kind !== 'pan') cancelObjectGesture();
+      else if (kind === 'transform') endTransform();
+      else if (kind === 'box') endBox();
+      else if (kind === 'press') endPress();
+      else if (kind === 'erase') endErase();
+      else if (kind === 'tap') gesture = null;
     }
     if (gesture && gesture.kind === 'pinch') {
       if (pointers.size >= 2) startPinch();          // three fingers down to two: carry on
@@ -4229,23 +4304,626 @@ function clearLive() {
 
 /* ---- The size ring: shows how wide the pen is, under a mouse or stylus ---- */
 function showRing(e) {
-  if (e.pointerType === 'touch' || spaceDown || (gesture && gesture.kind !== 'draw')) { hideRing(); return; }
-  const preset = currentPreset();
+  if (e.pointerType === 'touch' || spaceDown || tool === 'select' || (gesture && gesture.kind !== 'draw' && gesture.kind !== 'erase')) { hideRing(); return; }
   const pt = toPage(e.clientX, e.clientY);
   brushRing.setAttribute('cx', round2(pt.x));
   brushRing.setAttribute('cy', round2(pt.y));
-  brushRing.setAttribute('r', Math.max(preset.size / 2, 1.5 / scale()));
+  // The eraser's ring is how far it reaches; a pen's is half its width.
+  brushRing.setAttribute('r', tool === 'eraser' ? eraserReach() : Math.max(currentPreset().size / 2, 1.5 / scale()));
   // A dark ring on a light page; a light one on a dark page color.
   brushRing.classList.toggle('light', isDarkColor(page().color));
   brushRing.setAttribute('visibility', 'visible');
 }
 function hideRing() { if (brushRing) brushRing.setAttribute('visibility', 'hidden'); }
+/** The mouse pointer's shape over the board: arrows over handles, a "move" hand over what can be picked. */
+function hoverCursor(e) {
+  if (e.pointerType !== 'mouse' || spaceDown) return;
+  const h = sel.ids.size ? handleAt(e.clientX, e.clientY) : null;
+  let c = '';
+  if (h) c = h.cursor;
+  else if (tool === 'select') {
+    const pt = toPage(e.clientX, e.clientY);
+    c = itemAt(pt.x, pt.y, 5 / scale()) ? 'move' : 'default';
+  }
+  $('board').style.cursor = c;
+}
 /** Is a #rrggbb color dark (so a light ring shows up on it)? */
 function isDarkColor(hex) {
   if (!isHex(hex)) return false;
   const n = parseInt(hex.slice(1), 16);
   const r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+}
+
+/* =====================================================================
+   8b. PICKING AND CHANGING WHAT IS DRAWN (the Select tool)
+   ---------------------------------------------------------------------
+   What is picked is a list of item ids, `sel.ids`. Around them the board
+   draws a FRAME: a dashed box with eight square handles (drag one to
+   stretch or shrink) and a round turn handle above it (drag it to turn).
+   The handles are the suite's: bigger, and easier to catch, under a
+   finger (SUITE_TOUCH in the shared block).
+
+   How a change is made: when a drag starts, the board as it was is still
+   in `savedState` (the last kept change). Every time the pointer moves we
+   work out ONE "matrix" - a recipe that moves, stretches and turns points
+   - and apply it to copies of the items as they were when the drag
+   began, so a long drag never piles up rounding errors. When the drag
+   ends, the change is kept as one undo step. Escape (or a second finger)
+   in the middle puts everything back from `savedState`.
+
+   A matrix is SVG's six numbers [a, b, c, d, e, f]:
+       new x = a*x + c*y + e        new y = b*x + d*y + f
+   ===================================================================== */
+const sel = { ids: new Set(), angle: 0 };    // what is picked, and how far its frame is turned (radians)
+let selG = null;                             // the SVG group the frame and handles are drawn in (screen pixels)
+const elById = new Map();                    // item id -> its SVG element (filled by renderPage)
+
+/* ---- Matrices ---- */
+/** m after n: first do n, then m. */
+function mMul(m, n) {
+  return [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
+          m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
+          m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+}
+const mTranslate = (x, y) => [1, 0, 0, 1, x, y];
+const mRotate = (a) => [Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a), 0, 0];
+const mScale = (sx, sy) => [sx, 0, 0, sy, 0, 0];
+/** Where the point (x, y) goes. */
+const mApply = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+/** Turn by angle a around the point (cx, cy). */
+const mRotateAround = (a, cx, cy) => mMul(mTranslate(cx, cy), mMul(mRotate(a), mTranslate(-cx, -cy)));
+/** Stretch by sx and sy along the frame's own (turned) directions, keeping the point (ax, ay) still. */
+function mScaleAround(sx, sy, angle, ax, ay) {
+  return mMul(mTranslate(ax, ay), mMul(mRotate(angle), mMul(mScale(sx, sy), mMul(mRotate(-angle), mTranslate(-ax, -ay)))));
+}
+/** An angle kept between -180 and 180 degrees (in radians). */
+const normAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+
+/* ---- Items: where they are, and changing them ----
+   (Strokes are the only items so far. The shapes, text, notes and pictures
+   of the next versions add their own lines to itemHit, itemInBox,
+   itemPoints and transformItem.) */
+
+/** The items on this page that are picked, bottom first. */
+const pickedItems = () => page().items.filter((i) => sel.ids.has(i.id));
+/** Half the widest a stroke can be (a pressure line can swell to 1.7 times its size). */
+const halfWidth = (item) => item.size * (item.pressure ? 1.7 : 1) / 2;
+/** The points that outline an item (for a stroke: the points it passed through). */
+const itemPoints = (item) => item.pts;
+
+/** How far the page point (px, py) is from the line between points a and b. */
+function segDist(px, py, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  const len2 = dx * dx + dy * dy;
+  // t: how far along the line the nearest point is (0 = at a, 1 = at b).
+  const t = len2 ? clamp(((px - a[0]) * dx + (py - a[1]) * dy) / len2, 0, 1) : 0;
+  return Math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy));
+}
+/** Is the page point (x, y) on this item, give or take `reach` points? */
+function itemHit(item, x, y, reach) {
+  const r = reach + halfWidth(item), pts = item.pts;
+  if (pts.length === 1) return Math.hypot(x - pts[0][0], y - pts[0][1]) <= r;
+  for (let i = 1; i < pts.length; i++) if (segDist(x, y, pts[i - 1], pts[i]) <= r) return true;
+  return false;
+}
+/** The top item under a page point. Ink is drawn over highlights, so ink is looked at first. */
+function itemAt(x, y, reach) {
+  const items = page().items;
+  for (const kind of ['ink', 'highlight']) {
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i].type === kind && itemHit(items[i], x, y, reach)) return items[i];
+    }
+  }
+  return null;
+}
+/** Does the line from a to c cross the box b = { x0, y0, x1, y1 }? (Liang-Barsky clipping: the line
+    is cut down to the part inside the box, edge by edge; if anything is left, it crosses.) */
+function segHitsBox(a, c, b) {
+  let t0 = 0, t1 = 1;
+  const dx = c[0] - a[0], dy = c[1] - a[1];
+  for (const [p, q] of [[-dx, a[0] - b.x0], [dx, b.x1 - a[0]], [-dy, a[1] - b.y0], [dy, b.y1 - a[1]]]) {
+    if (p === 0) { if (q < 0) return false; continue; }   // parallel to this edge, and outside it
+    const r = q / p;
+    if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; }
+    else { if (r < t0) return false; if (r < t1) t1 = r; }
+  }
+  return true;
+}
+/** Does the item touch the box - or, with `inside`, sit wholly in it? */
+function itemInBox(item, b, inside) {
+  const pts = item.pts;
+  const inBox = (p) => p[0] >= b.x0 && p[0] <= b.x1 && p[1] >= b.y0 && p[1] <= b.y1;
+  if (inside) return pts.every(inBox);
+  if (pts.some(inBox)) return true;
+  for (let i = 1; i < pts.length; i++) if (segHitsBox(pts[i - 1], pts[i], b)) return true;
+  return false;
+}
+/**
+ * A copy of the item, changed by the matrix m. For a stroke every point
+ * moves, and its width grows or shrinks with it (by the square root of how
+ * much its area grew, so a stroke made twice as big is twice as thick).
+ */
+function transformItem(item, m) {
+  const out = { ...item, pts: item.pts.map((p) => { const q = mApply(m, p[0], p[1]); return [round2(q[0]), round2(q[1]), p[2]]; }) };
+  const grow = Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
+  const lim = SIZE_LIMITS[item.type === 'highlight' ? 'highlighter' : 'pen'];
+  out.size = round2(clamp(item.size * grow, lim[0], lim[1]));
+  return out;
+}
+
+/* ---- What is picked ---- */
+/** A few words for what is picked: "Blue pen stroke", or "3 marks: 2 pen strokes and 1 highlight". */
+function selectionWords(items = pickedItems()) {
+  if (!items.length) return 'nothing picked';
+  if (items.length === 1) return itemWords(items[0]);
+  const inks = items.filter((i) => i.type === 'ink').length, hls = items.length - inks;
+  return plural(items.length, 'mark') + ': ' + [inks ? plural(inks, 'pen stroke') : '', hls ? plural(hls, 'highlight') : ''].filter(Boolean).join(' and ');
+}
+/** Pick these ids (and say so, unless say is false). A new choice starts with an upright frame. */
+function setSelection(ids, say = true) {
+  const next = new Set(ids);
+  const same = next.size === sel.ids.size && [...next].every((id) => sel.ids.has(id));
+  if (!same) sel.angle = 0;
+  sel.ids = next;
+  selectionChanged();
+  if (say) announce(next.size ? 'Picked ' + selectionWords() : 'Nothing picked');
+}
+/** Redraw everything that shows what is picked. */
+function selectionChanged() {
+  renderSelection();
+  renderInspector();
+  renderStatus();
+  describeBoard();
+}
+/** Forget picked items that are no longer on the page (after undo, erasing, a new board...). */
+function pruneSelection() {
+  const here = new Set(page().items.map((i) => i.id));
+  for (const id of [...sel.ids]) if (!here.has(id)) sel.ids.delete(id);
+  if (!sel.ids.size) sel.angle = 0;
+}
+/** Everything on the page, in reading order: top to bottom, then left to right. */
+function readingOrder() {
+  const top = (it) => Math.min(...itemPoints(it).map((p) => p[1]));
+  const left = (it) => Math.min(...itemPoints(it).map((p) => p[0]));
+  // Things whose tops are within a third of an inch count as one row.
+  return page().items.slice().sort((a, b) => (Math.abs(top(a) - top(b)) > 24 ? top(a) - top(b) : left(a) - left(b)));
+}
+
+/* ---- The frame ----
+   It is worked out in the frame's own turned directions, called u (across)
+   and v (down): each point is turned back by the frame's angle, and the
+   smallest and largest u and v make the box. */
+/**
+ * The frame around the items: { angle, u0, v0, u1, v1, lockU, lockV }.
+ * padded: true leaves a little room round the marks (for drawing the frame
+ * and its handles); false gives the marks' own size (for the numbers).
+ */
+function selFrame(items = pickedItems(), angle = sel.angle, padded = true) {
+  if (!items.length) return null;
+  const back = mRotate(-angle);
+  let u0 = Infinity, v0 = Infinity, u1 = -Infinity, v1 = -Infinity, pad = 0;
+  for (const it of items) {
+    pad = Math.max(pad, halfWidth(it));
+    for (const p of itemPoints(it)) {
+      const q = mApply(back, p[0], p[1]);
+      u0 = Math.min(u0, q[0]); u1 = Math.max(u1, q[0]); v0 = Math.min(v0, q[1]); v1 = Math.max(v1, q[1]);
+    }
+  }
+  // A perfectly straight side-to-side (or up-and-down) line has no height
+  // (or width) to stretch, so that direction is "locked".
+  const lockU = u1 - u0 < 1, lockV = v1 - v0 < 1;
+  const extra = padded ? pad + 6 / scale() : 0;
+  return { angle, u0: u0 - extra, v0: v0 - extra, u1: u1 + extra, v1: v1 + extra, lockU, lockV };
+}
+/** A point of the frame, as fractions across (fu) and down (fv): 0 is the left or top, 1 the right or bottom. Page x, y. */
+const framePoint = (f, fu, fv) => mApply(mRotate(f.angle), f.u0 + (f.u1 - f.u0) * fu, f.v0 + (f.v1 - f.v0) * fv);
+/** A page point on the screen (pixels from the board's top-left corner). */
+const toScreen = (x, y) => [x * scale() + view.tx, y * scale() + view.ty];
+
+// The eight handles: corners and the middles of the sides.
+const HANDLES = [
+  { id: 'nw', fu: 0, fv: 0, cursor: 'nwse-resize' }, { id: 'n', fu: 0.5, fv: 0, cursor: 'ns-resize' },
+  { id: 'ne', fu: 1, fv: 0, cursor: 'nesw-resize' }, { id: 'e', fu: 1, fv: 0.5, cursor: 'ew-resize' },
+  { id: 'se', fu: 1, fv: 1, cursor: 'nwse-resize' }, { id: 's', fu: 0.5, fv: 1, cursor: 'ns-resize' },
+  { id: 'sw', fu: 0, fv: 1, cursor: 'nesw-resize' }, { id: 'w', fu: 0, fv: 0.5, cursor: 'ew-resize' }
+];
+const HANDLE_MOUSE_PX = 9;     // a handle's size with a mouse (a finger gets SUITE_TOUCH's bigger one)
+const TURN_MOUSE_PX = 26;      // how far above the frame the turn handle sits with a mouse
+
+/** The handles that can be used on this frame, each with where it is on the screen. */
+function frameHandles(f) {
+  // A locked direction can't be stretched. A straight side-to-side line keeps
+  // just its two end handles (left and right), an up-and-down line its top
+  // and bottom ones, and a dot has none at all.
+  let list = HANDLES;
+  if (f.lockU && f.lockV) list = [];
+  else if (f.lockV) list = HANDLES.filter((h) => h.fv === 0.5);
+  else if (f.lockU) list = HANDLES.filter((h) => h.fu === 0.5);
+  const out = list.map((h) => { const p = framePoint(f, h.fu, h.fv); return { ...h, kind: 'size', screen: toScreen(p[0], p[1]) }; });
+  // The turn handle: above the middle of the top edge (above as the frame is turned).
+  const lift = (suiteTouchScreen() ? SUITE_TOUCH.turnPx : TURN_MOUSE_PX) / scale();
+  const top = framePoint(f, 0.5, 0);
+  const up = mApply(mRotate(f.angle), 0, -lift);
+  out.push({ id: 'turn', kind: 'turn', cursor: 'grab', page: [top[0] + up[0], top[1] + up[1]], screen: toScreen(top[0] + up[0], top[1] + up[1]), from: toScreen(top[0], top[1]) });
+  return out;
+}
+/** The handle under a pointer (client coordinates), or null. The nearer one wins (the suite rule). */
+function handleAt(clientX, clientY) {
+  const f = selFrame();
+  if (!f) return null;
+  const r = $('board').getBoundingClientRect();
+  const x = clientX - r.left, y = clientY - r.top;
+  const reach = suiteHandleReach(HANDLE_MOUSE_PX);
+  let best = null, bestD = Infinity;
+  for (const h of frameHandles(f)) {
+    const d = Math.hypot(x - h.screen[0], y - h.screen[1]);
+    if (d <= reach && d < bestD) { best = h; bestD = d; }
+  }
+  return best;
+}
+
+/** Draw the frame and its handles (and a selection box being dragged), in screen pixels. */
+function renderSelection() {
+  if (!selG) return;
+  const parts = [];
+  if (gesture && gesture.kind === 'box') {
+    const a = toScreen(Math.min(gesture.x0, gesture.x1), Math.min(gesture.y0, gesture.y1));
+    const b = toScreen(Math.max(gesture.x0, gesture.x1), Math.max(gesture.y0, gesture.y1));
+    parts.push(svgEl('rect', { class: 'sel-box', x: a[0], y: a[1], width: Math.max(1, b[0] - a[0]), height: Math.max(1, b[1] - a[1]) }));
+  }
+  const f = selFrame();
+  if (f) {
+    const corners = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([fu, fv]) => { const p = framePoint(f, fu, fv); return toScreen(p[0], p[1]).map(round2).join(','); });
+    parts.push(svgEl('polygon', { class: 'sel-frame', points: corners.join(' ') }));
+    // While something is being moved or stretched, the handles step aside so the marks show clearly.
+    if (!(gesture && gesture.kind === 'transform' && gesture.moved)) {
+      const px = suiteHandlePx(HANDLE_MOUSE_PX), round = suiteHandleRound(HANDLE_MOUSE_PX);
+      const deg = round2(f.angle * 180 / Math.PI);
+      for (const h of frameHandles(f)) {
+        const [x, y] = h.screen.map(round2);
+        if (h.kind === 'turn') {
+          parts.push(svgEl('line', { class: 'sel-stem', x1: round2(h.from[0]), y1: round2(h.from[1]), x2: x, y2: y }));
+          parts.push(svgEl('circle', { class: 'sel-handle', cx: x, cy: y, r: round2(px / 2 + 1) }));
+        } else {
+          parts.push(svgEl('rect', { class: 'sel-handle', x: round2(x - px / 2), y: round2(y - px / 2), width: px, height: px, rx: round,
+            transform: 'rotate(' + deg + ' ' + x + ' ' + y + ')' }));
+        }
+      }
+    }
+  }
+  selG.replaceChildren(...parts);
+  updateInspectorDot();
+}
+
+/** The dot on the Inspector button: something is picked, but its settings are out of sight (the suite rule). */
+function updateInspectorDot() {
+  const b = $('btnInspector');
+  const dot = sel.ids.size > 0 && !inspectorOpen();
+  b.classList.toggle('has-dot', dot);
+  b.setAttribute('aria-label', dot ? 'Inspector (something is picked)' : 'Inspector');
+}
+
+/* ---- Pointer gestures for picking ---- */
+/** Press with the Select tool (or Ctrl/Cmd with another tool): pick, then perhaps move or draw a box. */
+function pointerDownSelect(e) {
+  const pt = toPage(e.clientX, e.clientY);
+  const reach = (e.pointerType === 'touch' ? 12 : 5) / scale();
+  const hit = itemAt(pt.x, pt.y, reach);
+  if (hit) {
+    if (e.shiftKey) {
+      // Shift+click: add it, or take it away.
+      const ids = new Set(sel.ids);
+      if (ids.has(hit.id)) ids.delete(hit.id); else ids.add(hit.id);
+      setSelection(ids);
+      gesture = { kind: 'tap', pointerId: e.pointerId };
+      return;
+    }
+    if (!sel.ids.has(hit.id)) setSelection([hit.id]);
+    beginTransform(e, { kind: 'move' }, hit.id);
+    return;
+  }
+  if (e.pointerType === 'touch') {
+    // A finger on an empty spot: dragging slides the page, but pressing and
+    // holding (half a second, nearly still) starts a selection box.
+    const g = { kind: 'press', pointerId: e.pointerId, x: e.clientX, y: e.clientY, start: pt };
+    g.timer = setTimeout(() => {
+      if (gesture !== g) return;
+      startBox(g.start, false, false, e.pointerId);
+      announce('Selection box: drag over what to pick');
+    }, 500);
+    gesture = g;
+    return;
+  }
+  startBox(pt, e.shiftKey, e.altKey, e.pointerId);
+}
+
+/** Start a selection box at page point pt. add: keep what was picked; inside: pick only what is wholly inside. */
+function startBox(pt, add, inside, pointerId) {
+  gesture = { kind: 'box', pointerId, x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y, inside, base: add ? new Set(sel.ids) : new Set() };
+  if (!add && sel.ids.size) { sel.ids = new Set(); sel.angle = 0; }
+  renderSelection();
+}
+function moveBox(e) {
+  const g = gesture, pt = toPage(e.clientX, e.clientY);
+  g.x1 = pt.x; g.y1 = pt.y;
+  if (e.altKey) g.inside = true;
+  const b = { x0: Math.min(g.x0, g.x1), y0: Math.min(g.y0, g.y1), x1: Math.max(g.x0, g.x1), y1: Math.max(g.y0, g.y1) };
+  const ids = new Set(g.base);
+  for (const it of page().items) if (itemInBox(it, b, g.inside)) ids.add(it.id);
+  sel.ids = ids; sel.angle = 0;
+  renderSelection();
+}
+function endBox() {
+  gesture = null;
+  selectionChanged();
+  announce(sel.ids.size ? 'Picked ' + selectionWords() : 'Nothing picked');
+}
+/** A finger pressing an empty spot moved before the long press: it slides the page instead. */
+function movePress(e) {
+  const g = gesture;
+  if (Math.hypot(e.clientX - g.x, e.clientY - g.y) < 8) return;
+  clearTimeout(g.timer);
+  gesture = { kind: 'pan', pointerId: g.pointerId, x: e.clientX, y: e.clientY };
+  $('board').classList.add('panning');
+}
+/** A quick tap on an empty spot (no long press): let go of what was picked. */
+function endPress() {
+  clearTimeout(gesture.timer);
+  gesture = null;
+  if (sel.ids.size) setSelection([]);
+}
+
+/* ---- Moving, stretching and turning ---- */
+/**
+ * Start changing what is picked. how: { kind: 'move' } or a handle from
+ * frameHandles ({ kind: 'size', fu, fv } or { kind: 'turn' }).
+ * clickedId: the item pressed on (a click without a drag picks just it).
+ */
+function beginTransform(e, how, clickedId) {
+  const items = pickedItems();
+  if (!items.length) return;
+  const f = selFrame(items);
+  const g = {
+    kind: 'transform', how: how.kind, handle: how, pointerId: e.pointerId, clickedId,
+    startX: e.clientX, startY: e.clientY, start: toPage(e.clientX, e.clientY), moved: false,
+    frame: f, angle0: sel.angle,
+    originals: items.map((it) => JSON.parse(JSON.stringify(it))),
+    index: new Map(page().items.map((it, i) => [it.id, i]))
+  };
+  if (how.kind === 'turn') {
+    g.center = framePoint(f, 0.5, 0.5);
+    g.a0 = Math.atan2(g.start.y - g.center[1], g.start.x - g.center[0]);
+    $('board').style.cursor = 'grabbing';
+  }
+  gesture = g;
+}
+/** Keep a stretch from squashing something flat (it can still flip over). */
+const keepAway = (s) => (Math.abs(s) < 0.02 ? (s < 0 ? -0.02 : 0.02) : s);
+
+function moveTransform(e) {
+  const g = gesture, pt = toPage(e.clientX, e.clientY);
+  // A press only becomes a drag once the pointer has moved a few pixels.
+  if (!g.moved && Math.hypot(e.clientX - g.startX, e.clientY - g.startY) < 3) return;
+  g.moved = true;
+  let m;
+  if (g.how === 'move') {
+    let dx = pt.x - g.start.x, dy = pt.y - g.start.y;
+    if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }   // Shift: straight across or straight down
+    m = mTranslate(dx, dy);
+  } else if (g.how === 'turn') {
+    let total = g.angle0 + Math.atan2(pt.y - g.center[1], pt.x - g.center[0]) - g.a0;
+    if (e.shiftKey) total = Math.round(total / (Math.PI / 12)) * (Math.PI / 12);   // Shift: steps of 15 degrees
+    m = mRotateAround(total - g.angle0, g.center[0], g.center[1]);
+    sel.angle = normAngle(total);
+  } else {
+    // Stretching from a handle: work in the frame's own directions (u across, v down).
+    const f = g.frame, h = g.handle;
+    const q = mApply(mRotate(-f.angle), pt.x, pt.y);
+    const au = f.u0 + (f.u1 - f.u0) * (1 - h.fu), av = f.v0 + (f.v1 - f.v0) * (1 - h.fv);   // the opposite side stays put
+    const hu = f.u0 + (f.u1 - f.u0) * h.fu, hv = f.v0 + (f.v1 - f.v0) * h.fv;               // where the handle began
+    let sx = h.fu === 0.5 || f.lockU ? 1 : (q[0] - au) / (hu - au);
+    let sy = h.fv === 0.5 || f.lockV ? 1 : (q[1] - av) / (hv - av);
+    // Shift on a corner: the same stretch both ways, so the shape is kept.
+    if (e.shiftKey && h.fu !== 0.5 && h.fv !== 0.5 && !f.lockU && !f.lockV) { sx = sy = Math.abs(sx) > Math.abs(sy) ? sx : sy; }
+    const anchor = mApply(mRotate(f.angle), au, av);
+    m = mScaleAround(keepAway(sx), keepAway(sy), f.angle, anchor[0], anchor[1]);
+  }
+  showTransformed(g, m);
+}
+/** Put the changed copies on the page and redraw just them (fast, even on a full page). */
+function showTransformed(g, m) {
+  const items = page().items;
+  for (const orig of g.originals) {
+    const i = g.index.get(orig.id);
+    if (i == null || !items[i] || items[i].id !== orig.id) continue;
+    items[i] = transformItem(orig, m);
+    const old = elById.get(orig.id), next = itemElement(items[i]);
+    if (old && old.isConnected) old.replaceWith(next);
+    elById.set(orig.id, next);
+  }
+  renderSelection();
+}
+function endTransform() {
+  const g = gesture;
+  gesture = null;
+  $('board').style.cursor = '';
+  if (!g.moved) {
+    // A click (no drag) on one of several picked items picks just that one.
+    if (g.clickedId && sel.ids.size > 1) setSelection([g.clickedId]);
+    renderSelection();
+    return;
+  }
+  const words = selectionWords();
+  commit((g.how === 'move' ? 'moving ' : g.how === 'turn' ? 'turning ' : 'resizing ') + words);
+  selectionChanged();
+  announce((g.how === 'move' ? 'Moved ' : g.how === 'turn' ? 'Turned ' : 'Resized ') + words);
+}
+
+/** Drop a change being made with the pointer: put the board back as it was at the last kept change. */
+function cancelObjectGesture() {
+  if (!gesture) return false;
+  if (gesture.kind === 'press') { clearTimeout(gesture.timer); gesture = null; return true; }
+  if (gesture.kind === 'box') { gesture = null; selectionChanged(); return true; }
+  if (gesture.kind === 'transform' || gesture.kind === 'erase') {
+    const changed = gesture.kind === 'erase' ? gesture.count > 0 : gesture.moved;
+    if (gesture.kind === 'transform') sel.angle = gesture.angle0;
+    gesture = null;
+    $('board').style.cursor = '';
+    if (changed) {
+      board = JSON.parse(savedState);              // our own copy, made by commit(): safe to read back
+      pruneSelection();
+      renderPage();
+    }
+    selectionChanged();
+    return true;
+  }
+  return false;
+}
+
+/* ---- Changing what is picked from the keyboard and the Inspector ---- */
+/** Change every picked item by the matrix m, as one undo step. mergeKey joins quick repeats (arrow nudges) into one. */
+function transformSelection(m, label, mergeKey) {
+  const items = page().items;
+  let n = 0;
+  items.forEach((it, i) => { if (sel.ids.has(it.id)) { items[i] = transformItem(it, m); n++; } });
+  if (!n) return;
+  commit(label + ' ' + selectionWords(), mergeKey);
+  renderPage();
+  renderInspector();
+  renderStatus();
+}
+/** Arrow keys: nudge by 1 point (Shift: 10). Quick repeats are one undo step. */
+function nudge(dx, dy) {
+  transformSelection(mTranslate(dx, dy), 'nudging', 'nudge:' + [...sel.ids].join(','));
+  announce('Nudged');
+}
+function deleteSelection() {
+  if (!sel.ids.size) return;
+  const words = selectionWords();
+  page().items = page().items.filter((it) => !sel.ids.has(it.id));
+  sel.ids = new Set(); sel.angle = 0;
+  commit('deleting ' + words);
+  renderPage();
+  selectionChanged();
+  toast('Deleted ' + words + '. Undo (Ctrl+Z) brings it back.');
+}
+function selectAll() {
+  if (!page().items.length) { announce('Nothing on the page to pick'); return; }
+  setSelection(page().items.map((i) => i.id));
+}
+/** Tab and Shift+Tab with the board focused: step through the page's marks in reading order.
+    Returns false at either end, so Tab carries on out of the board as usual. */
+function tabThrough(back) {
+  const order = readingOrder();
+  if (!order.length) return false;
+  const at = sel.ids.size === 1 ? order.findIndex((it) => sel.ids.has(it.id)) : -1;
+  const next = at < 0 ? (back ? -1 : 0) : at + (back ? -1 : 1);
+  if (next < 0 || next >= order.length) return false;
+  setSelection([order[next].id], false);
+  announce(itemWords(order[next]) + ', ' + (next + 1) + ' of ' + order.length);
+  return true;
+}
+
+/* =====================================================================
+   8c. THE ERASER
+   ---------------------------------------------------------------------
+   Two ways (E, or E again to switch; also in the Inspector):
+   - Whole strokes (the extension's): touching a stroke takes it away.
+   - Part of a stroke: rubs out only what is under the eraser. The stroke
+     is cut there, and the pieces on either side become strokes of their
+     own (same color and size).
+   Its size follows Small / Medium / Large, and stays the same on the
+   screen at any zoom. Erasing never touches the page itself, and a whole
+   sweep of the eraser is one undo step.
+   ===================================================================== */
+/** How far the eraser reaches, in page points. */
+const eraserReach = () => WB_ERASER_RADIUS[settings.size] / scale();
+/** "whole strokes, Medium" */
+const eraserWords = () => (settings.eraserMode === 'part' ? 'part of a stroke' : 'whole strokes') + ', ' + WB_SIZES[settings.size].name;
+
+function toggleEraserMode() {
+  settings.eraserMode = settings.eraserMode === 'part' ? 'whole' : 'part';
+  toolChanged();
+  announce('Eraser: ' + eraserWords());
+}
+
+function startErase(e) {
+  const pt = toPage(e.clientX, e.clientY);
+  if (sel.ids.size) setSelection([], false);
+  gesture = { kind: 'erase', pointerId: e.pointerId, count: 0, last: pt };
+  eraseAt(pt.x, pt.y);
+}
+function moveErase(e) {
+  const g = gesture;
+  const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  for (const ev of (events.length ? events : [e])) {
+    const pt = toPage(ev.clientX, ev.clientY);
+    // Erase all along the way from the last spot, so a fast sweep leaves no gaps.
+    const step = eraserReach() / 2;
+    const dist = Math.hypot(pt.x - g.last.x, pt.y - g.last.y);
+    const n = Math.max(1, Math.ceil(dist / step));
+    for (let i = 1; i <= n; i++) eraseAt(g.last.x + (pt.x - g.last.x) * i / n, g.last.y + (pt.y - g.last.y) * i / n);
+    g.last = pt;
+  }
+  showRing(e);
+}
+/** Erase at one page point. */
+function eraseAt(x, y) {
+  const r = eraserReach(), p = page();
+  let changed = false;
+  if (settings.eraserMode === 'part') {
+    const out = [];
+    for (const it of p.items) {
+      const pieces = itemHit(it, x, y, r) ? splitStroke(it, x, y, r) : null;
+      if (!pieces) { out.push(it); continue; }      // untouched (or only brushed past): kept as it is
+      out.push(...pieces);
+      changed = true;
+    }
+    if (changed) p.items = out;
+  } else {
+    const before = p.items.length;
+    p.items = p.items.filter((it) => !itemHit(it, x, y, r));
+    changed = p.items.length !== before;
+  }
+  if (changed) { gesture.count++; renderPage(); }
+}
+/**
+ * Rub out the part of a stroke near (x, y): the points under the eraser
+ * go, and each run of points left becomes a stroke of its own. A run too
+ * short to see (one point) goes too. Returns null if nothing was rubbed out.
+ */
+function splitStroke(item, x, y, r) {
+  const reach = r + item.size / 2;
+  // First add points along any long straight bit (a Shift line has only two),
+  // so the cut lands where the eraser is, not at the far ends.
+  let pts = item.pts;
+  const dense = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / (r / 2));
+    for (let k = 1; k < n; k++) dense.push([round2(a[0] + (b[0] - a[0]) * k / n), round2(a[1] + (b[1] - a[1]) * k / n), round2(a[2] + (b[2] - a[2]) * k / n)]);
+    dense.push(b);
+  }
+  if (dense.length <= MAX_POINTS_PER_STROKE) pts = dense;
+  const runs = [];
+  let run = [], removed = false;
+  for (const q of pts) {
+    if (Math.hypot(q[0] - x, q[1] - y) <= reach) { removed = true; if (run.length) runs.push(run); run = []; }
+    else run.push(q);
+  }
+  if (!removed) return null;
+  if (run.length) runs.push(run);
+  return runs.filter((rn) => rn.length >= 2).map((rn) => ({ ...item, id: uid('i'), pts: rn }));
+}
+function endErase() {
+  const g = gesture;
+  gesture = null;
+  if (!g.count) return;
+  pruneSelection();
+  commit(settings.eraserMode === 'part' ? 'rubbing out' : 'erasing');
+  selectionChanged();
+  announce(settings.eraserMode === 'part' ? 'Rubbed out' : 'Erased');
 }
 
 /* =====================================================================
@@ -4258,7 +4936,9 @@ function isDarkColor(hex) {
    pen, 6-9 a highlighter, [ and ] the size.
    ===================================================================== */
 let tool = settings.tool;
-const TOOL_NAMES = { pen: 'Pen', highlighter: 'Highlighter' };
+// The tools this version has (the rest of the shared bar's arrive in the next versions).
+const TOOLS_HERE = ['select', 'pen', 'highlighter', 'eraser'];
+const TOOL_NAMES = { select: 'Select', pen: 'Pen', highlighter: 'Highlighter', eraser: 'Eraser' };
 let bar = null;                          // the shared bar (built at start-up)
 
 /** Build the rail and the pill from the shared bar. */
@@ -4268,7 +4948,9 @@ function buildBar() {
     label: 'Drawing tools',
     // The tools this version has. The rest of the bar (shapes, text, sticky
     // notes, eraser, laser...) is added here as each one is built.
-    tools: ['pen', 'size', 'highlighter'],
+    tools: ['select', 'pen', 'size', 'highlighter', 'eraser'],
+    // The app's eraser has two ways of working (the extension's has one).
+    tips: { eraser: 'press E again to switch between whole strokes and part of a stroke; [ and ] size it' },
     strip: $('quickBar'),
     penColors: settings.pens.map((p) => p.color),
     highlighterColors: settings.highlighters.map((h) => h.color),
@@ -4307,10 +4989,16 @@ function toolChanged() {
 }
 
 function setTool(next, say = true) {
-  tool = next === 'highlighter' ? 'highlighter' : 'pen';
+  if (!TOOLS_HERE.includes(next)) return;
+  if (live) cancelStroke();
+  tool = next;
   settings.tool = tool;
+  $('board').dataset.tool = tool;                 // (the CSS picks the board's pointer shape from this)
   toolChanged();
-  if (say) announce(TOOL_NAMES[tool] + ': ' + currentPreset().name);
+  if (!say) return;
+  if (tool === 'pen' || tool === 'highlighter') announce(TOOL_NAMES[tool] + ': ' + currentPreset().name);
+  else if (tool === 'eraser') announce('Eraser: ' + eraserWords());
+  else announce('Select');
 }
 /** Choose pen (kind 'pen') or highlighter ('highlighter') number i, and that tool. */
 function setPreset(kind, i, say = true) {
@@ -4415,8 +5103,14 @@ function renderInspector() {
     : null;
 
   $('inspTitle').textContent = 'Inspector';
-  $('inspSub').textContent = TOOL_NAMES[tool] + ' and page';
-  body.replaceChildren(toolSection(), pageSection(), colorsSection());
+  if (sel.ids.size) {
+    // Something is picked: its settings (the page's come back when nothing is).
+    $('inspSub').textContent = 'What is picked';
+    body.replaceChildren(selectionSection(), geometrySection());
+  } else {
+    $('inspSub').textContent = TOOL_NAMES[tool] + ' and page';
+    body.replaceChildren(toolSection(), pageSection(), colorsSection());
+  }
 
   body.scrollTop = scrollTop;
   if (focusLabel) {
@@ -4426,8 +5120,10 @@ function renderInspector() {
   }
 }
 
-/* ---- Pen / Highlighter ---- */
+/* ---- The tool in use: Select, Eraser, or a pen or highlighter ---- */
 function toolSection() {
+  if (tool === 'select') return selectToolSection();
+  if (tool === 'eraser') return eraserSection();
   const kind = tool;
   const list = kind === 'highlighter' ? settings.highlighters : settings.pens;
   const at = kind === 'highlighter' ? settings.hlIndex : settings.penIndex;
@@ -4462,17 +5158,135 @@ function toolSection() {
       (v) => { settings.exact[kind] = v; changed(); renderInspector(); announce(TOOL_NAMES[kind] + ' size ' + v + ' points'); }),
     el('p', { class: 'hint', text: 'S, M and L (or [ and ]) set the size for every tool. An exact size is for the ' + kind + ' alone, until you pick S, M or L again.' })
   ];
-  rows.push(selectField('A finger on the page', settings.fingerPans, [
+  rows.push(fingerField());
+  if (kind === 'pen') rows.push(el('p', { class: 'hint', text: 'With a stylus, pressing harder makes the line wider. Hold Shift while drawing for a straight line.' }));
+  else rows.push(el('p', { class: 'hint', text: 'Highlights go under pen strokes, so ink stays clear on top. Hold Shift for a straight line.' }));
+  return section('tool', TOOL_NAMES[kind], preset.name, ...rows);
+}
+
+/** What a finger does on the page (palm rejection). Shared by the drawing tools and the eraser. */
+function fingerField() {
+  return selectField('A finger on the page', settings.fingerPans, [
     ['auto', 'Draws, until a stylus is used'],
     ['off', 'Always draws'],
     ['on', 'Slides the page (a stylus draws)']
   ], (v) => {
     settings.fingerPans = v; saveSettings();
     announce(v === 'on' ? 'A finger now slides the page' : v === 'off' ? 'A finger now draws' : 'A finger draws until a stylus is used');
-  }, true));
-  if (kind === 'pen') rows.push(el('p', { class: 'hint', text: 'With a stylus, pressing harder makes the line wider. Hold Shift while drawing for a straight line.' }));
-  else rows.push(el('p', { class: 'hint', text: 'Highlights go under pen strokes, so ink stays clear on top. Hold Shift for a straight line.' }));
-  return section('tool', TOOL_NAMES[kind], preset.name, ...rows);
+  }, true);
+}
+
+/* ---- Select, with nothing picked: how it works ---- */
+function selectToolSection() {
+  const tips = [
+    'Click a mark to pick it. Shift+click adds one or takes it away.',
+    'Drag on an empty spot for a selection box: it picks whatever it touches. Hold Alt for only what is wholly inside.',
+    'Ctrl+A picks everything on the page. With a pen, Ctrl+click picks without changing tools.',
+    'On a touch screen: tap to pick, drag to move, and press and hold an empty spot for a selection box.',
+    'With the board focused, Tab and Shift+Tab step through the marks on the page.'
+  ];
+  return section('tool', 'Select', null, el('ul', { class: 'hint tips' }, ...tips.map((s) => el('li', { text: s }))));
+}
+
+/* ---- Eraser ---- */
+function eraserSection() {
+  const sizes = wbSizeGroup((s) => setSize(s));
+  sizes.root.classList.add('preset-row');
+  sizes.set(settings.size);
+  return section('tool', 'Eraser', settings.eraserMode === 'part' ? 'Part of a stroke' : 'Whole strokes',
+    selectField('Erases', settings.eraserMode, [['whole', 'Whole strokes'], ['part', 'Part of a stroke']], (v) => {
+      settings.eraserMode = v === 'part' ? 'part' : 'whole';
+      toolChanged();
+      announce('Eraser: ' + eraserWords());
+    }),
+    el('p', { class: 'hint', text: 'Whole strokes: touching a stroke takes it away. Part of a stroke: rubs out only what the eraser goes over, and cuts the stroke there. Press E again to switch.' }),
+    el('div', { class: 'field' }, el('span', { class: 'label', text: 'Size' }), sizes.root),
+    el('p', { class: 'hint', text: 'S, M and L (or [ and ]) size the eraser too. It erases what you draw, never the page itself, and Undo brings anything back.' }),
+    fingerField());
+}
+
+/* ---- What is picked: its color and line width ---- */
+/** Redraw one item's SVG element after a change (a color being tried, say). */
+function refreshItemEl(item) {
+  const old = elById.get(item.id), next = itemElement(item);
+  if (old && old.isConnected) old.replaceWith(next);
+  elById.set(item.id, next);
+}
+function selectionSection() {
+  const items = pickedItems();
+  const first = items[0];
+  const words = selectionWords(items);
+  const mixed = items.some((i) => i.color !== first.color);
+  const widthLimit = (it, v) => { const lim = SIZE_LIMITS[it.type === 'highlight' ? 'highlighter' : 'pen']; return round2(clamp(v, lim[0], lim[1])); };
+  return section('sel', 'Picked', plural(items.length, 'mark'),
+    el('p', { class: 'hint', text: 'Picked: ' + words + '.' }),
+    colorField('Color', first.color,
+      (v) => { for (const it of items) { it.color = v; refreshItemEl(it); } },
+      (v) => { for (const it of items) it.color = v; commit('color of ' + words); renderPage(); renderInspector(); announce('Color changed'); }),
+    mixed ? el('p', { class: 'hint', text: 'They are different colors now. A new color goes on all of them.' }) : null,
+    sliderField('Line width', round2(first.size), 0.5, 60, 0.5, 'points',
+      (v) => { for (const it of items) { it.size = widthLimit(it, v); refreshItemEl(it); } },
+      (v) => { for (const it of items) it.size = widthLimit(it, v); commit('line width of ' + words); renderPage(); renderInspector(); announce('Line width ' + v + ' points'); }),
+    el('div', { class: 'btn-row' },
+      el('button', { class: 'btn small', type: 'button', onclick: deleteSelection }, iconSvg('trash'), 'Delete'),
+      el('button', { class: 'btn small', type: 'button', onclick: () => setSelection([]) }, iconSvg('x'), 'Let go')),
+    el('p', { class: 'hint', text: 'Arrow keys nudge (Shift: 10 points). Delete removes. Escape lets go. Drag the corners to resize (Shift keeps the shape) and the round handle to turn (Shift: 15 degree steps).' }));
+}
+
+/** A number field that acts when the person is done with it (Enter, leaving it, or the finger panel). */
+function numberField(label, value, step, min, max, onDone, disabled) {
+  const id = fid();
+  const n = el('input', { type: 'number', id, step, min, max, value, disabled: disabled ? true : null });
+  n.addEventListener('change', () => {
+    const v = Number(n.value);
+    if (n.value === '' || !isFinite(v)) { n.value = value; return; }
+    onDone(clamp(v, min, max));
+  });
+  return el('div', { class: 'field' }, el('label', { for: id, text: label }), n);
+}
+
+/* ---- What is picked: where it is, its size and its turn, by number ----
+   (So everything a drag can do can be done from the keyboard too.) */
+function geometrySection() {
+  const items = pickedItems();
+  const unitIsMm = settings.units === 'mm';
+  const per = unitIsMm ? PT_PER_MM : PT_PER_IN, u = unitIsMm ? 'mm' : 'in';
+  const show = (pt) => (unitIsMm ? Math.round(pt / per * 10) / 10 : round2(pt / per));
+  const step = unitIsMm ? 1 : 0.05;
+  const far = 100 * PT_PER_IN;                                // 100 inches either way is plenty
+  const f = selFrame(items, sel.angle, false);              // the marks' own size, along the frame as it is turned
+  // X and Y: the left and top of everything picked, straight across the page.
+  let x0 = Infinity, y0 = Infinity;
+  for (const it of items) for (const q of itemPoints(it)) { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); }
+  const w = f.u1 - f.u0, h = f.v1 - f.v0;
+  // Stretch along the frame, keeping its top-left corner still.
+  const resize = (sx, sy) => {
+    const corner = framePoint(f, 0, 0);
+    transformSelection(mScaleAround(sx, sy, f.angle, corner[0], corner[1]), 'resizing');
+    announce('Resized');
+  };
+  const keep = el('input', { type: 'checkbox', id: fid(), checked: settings.keepShape ? true : null });
+  keep.addEventListener('change', () => { settings.keepShape = keep.checked; saveSettings(); });
+  return section('geom', 'Position and size', null,
+    numberField('X (' + u + ')', show(x0), step, -show(far), show(far), (v) => { transformSelection(mTranslate(v * per - x0, 0), 'moving'); announce('Moved'); }),
+    numberField('Y (' + u + ')', show(y0), step, -show(far), show(far), (v) => { transformSelection(mTranslate(0, v * per - y0), 'moving'); announce('Moved'); }),
+    numberField('Width (' + u + ')', show(w), step, unitIsMm ? 1 : 0.05, show(far), (v) => {
+      const k = keepAway(v * per / w);
+      resize(k, settings.keepShape && !f.lockV ? k : 1);
+    }, f.lockU),
+    numberField('Height (' + u + ')', show(h), step, unitIsMm ? 1 : 0.05, show(far), (v) => {
+      const k = keepAway(v * per / h);
+      resize(settings.keepShape && !f.lockU ? k : 1, k);
+    }, f.lockV),
+    el('label', { class: 'check', for: keep.id }, keep, el('span', { text: 'Keep the shape (width and height change together)' })),
+    numberField('Turn (degrees)', Math.round(sel.angle * 180 / Math.PI), 1, -180, 180, (v) => {
+      const a = v * Math.PI / 180, c = framePoint(f, 0.5, 0.5), d = a - sel.angle;
+      sel.angle = normAngle(a);
+      transformSelection(mRotateAround(d, c[0], c[1]), 'turning');
+      announce('Turned to ' + v + ' degrees');
+    }),
+    selectField('Units', u, [['in', 'Inches'], ['mm', 'Millimeters']], (v) => { settings.units = v === 'mm' ? 'mm' : 'in'; saveSettings(); renderInspector(); }),
+    el('p', { class: 'hint', text: 'Width and height are measured along the frame, as it is turned. X and Y are the left and top of what is picked. Turn counts from how it stood when you picked it.' }));
 }
 
 /* ---- Page: its size ---- */
@@ -4568,9 +5382,14 @@ function colorsSection() {
 function renderStatus() {
   $('stPage').textContent = (pageIndex + 1) + ' of ' + board.pages.length;
   $('stSize').textContent = sizeWords(page());
-  const preset = currentPreset();
-  const which = settings.exact[tool] != null ? 'exact' : WB_SIZES[settings.size].name;
-  $('stTool').textContent = TOOL_NAMES[tool] + ': ' + preset.name + ', ' + preset.size + ' pt (' + which + ')';
+  if (tool === 'pen' || tool === 'highlighter') {
+    const preset = currentPreset();
+    const which = settings.exact[tool] != null ? 'exact' : WB_SIZES[settings.size].name;
+    $('stTool').textContent = TOOL_NAMES[tool] + ': ' + preset.name + ', ' + preset.size + ' pt (' + which + ')';
+  } else {
+    $('stTool').textContent = tool === 'eraser' ? 'Eraser: ' + eraserWords() : 'Select';
+  }
+  $('stSel').textContent = sel.ids.size ? 'Picked: ' + selectionWords() : '';
 }
 
 /* =====================================================================
@@ -4622,13 +5441,22 @@ function startNewBoard(sizeId) {
    13. HELP, THEME, THE PHONE SHEET, KEYBOARD SHORTCUTS
    ===================================================================== */
 const HELP_KEYS = [
+  ['V', 'Select: pick, move, resize and turn what is drawn'],
+  ['Shift+click, drag a box', 'Pick more (Alt+drag: only what is wholly inside)'],
+  ['Ctrl+A', 'Pick everything on the page'],
+  ['Ctrl+click (with a pen)', 'Pick without leaving the pen'],
+  ['Arrow keys (something picked)', 'Nudge it 1 point (Shift: 10)'],
+  ['Delete or Backspace', 'Delete what is picked'],
+  ['Tab / Shift+Tab (board focused)', 'Step through the marks on the page'],
+  ['Shift while resizing or turning', 'Keep the shape / turn in 15 degree steps'],
+  ['E', 'Eraser (E again: whole strokes or part of a stroke)'],
   ['P', 'Pen'],
   ['H', 'Highlighter'],
   ['1 to 5', 'A pen: black, blue, red, green, purple'],
   ['6 to 9', 'A highlighter: yellow, green, pink, blue'],
   ['[ and ]', 'Smaller or larger: Small, Medium, Large'],
   ['Shift while drawing', 'A straight line'],
-  ['Escape', 'Drop the stroke you are drawing'],
+  ['Escape', 'Step back: drop a stroke being drawn, put back a move, let go of what is picked, then Select'],
   ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo (Ctrl+Y redoes too)'],
   ['Ctrl+wheel, or pinch', 'Zoom around the pointer'],
   ['Ctrl+plus / Ctrl+minus', 'Zoom in / out (with the pointer over the board, or the board focused)'],
@@ -4649,7 +5477,7 @@ function buildHelp() {
   HELP_KEYS.forEach(([k, what]) => table.append(el('tr', null, el('td', null, el('kbd', { text: k })), el('td', { text: what }))));
   $('paneKeys').replaceChildren(el('h3', { text: 'Keyboard shortcuts' }), table,
     el('p', { class: 'hint', text: 'Single letters work when you are not typing in a field. On a Mac, Cmd works wherever Ctrl is shown.' }),
-    el('p', { class: 'hint', text: 'The tools, colors and keys are the same as in the WHTBRDR Chrome extension. More of its tools arrive in the next versions: V select, A arrow, L line, R rectangle, O ellipse, T text, J sticky note ("jot"), E eraser, and K laser, S spotlight and M magnifier in Present mode. N will add step numbers.' }));
+    el('p', { class: 'hint', text: 'The tools, colors and keys are the same as in the WHTBRDR Chrome extension. More of its tools arrive in the next versions: A arrow, L line, R rectangle, O ellipse, T text, J sticky note ("jot"), and K laser, S spotlight and M magnifier in Present mode. N will add step numbers.' }));
   // Getting started
   $('paneStart').replaceChildren(
     el('h3', { text: 'Getting started' }),
@@ -4658,11 +5486,13 @@ function buildHelp() {
       el('li', { text: 'Draw on the page with a mouse, a stylus or a finger. With a stylus, pressing harder makes a wider line. Hold Shift for a straight line.' }),
       el('li', { text: 'Zoom with Ctrl and the wheel, a pinch, or the zoom controls at the bottom right. Slide around with the wheel, two fingers, or Space and a drag.' }),
       el('li', { text: 'Change a color, or set an exact size, in the Inspector on the right. Your changes are kept for next time.' }),
+      el('li', { text: 'Pick what you drew with Select (V): click it, or drag a box round it. Drag it to move it, a corner to resize it, the round handle to turn it, or press Delete. The Inspector changes its color, width, place, size and turn by number.' }),
+      el('li', { text: 'The eraser (E) takes away whole strokes, or press E again to rub out just part of one. S, M and L size it.' }),
       el('li', { text: 'Pick the page size in the Inspector (Page), or start a new board with the first button in the top bar. Undo brings back anything, even a cleared page or the board before a new one.' })),
     el('h3', { text: 'Using a stylus' }),
     el('p', { text: 'Once a stylus touches the board, a finger slides the page instead of drawing, so your hand can rest on the screen. The Inspector\'s "A finger" setting changes this.' }),
     el('h3', { text: 'What is coming' }),
-    el('p', { text: 'This is the first version. Next: picking and moving what you draw, sticky notes, shapes and arrows, pictures, step numbers, many pages with a filmstrip, opening PDFs and pictures, saving, export to PDF, PNG and PowerPoint, and Present mode.' }),
+    el('p', { text: 'Next: shapes and arrows, text and sticky notes, pictures and stamps, locking, grouping and alt text, then step numbers, many pages with a filmstrip, opening PDFs and pictures, saving, export to PDF, PNG and PowerPoint, and Present mode.' }),
     el('p', { class: 'hint', text: 'Nothing is saved yet in this version. If you close the tab, your drawing goes with it (the browser asks first).' }));
   // About
   const credits = el('div');
@@ -4716,6 +5546,7 @@ const inspectorOpen = () => !$('app').classList.contains('panel-hidden');
 function setInspector(show) {
   $('app').classList.toggle('panel-hidden', !show);
   $('btnInspector').setAttribute('aria-pressed', String(show));
+  updateInspectorDot();
   if (!PHONE.matches) { settings.inspector = show; saveSettings(); }
   applySheet();
 }
@@ -4834,11 +5665,12 @@ function wireKeys() {
     if (e.key === 'F6' && !dialogOpen()) { e.preventDefault(); jumpRegion(e.shiftKey ? -1 : 1); return; }
     if (dialogOpen()) return;                         // app shortcuts stand down while a dialog is open
 
-    // Undo and redo (in a text field, the field's own undo comes first).
+    // Undo and redo (in a text field, the field's own undo comes first), and Ctrl/Cmd+A picks everything.
     if (mod && !e.altKey && !typing) {
       const k = e.key.toLowerCase();
       if (k === 'z' && !e.shiftKey) { e.preventDefault(); stepHistory(-1); return; }
       if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); stepHistory(1); return; }
+      if (k === 'a' && !e.shiftKey) { e.preventDefault(); selectAll(); return; }
     }
     // Zoom keys: only with the pointer over the board or the board focused, so the
     // browser's own zoom still works everywhere else for people who rely on it.
@@ -4851,7 +5683,20 @@ function wireKeys() {
     if (mod || e.altKey || typing) return;            // the rest are plain keys, not while typing
 
     if (e.key === '?' || e.key === 'F1') { e.preventDefault(); openHelp(); return; }
-    if (e.key === 'Escape' && live) { e.preventDefault(); cancelStroke(); announce('Stroke dropped'); return; }
+    // Escape steps back one thing at a time: a stroke being drawn, then a
+    // move or erase under way, then what is picked, then back to Select.
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (live) { cancelStroke(); announce('Stroke dropped'); }
+      else if (cancelObjectGesture()) announce('Put back');
+      else if (sel.ids.size) setSelection([]);
+      else if (tool !== 'select') setTool('select');
+      return;
+    }
+    // Delete or Backspace: delete what is picked.
+    if ((e.key === 'Delete' || e.key === 'Backspace') && sel.ids.size) { e.preventDefault(); deleteSelection(); return; }
+    // Tab with the board focused: step through the marks on the page.
+    if (e.key === 'Tab' && document.activeElement === $('board') && tabThrough(e.shiftKey)) { e.preventDefault(); return; }
     // The shared bar's keys (the same as the extension's): P and H, 1-5 a
     // pen, 6-9 a highlighter, [ and ] the size. Letters for tools this
     // version doesn't have yet do nothing.
@@ -4860,16 +5705,27 @@ function wireKeys() {
       if (action.type === 'pen') { setPreset('pen', action.index); return; }
       if (action.type === 'highlighter') { setPreset('highlighter', action.index); return; }
       if (action.type === 'size') { setSize(wbNextSize(settings.size, action.step)); return; }
-      if (action.type === 'tool' && (action.tool === 'pen' || action.tool === 'highlighter')) { setTool(action.tool); return; }
+      if (action.type === 'tool' && TOOLS_HERE.includes(action.tool)) {
+        if (action.tool === 'eraser' && tool === 'eraser') toggleEraserMode();   // E again: the other way of erasing
+        else setTool(action.tool);
+        return;
+      }
     }
     // Space + drag slides the board (only with the pointer over it or the board focused,
     // so Space still presses buttons everywhere else).
     if (e.key === ' ' && onBoard) {
       e.preventDefault();
-      if (!e.repeat) { spaceDown = true; $('board').classList.add('space-ready'); hideRing(); }
+      if (!e.repeat) { spaceDown = true; $('board').classList.add('space-ready'); $('board').style.cursor = ''; hideRing(); }
       return;
     }
-    // Arrow keys slide the board when it has focus.
+    // Arrow keys with the board focused: nudge what is picked (1 point, Shift: 10), or slide the board.
+    if (document.activeElement === $('board') && e.key.startsWith('Arrow') && sel.ids.size) {
+      e.preventDefault();
+      const d = e.shiftKey ? 10 : 1;
+      const move = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] }[e.key];
+      nudge(move[0], move[1]);
+      return;
+    }
     if (document.activeElement === $('board') && e.key.startsWith('Arrow')) {
       e.preventDefault();
       const step = e.shiftKey ? 200 : 40;
@@ -4935,6 +5791,15 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.2.0', date: '2026-10-19', notes: [
+    'Select (V): click to pick, Shift+click to add or take away, drag on an empty spot for a selection box (Alt: only what is wholly inside), Ctrl+A for everything on the page. With a pen, Ctrl+click picks without changing tools.',
+    'Move, resize and turn what is picked: drag it, drag a corner or side handle (Shift on a corner keeps the shape), or drag the round handle (Shift: 15 degree steps). The handles are the family\'s finger-sized ones on a touch screen. A stroke made bigger gets thicker with it.',
+    'On a touch screen: tap to pick, drag to move, press and hold an empty spot for a selection box; dragging from an empty spot slides the page.',
+    'From the keyboard: arrow keys nudge (Shift: 10 points; quick nudges are one undo step), Delete removes, Tab and Shift+Tab step through the marks in reading order, Escape steps back one thing at a time.',
+    'The Inspector shows what is picked: its color and line width, and its place, size and turn by number (in inches or millimeters). A dot on the Inspector button says something is picked while the Inspector is hidden.',
+    'The eraser (E): whole strokes, or part of a stroke (E again to switch), which cuts a stroke where it rubs. S, M and L size it, and each sweep is one undo step.',
+    'The shared bar learned the eraser\'s sizes (the extension is now 1.3.1, where Medium is its old size).'
+  ] },
   { version: '0.1.1', date: '2026-10-19', notes: [
     'The annotation bar is now shared with the WHTBRDR Chrome extension: the same tools, colors, sizes, names, icons and keys, from one master file in the family\'s _edtr-suite folder.',
     'Keys: 1 to 5 pick a pen and 6 to 9 a highlighter, whichever tool you are using; [ and ] change the size. P and H still pick the tool.',
@@ -4999,7 +5864,7 @@ function start() {
 
   applyTheme();
   setInspector(PHONE.matches ? false : settings.inspector);
-  setTool(tool, false);
+  setTool(TOOLS_HERE.includes(tool) ? tool : 'pen', false);
   renderAll();
   fitView('page', false);
 }

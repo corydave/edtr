@@ -1,8 +1,9 @@
 # WHTBRDR spec
 
 Written 2026-10-19 with Dave. Status: milestone 1 built as 0.1.0 in a chat;
-the extension's toolbar folded in and shared as 0.1.1 (Cowork, 2026-10-19),
-waiting for Dave's review before milestone 2 (see `00-START-HERE.md`).
+the extension's toolbar folded in and shared as 0.1.1, and milestone 2's
+first step built as 0.2.0 (Select and the eraser), all in Cowork on
+2026-10-19. Waiting for Dave's review of 0.2.0 (see `00-START-HERE.md`).
 
 ## What it is
 
@@ -305,7 +306,11 @@ Two sister projects change alongside WHTBRDR: the extension gets pictures and a 
 Built one milestone at a time, stopping for Dave's review after each, as with ANIMEDTR and DSKEDTR. Checked with Playwright at each stop.
 
 1. **0.1.0 - the shell and one page (built):** the suite shell (top bar, rail, Inspector, status bar, help panel, theme), a blank page at any size, pens and highlighters with stylus pressure, undo/redo, zoom and pan (all the keys). **0.1.1 (built):** the shared toolbar file pulled from the extension, the extension's keys, colors and sizes, the master SUITE block. Proves the drawing model and the shared toolbar.
-2. **0.2.0 - objects:** Select and the selection box, move, resize, rotate, lock, group, layers tree, snapping and alignment, text, sticky notes, shapes and arrows, pictures, stamps, eraser, alt text and the Description field, context menus.
+2. **0.2.x - objects**, in four stops (agreed with Dave 2026-10-19):
+   - **0.2.0 (built):** Select, the selection box, move, resize, turn, delete, nudge, Tab through objects, Ctrl/Cmd+A, Ctrl/Cmd+click with a pen, long press for a box on touch, the Inspector's color, width and position/size/turn fields, and the eraser (whole strokes and part of a stroke, sized by S/M/L). Decisions made building it: a stroke's width grows and shrinks with it; strokes keep no turn of their own, so the frame stands upright again once you let go (the Turn field counts from how things stood when picked); Escape steps back one thing at a time.
+   - **0.2.1:** the extension's tools onto the rail: arrow, line, rectangle, ellipse (A L R O), text (T, Atkinson Hyperlegible built in), sticky notes (J).
+   - **0.2.2:** pictures (I) and stamps (G).
+   - **0.2.3:** lock, group, the layers tree, snapping and alignment, copy, cut, paste and duplicate, context menus, alt text and the Description field.
 3. **0.3.0 - pages:** the filmstrip (insert anywhere, copy, reorder, multi-pick), the page Inspector (colors, the six backgrounds, coordinate grid, background picture), step numbers across pages.
 4. **0.4.0 - documents:** PDF and picture import, highlights quoting PDF text, the "Save as PDF first" dialog for Office files, the two editions.
 5. **0.5.0 - files and export:** `.whtbrdr` projects, crash backups, the splash, samples, PDF export (editable and flattened-tagged), PNG and picture export, manifest, icons, `sw.js`, Install. `listed: false` in the SUITE block.
