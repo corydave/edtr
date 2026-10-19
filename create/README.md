@@ -27,20 +27,18 @@ Opened straight from a disk (`file:`), it uses the folders beside it.
 
 ## Putting it live at edtrapps.com/create/
 
-edtrapps.com is the `edtr-main` Worker. Its build (set in Cloudflare under
-Workers & Pages > edtr-main > Settings > Build) gathers the site into `dist/`:
+edtrapps.com is the `edtr-main` Worker. Its settings in Cloudflare (Workers &
+Pages > edtr-main > Settings > Build) are:
 
 - **Root directory:** `/` (the repo root)
-- **Build command:**
-  ```
-  rm -rf dist && mkdir dist && cp -R apps-landing/. dist/ && for d in create txtedtr pdfedtr imgedtr sndedtr videdtr scrncstr vctredtr 3dedtr dskedtr animedtr; do cp -R "$d" dist/; done && rm -f dist/README.md
-  ```
-- **Deploy command:** `npx wrangler deploy`, which reads `wrangler.jsonc` at the
-  repo root and serves `dist/`.
+- **Build command:** `bash edtrapps-deploy/build.sh` (gathers the site into `dist/`)
+- **Deploy command:** `npx wrangler deploy --config edtrapps-deploy/wrangler.jsonc`
 
-The result is laid out as in the repo: `/` from `apps-landing`, `/create/` from
-`create/`, and `/imgedtr/` and the other app folders beside them. The apps' own
-sites (imgedtr.app and friends) stay exactly as they are.
+The config and build script live in `edtrapps-deploy/`, not at the repo root,
+so the apps' own deploys never see them. The result is laid out as in the repo:
+`/` from `apps-landing`, `/create/` from `create/`, and `/imgedtr/` and the other
+app folders beside them. The apps' own sites (imgedtr.app and friends) stay
+exactly as they are.
 
 ## Notes
 

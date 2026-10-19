@@ -4,3 +4,6 @@ gamedtr/
 # macOS
 .DS_Store
 Icon
+
+# Built site for edtrapps.com (made by edtrapps-deploy/build.sh)
+dist/
