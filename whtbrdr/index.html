@@ -273,6 +273,47 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 #btnPages { display: none; }                      /* (a phone only: see the phone layout) */
 @media (forced-colors: active) { .thumb.here { outline: 3px solid Highlight; } }
 
+/* The top bar's Present button: solid, in the app's color (the family's main-action look). */
+.present-btn { min-height: 36px; padding: 0 12px 0 10px; margin-right: 6px; gap: 6px; }
+.present-btn svg.icon { width: 18px; height: 18px; }
+
+/* ---- PRESENT MODE (section 8i): only the page, on black, with a floating bar ---- */
+body.presenting .topbar, body.presenting .rail, body.presenting .panel, body.presenting .filmstrip,
+body.presenting .statusbar, body.presenting .quick-bar { display: none !important; }
+body.presenting .app { height: 100%; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+body.presenting .app > .workspace { grid-row: 1; grid-column: 1; background: #000000; }
+body.presenting .page-halo, body.presenting .page-edge { display: none; }
+body.presenting #board:focus-visible { outline: none; }          /* (the whole screen is the board: its ring would only frame it) */
+body.presenting #board[data-tool="select"] { cursor: default; }
+body.presenting #board[data-tool="laser"] { cursor: none; }      /* the laser dot is the pointer */
+body.presenting #board[data-tool="spotlight"], body.presenting #board[data-tool="magnifier"] { cursor: default; }
+body.present-idle #board { cursor: none !important; }            /* the mouse arrow hides when still, as in PowerPoint */
+body.presenting .toast { bottom: 84px; }                         /* (above the floating bar) */
+.present-ui[hidden] { display: none; }
+.present-laser { position: fixed; top: 0; left: 0; z-index: 30; pointer-events: none; }
+.present-spot { position: fixed; inset: 0; z-index: 31; pointer-events: none; }
+.present-spot[hidden], .present-lens[hidden], .present-blank[hidden] { display: none; }
+.present-lens { position: fixed; z-index: 32; pointer-events: none; border-radius: 50%; overflow: hidden; background: #000000;
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #9f1239, 0 10px 30px rgba(0, 0, 0, .45); }
+.present-lens-svg { display: block; width: 100%; height: 100%; }
+.present-blank { position: fixed; inset: 0; z-index: 40; background: #000000; cursor: none; }
+.present-blank.white { background: #ffffff; }
+/* Disappearing ink fades out (the timing is in section 8i). */
+.present-fade .fading { opacity: 0; transition: opacity .8s ease; }
+@media (prefers-reduced-motion: reduce) { .present-fade .fading { transition: none; } }
+/* The floating bar: the shared bar laid out flat (as in the extension), on a dark pill, bottom center. */
+.present-bar.wb-bar { position: fixed; left: 0; right: 0; bottom: 16px; margin: 0 auto; width: max-content; z-index: 35;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; max-width: calc(100vw - 16px); box-sizing: border-box;
+  padding: 5px 6px; border-radius: 14px; background: rgba(17, 24, 39, .94); box-shadow: 0 8px 28px rgba(0, 0, 0, .45);
+  --wb-fg: #f9fafb; --wb-hover: rgba(255, 255, 255, .14); --wb-pressed: rgba(253, 164, 175, .22);
+  --wb-accent: #fda4af; --wb-focus: #fda4af; --wb-line: rgba(255, 255, 255, .22);
+  transition: opacity .35s ease; }
+.present-bar.idle { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .present-bar.wb-bar { transition: none; } }
+.present-bar .wb-btn svg.icon { width: 20px; height: 20px; }
+.present-num { min-width: 52px; text-align: center; color: #f9fafb; font: 600 13px/1 var(--ui-font); font-variant-numeric: tabular-nums; }
+@media (forced-colors: active) { .present-bar.wb-bar { background: Canvas; border: 1px solid CanvasText; } }
+
 /* =====================================================================
    4. THE BOARD (middle): the staging area with the page on it.
    The staging area's color comes from the project (--staging), or the
@@ -1053,6 +1094,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     </div>
     <div class="spacer"></div>
     <div class="group">
+      <!-- Present (section 8i): this page on, full screen. F5 starts from the first page. -->
+      <button class="btn primary present-btn" id="btnPresent" title="Present from this page (Shift+F5); F5 starts from the first page"><span data-icon="present"></span><span class="present-word">Present</span></button>
       <!-- Install: hidden until the browser says the app can be installed, and again once it is (SuiteInstall). -->
       <button class="icon-btn" id="btnInstall" hidden aria-label="Install WHTBRDR as an app" title="Install WHTBRDR as an app: its own window, and it works offline"><span data-icon="install"></span></button>
       <!-- Standard family order: (Backup, when there is one), Inspector, Theme, Help. -->
@@ -3713,7 +3756,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.3.1';
+const APP_VERSION = '0.3.2';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -3813,6 +3856,9 @@ const ICONS = {
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
   // The top bar's Install button (the suite's drawing: a page with an arrow down into it).
   install: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 7v7M9 11.5l3 3 3-3"/>',
+  // Present mode (section 8i): a screen on a stand, and disappearing ink (a dashed squiggle).
+  present: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
+  fade: '<path d="M3 17c3-7 6-7 8-3s5 4 10-4" stroke-dasharray="2.5 3.5"/>',
   // The filmstrip's buttons (section 8h).
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
   copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
@@ -4042,6 +4088,7 @@ function commit(label, mergeKey, pages) {
   savedState = JSON.stringify(board);
   updateUndoButtons();
   scheduleThumb();                       // (the page's thumbnail in the filmstrip catches up a moment later)
+  lensDirty = true;                      // (and the magnifier's copy of the page, while presenting)
 }
 /** Undo (dir = -1) or redo (dir = 1) one change. */
 function stepHistory(dir) {
@@ -4207,6 +4254,12 @@ function renderPage() {
 /** Tell screen readers what is on the page, in one line. */
 function describeBoard() {
   const p = page();
+  if (presenting) {
+    // Presenting: the page's number and title, then what is on it, in reading order (section 8i).
+    const words = readingOrder().filter((i) => !i.hidden && !i.decorative).slice(0, 60).map(itemWords);
+    $('board').setAttribute('aria-label', presentPageWords() + '. ' + (words.length ? words.join('. ') : 'Nothing on this page'));
+    return;
+  }
   const what = p.items.length ? countWords(p.items) : 'nothing drawn yet';
   const picked = sel.ids.size ? '. Picked: ' + selectionWords() : '';
   $('board').setAttribute('aria-label', 'Page ' + (pageIndex + 1) + ' of ' + board.pages.length + ', ' + sizeWords(p) + ': ' + what + picked);
@@ -4220,6 +4273,7 @@ function renderAll() {
   renderStatus();
   updateUndoButtons();
   renderFilmstrip();                   // (section 8h)
+  if (presenting) updatePresentUI();   // (section 8i: an undo may have changed the page on show)
   if (view.fit) fitView(view.fit, false); else applyView();
 }
 
@@ -4272,9 +4326,10 @@ function applyView() {
 /** Fit the page ('page': all of it; 'width': its width) into the board. */
 function fitView(kind = 'page', say = true) {
   const { w, h } = boardSize(), p = page();
-  const margin = w < 500 ? 14 : 36;
+  // (Presenting: the page fills the screen, edge to edge.)
+  const margin = presenting ? 0 : w < 500 ? 14 : 36;
   // Room at the top for the floating pill of colors, so it never covers the page.
-  const top = $('quickBar').offsetHeight + 20;
+  const top = presenting ? 0 : $('quickBar').offsetHeight + 20;
   const zx = (w - margin * 2) / (p.w * PX_PER_PT), zy = (h - top - margin) / (p.h * PX_PER_PT);
   view.zoom = clamp(kind === 'width' ? zx : Math.min(zx, zy), ZOOM_MIN, ZOOM_MAX);
   const s = scale();
@@ -4410,6 +4465,13 @@ function wireBoardPointers() {
       return;
     }
     if (pointers.size > 1) return;                   // a second pointer of another kind: ignore it
+    // Presenting (section 8i): the Pointer's click goes to the next page (when it is let go);
+    // the laser, spotlight and magnifier never draw; the pens, highlighters and eraser carry on below.
+    if (presenting) {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey) return;
+      if (tool === 'select') { present.press = { id: e.pointerId, x: e.clientX, y: e.clientY, at: performance.now() }; return; }
+      if (tool === 'laser' || tool === 'spotlight' || tool === 'magnifier') return;
+    }
 
     // (With Select, a finger picks and moves things; it slides the page from an empty spot.)
     const wantsPan = e.button === 1 || spaceDown || (e.pointerType === 'touch' && fingerPans() && tool !== 'select');
@@ -4463,6 +4525,12 @@ function wireBoardPointers() {
   const finish = (e) => {
     if (!pointers.has(e.pointerId)) return;
     pointers.delete(e.pointerId);
+    // Presenting: a click (not a drag) with the Pointer goes to the next page.
+    if (presenting && present.press && present.press.id === e.pointerId) {
+      const p = present.press;
+      present.press = null;
+      if (e.type === 'pointerup' && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8 && performance.now() - p.at < 700) presentStep(1);
+    }
     if (gesture && gesture.kind === 'draw' && live && e.pointerId === live.pointerId) {
       if (e.type === 'pointercancel') cancelStroke(); else finishStroke(e);
     }
@@ -4497,6 +4565,7 @@ function wireBoardPointers() {
   // them, it opens the menu for what is picked.
   boardEl.addEventListener('contextmenu', (e) => {
     e.preventDefault();
+    if (presenting) return;                          // (no menu while presenting)
     if (dialogOpen() || editing || !$('ctxMenu').hidden) return;
     if (lastBoardPointer.type === 'touch') return;
     const fromPointer = performance.now() - lastBoardPointer.at < 1500;   // (just pressed: a mouse or pen)
@@ -4504,7 +4573,7 @@ function wireBoardPointers() {
   });
   // Double-click with Select: on a group, work inside it; on a text or sticky note, type in it.
   boardEl.addEventListener('dblclick', (e) => {
-    if (tool !== 'select' || dialogOpen()) return;
+    if (tool !== 'select' || dialogOpen() || presenting) return;
     const pt = toPage(e.clientX, e.clientY);
     const hit = itemAt(pt.x, pt.y, 4 / scale());
     if (!hit) return;
@@ -4517,6 +4586,14 @@ function wireBoardPointers() {
   boardEl.addEventListener('wheel', (e) => {
     if (dialogOpen()) return;
     e.preventDefault();                              // the page itself never scrolls or zooms here
+    // Presenting: the wheel moves page by page (one page per turn, however long the turn).
+    if (presenting) {
+      const now = performance.now();
+      if (e.ctrlKey || Math.abs(e.deltaY) < 4 || now - wheelAt < 400) { if (Math.abs(e.deltaY) >= 4) wheelAt = now; return; }
+      wheelAt = now;
+      presentStep(e.deltaY > 0 ? 1 : -1);
+      return;
+    }
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? boardSize().h : 1;   // lines or pages to pixels
     const dx = e.deltaX * unit, dy = e.deltaY * unit;
     const r = boardEl.getBoundingClientRect();
@@ -4649,6 +4726,8 @@ function finishStroke() {
   // End exactly where the pointer let go (smoothing kept the line a hair behind).
   if (live.lastRaw && item.pts.length > 1 && item.pts.length < MAX_POINTS_PER_STROKE) item.pts.push(live.lastRaw);
   clearLive();
+  // Disappearing ink (Present mode, section 8i): shown for a moment, then gone. Never kept.
+  if (presenting && present.disappearing) { fadeStroke(item); return; }
   page().items.push(item);
   renderPage();
   commit(item.type === 'highlight' ? 'highlight' : 'pen stroke');
@@ -4668,7 +4747,8 @@ function clearLive() {
 
 /* ---- The size ring: shows how wide the pen is, under a mouse or stylus ---- */
 function showRing(e) {
-  const ringless = tool === 'select' || SHAPE_TYPES.includes(tool) || tool === 'text' || tool === 'jot' || tool === 'stamp';
+  const ringless = tool === 'select' || SHAPE_TYPES.includes(tool) || tool === 'text' || tool === 'jot' || tool === 'stamp'
+    || tool === 'laser' || tool === 'spotlight' || tool === 'magnifier';   // (Present mode's pointing tools draw nothing)
   if (e.pointerType === 'touch' || spaceDown || ringless || (gesture && gesture.kind !== 'draw' && gesture.kind !== 'erase')) { hideRing(); return; }
   const pt = toPage(e.clientX, e.clientY);
   brushRing.setAttribute('cx', round2(pt.x));
@@ -7329,12 +7409,13 @@ function finishPageMove(oldIdx, ids) {
 }
 
 /* ---- Asking first (a small dialog with two buttons) ---- */
-/** Ask a yes-or-no question. Resolves true for the yes button, false for Cancel, Escape or closing. */
-function askConfirm(title, text, yesWords) {
+/** Ask a yes-or-no question. Resolves true for the yes button, false for the other one (Cancel, or noWords), Escape or closing. */
+function askConfirm(title, text, yesWords, noWords) {
   const dlg = $('confirmDlg');
   $('confirmTitle').textContent = title;
   $('confirmText').textContent = text;
   $('confirmYes').textContent = yesWords;
+  $('confirmNo').textContent = noWords || 'Cancel';    // (the safe answer: it has the focus first)
   const back = document.activeElement;
   return new Promise((resolve) => {
     const done = (answer) => {
@@ -7562,6 +7643,450 @@ function pageMenuEntries() {
 }
 
 /* =====================================================================
+   8i. PRESENT MODE
+   ---------------------------------------------------------------------
+   One page at a time, full screen, on black, and you can keep drawing
+   while you teach.
+
+   START: the Present button, F5 (from the first page) or Shift+F5 (from
+   the page on show). The browser's full screen is asked for; where it is
+   not allowed, the app simply fills the window.
+
+   MOVING: Right, Down, Space, Page Down or Enter go forward; Left, Up,
+   Page Up or Backspace go back; Home and End jump to the ends. A clicker
+   remote sends Page Up and Page Down, so it just works. A number and
+   then Enter goes to that page (the number keys also pick pen colors, as
+   always; Enter puts the tool back as it was). With the Pointer tool, a
+   click on the page goes forward, and the mouse wheel moves page by page.
+
+   DRAWING: the floating bar at the bottom (the shared bar, laid out flat
+   as in the extension, on a dark background) has the Pointer, the five
+   pens, the sizes, the four highlighters, the eraser, the laser pointer
+   (K), the spotlight (S), the magnifying glass (M; + and - zoom it),
+   disappearing ink, undo, the page buttons and Stop. It fades when the
+   mouse is still, and comes back when it moves or the keyboard reaches
+   it. Marks made while presenting are real marks; when you stop, if any
+   were made, you are asked whether to keep them.
+
+   B / W: a black or a white screen, as in PowerPoint (also . and ,).
+   Any key, or a click, brings the page back.
+
+   ESCAPE: stops (after dropping a stroke being drawn, or leaving a black
+   or white screen first), back on the page you ended on.
+
+   SCREEN READERS hear "Page 4 of 12" and the page's title (its first
+   words) on each page; the board's name lists what is on the page, in
+   reading order.
+
+   The laser, spotlight and magnifier use the extension's numbers, so they
+   feel the same in both. The magnifier draws the page again, larger,
+   from its own marks (the extension has to take a screenshot instead).
+   ===================================================================== */
+const PRESENT_TOOLS = ['select', 'pen', 'highlighter', 'eraser', 'laser', 'spotlight', 'magnifier'];
+const LASER_TRAIL_MS = 300;                       // how long the laser's tail lasts (the extension's)
+const LASER_DOT_RADIUS = 7;                       // the laser dot's radius, in screen pixels
+const SPOTLIGHT_RADII = { S: 90, M: 140, L: 210 }; // the bright circle, in screen pixels, for each size
+const SPOTLIGHT_DARKNESS = 0.72;                  // how dark the rest gets (0: not at all, 1: black)
+const LENS_RADII = { S: 80, M: 120, L: 170 };     // the magnifying glass, in screen pixels, for each size
+const LENS_ZOOM = { min: 1.5, max: 5, step: 0.5 }; // how much it enlarges
+const FADE_AFTER_MS = 2500;                       // disappearing ink: how long a stroke stays before it fades
+const BAR_IDLE_MS = 2500;                         // the floating bar fades when the mouse is still this long
+
+let presenting = false;
+// While presenting: { prevTool, startState, startPage, blank: null | 'black' | 'white', disappearing,
+//   number: { typed, tool, penIndex, hlIndex, timer } (a page number being typed), press (a click on the page) }
+let present = null;
+let presentBar = null;                            // the floating bar (the shared bar, built the first time)
+let presentEls = null;                            // the overlays: { wrap, page, laser, ctx, spot, lens, lensSvg, blank, fade }
+let lensZoom = 2;                                 // the magnifier's enlargement (kept between presentations)
+let lensDirty = true;                             // the magnifier's copy of the page needs drawing again
+const pointerAt = { x: null, y: null };           // where the mouse is (screen pixels), for the laser, spotlight and lens
+let barIdleTimer = 0, wheelAt = 0;
+
+/** The words a page is known by: its first words in reading order (or nothing). */
+function pageTitle(pg) {
+  const shown = pg.items.filter((i) => !i.hidden && !i.decorative && hasWords(i) && i.text.trim());
+  if (!shown.length) return '';
+  const top = (it) => Math.min(...itemPoints(it).map((q) => q[1]));
+  shown.sort((a, b) => top(a) - top(b));
+  return shortWords(shown[0].text);
+}
+/** What is said for each page while presenting: "Page 4 of 12: The water cycle". */
+const presentPageWords = () => 'Page ' + (pageIndex + 1) + ' of ' + board.pages.length + (pageTitle(page()) ? ': ' + pageTitle(page()) : '');
+
+/** Build the overlays and the floating bar (the first time Present starts). */
+function buildPresent() {
+  const wrap = el('div', { class: 'present-ui', role: 'region', 'aria-label': 'Presentation controls', hidden: true });
+  const laser = el('canvas', { class: 'present-laser', 'aria-hidden': 'true' });
+  const spot = el('div', { class: 'present-spot', 'aria-hidden': 'true', hidden: true });
+  const lensSvg = svgEl('svg', { class: 'present-lens-svg', preserveAspectRatio: 'xMidYMid slice', 'aria-hidden': 'true', focusable: 'false' });
+  const lens = el('div', { class: 'present-lens', 'aria-hidden': 'true', hidden: true }, lensSvg);
+  const blank = el('div', { class: 'present-blank', 'aria-hidden': 'true', hidden: true });
+  // The page's number in the bar ("3 / 12"; its buttons say it in words).
+  const pageNum = el('span', { class: 'present-num', 'aria-hidden': 'true' });
+  const btn = (label, icon, fn, extra) => { const b = wbButton(label, iconSvg(icon), fn, extra); b.setAttribute('aria-label', label.replace(/ \(.*\)$/, '')); return b; };
+  const fadeBtn = btn('Disappearing ink: strokes fade after a few seconds', 'fade', () => setDisappearing(!present.disappearing));
+  fadeBtn.setAttribute('aria-pressed', 'false');
+  const groups = [
+    el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Ink' }, fadeBtn,
+      btn('Undo (Ctrl+Z)', 'undo', () => stepHistory(-1))),
+    el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Pages' },
+      btn('Page before (Left)', 'chevronLeft', () => presentStep(-1)), pageNum,
+      btn('Next page (Right)', 'chevronRight', () => presentStep(1))),
+    el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Stop' },
+      btn('Stop presenting (Esc)', 'x', () => stopPresent()))
+  ];
+  presentBar = wbBuildBar({
+    layout: 'flat',
+    label: 'Presenting tools',
+    tools: ['select', 'pen', 'size', 'highlighter', 'eraser', 'laser', 'spotlight', 'magnifier'],
+    names: { select: 'Pointer' },
+    tips: { select: 'click the page for the next one', eraser: 'removes what it touches; [ and ] size it' },
+    after: groups,
+    onPick: (kind, value) => {
+      if (kind === 'tool') setTool(value);
+      else if (kind === 'pen') setPreset('pen', value);
+      else if (kind === 'highlighter') setPreset('highlighter', value);
+      else if (kind === 'size') setSize(value);
+    }
+  });
+  presentBar.root.classList.add('present-bar');
+  presentBar.fadeBtn = fadeBtn;
+  presentBar.pageNum = pageNum;
+  // A layer for disappearing ink, on top of the page's own marks (in page points, like them).
+  const fade = svgEl('g', { class: 'present-fade' });
+  viewG.append(fade);
+  wrap.append(laser, spot, lens, presentBar.root, blank);
+  document.body.append(wrap);
+  presentEls = { wrap, laser, ctx: laser.getContext('2d'), spot, lens, lensSvg, blank, fade };
+
+  // The bar stays while the mouse is over it or the keyboard is in it.
+  presentBar.root.addEventListener('focusin', () => wakeBar());
+  presentBar.root.addEventListener('pointerenter', () => { clearTimeout(barIdleTimer); presentBar.root.classList.remove('idle'); });
+  presentBar.root.addEventListener('pointerleave', () => wakeBar());
+  blank.addEventListener('click', () => setBlank(null));
+  // The mouse anywhere: the laser, spotlight and lens follow it, and the bar wakes up.
+  document.addEventListener('pointermove', (e) => {
+    if (!presenting) return;
+    pointerAt.x = e.clientX; pointerAt.y = e.clientY;
+    wakeBar();
+    if (tool === 'laser') addLaserPoint(e);
+    if (tool === 'spotlight') drawSpotlight();
+    if (tool === 'magnifier') drawLens();
+  }, true);
+  window.addEventListener('resize', () => { if (presenting) sizeLaser(); });
+  // Leaving the browser's full screen (its own Escape) stops presenting too.
+  document.addEventListener('fullscreenchange', () => { if (presenting && !document.fullscreenElement && present.wentFull) stopPresent(); });
+}
+
+/** Start presenting: from the first page (fromFirst) or the page on show. */
+function startPresent(fromFirst) {
+  if (presenting || dialogOpen()) return;
+  if (!presentEls) buildPresent();
+  if (live) cancelStroke();
+  cancelObjectGesture();
+  finishEdit();
+  closeMenu(true);
+  leavePage();
+  present = { prevTool: tool, startState: savedState, startPage: page().id, blank: null, disappearing: false, number: null, press: null, wentFull: false };
+  presenting = true;
+  if (fromFirst) { pageIndex = 0; pagePicks = new Set(); }
+  document.body.classList.add('presenting');
+  presentEls.wrap.hidden = false;
+  // The browser's full screen, where it is allowed (it needs a click or a key, which this always is).
+  const root = document.documentElement;
+  if (root.requestFullscreen) {
+    root.requestFullscreen({ navigationUI: 'hide' }).then(() => { if (presenting) present.wentFull = true; }).catch(() => { /* not allowed: the window will do */ });
+  }
+  setTool('select', false);
+  setDisappearing(false, true);
+  sizeLaser();
+  view.fit = 'page';
+  renderAll();
+  updatePresentUI();
+  wakeBar();
+  $('board').focus({ preventScroll: true });
+  announce('Presenting. ' + presentPageWords() + '. Right arrow or Space for the next page; Escape to stop.');
+}
+
+/** Stop presenting, back on the page you ended on. Asks about the ink if any was made. */
+async function stopPresent() {
+  if (!presenting) return;
+  const was = present;
+  presenting = false;
+  if (live) cancelStroke();
+  cancelObjectGesture();
+  setBlank(null, true);
+  clearFadeInk();
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  document.body.classList.remove('presenting');
+  presentEls.wrap.hidden = true;
+  presentEls.spot.hidden = true;
+  presentEls.lens.hidden = true;
+  laserTrail.points = [];
+  drawLaser();
+  setTool(TOOLS_HERE.includes(was.prevTool) ? was.prevTool : 'pen', false);
+  view.fit = 'page';
+  renderAll();
+  $('board').focus({ preventScroll: true });
+  // Ink made while presenting: keep it, or take it all away (one undo step either way).
+  if (savedState !== was.startState) {
+    const before = JSON.parse(was.startState);
+    const words = presentInkWords(before, board);
+    const keep = !(await askConfirm('Keep the ink from this presentation?', words + ' Keep it on the pages, or take it all away? Undo (Ctrl+Z) can change your mind either way.', 'Take it away', 'Keep it'));
+    if (!keep) {
+      board = before;                                // (our own copy, made by commit(): safe to read back)
+      pageIndex = clamp(pageIndex, 0, board.pages.length - 1);
+      commit('taking away the ink from the presentation');
+      renderAll();
+      announce('Took away the ink from the presentation');
+    } else announce('Kept the ink from the presentation');
+  } else announce('Stopped presenting. ' + presentPageWords());
+}
+/** "You added 4 marks and erased 1 while presenting." */
+function presentInkWords(before, after) {
+  const ids = (b) => new Set(b.pages.flatMap((p) => p.items.map((i) => i.id)));
+  const a = ids(before), z = ids(after);
+  const added = [...z].filter((id) => !a.has(id)).length, gone = [...a].filter((id) => !z.has(id)).length;
+  const parts = [];
+  if (added) parts.push('added ' + plural(added, 'mark'));
+  if (gone) parts.push('erased ' + plural(gone, 'mark'));
+  return parts.length ? 'You ' + parts.join(' and ') + ' while presenting.' : 'The pages changed while presenting.';
+}
+
+/** Show the page's number on the bar, and keep the board's description current. */
+function updatePresentUI() {
+  if (!presenting || !presentBar) return;
+  presentBar.pageNum.textContent = (pageIndex + 1) + ' / ' + board.pages.length;
+  presentBar.fadeBtn.setAttribute('aria-pressed', String(!!present.disappearing));
+  lensDirty = true;
+  if (tool === 'magnifier') drawLens();
+}
+/** The next page (step 1) or the one before (-1). */
+function presentStep(step) {
+  const to = pageIndex + step;
+  if (to < 0) { announce('This is the first page'); return; }
+  if (to >= board.pages.length) { announce('End of the presentation. Escape to stop.'); toast('End of the presentation. Press Escape to stop.'); return; }
+  presentGo(to);
+}
+/** Go to page i while presenting. */
+function presentGo(i) {
+  if (i === pageIndex) return;
+  clearFadeInk();
+  goToPage(i, false, true);
+  updatePresentUI();
+  announce(presentPageWords());
+}
+
+/* ---- Black and white screens ---- */
+function setBlank(kind, quiet) {
+  if (!presentEls) return;
+  if (present) present.blank = kind;
+  presentEls.blank.hidden = !kind;
+  presentEls.blank.classList.toggle('white', kind === 'white');
+  if (!quiet) announce(kind ? (kind === 'white' ? 'White screen' : 'Black screen') + '. Any key brings the page back.' : presentPageWords());
+}
+
+/* ---- Disappearing ink ---- */
+function setDisappearing(on, quiet) {
+  if (!present) return;
+  present.disappearing = on;
+  if (presentBar) presentBar.fadeBtn.setAttribute('aria-pressed', String(on));
+  if (!quiet) announce(on ? 'Disappearing ink: strokes fade after a few seconds' : 'Ink stays');
+}
+/** A finished stroke of disappearing ink: shown for a moment, then faded away. It is never kept. */
+function fadeStroke(item) {
+  const node = itemElement(item);
+  presentEls.fade.append(node);
+  setTimeout(() => {
+    node.classList.add('fading');                  // (the CSS fades it out)
+    setTimeout(() => node.remove(), 900);
+  }, FADE_AFTER_MS);
+}
+function clearFadeInk() { if (presentEls) presentEls.fade.replaceChildren(); }
+
+/* ---- The floating bar wakes up, and fades when the mouse is still ---- */
+function wakeBar() {
+  if (!presenting || !presentBar) return;
+  presentBar.root.classList.remove('idle');
+  document.body.classList.remove('present-idle');
+  clearTimeout(barIdleTimer);
+  barIdleTimer = setTimeout(() => {
+    if (!presenting || presentBar.root.contains(document.activeElement) || presentBar.root.matches(':hover')) return;
+    presentBar.root.classList.add('idle');
+    if (tool === 'select') document.body.classList.add('present-idle');   // (the mouse arrow hides too, as in PowerPoint)
+  }, BAR_IDLE_MS);
+}
+
+/* ---- The laser pointer: a dot with a fading tail, in the pen's color. It never draws. ---- */
+const laserTrail = { points: [], dot: null, animating: false };
+function sizeLaser() {
+  const c = presentEls.laser, ratio = window.devicePixelRatio || 1;
+  c.width = Math.round(window.innerWidth * ratio); c.height = Math.round(window.innerHeight * ratio);
+  c.style.width = window.innerWidth + 'px'; c.style.height = window.innerHeight + 'px';
+}
+function addLaserPoint(e) {
+  laserTrail.points.push({ x: e.clientX, y: e.clientY, time: performance.now() });
+  laserTrail.dot = { x: e.clientX, y: e.clientY };
+  if (!laserTrail.animating) { laserTrail.animating = true; requestAnimationFrame(drawLaser); }
+}
+function drawLaser() {
+  if (!presentEls) return;
+  const c = presentEls.ctx, ratio = window.devicePixelRatio || 1, now = performance.now();
+  const color = currentPresetColor();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, presentEls.laser.width, presentEls.laser.height);
+  c.setTransform(ratio, 0, 0, ratio, 0, 0);
+  laserTrail.points = laserTrail.points.filter((p) => now - p.time < LASER_TRAIL_MS);
+  // The tail: short pieces between the points, thinner and fainter as they age.
+  c.lineCap = 'round';
+  c.strokeStyle = color;
+  for (let i = 1; i < laserTrail.points.length; i++) {
+    const a = laserTrail.points[i - 1], b = laserTrail.points[i];
+    const life = 1 - (now - b.time) / LASER_TRAIL_MS;
+    c.globalAlpha = life * 0.75;
+    c.lineWidth = LASER_DOT_RADIUS * 2 * life;
+    c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+  }
+  // The dot, with a glow and a thin white ring so it shows on dark pages too.
+  if (presenting && tool === 'laser' && laserTrail.dot) {
+    c.globalAlpha = 1;
+    c.shadowColor = color; c.shadowBlur = 14;
+    c.fillStyle = color;
+    c.beginPath(); c.arc(laserTrail.dot.x, laserTrail.dot.y, LASER_DOT_RADIUS, 0, Math.PI * 2); c.fill();
+    c.shadowBlur = 0;
+    c.lineWidth = 1.5; c.strokeStyle = 'rgba(255, 255, 255, 0.9)'; c.stroke();
+  }
+  c.globalAlpha = 1;
+  if (laserTrail.points.length) requestAnimationFrame(drawLaser); else laserTrail.animating = false;
+}
+/** The pen color in use (the laser's color). */
+const currentPresetColor = () => (settings.pens[settings.penIndex] || settings.pens[0]).color;
+
+/* ---- The spotlight: everything dark except a circle around the mouse. It never draws. ---- */
+function drawSpotlight() {
+  const on = presenting && tool === 'spotlight';
+  presentEls.spot.hidden = !on;
+  if (!on) return;
+  const x = pointerAt.x == null ? window.innerWidth / 2 : pointerAt.x;
+  const y = pointerAt.y == null ? window.innerHeight / 2 : pointerAt.y;
+  const r = SPOTLIGHT_RADII[settings.size] || SPOTLIGHT_RADII.M;
+  // Clear in the middle, with a soft 16px edge fading into the dark (numbers only: nothing from a person goes in).
+  presentEls.spot.style.background = 'radial-gradient(circle at ' + Math.round(x) + 'px ' + Math.round(y) + 'px, transparent '
+    + (r - 16) + 'px, rgba(0, 0, 0, ' + SPOTLIGHT_DARKNESS + ') ' + r + 'px)';
+}
+
+/* ---- The magnifying glass: a round window showing the page again, larger, drawn from its own marks. ---- */
+function drawLens() {
+  const on = presenting && tool === 'magnifier' && pointerAt.x != null;
+  presentEls.lens.hidden = !on;
+  if (!on) return;
+  if (lensDirty) {
+    // A fresh copy of the page (its color, highlights and ink), kept until something changes.
+    presentEls.lensSvg.replaceChildren(...thumbContent(page()));
+    lensDirty = false;
+  }
+  const r = LENS_RADII[settings.size] || LENS_RADII.M;
+  const lens = presentEls.lens;
+  lens.style.width = lens.style.height = (r * 2) + 'px';
+  lens.style.left = Math.round(pointerAt.x - r) + 'px';
+  lens.style.top = Math.round(pointerAt.y - r) + 'px';
+  // The part of the page under the mouse, "zoom" times smaller than the lens, stretched to fill it.
+  const pt = toPage(pointerAt.x, pointerAt.y), half = r / (scale() * lensZoom);
+  presentEls.lensSvg.setAttribute('viewBox', [pt.x - half, pt.y - half, half * 2, half * 2].map(round2).join(' '));
+}
+function changeLensZoom(dir) {
+  lensZoom = clamp(lensZoom + dir * LENS_ZOOM.step, LENS_ZOOM.min, LENS_ZOOM.max);
+  drawLens();
+  announce('Magnified ' + lensZoom + ' times');
+}
+/** After a tool change while presenting: show or hide the spotlight and lens, and clear the laser's dot. */
+function presentToolChanged() {
+  if (!presenting || !presentEls) return;
+  drawSpotlight();
+  drawLens();
+  if (tool !== 'laser') { laserTrail.dot = null; if (!laserTrail.animating) drawLaser(); }
+  document.body.classList.remove('present-idle');
+}
+
+/* ---- Keys while presenting ----
+   Listened for before everything else (the capture phase), so the app's
+   usual keys stand down: no Delete, no shapes, no Inspector. */
+function presentKeys(e) {
+  if (!presenting || dialogOpen()) return;
+  const k = e.key, mod = e.ctrlKey || e.metaKey;
+  const done = () => { e.preventDefault(); e.stopPropagation(); };
+  // A black or white screen: any key brings the page back (and does nothing else).
+  if (present.blank) { done(); setBlank(null); return; }
+  // In the floating bar, the bar's own keys move along it (and Enter or Space press a button).
+  if (presentBar.root.contains(e.target) && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', ' ', 'Tab'].includes(k)) return;
+  if (mod) {
+    // Undo and redo still work; the app's other Ctrl keys (new page, copy...) don't, while presenting.
+    const l = k.toLowerCase();
+    if (l === 'z' && !e.shiftKey) { done(); stepHistory(-1); return; }
+    if ((l === 'z' && e.shiftKey) || l === 'y') { done(); stepHistory(1); return; }
+    e.stopPropagation();
+    return;
+  }
+  if (k === 'Escape') {
+    done();
+    if (live) { cancelStroke(); announce('Stroke dropped'); return; }
+    if (cancelObjectGesture()) return;
+    stopPresent();
+    return;
+  }
+  if (k === 'F5' || k === 'F6' || k === 'F1' || k === '?') { done(); return; }   // (no reload, and no panels to jump to)
+  // A page number, then Enter.
+  if (/^[0-9]$/.test(k)) {
+    if (!present.number) present.number = { typed: '', tool, penIndex: settings.penIndex, hlIndex: settings.hlIndex };
+    present.number.typed = (present.number.typed + k).slice(-4);
+    clearTimeout(present.number.timer);
+    present.number.timer = setTimeout(() => { present.number = null; }, 3000);
+    // (1 to 9 also pick a pen or a highlighter, below, as everywhere in WHTBRDR.)
+  } else if (k !== 'Enter' && k !== 'Shift' && present.number) { clearTimeout(present.number.timer); present.number = null; }
+  if (k === 'Enter' && present.number && present.number.typed) {
+    done();
+    const n = present.number;
+    present.number = null;
+    clearTimeout(n.timer);
+    // Put the tool back as it was before the number keys picked colors.
+    settings.penIndex = n.penIndex; settings.hlIndex = n.hlIndex;
+    setTool(n.tool, false);
+    const to = parseInt(n.typed, 10) - 1;
+    if (to >= 0 && to < board.pages.length) presentGo(to); else announce('There is no page ' + n.typed);
+    return;
+  }
+  // Forward and back (clickers send Page Up and Page Down).
+  if (['ArrowRight', 'ArrowDown', ' ', 'PageDown', 'Enter'].includes(k)) { done(); presentStep(1); return; }
+  if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { done(); presentStep(-1); return; }
+  if (k === 'Home') { done(); presentGo(0); return; }
+  if (k === 'End') { done(); presentGo(board.pages.length - 1); return; }
+  // Black or white screen.
+  const l = k.toLowerCase();
+  if (l === 'b' || k === '.') { done(); setBlank('black'); return; }
+  if (l === 'w' || k === ',') { done(); setBlank('white'); return; }
+  // The magnifier's zoom.
+  if ((k === '+' || k === '=' || k === '-' || k === '_') && tool === 'magnifier') { done(); changeLensZoom(k === '-' || k === '_' ? -1 : 1); return; }
+  // The shared bar's keys: V, P, H, E, K, S, M, 1 to 9, [ and ].
+  const action = wbKeyAction(e);
+  if (action) {
+    done();
+    if (action.type === 'pen') setPreset('pen', action.index);
+    else if (action.type === 'highlighter') setPreset('highlighter', action.index);
+    else if (action.type === 'size') setSize(wbNextSize(settings.size, action.step));
+    else if (action.type === 'tool' && PRESENT_TOOLS.includes(action.tool)) setTool(action.tool);
+    return;
+  }
+  // Everything else (Delete, the app's other tool keys...) is quiet while presenting. Tab still moves to the bar.
+  // (Tab goes on to the floating bar, as usual; only the app's own use of it, stepping through marks, stands down.)
+  e.stopPropagation();
+}
+function wirePresent() {
+  document.addEventListener('keydown', presentKeys, true);
+  $('btnPresent').addEventListener('click', () => startPresent(false));
+}
+
+/* =====================================================================
    9. TOOLS AND PRESETS
    The rail and the floating pill are the shared annotation bar (section
    8a), laid out as a "rail": one button per tool down the left, and the
@@ -7574,7 +8099,8 @@ let tool = settings.tool;
 // The tools this version has (the rest of the shared bar's arrive in the next versions).
 const TOOLS_HERE = ['select', 'pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'eraser', 'stamp'];
 const TOOL_NAMES = { select: 'Select', pen: 'Pen', highlighter: 'Highlighter', arrow: 'Arrow', line: 'Line', rect: 'Rectangle',
-  ellipse: 'Ellipse', text: 'Text', jot: 'Sticky note', eraser: 'Eraser', stamp: 'Stamp' };
+  ellipse: 'Ellipse', text: 'Text', jot: 'Sticky note', eraser: 'Eraser', stamp: 'Stamp',
+  laser: 'Laser pointer', spotlight: 'Spotlight', magnifier: 'Magnifying glass' };   // (the last three: Present mode)
 let bar = null;                          // the shared bar (built at start-up)
 let stampBtn = null;                     // the app's own Stamp button on the rail (below the shared bar's tools)
 
@@ -7634,6 +8160,9 @@ function refreshBar() {
     highlighterColors: settings.highlighters.map((h) => h.color),
     dark: isDark()
   });
+  // The floating bar while presenting (section 8i): the same choices, on its dark background.
+  if (presentBar) presentBar.refresh({ tool, pen: settings.penIndex, highlighter: settings.hlIndex, size: settings.size,
+    font: settings.font, penColors: settings.pens.map((p) => p.color), highlighterColors: settings.highlighters.map((h) => h.color), dark: true });
 }
 
 /** Everything that shows the tool or its preset, redrawn after a change. */
@@ -7642,10 +8171,11 @@ function toolChanged() {
   refreshBar();
   renderInspector();
   renderStatus();
+  presentToolChanged();                            // (the spotlight, lens and laser while presenting: section 8i)
 }
 
 function setTool(next, say = true) {
-  if (!TOOLS_HERE.includes(next)) return;
+  if (!(presenting ? PRESENT_TOOLS : TOOLS_HERE).includes(next)) return;   // (Present mode has its own few: section 8i)
   if (live) cancelStroke();
   if (editing && next !== 'text' && next !== 'jot') finishEdit();
   tool = next;
@@ -7655,6 +8185,7 @@ function setTool(next, say = true) {
   if (!say) return;
   if (tool === 'pen' || tool === 'highlighter') announce(TOOL_NAMES[tool] + ': ' + currentPreset().name);
   else if (tool === 'eraser') announce('Eraser: ' + eraserWords());
+  else if (presenting && tool === 'select') announce('Pointer: click the page for the next one');
   else announce(TOOL_NAMES[tool]);
 }
 /** Choose pen (kind 'pen') or highlighter ('highlighter') number i, and that tool. */
@@ -7756,6 +8287,7 @@ function selectField(label, value, options, onChange, stack = false) {
 }
 
 function renderInspector() {
+  if (presenting) return;                          // (hidden while presenting; drawn again when it stops)
   const body = $('inspBody');
   // Keep the place: which field had focus (by its label) and how far the panel was scrolled.
   const scrollTop = body.scrollTop;
@@ -8184,6 +8716,7 @@ function colorsSection() {
    11. THE STATUS BAR
    ===================================================================== */
 function renderStatus() {
+  if (presenting) return;                          // (hidden while presenting)
   $('stPage').textContent = (pageIndex + 1) + ' of ' + board.pages.length;
   $('stSize').textContent = sizeWords(page());
   if (tool === 'pen' || tool === 'highlighter') {
@@ -8291,6 +8824,11 @@ const HELP_KEYS = [
   ['Escape', 'Step back: drop a stroke being drawn, put back a move, let go of what is picked, leave a group, then Select'],
   ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo (Ctrl+Y redoes too); it shows the page the change was on'],
   ['Page Up / Page Down', 'The page before or after'],
+  ['F5 / Shift+F5', 'Present: from the first page / from this page (Escape stops)'],
+  ['Presenting: Right, Space, Page Down, Enter', 'Next page (Left, Page Up, Backspace: the page before; Home and End: the ends)'],
+  ['Presenting: a number, then Enter', 'Go to that page'],
+  ['Presenting: K, S, M', 'Laser pointer, spotlight, magnifying glass (+ and - zoom it)'],
+  ['Presenting: B or W', 'A black or white screen (any key brings the page back)'],
   ['Ctrl+Enter', 'Add a page after this one (the same size and color)'],
   ['Ctrl+Shift+D', 'Copy the picked pages, marks and all'],
   ['Filmstrip: Left / Right, Home / End', 'Go to the page before or after, or the first or last (Shift: pick the pages on the way)'],
@@ -8539,6 +9077,8 @@ function wireKeys() {
     if (mod || e.altKey || typing) return;            // the rest are plain keys, not while typing
 
     if (e.key === '?' || e.key === 'F1') { e.preventDefault(); openHelp(); return; }
+    // F5: present from the first page; Shift+F5: from this page (section 8i). (Never the browser's reload.)
+    if (e.key === 'F5') { e.preventDefault(); startPresent(!e.shiftKey); return; }
     // Page Up and Page Down: the page before or after (from the board, the rail or the filmstrip;
     // in the Inspector they still scroll it).
     if ((e.key === 'PageUp' || e.key === 'PageDown') && !$('sidePanel').contains(document.activeElement) && !editing) {
@@ -8674,10 +9214,33 @@ const APP_FEATURES = [
       + '<rect x="100" y="24" width="120" height="152" rx="3" class="fx-paper fx-edge"/><rect x="116" y="44" width="70" height="6" rx="3" class="fx-mute"/><rect x="116" y="60" width="88" height="6" rx="3" class="fx-mute"/>'
       + '<path d="M176 104c6-12 16-12 22 0s16 12 22 0" class="fx-line-acc"/><circle cx="190" cy="110" r="14" class="fx-line-pop fx-thin"/></g>'
       + '<path d="M190 110l0 17 4.5-4.5 3.5 7 3-1.5-3.5-7 6 0z" class="fx-ink"/></svg>'
+  },
+  {
+    title: 'Present, and keep drawing',
+    text: 'F5 shows one page at a time, full screen. Arrows, Space or a clicker move through the pages, and a floating bar holds the pens, a laser pointer, a spotlight and a magnifying glass. B or W blanks the screen.',
+    alt: 'A page fills a dark screen. A glowing laser dot sweeps along its lines of text, then a pen underlines a word, above a small floating toolbar.',
+    still: 3.5,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" class="fx-ink"/>'
+      + '<rect x="70" y="12" width="180" height="150" rx="2" class="fx-paper"/>'
+      + '<rect x="90" y="32" width="96" height="9" rx="4" class="fx-ink"/><rect x="90" y="60" width="130" height="6" rx="3" class="fx-mute"/>'
+      + '<rect x="90" y="78" width="112" height="6" rx="3" class="fx-mute"/><rect x="90" y="96" width="124" height="6" rx="3" class="fx-mute"/>'
+      + '<path d="M90 110h70" pathLength="100" stroke-dasharray="100 104" stroke-dashoffset="102" class="fx-line-acc fx-thick"><animate attributeName="stroke-dashoffset" values="102;102;0;0;102" keyTimes="0;0.55;0.7;0.92;1" dur="6s" repeatCount="indefinite"/></path>'
+      + '<circle r="5" class="fx-pop" opacity="0"><animate attributeName="opacity" values="0;1;1;0;0" keyTimes="0;0.05;0.45;0.5;1" dur="6s" repeatCount="indefinite"/>'
+      + '<animateMotion path="M92 63H216M216 63L92 81H198M198 81L92 99H210" keyPoints="0;0;1;1" keyTimes="0;0.05;0.45;1" calcMode="linear" dur="6s" repeatCount="indefinite"/></circle>'
+      + '<rect x="100" y="172" width="120" height="20" rx="10" class="fx-paper fx-edge"/><circle cx="116" cy="182" r="4.5" class="fx-ink"/>'
+      + '<circle cx="132" cy="182" r="4.5" class="fx-acc"/><circle cx="148" cy="182" r="4.5" class="fx-pop"/><rect x="160" y="179" width="12" height="6" rx="2" class="fx-hl"/>'
+      + '<circle cx="186" cy="182" r="3" class="fx-pop"/><path d="M200 178l8 8M208 178l-8 8" class="fx-line-mute fx-thin"/></svg>'
   }
 ];
 
 const CHANGELOG = [
+  { version: '0.3.2', date: '2026-10-20', notes: [
+    'Present mode: the Present button, F5 (from the first page) or Shift+F5 (from this page) shows one page at a time, full screen, on black. Escape stops, back on the page you ended on.',
+    'Moving: Right, Down, Space, Page Down or Enter go forward; Left, Up, Page Up or Backspace go back; Home and End jump to the ends; a number and Enter goes to that page. Clickers work (they send Page Up and Page Down). With the Pointer, a click on the page goes forward, and the wheel moves page by page.',
+    'A floating bar (it fades when the mouse is still): the Pointer, the pens and sizes, the highlighters, the eraser, the laser pointer (K), the spotlight (S), the magnifying glass (M; + and - zoom it), disappearing ink, undo, the pages and Stop.',
+    'B or W blanks the screen to black or white; any key brings the page back. Ink made while presenting is real ink: when you stop, WHTBRDR asks whether to keep it.',
+    'Screen readers hear each page\'s number and title, and what is on it in reading order.'
+  ] },
   { version: '0.3.1', date: '2026-10-19', notes: [
     'WHTBRDR installs as an app: Install in the top bar (or at the foot of the splash) gives it its own window and an icon, and it opens with no network. Each launch picks up the newest version when there is one.',
     'A splash at start-up, like the rest of the family: a picture of WHTBRDR in use, then New board, Pick a page size, or Draw on a picture, the tour of what it can do, and the other apps. A picture pasted or dropped on the splash goes straight onto the page. Escape or the X goes straight to the board.',
@@ -8767,6 +9330,7 @@ function start() {
   wireMenu();
   wireLayers();
   wireFilmstrip();
+  wirePresent();
   $('btnPicture').addEventListener('click', choosePictures);
   // When the fonts have loaded, measure words again (they may have been measured in a stand-in font).
   if (document.fonts && document.fonts.load) {

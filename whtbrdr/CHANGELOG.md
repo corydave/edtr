@@ -1,5 +1,15 @@
 # WHTBRDR - changelog
 
+## 0.3.2 - 2026-10-20 - Present mode
+
+- **Start:** the Present button in the top bar (from the page on show), F5 (from the first page) or Shift+F5 (from this page). The page fills the screen on black, using the browser's full screen where it is allowed. **Escape** stops, back on the page you ended on (leaving the browser's full screen stops too).
+- **Moving:** Right, Down, Space, Page Down or Enter go forward; Left, Up, Page Up or Backspace go back; Home and End jump to the ends. Clicker remotes work (they send Page Up and Page Down). A number and then Enter goes to that page (the number keys still pick colors on the way, and Enter puts the tool back). With the Pointer, a click on the page goes forward, and the mouse wheel moves one page per turn.
+- **The floating bar** (bottom center; it fades when the mouse is still, and the mouse arrow hides with it): the Pointer, the five pens, S / M / L, the four highlighters, the eraser, the **laser pointer** (K, a glowing dot with a fading tail in the pen's color), the **spotlight** (S, everything dark but a circle around the mouse), the **magnifying glass** (M; + and - zoom it from 1.5 to 5 times; it redraws the page larger, so it stays sharp), **disappearing ink** (strokes fade after a few seconds and are never kept), undo, the page before and after, and Stop. It is one Tab stop, and the arrow keys move along it.
+- **B or W** turns the screen black or white, as in PowerPoint ("." and "," too); any key or a click brings the page back.
+- **Ink while presenting is real ink.** When you stop, if anything changed, WHTBRDR asks whether to keep it or take it all away; either way is one undo step.
+- **Screen readers** hear each page's number and title ("Page 4 of 12: The water cycle"), and the board lists what is on the page in reading order.
+- The help panel's tour has a fourth feature, "Present, and keep drawing", and the keyboard list has the presenting keys.
+
 ## 0.3.1 - 2026-10-19 - Install it, and a splash
 
 - **Installable:** Install in the top bar (shown only when the browser allows it) or at the foot of the splash gives WHTBRDR its own window and icon. It opens with no network: `sw.js` keeps the page and the icons (never your boards). With a network, each launch loads the newest version, and the splash checks for updates (Update now when there is one). On iPhone and iPad the splash says how to add it to the Home Screen.

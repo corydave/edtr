@@ -30,8 +30,10 @@
 > `manifest.webmanifest`, `sw.js`, the icons (`make-icons.py` draws the
 > PNGs from the same numbers as `icon.svg`), and `whtbrdr-thumb.webp` (the
 > hub picture; the splash's `APP_HERO` is the same picture, smaller).
-> **Present mode is queued next as 0.3.2**, then backgrounds (0.3.3) and
-> step numbers (0.3.4). Waiting for Dave's review of 0.3.1. **Phone testing is on hold**
+> **Then 0.3.2: Present mode** (section 8i): F5, full screen on black, the
+> floating ink bar with the laser, spotlight and magnifier, B/W, and keep or
+> take away the ink at the end. Next are backgrounds (0.3.3) and step
+> numbers (0.3.4). Waiting for Dave's review of 0.3.2. **Phone testing is on hold**
 > until Dave has time: check builds on the desktop only. The extension is
 > unchanged (1.3.2).
 
