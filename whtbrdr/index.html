@@ -1133,6 +1133,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <textarea class="text-editor" id="textEditor" spellcheck="true" wrap="off" hidden></textarea>
     <!-- The file chooser for pictures (opened by Picture or I; never shown itself). -->
     <input type="file" id="picFile" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden tabindex="-1" aria-hidden="true">
+    <!-- The file chooser for a page's background picture (the Inspector's Background picture section). -->
+    <input type="file" id="bgPicFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden tabindex="-1" aria-hidden="true">
     <!-- The right-click menu (also Shift+F10 or the Menu key): filled in each time it opens (section 8f). -->
     <div class="ctx-menu" id="ctxMenu" role="menu" aria-label="Actions" hidden></div>
   </main>
@@ -3756,7 +3758,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.3.2';
+const APP_VERSION = '0.3.3';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -3953,7 +3955,7 @@ function loadSettings() {
     s.exact.highlighter = exactOk(raw.exact.highlighter, 'highlighter');
   }
   if (raw.open && typeof raw.open === 'object') {
-    for (const key of ['tool', 'page', 'colors', 'sel', 'geom', 'layers']) if (raw.open[key] === true) s.open[key] = true;
+    for (const key of ['tool', 'page', 'colors', 'sel', 'geom', 'layers', 'bg', 'grid', 'bgpic']) if (raw.open[key] === true) s.open[key] = true;
   }
   // A saved preset keeps its color if it is a real color. Settings from
   // 0.1.0 (no "bar" mark) held that version's stand-in colors, so they are
@@ -4191,7 +4193,7 @@ function arrowWay(item) {
          <g class="ink-layer">           pen strokes
          <g>                             the pen stroke being drawn right now, and the size ring
    ===================================================================== */
-let viewG, pageHalo, pageRect, pageEdge, hlLayer, inkLayer, liveInk, brushRing;
+let viewG, pageHalo, pageRect, pageEdge, backdropLayer, hlLayer, inkLayer, liveInk, brushRing;
 
 function buildBoardSvg() {
   const svg = $('boardSvg');
@@ -4205,6 +4207,7 @@ function buildBoardSvg() {
   pageHalo = svgEl('rect', { class: 'page-halo' });
   pageRect = svgEl('rect');
   pageEdge = svgEl('rect', { class: 'page-edge', fill: 'none' });
+  backdropLayer = svgEl('g', { class: 'backdrop-layer' });   // the page's background picture, lines and grid (section 8j)
   hlLayer = svgEl('g', { class: 'hl-layer' });
   inkLayer = svgEl('g', { class: 'ink-layer' });
   // A highlight being drawn goes straight into the highlight layer (at the
@@ -4213,7 +4216,7 @@ function buildBoardSvg() {
   liveInk = svgEl('g');
   brushRing = svgEl('circle', { class: 'brush-ring', r: 1, visibility: 'hidden' });
   // Order matters: later things are drawn on top.
-  viewG.append(pageHalo, pageRect, hlLayer, inkLayer, liveInk, pageEdge, brushRing);
+  viewG.append(pageHalo, pageRect, backdropLayer, hlLayer, inkLayer, liveInk, pageEdge, brushRing);
   // The frame round what is picked is drawn on top, in screen pixels (not
   // zoomed), so its lines and handles stay the same size at any zoom.
   selG = svgEl('g', { class: 'sel-layer' });
@@ -4233,6 +4236,7 @@ function renderPage() {
   // Highlights blend into a light page (multiply keeps the words under them
   // fully dark); on a dark page they are see-through instead (see the CSS).
   hlLayer.classList.toggle('on-dark', isDarkColor(p.color));
+  backdropLayer.replaceChildren(...backdropNodes(p));   // (under the marks: section 8j)
   const hl = [], ink = [];
   elById.clear();
   for (const item of p.items) {
@@ -4260,7 +4264,7 @@ function describeBoard() {
     $('board').setAttribute('aria-label', presentPageWords() + '. ' + (words.length ? words.join('. ') : 'Nothing on this page'));
     return;
   }
-  const what = p.items.length ? countWords(p.items) : 'nothing drawn yet';
+  const what = (p.items.length ? countWords(p.items) : 'nothing drawn yet') + (backdropWords(p) ? '; under it, ' + backdropWords(p) : '');
   const picked = sel.ids.size ? '. Picked: ' + selectionWords() : '';
   $('board').setAttribute('aria-label', 'Page ' + (pageIndex + 1) + ' of ' + board.pages.length + ', ' + sizeWords(p) + ': ' + what + picked);
 }
@@ -7317,12 +7321,14 @@ function clonePage(pg) {
   return c;
 }
 
-/** Add a blank page at place `at` (the size and color of the page on show), and go to it. */
+/** Add a blank page at place `at` (the size, color and background of the page on show), and go to it. */
 function addPage(at) {
   if (board.pages.length >= MAX_PAGES) { toast('A board holds up to ' + MAX_PAGES + ' pages.'); return; }
   const from = page();
   const np = newPage(from.w, from.h);
   np.color = from.color;
+  // ...and its background, grid and background picture (section 8j).
+  for (const what of ['bg', 'grid', 'bgPic']) if (from[what]) np[what] = JSON.parse(JSON.stringify(from[what]));
   at = clamp(at, 0, board.pages.length);
   leavePage();
   board.pages.splice(at, 0, np);
@@ -7477,7 +7483,7 @@ function renderFilmstrip() {
 function thumbContent(pg) {
   const hl = svgEl('g', { class: 'hl-layer' + (isDarkColor(pg.color) ? ' on-dark' : '') }), ink = svgEl('g');
   for (const it of pg.items) (it.type === 'highlight' ? hl : ink).append(itemElement(it));
-  return [svgEl('rect', { x: 0, y: 0, width: pg.w, height: pg.h, fill: isHex(pg.color) ? pg.color : '#ffffff' }), hl, ink];
+  return [svgEl('rect', { x: 0, y: 0, width: pg.w, height: pg.h, fill: isHex(pg.color) ? pg.color : '#ffffff' }), ...backdropNodes(pg), hl, ink];
 }
 /** Redraw the page on show's thumbnail a moment after a change (drawing many strokes in a row redraws it once). */
 function scheduleThumb() {
@@ -8087,6 +8093,327 @@ function wirePresent() {
 }
 
 /* =====================================================================
+   8j. PAGE BACKGROUNDS, THE COORDINATE GRID, THE BACKGROUND PICTURE
+   ---------------------------------------------------------------------
+   Three things a page can have under everything drawn on it, each set in
+   the Inspector when nothing is picked (and each can be put on every page):
+
+   page.bg   = { kind, color, spacing }     dots, lines or graph paper
+               kind: 'dots', 'ruled-s' (small lines), 'ruled-l' (large
+               lines, wide ruled, with a margin line), 'graph-s', 'graph-l'
+               spacing: points between lines (or dots)
+   page.grid = { quad, square, units, every, labels, axes, ox, oy, color }
+               a coordinate grid, for graphing. quad: 'four' quadrants or
+               the 'first' only. square: a square's size in points. units:
+               what one square is worth. every: a number every so many
+               squares. labels / axes: numbers, and axes with arrows. ox, oy:
+               where the origin sits, in squares from the grid's left and
+               bottom edges.
+   page.bgPic = { pic, name, nw, nh, fit, fade }
+               a picture under everything: fit ('fit', 'fill' or 'center')
+               and fade (0 to 0.9: how much it is washed out). pic names a
+               picture in pictureStore (section 8e), like a picture mark.
+
+   From the bottom up a page is: its color, the picture, the lines, the
+   grid, then the highlights and ink. None of these are marks: they can't
+   be picked, moved or erased, so drawing on them never disturbs them.
+   They are drawn from numbers only (nothing typed goes into them except
+   the grid's numbers, which the app writes itself).
+   ===================================================================== */
+const BG_KINDS = [
+  { id: 'none',    name: 'None' },
+  { id: 'dots',    name: 'Dots',                          spacing: 18,    color: '#94a3b8' },   // a dot every quarter inch
+  { id: 'ruled-s', name: 'Lines, small',                  spacing: 20.25, color: '#93c5fd' },   // college ruled (9/32 in)
+  { id: 'ruled-l', name: 'Lines, large, with a margin',   spacing: 24.75, color: '#93c5fd' },   // wide ruled (11/32 in)
+  { id: 'graph-s', name: 'Graph paper, small',            spacing: 18,    color: '#a7c4ea' },   // quarter-inch squares
+  { id: 'graph-l', name: 'Graph paper, large',            spacing: 36,    color: '#a7c4ea' }    // half-inch squares
+];
+const BG_MARGIN_COLOR = '#f87171';          // the wide-ruled margin line (notebook red)
+const GRID_DEFAULT = { quad: 'four', square: 18, units: 1, every: 2, labels: true, axes: true, color: '#94a3b8' };
+const GRID_EDGE = 36;                       // room left round the coordinate grid, in points (half an inch)
+const GRID_AXIS_COLOR = '#1f2937';          // the axes and their numbers: dark, 14:1 on white
+const BGPIC_FITS = [['fit', 'Fit (all of it shows)'], ['fill', 'Fill (covers the page)'], ['center', 'Centered, its own size']];
+const GRID_FONT = '"' + WB_FONTS[0].family + '", system-ui, sans-serif';   // the grid's letters and numbers: Atkinson Hyperlegible
+const bgKind = (id) => BG_KINDS.find((k) => k.id === id) || BG_KINDS[0];
+const fmtNum = (n) => String(Math.round(n * 1000) / 1000);   // 0.5, 2, 1.25 (no long tails)
+
+/** Everything under a page's marks, as SVG: the picture, the lines and the grid (in that order). */
+function backdropNodes(pg) {
+  const out = [];
+  if (pg.bgPic) { const n = bgPicNode(pg); if (n) out.push(n); }
+  if (pg.bg && pg.bg.kind !== 'none') out.push(bgNode(pg));
+  if (pg.grid) out.push(gridNode(pg));
+  return out;
+}
+
+/* ---- The background picture ---- */
+function bgPicNode(pg) {
+  const b = pg.bgPic, stored = pictureStore.get(b.pic);
+  if (!stored) return null;
+  // A nested <svg> the size of the page: anything past the edge is cut off (the "centered" picture can be bigger).
+  const box = svgEl('svg', { x: 0, y: 0, width: pg.w, height: pg.h, overflow: 'hidden', opacity: wbFmt(1 - (b.fade || 0)) });
+  let x = 0, y = 0, w = pg.w, h = pg.h, aspect = b.fit === 'fill' ? 'xMidYMid slice' : 'xMidYMid meet';
+  if (b.fit === 'center') {
+    w = b.nw * PT_PER_PX; h = b.nh * PT_PER_PX;       // its own size: a pixel is 0.75 points
+    x = (pg.w - w) / 2; y = (pg.h - h) / 2;
+    aspect = 'none';
+  }
+  box.append(svgEl('image', { href: stored.url, x: wbFmt(x), y: wbFmt(y), width: wbFmt(w), height: wbFmt(h), preserveAspectRatio: aspect }));
+  return box;
+}
+
+/* ---- Dots, lines and graph paper ----
+   Each is ONE path (many short pieces in one shape), so even a page full
+   of dots is quick to draw. A dot is a line of length 0 with round ends. */
+function bgNode(pg) {
+  const bg = pg.bg, kind = bgKind(bg.kind);
+  const s = clamp(bg.spacing || kind.spacing, 6, 144);
+  const color = isHex(bg.color) ? bg.color : kind.color;
+  const g = svgEl('g', { class: 'page-bg' });
+  const d = [];
+  // Line the pattern up evenly: the same room left over at both edges.
+  const x0 = (pg.w % s) / 2, y0 = (pg.h % s) / 2;
+  if (bg.kind === 'dots') {
+    for (let y = y0; y <= pg.h; y += s) for (let x = x0; x <= pg.w; x += s) d.push('M' + wbFmt(x) + ' ' + wbFmt(y) + 'h0');
+    g.append(svgEl('path', { d: d.join(''), stroke: color, 'stroke-width': 1.8, 'stroke-linecap': 'round', fill: 'none' }));
+    return g;
+  }
+  if (bg.kind === 'ruled-s' || bg.kind === 'ruled-l') {
+    // Notebook paper: a clear band at the top (about an inch), then lines across.
+    const top = Math.max(s * 2, 54);
+    for (let y = top; y <= pg.h - s / 2; y += s) d.push('M0 ' + wbFmt(y) + 'H' + wbFmt(pg.w));
+    g.append(svgEl('path', { d: d.join(''), stroke: color, 'stroke-width': 0.75, fill: 'none' }));
+    // Wide ruled: a margin line an inch and a quarter in from the left.
+    if (bg.kind === 'ruled-l' && pg.w > 180) g.append(svgEl('path', { d: 'M90 0V' + wbFmt(pg.h), stroke: BG_MARGIN_COLOR, 'stroke-width': 0.9, fill: 'none' }));
+    return g;
+  }
+  // Graph paper: lines both ways.
+  for (let x = x0; x <= pg.w; x += s) d.push('M' + wbFmt(x) + ' 0V' + wbFmt(pg.h));
+  for (let y = y0; y <= pg.h; y += s) d.push('M0 ' + wbFmt(y) + 'H' + wbFmt(pg.w));
+  g.append(svgEl('path', { d: d.join(''), stroke: color, 'stroke-width': 0.6, fill: 'none' }));
+  return g;
+}
+
+/* ---- The coordinate grid ---- */
+/**
+ * Where the grid sits on the page: { left, top, nx, ny, sq, ox, oy } -
+ * its top-left corner, how many squares across and down, a square's size,
+ * and the origin, in squares from the left and from the bottom.
+ */
+function gridLayout(pg) {
+  const g = pg.grid, sq = clamp(g.square || GRID_DEFAULT.square, 6, 144);
+  const nx = Math.max(2, Math.floor((pg.w - GRID_EDGE * 2) / sq)), ny = Math.max(2, Math.floor((pg.h - GRID_EDGE * 2) / sq));
+  const left = (pg.w - nx * sq) / 2, top = (pg.h - ny * sq) / 2;
+  const def = gridOrigin(g.quad, nx, ny);
+  const ox = Number.isInteger(g.ox) ? clamp(g.ox, 0, nx) : def.ox;
+  const oy = Number.isInteger(g.oy) ? clamp(g.oy, 0, ny) : def.oy;
+  return { left, top, nx, ny, sq, ox, oy };
+}
+/** Where the origin goes by default: the middle (four quadrants), or near the lower left (the first). */
+function gridOrigin(quad, nx, ny) {
+  return quad === 'first' ? { ox: 1, oy: 1 } : { ox: Math.floor(nx / 2), oy: Math.floor(ny / 2) };
+}
+function gridNode(pg) {
+  const g = pg.grid, L = gridLayout(pg);
+  const color = isHex(g.color) ? g.color : GRID_DEFAULT.color;
+  const out = svgEl('g', { class: 'page-grid' });
+  // Page points for a grid point given in squares (x across from the left, y up from the bottom).
+  const px = (cx) => L.left + cx * L.sq, py = (cy) => L.top + (L.ny - cy) * L.sq;
+  // The first quadrant only: the lines start at the axes; otherwise they cover the whole grid.
+  const first = g.quad === 'first';
+  const cx0 = first ? L.ox : 0, cy0 = first ? L.oy : 0;
+  const d = [];
+  for (let i = cx0; i <= L.nx; i++) d.push('M' + wbFmt(px(i)) + ' ' + wbFmt(py(cy0)) + 'V' + wbFmt(py(L.ny)));
+  for (let j = cy0; j <= L.ny; j++) d.push('M' + wbFmt(px(cx0)) + ' ' + wbFmt(py(j)) + 'H' + wbFmt(px(L.nx)));
+  out.append(svgEl('path', { d: d.join(''), stroke: color, 'stroke-width': 0.6, fill: 'none' }));
+  if (g.axes !== false) {
+    // The axes, darker, with an arrowhead at each open end (both ends with four quadrants).
+    const ax = px(L.ox), ay = py(L.oy), head = Math.min(7, L.sq * 0.45);
+    const xa = first ? ax : px(0), xb = px(L.nx), ya = first ? ay : py(0), yb = py(L.ny);
+    const arrow = (x, y, dx, dy) => 'M' + wbFmt(x - dx * head - dy * head * 0.6) + ' ' + wbFmt(y - dy * head - dx * head * 0.6)
+      + 'L' + wbFmt(x) + ' ' + wbFmt(y) + 'L' + wbFmt(x - dx * head + dy * head * 0.6) + ' ' + wbFmt(y - dy * head + dx * head * 0.6);
+    let a = 'M' + wbFmt(xa) + ' ' + wbFmt(ay) + 'H' + wbFmt(xb) + 'M' + wbFmt(ax) + ' ' + wbFmt(ya) + 'V' + wbFmt(yb);
+    a += arrow(xb, ay, 1, 0) + arrow(ax, yb, 0, -1);
+    if (!first) a += arrow(xa, ay, -1, 0) + arrow(ax, ya, 0, 1);
+    out.append(svgEl('path', { d: a, stroke: GRID_AXIS_COLOR, 'stroke-width': 1.4, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+    // The axes' names, by their arrowheads.
+    const size = clamp(L.sq * 0.7, 8, 16);
+    const name = (t, x, y, anchor) => { const n = svgEl('text', { x: wbFmt(x), y: wbFmt(y), 'font-size': wbFmt(size), 'font-style': 'italic', 'font-family': GRID_FONT, fill: GRID_AXIS_COLOR, 'text-anchor': anchor }); n.textContent = t; return n; };
+    out.append(name('x', xb - size * 0.2, ay - size * 0.55, 'end'), name('y', ax + size * 0.55, yb + size * 0.9, 'start'));
+  }
+  if (g.labels !== false) {
+    // Numbers along the axes, every so many squares (0 once, at the origin).
+    const every = clamp(Math.round(g.every || 1), 1, 50), units = Number(g.units) || 1;
+    const size = clamp(L.sq * 0.5, 6, 12), font = GRID_FONT;
+    const label = (t, x, y, anchor) => { const n = svgEl('text', { x: wbFmt(x), y: wbFmt(y), 'font-size': wbFmt(size), 'font-family': font, fill: GRID_AXIS_COLOR, 'text-anchor': anchor }); n.textContent = t; return n; };
+    const ax = px(L.ox), ay = py(L.oy), nodes = [];
+    for (let i = (first ? L.ox : 0); i <= L.nx; i++) {
+      const k = i - L.ox;
+      if (k === 0 || k % every) continue;
+      nodes.push(label(fmtNum(k * units), px(i), ay + size + 3, 'middle'));
+    }
+    for (let j = (first ? L.oy : 0); j <= L.ny; j++) {
+      const k = j - L.oy;
+      if (k === 0 || k % every) continue;
+      nodes.push(label(fmtNum(k * units), ax - 4, py(j) + size * 0.35, 'end'));
+    }
+    nodes.push(label('0', ax - 4, ay + size + 3, 'end'));
+    out.append(...nodes);
+  }
+  return out;
+}
+/** A few words for what is under a page's marks, for screen readers: "graph paper, a coordinate grid". */
+function backdropWords(pg) {
+  const parts = [];
+  if (pg.bgPic) parts.push('a background picture');
+  if (pg.bg && pg.bg.kind !== 'none') parts.push(bgKind(pg.bg.kind).name.toLowerCase());
+  if (pg.grid) parts.push('a coordinate grid');
+  return parts.join(', ');
+}
+
+/* ---- Changing them (each change is one undo step) ---- */
+function setPageBg(kind) {
+  const p = page();
+  if (kind === 'none') delete p.bg;
+  else {
+    const k = bgKind(kind), was = p.bg;
+    // A new kind starts with its own spacing and color; a color set by hand (colorSet) is kept.
+    p.bg = { kind, color: k.color, spacing: k.spacing };
+    if (was && was.colorSet) { p.bg.color = was.color; p.bg.colorSet = true; }
+  }
+  commit('page background');
+  renderPage(); renderInspector();
+  announce(kind === 'none' ? 'No background' : 'Background: ' + bgKind(kind).name);
+}
+function setPageGrid(on) {
+  const p = page();
+  if (on) p.grid = { ...GRID_DEFAULT }; else delete p.grid;
+  commit(on ? 'coordinate grid' : 'no coordinate grid');
+  renderPage(); renderInspector();
+  announce(on ? 'Coordinate grid on: four quadrants, the origin in the middle' : 'Coordinate grid off');
+}
+/** Change one of the grid's settings (the origin goes back to its usual place when the quadrants change). */
+function changeGrid(field, value, words) {
+  const g = page().grid;
+  if (!g) return;
+  g[field] = value;
+  if (field === 'quad' || field === 'square') { delete g.ox; delete g.oy; }
+  commit('coordinate grid: ' + words);
+  renderPage(); renderInspector();
+}
+/** Put the page's background (what: 'bg', 'grid' or 'bgPic') on every page. */
+function backdropToAll(what, words) {
+  const p = page();
+  for (const o of board.pages) {
+    if (o === p) continue;
+    if (p[what]) o[what] = JSON.parse(JSON.stringify(p[what])); else delete o[what];
+  }
+  commit(words + ' on every page');
+  filmSig = '';
+  renderAll();
+  announce(capFirst(words) + ' on all ' + board.pages.length + ' pages');
+}
+/** A picture file for the page's background (checked and redrawn like any picture: section 8e). */
+async function takeBgPicture(file) {
+  if (!file) return;
+  try {
+    const r = await readPicture(file);
+    const p = page();
+    p.bgPic = { pic: r.pic, name: r.name, nw: r.w, nh: r.h, fit: p.bgPic ? p.bgPic.fit : 'fit', fade: p.bgPic ? p.bgPic.fade : 0 };
+    commit('background picture');
+    renderPage(); renderInspector();
+    toast('Background picture: ' + r.name + '. Hidden data such as GPS was left out.');
+  } catch (err) {
+    toast((file.name ? '"' + String(file.name).slice(0, 60) + '"' : 'That file') + ' ' + err.message + '.');
+  }
+}
+/** A picture on the page becomes the background (it stops being a mark: nothing can move it by accident). */
+function pictureToBackground(it) {
+  const p = page();
+  p.bgPic = { pic: it.pic, name: it.name, nw: it.nw, nh: it.nh, fit: 'fit', fade: 0 };
+  p.items = p.items.filter((i) => i.id !== it.id);
+  sel.ids = new Set(); sel.angle = 0;
+  commit('making ' + itemWords(it) + ' the background');
+  renderPage();
+  selectionChanged();
+  announce('The picture is the page\'s background now. Its settings are in the Inspector, under Background picture.');
+}
+
+/* ---- The three Inspector sections (nothing picked) ---- */
+function backgroundSection() {
+  const p = page(), bg = p.bg;
+  const rows = [selectField('Kind', bg ? bg.kind : 'none', BG_KINDS.map((k) => [k.id, k.name]), setPageBg, true)];
+  if (bg) {
+    rows.push(colorField('Lines', isHex(bg.color) ? bg.color : bgKind(bg.kind).color,
+      (v) => { bg.color = v; renderPage(); },
+      (v) => { bg.color = v; bg.colorSet = true; commit('background color'); renderPage(); renderInspector(); }));
+    const mm = settings.units === 'mm', per = mm ? PT_PER_MM : PT_PER_IN;
+    rows.push(numberField('Spacing (' + (mm ? 'mm' : 'in') + ')', round2((bg.spacing || bgKind(bg.kind).spacing) / per), mm ? 0.5 : 0.0625,
+      round2(6 / per), round2(144 / per), (v) => { bg.spacing = round2(v * per); commit('background spacing'); renderPage(); renderInspector(); }));
+  }
+  if (board.pages.length > 1) rows.push(allPagesButton('bg', 'this background'));
+  rows.push(el('p', { class: 'hint', text: 'Under everything you draw. It can\'t be picked or erased.' }));
+  return section('bg', 'Background', bg ? bgKind(bg.kind).name.replace(/, with a margin$/, '') : 'None', ...rows);
+}
+function gridSection() {
+  const p = page(), g = p.grid;
+  const box = el('input', { type: 'checkbox', id: fid(), checked: g ? true : null });
+  box.addEventListener('change', () => setPageGrid(box.checked));
+  const rows = [el('label', { class: 'check', for: box.id }, box, el('span', { text: 'Show a coordinate grid (for graphing)' }))];
+  if (g) {
+    const L = gridLayout(p);
+    rows.push(selectField('Quadrants', g.quad, [['four', 'All four'], ['first', 'The first only']], (v) => changeGrid('quad', v, v === 'four' ? 'all four quadrants' : 'the first quadrant')));
+    const mm = settings.units === 'mm', per = mm ? PT_PER_MM : PT_PER_IN;
+    rows.push(numberField('Square (' + (mm ? 'mm' : 'in') + ')', round2(L.sq / per), mm ? 1 : 0.0625, round2(9 / per), round2(72 / per),
+      (v) => changeGrid('square', round2(v * per), 'square size')));
+    rows.push(numberField('A square is', Number(g.units) || 1, 'any', 0.001, 1000, (v) => changeGrid('units', v, 'each square is ' + fmtNum(v))));
+    rows.push(numberField('Number every', clamp(Math.round(g.every || 1), 1, 50), 1, 1, 50, (v) => changeGrid('every', Math.round(v), 'a number every ' + plural(Math.round(v), 'square'))));
+    const check = (label, field) => {
+      const c = el('input', { type: 'checkbox', id: fid(), checked: g[field] !== false ? true : null });
+      c.addEventListener('change', () => changeGrid(field, c.checked, label.toLowerCase() + (c.checked ? ' on' : ' off')));
+      return el('label', { class: 'check', for: c.id }, c, el('span', { text: label }));
+    };
+    rows.push(check('Numbers on the axes', 'labels'), check('Axes with arrows', 'axes'));
+    // Where the origin sits, in squares from the grid's left and bottom edges.
+    rows.push(numberField('Origin, across', L.ox, 1, 0, L.nx, (v) => changeGrid('ox', Math.round(v), 'origin moved')),
+      numberField('Origin, up', L.oy, 1, 0, L.ny, (v) => changeGrid('oy', Math.round(v), 'origin moved')));
+    rows.push(el('p', { class: 'hint', text: 'The origin is counted in squares from the grid\'s left edge and from its bottom edge (' + L.nx + ' across, ' + L.ny + ' up).' }));
+    rows.push(colorField('Lines', isHex(g.color) ? g.color : GRID_DEFAULT.color,
+      (v) => { g.color = v; renderPage(); },
+      (v) => { g.color = v; commit('grid color'); renderPage(); renderInspector(); }));
+    if (board.pages.length > 1) rows.push(allPagesButton('grid', 'this grid'));
+  }
+  return section('grid', 'Coordinate grid', g ? (g.quad === 'first' ? 'First quadrant' : 'Four quadrants') : 'Off', ...rows);
+}
+function bgPicSection() {
+  const p = page(), b = p.bgPic;
+  const rows = [];
+  const choose = el('button', { class: 'btn small', type: 'button', onclick: () => $('bgPicFile').click() }, iconSvg('image'), b ? 'Change the picture' : 'Choose a picture');
+  if (!b) {
+    rows.push(el('div', { class: 'btn-row' }, choose),
+      el('p', { class: 'hint', text: 'Under everything, and never picked by accident. A picture already on the page can become the background too: pick it, then "Make it the background".' }));
+  } else {
+    rows.push(el('p', { class: 'hint', text: b.name + ': ' + b.nw + ' x ' + b.nh + ' pixels.' }));
+    rows.push(selectField('Fit', b.fit, BGPIC_FITS, (v) => { b.fit = v; commit('background picture fit'); renderPage(); renderInspector(); }));
+    rows.push(sliderField('Fade', Math.round((b.fade || 0) * 100), 0, 90, 5, 'percent',
+      (v) => { b.fade = v / 100; renderPage(); },
+      (v) => { b.fade = v / 100; commit('background picture fade'); renderPage(); announce('Faded ' + v + ' percent'); }));
+    rows.push(el('div', { class: 'btn-row' }, choose,
+      el('button', { class: 'btn small', type: 'button', onclick: () => { delete p.bgPic; commit('no background picture'); renderPage(); renderInspector(); announce('Background picture taken away'); } }, iconSvg('trash'), 'Take it away')));
+    if (board.pages.length > 1) rows.push(allPagesButton('bgPic', 'this background picture'));
+  }
+  return section('bgpic', 'Background picture', b ? 'On' : 'None', ...rows);
+}
+/** "Put it on every page" for one of the three. */
+function allPagesButton(what, words) {
+  return el('div', { class: 'btn-row' }, el('button', { class: 'btn small', type: 'button', onclick: () => backdropToAll(what, words) }, 'Put it on every page'));
+}
+function wireBackdrops() {
+  const input = $('bgPicFile');
+  input.addEventListener('change', () => { takeBgPicture(input.files[0]); input.value = ''; });
+}
+
+/* =====================================================================
    9. TOOLS AND PRESETS
    The rail and the floating pill are the shared annotation bar (section
    8a), laid out as a "rail": one button per tool down the left, and the
@@ -8305,7 +8632,7 @@ function renderInspector() {
     else body.replaceChildren(selectionSection(), geometrySection(), layersSection());
   } else {
     $('inspSub').textContent = TOOL_NAMES[tool] + ' and page';
-    body.replaceChildren(toolSection(), pageSection(), colorsSection(), layersSection());
+    body.replaceChildren(toolSection(), pageSection(), colorsSection(), backgroundSection(), gridSection(), bgPicSection(), layersSection());
   }
   renderLayers();
 
@@ -8531,6 +8858,8 @@ function selectionSection() {
   if (pictures.length) {
     buttons.push(el('button', { class: 'btn small', type: 'button', onclick: () => { change(pictures, 'real size', pictureRealSize); announce('Back to its own size'); } },
       iconSvg('fit'), pictures.length === 1 ? 'Its own size' : 'Their own sizes'));
+    // One picture can become the page's background (section 8j): under everything, never moved by accident.
+    if (pictures.length === 1 && items.length === 1) buttons.push(el('button', { class: 'btn small', type: 'button', onclick: () => pictureToBackground(pictures[0]) }, iconSvg('image'), 'Make it the background'));
   }
   if (items.length === 1 && hasWords(items[0])) {
     buttons.push(el('button', { class: 'btn small', type: 'button', onclick: () => startEdit(items[0], false) }, iconSvg('type'), 'Type in it'));
@@ -9216,6 +9545,18 @@ const APP_FEATURES = [
       + '<path d="M190 110l0 17 4.5-4.5 3.5 7 3-1.5-3.5-7 6 0z" class="fx-ink"/></svg>'
   },
   {
+    title: 'A graph in one tap',
+    text: 'Turn on the coordinate grid for a ready graphing page: all four quadrants or the first, numbered axes with arrows, and squares worth whatever you like. Dots, lined and graph paper sit under everything too, and none of it can be erased by accident.',
+    alt: 'A page with graph paper and two dark axes. Two orange points appear, and a line is drawn through them.',
+    still: 4.5,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" class="fx-soft"/><rect x="90" y="12" width="140" height="170" rx="3" class="fx-paper fx-edge"/>'
+      + '<path d="M100 22V172M115 22V172M130 22V172M145 22V172M160 22V172M175 22V172M190 22V172M205 22V172M220 22V172M100 22H220M100 37H220M100 52H220M100 67H220M100 82H220M100 97H220M100 112H220M100 127H220M100 142H220M100 157H220M100 172H220" class="fx-line-mute fx-thin" opacity=".5"/>'
+      + '<path d="M100 112H220M160 22V172M214 108l6 4-6 4M164 28l-4-6-4 6M106 108l-6 4 6 4M156 166l4 6 4-6" class="fx-line fx-thin"/>'
+      + '<circle cx="145" cy="127" r="4" class="fx-pop" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.15;0.2;0.92;1" dur="6s" repeatCount="indefinite"/></circle>'
+      + '<circle cx="190" cy="67" r="4" class="fx-pop" opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.3;0.35;0.92;1" dur="6s" repeatCount="indefinite"/></circle>'
+      + '<path d="M115 167L212 38" pathLength="100" stroke-dasharray="100 104" stroke-dashoffset="102" class="fx-line-acc fx-thick"><animate attributeName="stroke-dashoffset" values="102;102;0;0;102" keyTimes="0;0.45;0.7;0.92;1" dur="6s" repeatCount="indefinite"/></path></svg>'
+  },
+  {
     title: 'Present, and keep drawing',
     text: 'F5 shows one page at a time, full screen. Arrows, Space or a clicker move through the pages, and a floating bar holds the pens, a laser pointer, a spotlight and a magnifying glass. B or W blanks the screen.',
     alt: 'A page fills a dark screen. A glowing laser dot sweeps along its lines of text, then a pen underlines a word, above a small floating toolbar.',
@@ -9234,6 +9575,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.3.3', date: '2026-10-20', notes: [
+    'Backgrounds (Inspector, with nothing picked): dots, small lines, large lines with a margin, and small or large graph paper, each with its own line color and spacing.',
+    'The coordinate grid, for graphing: all four quadrants or the first only, squares worth any amount, a number every so many squares, axes with arrows, and the origin wherever you want it.',
+    'A background picture, under everything: fit, fill or centered, and faded as much as you like. Pick a picture on the page and choose "Make it the background" to turn it into one.',
+    'Each can be put on every page, and a new page takes the background of the page on show. None of them can be picked, moved or erased, so drawing on them never disturbs them.'
+  ] },
   { version: '0.3.2', date: '2026-10-20', notes: [
     'Present mode: the Present button, F5 (from the first page) or Shift+F5 (from this page) shows one page at a time, full screen, on black. Escape stops, back on the page you ended on.',
     'Moving: Right, Down, Space, Page Down or Enter go forward; Left, Up, Page Up or Backspace go back; Home and End jump to the ends; a number and Enter goes to that page. Clickers work (they send Page Up and Page Down). With the Pointer, a click on the page goes forward, and the wheel moves page by page.',
@@ -9331,6 +9678,7 @@ function start() {
   wireLayers();
   wireFilmstrip();
   wirePresent();
+  wireBackdrops();
   $('btnPicture').addEventListener('click', choosePictures);
   // When the fonts have loaded, measure words again (they may have been measured in a stand-in font).
   if (document.fonts && document.fonts.load) {

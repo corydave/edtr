@@ -1,5 +1,14 @@
 # WHTBRDR - changelog
 
+## 0.3.3 - 2026-10-20 - Backgrounds and the coordinate grid
+
+- **Backgrounds** (Inspector, with nothing picked): dots, small lines (college ruled), large lines with a red margin line (wide ruled), and small or large graph paper. Each has its own line color and spacing (in inches or millimeters).
+- **The coordinate grid,** for graphing: all four quadrants or the first only, the square's size, what a square is worth (0.5, 2, 10...), a number every so many squares, numbers on the axes and axes with arrows (each can be turned off), and the origin wherever you want it (counted in squares). It sits on top of any background.
+- **The background picture:** choose one (checked and redrawn like every picture, so hidden data such as GPS is left out), then fit, fill or center it and fade it from 0 to 90%. A picture already on the page becomes the background with "Make it the background" in its Inspector.
+- **On every page:** each of the three has "Put it on every page", and a new page takes the background, grid and picture of the page on show.
+- None of them are marks: they can't be picked, moved or erased, so drawing (and erasing) on top never disturbs them. They show in the filmstrip, in Present mode and in its magnifying glass, and screen readers hear them in the page's description ("under it, graph paper, a coordinate grid").
+- The help panel's tour has a fifth feature, "A graph in one tap".
+
 ## 0.3.2 - 2026-10-20 - Present mode
 
 - **Start:** the Present button in the top bar (from the page on show), F5 (from the first page) or Shift+F5 (from this page). The page fills the screen on black, using the browser's full screen where it is allowed. **Escape** stops, back on the page you ended on (leaving the browser's full screen stops too).
