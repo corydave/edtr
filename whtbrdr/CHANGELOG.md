@@ -1,5 +1,13 @@
 # WHTBRDR - changelog
 
+## 0.4.1 - 2026-10-20 - The page pill
+
+- **The page pill, from DSKEDTR:** click or tap a page in the filmstrip and a small pill of buttons floats just above it: **Move left, Move right | Present from this page, Open a PDF or pictures after this page, Duplicate | Delete** (in the warning color). The same look as DSKEDTR's: round 34px buttons (42px on a touch screen), 20px icons, thin separators, a soft shadow; it stays centered over the page on show and inside the filmstrip's width.
+- **It acts on every picked page** and says so: "Duplicate 3 pages", and the pill itself is named "Pages 2 to 4 picked". A button that can't act right now (the first page can't move left, the only page can't be deleted) is grayed but stays in reach, so the arrow keys don't skip over it.
+- **From the keyboard:** coming into the filmstrip opens the pill; Tab from the pages reaches it (one Tab stop); Left, Right, Home and End move along it; Escape closes it and puts the keyboard back on the page (a second Escape then lets go of the extra picked pages, as before). It closes on a click anywhere off the filmstrip, or when the keyboard leaves it, but not while "Delete page 3?" or a file chooser is open.
+- **The filmstrip's side** keeps just the + (add a page after this one); its copy, move and delete buttons moved into the pill, as in DSKEDTR. The right-click menu on a page gained **Present from this page** and **Open a PDF or pictures after this page**.
+- **"Copy this page" is now "Duplicate this page"** (still Ctrl+Shift+D), DSKEDTR's word, so "copy" stays free for the clipboard if pages get copy and paste later.
+
 ## 0.4.0 - 2026-10-20 - Open PDFs and pictures
 
 - **Open** (Ctrl+O, the new folder button in the top bar, or "Open a PDF or pictures" on the splash): every page of a PDF becomes a page of the same size, with the PDF under everything you draw, so it can't be picked, moved or erased by accident. A picture becomes a page the size of the picture (as its background picture, so it can still be faded). New pages go in after the page on show; on a board that is still one blank page, they take its place. One undo step either way.

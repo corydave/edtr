@@ -265,7 +265,7 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 /* The filmstrip (below the board, section 8h): the page buttons, then the pages in a row. */
 .filmstrip { position: relative; display: flex; gap: 8px; align-items: stretch; min-width: 0;
   background: var(--surface); border-top: 1px solid var(--border); padding: 6px 8px; }
-.film-tools { display: grid; grid-template-columns: repeat(2, 32px); grid-auto-rows: 30px; gap: 2px; align-content: center; }
+.film-tools { display: grid; grid-template-columns: 32px; grid-auto-rows: 30px; gap: 2px; align-content: center; }
 .film-tools .icon-btn { width: 32px; height: 30px; }
 .film-tools .icon-btn svg.icon { width: 18px; height: 18px; }
 .page-list { display: flex; gap: 10px; list-style: none; margin: 0; padding: 4px; overflow-x: auto; flex: 1; min-width: 0; }
@@ -289,6 +289,24 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 .film-insert[hidden] { display: none; }
 .film-insert svg.icon { width: 14px; height: 14px; }
 #btnPages { display: none; }                      /* (a phone only: see the phone layout) */
+/* The page pill (0.4.1): DSKEDTR's quick-action pill, floating just above the
+   filmstrip over the page on show (its left edge is set by placePagePill).
+   Round 34px buttons (42px for a finger), 20px icons, thin separators, Delete
+   in the warning color. A grayed button can't act but can still be reached. */
+.page-pill { position: absolute; bottom: calc(100% + 6px); left: 8px; z-index: 20; display: flex; gap: 2px; padding: 4px;
+  border-radius: 999px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0, 0, 0, .18); }
+.page-pill[hidden] { display: none; }
+.page-pill .pp-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 999px;
+  background: transparent; color: var(--text); cursor: pointer; }
+.page-pill .pp-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.page-pill .pp-btn svg.icon { width: 20px; height: 20px; }
+.page-pill .pp-btn.danger { color: var(--danger); }
+.page-pill .pp-btn[aria-disabled="true"] { opacity: .35; cursor: default; }
+.page-pill .pp-btn[aria-disabled="true"]:hover { background: transparent; }
+.page-pill .pp-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+.page-pill .pp-sep { width: 1px; align-self: stretch; margin: 6px 2px; background: var(--border); }
+@media (pointer: coarse) { .page-pill .pp-btn { width: 42px; height: 42px; } }
+@media (forced-colors: active) { .page-pill { border-color: CanvasText; } }
 @media (forced-colors: active) { .thumb.here { outline: 3px solid Highlight; } }
 
 /* The top bar's Present button: solid, in the app's color (the family's main-action look). */
@@ -1175,15 +1193,28 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
        to add, copy, move and delete them (section 8h).
        =================================================================== -->
   <section class="filmstrip" id="filmstrip" aria-label="Filmstrip">
+    <!-- (0.4.1: moving, duplicating and deleting pages moved into the page pill below, as in DSKEDTR.) -->
     <div class="film-tools" role="group" aria-label="Page actions">
       <button class="icon-btn" id="btnPageAdd" aria-label="Add a page after this one" title="Add a page after this one (Ctrl+Enter)"><span data-icon="plus"></span></button>
-      <button class="icon-btn" id="btnPageDup" aria-label="Copy this page" title="Copy this page (Ctrl+Shift+D)"><span data-icon="copy"></span></button>
-      <button class="icon-btn" id="btnPageLeft" aria-label="Move page left" title="Move page left (Alt+Left)"><span data-icon="chevronLeft"></span></button>
-      <button class="icon-btn" id="btnPageRight" aria-label="Move page right" title="Move page right (Alt+Right)"><span data-icon="chevronRight"></span></button>
-      <button class="icon-btn" id="btnPageDel" aria-label="Delete this page" title="Delete this page (Delete)"><span data-icon="trash"></span></button>
     </div>
     <ul class="page-list" id="pageList" role="listbox" aria-label="Pages" aria-orientation="horizontal" aria-multiselectable="true" aria-describedby="filmHelp"></ul>
-    <p class="sr-only" id="filmHelp">Left and Right go to the page before or after; with Shift they pick the pages on the way. Alt with Left or Right moves the picked pages. Delete removes them. Enter goes back to the board.</p>
+    <p class="sr-only" id="filmHelp">Left and Right go to the page before or after; with Shift they pick the pages on the way. Alt with Left or Right moves the picked pages. Delete removes them. Enter goes back to the board. Tab goes on to the page's buttons: move, present, open, duplicate, delete.</p>
+    <!-- THE PAGE PILL (0.4.1, DSKEDTR's look and feel): it floats just above the
+         filmstrip, over the page on show, when a page is clicked or tapped, or
+         when the keyboard comes into the filmstrip (Tab from the pages reaches
+         it). Its buttons act on every picked page. One Tab stop: Left and Right
+         move along it, Escape closes it. A grayed button (aria-disabled) stays
+         in reach but can't act: the first page can't move left, say. -->
+    <div class="page-pill" id="pagePill" role="toolbar" aria-label="Page" hidden>
+      <button type="button" class="pp-btn" id="btnPageLeft" tabindex="0" aria-label="Move page left" title="Move page left (Alt+Left)"><span data-icon="chevronLeft"></span></button>
+      <button type="button" class="pp-btn" id="btnPageRight" tabindex="-1" aria-label="Move page right" title="Move page right (Alt+Right)"><span data-icon="chevronRight"></span></button>
+      <span class="pp-sep" aria-hidden="true"></span>
+      <button type="button" class="pp-btn" id="btnPagePresent" tabindex="-1" aria-label="Present from this page" title="Present from this page (Shift+F5)"><span data-icon="present"></span></button>
+      <button type="button" class="pp-btn" id="btnPageOpen" tabindex="-1" aria-label="Open a PDF or pictures after this page" title="Open a PDF or pictures after this page (Ctrl+O)"><span data-icon="open"></span></button>
+      <button type="button" class="pp-btn" id="btnPageDup" tabindex="-1" aria-label="Duplicate this page" title="Duplicate this page (Ctrl+Shift+D)"><span data-icon="copy"></span></button>
+      <span class="pp-sep" aria-hidden="true"></span>
+      <button type="button" class="pp-btn danger" id="btnPageDel" tabindex="-1" aria-label="Delete this page" title="Delete this page (Delete)"><span data-icon="trash"></span></button>
+    </div>
     <!-- The + that shows between pages under the mouse (the + button above does the same from the keyboard). -->
     <button class="film-insert" id="filmInsert" type="button" tabindex="-1" aria-hidden="true" title="Add a page here" hidden><span data-icon="plus"></span></button>
   </section>
@@ -3820,7 +3851,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.4.0';
+const APP_VERSION = '0.4.1';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -7472,9 +7503,9 @@ function duplicatePages() {
   board.pages.splice(at, 0, ...copies);
   pageIndex = at;
   pagePicks = new Set(copies.map((p) => p.id));
-  commit('copying ' + pagesWords(idx), null, { undoPage: from, redoPage: copies[0].id });
+  commit('duplicating ' + pagesWords(idx), null, { undoPage: from, redoPage: copies[0].id });
   renderAll();
-  announce('Copied ' + pagesWords(idx) + '. ' + (copies.length === 1 ? 'The copy is page ' : 'The copies start at page ') + (at + 1) + ' of ' + board.pages.length);
+  announce('Duplicated ' + pagesWords(idx) + '. ' + (copies.length === 1 ? 'The copy is page ' : 'The copies start at page ') + (at + 1) + ' of ' + board.pages.length);
 }
 /** Delete the picked pages (asking first if anything is drawn on them). A board always keeps one page. */
 async function deletePages() {
@@ -7592,15 +7623,23 @@ function renderFilmstrip() {
   // The buttons: grayed out (not hidden) when they can't act, so they don't jump about.
   const atStart = idx.every((v, k) => v === k), atEnd = idx.every((v, k) => v === n - idx.length + k);
   const what = many ? idx.length + ' pages' : 'this page';
-  const setBtn = (id, words, keys, off) => { const b = $(id); b.disabled = !!off; b.setAttribute('aria-label', words); b.title = words + (keys ? ' (' + keys + ')' : ''); };
+  // (The page pill's buttons are grayed with aria-disabled, so they stay in reach along the pill, as in DSKEDTR.)
+  const setBtn = (id, words, keys, off) => {
+    const b = $(id);
+    if (b.classList.contains('pp-btn')) b.setAttribute('aria-disabled', String(!!off)); else b.disabled = !!off;
+    b.setAttribute('aria-label', words); b.title = words + (keys ? ' (' + keys + ')' : '');
+  };
   setBtn('btnPageAdd', 'Add a page after this one', 'Ctrl+Enter', n >= MAX_PAGES);
-  setBtn('btnPageDup', 'Copy ' + what, 'Ctrl+Shift+D', n + idx.length > MAX_PAGES);
+  setBtn('btnPageDup', 'Duplicate ' + what, 'Ctrl+Shift+D', n + idx.length > MAX_PAGES);
+  setBtn('btnPageOpen', 'Open a PDF or pictures after ' + (many ? 'page ' + (pageIndex + 1) : 'this page'), 'Ctrl+O', n >= MAX_PAGES);
+  setBtn('btnPagePresent', 'Present from ' + (many ? 'page ' + (pageIndex + 1) : 'this page'), 'Shift+F5', false);
   setBtn('btnPageLeft', 'Move ' + (many ? 'pages' : 'page') + ' left', 'Alt+Left', atStart);
   setBtn('btnPageRight', 'Move ' + (many ? 'pages' : 'page') + ' right', 'Alt+Right', atEnd);
   setBtn('btnPageDel', 'Delete ' + what, 'Delete', idx.length >= n);
-  if (hadFocus) focusThumb();
+  if (hadFocus) focusThumbQuietly();
   const cur = $('thumb-' + page().id);
   if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  updatePagePill();                    // (its name, and its place over the page on show)
 }
 /** A page's thumbnail drawing: its color, then its highlights and ink (the same drawing as the board).
     tier: which painting of a PDF page to use (section 8l): the filmstrip's small one, or the magnifier's sharp one. */
@@ -7642,6 +7681,94 @@ function focusThumb() {
   if (li) li.focus({ preventScroll: true });
 }
 
+/* ---- The page pill (0.4.1: DSKEDTR's look and feel) ----
+   Click or tap a page in the filmstrip and a small pill opens above it:
+     - Move left / Move right (the no-drag way to put pages in order: needed
+       on touch screens, and for anyone who can't drag - WCAG 2.5.7)
+     - Present from this page, Open a PDF or pictures after it, Duplicate
+     - Delete (in the warning color; it asks first when there are marks)
+   The buttons act on every picked page and say how many ("Duplicate 3
+   pages"). The pill also opens when the keyboard comes into the filmstrip
+   from elsewhere (Tab from the pages then reaches it), and closes on a
+   press anywhere off the filmstrip, on Escape, or when the keyboard leaves.
+   Moving from page to page leaves it as it is. */
+let pagePillOpen = false;            // is the pill showing?
+let pagePillQuiet = false;           // (true while the app itself puts the keyboard back on a page: that doesn't open it)
+/** Put the keyboard back on the page on show's thumbnail without that opening the pill. */
+function focusThumbQuietly() { pagePillQuiet = true; focusThumb(); pagePillQuiet = false; }
+/** The pill's buttons, in order. */
+const pagePillButtons = () => [...$('pagePill').querySelectorAll('.pp-btn')];
+function setPagePill(open) {
+  pagePillOpen = !!open && !presenting;
+  updatePagePill();
+}
+/** Show or hide the pill, name it, and put it over the page on show. */
+function updatePagePill() {
+  const pill = $('pagePill');
+  if (!pill) return;
+  if (!pagePillOpen) {
+    if (pill.contains(document.activeElement)) focusThumbQuietly();   // (the keyboard never falls into a hidden pill)
+    pill.hidden = true;
+    return;
+  }
+  const idx = pickedPageIndexes();
+  pill.setAttribute('aria-label', idx.length > 1 ? capFirst(pagesWords(idx)) + ' picked' : 'Page ' + (pageIndex + 1) + ' of ' + board.pages.length);
+  pill.hidden = false;
+  placePagePill();
+}
+/** Center the pill above the page on show's thumbnail, kept inside the filmstrip's width. */
+function placePagePill() {
+  const pill = $('pagePill'), thumb = $('thumb-' + page().id);
+  if (!thumb || pill.hidden) return;
+  const strip = pill.parentElement.getBoundingClientRect(), r = thumb.getBoundingClientRect(), w = pill.offsetWidth;
+  const x = clamp(r.left + r.width / 2 - strip.left - w / 2, 4, Math.max(4, strip.width - w - 4));
+  pill.style.left = Math.round(x) + 'px';
+}
+function wirePagePill() {
+  const pill = $('pagePill'), list = $('pageList'), strip = $('filmstrip');
+  // A grayed button can't act. (This listens first, on the way down, and stops the click there.)
+  pill.addEventListener('click', (e) => {
+    const b = e.target.closest('.pp-btn');
+    if (b && b.getAttribute('aria-disabled') === 'true') { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  $('btnPagePresent').addEventListener('click', () => { setPagePill(false); startPresent(false); });
+  $('btnPageOpen').addEventListener('click', chooseOpen);
+  // Left and Right along the pill (one Tab stop: the button last used keeps it); Escape closes it.
+  pill.addEventListener('keydown', (e) => {
+    const btns = pagePillButtons(), i = btns.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setPagePill(false); focusThumbQuietly(); return; }
+    let j = null;
+    if (e.key === 'ArrowRight') j = (i + 1) % btns.length;
+    else if (e.key === 'ArrowLeft') j = (i - 1 + btns.length) % btns.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = btns.length - 1;
+    if (j == null) return;
+    e.preventDefault(); e.stopPropagation();          // (so the arrows don't also slide the board)
+    btns.forEach((b, n) => { b.tabIndex = n === j ? 0 : -1; });
+    btns[j].focus();
+  });
+  // Open: a click or tap on a page, or the keyboard arriving in the filmstrip from somewhere else.
+  list.addEventListener('click', (e) => { if (e.target.closest('li[data-index]')) setPagePill(true); });
+  list.addEventListener('focusin', (e) => {
+    const from = e.relatedTarget;
+    if (!pagePillOpen && !pagePillQuiet && !(from && (list.contains(from) || pill.contains(from)))) setPagePill(true);
+  });
+  // Close: a press anywhere off the filmstrip (its right-click menu counts as on it)...
+  document.addEventListener('pointerdown', (e) => {
+    if (!pagePillOpen || strip.contains(e.target) || $('ctxMenu').contains(e.target)) return;
+    setPagePill(false);
+  }, true);
+  // ...or the keyboard leaving it. (Not for a dialog it opened, like "Delete page 3?", nor when
+  // the whole window loses focus, as it does while a file chooser is open.)
+  strip.addEventListener('focusout', (e) => {
+    const to = e.relatedTarget;
+    if (!to || strip.contains(to) || $('ctxMenu').contains(to) || to.closest('dialog')) return;
+    setPagePill(false);
+  });
+  list.addEventListener('scroll', placePagePill, { passive: true });
+  window.addEventListener('resize', placePagePill);
+}
+
 /* ---- The filmstrip's keys, clicks and drags ---- */
 function wireFilmstrip() {
   const list = $('pageList');
@@ -7672,6 +7799,7 @@ function wireFilmstrip() {
     }
     if (k === 'Delete' || k === 'Backspace') { stop(); deletePages(); return; }
     if (k === 'Enter' && !e.ctrlKey && !e.metaKey) { stop(); $('board').focus(); return; }
+    if (k === 'Escape' && pagePillOpen) { stop(); setPagePill(false); return; }       // (the pill closes first: section 8h)
     if (k === 'Escape' && pagePicks.size > 1) { stop(); pagePicks = new Set(); renderFilmstrip(); announce('Just page ' + (pageIndex + 1) + ' picked'); return; }
     if ((k === 'F10' && e.shiftKey) || k === 'ContextMenu') {
       stop();
@@ -7781,7 +7909,10 @@ function pageMenuEntries() {
   const what = idx.length > 1 ? idx.length + ' pages' : 'this page';
   return [
     { label: 'Add a page after this one', keys: MOD_KEY + '+Enter', disabled: n >= MAX_PAGES, run: () => addPage(pageIndex + 1) },
-    { label: 'Copy ' + what, keys: MOD_KEY + '+Shift+D', disabled: n + idx.length > MAX_PAGES, run: duplicatePages },
+    { label: 'Duplicate ' + what, keys: MOD_KEY + '+Shift+D', disabled: n + idx.length > MAX_PAGES, run: duplicatePages },
+    { label: 'Open a PDF or pictures after this page', keys: MOD_KEY + '+O', disabled: n >= MAX_PAGES, run: chooseOpen },
+    '-',
+    { label: 'Present from this page', keys: 'Shift+F5', run: () => startPresent(false) },
     '-',
     { label: 'Move left', keys: 'Alt+Left', disabled: idx.every((v, k) => v === k), run: () => movePages(-1) },
     { label: 'Move right', keys: 'Alt+Right', disabled: idx.every((v, k) => v === n - idx.length + k), run: () => movePages(1) },
@@ -7954,6 +8085,7 @@ function startPresent(fromFirst) {
   cancelObjectGesture();
   finishEdit();
   closeMenu(true);
+  setPagePill(false);                  // (the filmstrip's page pill closes: section 8h)
   leavePage();
   present = { prevTool: tool, startState: savedState, startPage: page().id, blank: null, disappearing: false, number: null, press: null, wentFull: false };
   presenting = true;
@@ -10195,7 +10327,8 @@ const HELP_KEYS = [
   ['Presenting: K, S, M', 'Laser pointer, spotlight, magnifying glass (+ and - zoom it)'],
   ['Presenting: B or W', 'A black or white screen (any key brings the page back)'],
   ['Ctrl+Enter', 'Add a page after this one (the same size and color)'],
-  ['Ctrl+Shift+D', 'Copy the picked pages, marks and all'],
+  ['Ctrl+Shift+D', 'Duplicate the picked pages, marks and all'],
+  ['Filmstrip: Tab from the pages', 'The page pill: move, present, open, duplicate, delete (Left and Right along it, Escape closes it)'],
   ['Filmstrip: Left / Right, Home / End', 'Go to the page before or after, or the first or last (Shift: pick the pages on the way)'],
   ['Filmstrip: Alt+Left / Alt+Right', 'Move the picked pages'],
   ['Filmstrip: Ctrl+click, Shift+click', 'Pick pages one at a time, or a run of them'],
@@ -10620,6 +10753,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.4.1', date: '2026-10-20', notes: [
+    'The page pill, as in DSKEDTR: click or tap a page in the filmstrip and a small pill of buttons opens above it: move left, move right, present from this page, open a PDF or pictures after it, duplicate, and delete. They act on every picked page and say how many.',
+    'From the keyboard, Tab from the pages reaches the pill (it opens when you come into the filmstrip); Left and Right move along it, and Escape closes it. A button that can\'t act right now is grayed but stays in reach.',
+    'The filmstrip\'s side keeps just the + (add a page); its other buttons moved into the pill. The right-click menu on a page gained Present from this page and Open a PDF or pictures after it.',
+    '"Copy this page" is now "Duplicate this page" (still Ctrl+Shift+D), as in DSKEDTR, so "copy" can mean the clipboard later.'
+  ] },
   { version: '0.4.0', date: '2026-10-20', notes: [
     'Open a PDF or pictures (Ctrl+O, the folder button in the top bar, or the splash): every PDF page becomes a page of the same size to draw on, after the page on show. A picture becomes a page the size of the picture. On a board that is still one blank page, they take its place. Undo takes it all back.',
     'Drop a PDF on the board or the filmstrip to open it the same way; a picture dropped on the filmstrip becomes a page where it lands (dropped on the board, it is still a picture you can move).',
@@ -10655,7 +10794,7 @@ const CHANGELOG = [
     'The app icon is now a full set (any size, and the round-cornered one phones crop).'
   ] },
   { version: '0.3.0', date: '2026-10-19', notes: [
-    'Pages: a filmstrip along the bottom shows every page, numbered, with what is drawn on it. Add a page (the + button, Ctrl+Enter, or the + that shows between pages under the mouse), copy pages (Ctrl+Shift+D), move them (the arrow buttons, Alt+Left and Alt+Right, or drag), and delete them (asks first when they have marks). A new page takes the size and color of the page on show.',
+    'Pages: a filmstrip along the bottom shows every page, numbered, with what is drawn on it. Add a page (the + button, Ctrl+Enter, or the + that shows between pages under the mouse), duplicate pages (Ctrl+Shift+D), move them (Alt+Left and Alt+Right, or drag), and delete them (asks first when they have marks). Click a page and a pill of its buttons opens above it: move, present from it, open a PDF after it, duplicate, delete. A new page takes the size and color of the page on show.',
     'Pick several pages with Ctrl+click or Shift+click (or Shift and the arrow keys) to copy, move or delete them together. Right-click a page for the same choices.',
     'Page Up and Page Down go to the page before or after. Undo and redo show the page the change was on.',
     'The Inspector can make every page the same size, or the same color.',
@@ -10738,6 +10877,7 @@ function start() {
   wireMenu();
   wireLayers();
   wireFilmstrip();
+  wirePagePill();                    // (section 8h: the pill over the picked pages)
   wirePresent();
   wireBackdrops();
   wireOpen();

@@ -48,8 +48,11 @@
 > editions now:** `index-online.html` is the SOURCE (edit it), and
 > `python3 build-offline.py` makes `index.html` from it, with pdf.js
 > (in `vendor/`) packed inside. Never edit `index.html` by hand. After
-> `_edtr-suite/paste_whtbrdr_bar.py`, rebuild too. Waiting for Dave's
-> review of 0.4.0; next is 0.4.1 (highlights that quote the PDF's words).
+> `_edtr-suite/paste_whtbrdr_bar.py`, rebuild too.
+>
+> **Then 0.4.1:** the page pill over the filmstrip, DSKEDTR's look and
+> feel (section 8h). Waiting for Dave's review of 0.4.1; next is 0.4.2
+> (highlights that quote the PDF's words).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**
