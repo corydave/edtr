@@ -1,5 +1,25 @@
+// ================================================================
+// edtrapps.com - Cloudflare Worker settings
+// ================================================================
+// This file is ONLY for the Worker that serves edtrapps.com. It lives in
+// its own folder (not the top of the repo) on purpose: when an app's own
+// site (imgedtr.app and friends) deploys, Wrangler looks for a settings
+// file in that app's folder and every folder ABOVE it - a file at the top
+// of the repo would be found by every app and break them all. Nothing
+// looks inside this folder unless told to with --config.
+//
+// The Worker's dashboard settings that go with it:
+//   Root directory:  /
+//   Build command:   bash edtrapps-deploy/build.sh
+//   Deploy command:  npx wrangler deploy --config edtrapps-deploy/wrangler.jsonc
+// ================================================================
 {
+  // Must match the Worker's name in the Cloudflare dashboard exactly.
   "name": "edtr-main",
   "compatibility_date": "2026-10-06",
-  "assets": { "directory": "../dist" }
+  "assets": {
+    // The folder build.sh makes. The path counts from THIS file's folder,
+    // so "../dist" is the dist folder at the top of the repo.
+    "directory": "../dist"
+  }
 }

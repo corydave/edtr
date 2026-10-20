@@ -1,9 +1,20 @@
+# ================================================================
+# .gitignore - files git should never track in this repo
+# ================================================================
+# macOS creates a hidden file called "Icon" (really "Icon" plus an
+# invisible carriage-return character) in any folder that has a
+# custom Finder icon. It's junk as far as the repo is concerned.
+# The "?" stands for that one invisible character.
+Icon?
+
+# macOS also drops a hidden ".DS_Store" file into folders you open in
+# Finder (it remembers view settings like icon size and sort order).
+# The "**/" part means "in any folder, at any depth".
+**/.DS_Store
+
+# The edtrapps.com build step (edtrapps-deploy/build.sh) makes this folder;
+# Cloudflare builds it fresh every time, so it is never kept in the repo.
+dist/
+
 # Apps kept only on the local machine (not published in this repo)
 gamedtr/
-
-# macOS
-.DS_Store
-Icon
-
-# Built site for edtrapps.com (made by edtrapps-deploy/build.sh)
-dist/
