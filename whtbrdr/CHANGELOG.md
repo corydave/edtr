@@ -1,5 +1,16 @@
 # WHTBRDR - changelog
 
+## 0.3.0 - 2026-10-19 - Pages
+
+- **The filmstrip** along the bottom shows every page, numbered, with a small live copy of what is drawn on it. The page on show has a thick outline (and "on show" for screen readers); other picked pages a dashed one and a tick.
+- **Add a page:** the + button, Ctrl/Cmd+Enter, or the + that shows between pages under the mouse. A new page takes the size and color of the page on show.
+- **Copy pages** (Ctrl/Cmd+Shift+D), marks, groups and descriptions and all; the copies go right after. **Move pages** with the arrow buttons, Alt+Left and Alt+Right, or by dragging. **Delete pages** with the button or Delete; it asks first when they have marks, and undo brings them back. A board keeps at least one page.
+- **Pick several pages** with Ctrl/Cmd+click, Shift+click or Shift and the arrow keys, to copy, move or delete them together. Right-click a page for the same choices (Shift+F10 or the Menu key from the keyboard).
+- **Getting around:** the filmstrip is one Tab stop (the arrow keys go page to page, Home and End to the ends, Enter back to the board), Page Up and Page Down work from the board, and F6 now stops at the filmstrip too. Undo and redo show the page the change was on.
+- **Inspector:** "Make every page this size" and "Make every page this color" when there is more than one page.
+- **Phones:** the filmstrip folds behind a Pages button in the top bar (not yet checked on a phone).
+- **Fixed:** renaming a row in the layers list could stop after the first letter, when the Inspector happened to be redrawn just then (0.2.4).
+
 ## 0.2.4 - 2026-10-19 - Describe it, list it, line it up
 
 - **Descriptions (alt text):** every mark gets a description as it is made: "Red arrow pointing right", "Yellow highlight", "Text: Read page 4", "Sticky note: check this date", "Picture: diagram.png". Text and sticky notes follow their own words. The Inspector's **Description** field (at the top of what is picked) replaces it; the reset button puts the written one back. A whole group can have a description of its own, which copy and paste carry along. The description is the mark's name everywhere: the layers list, "Picked: ...", Tab, the menus.

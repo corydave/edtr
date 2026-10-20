@@ -216,11 +216,12 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 
 .app {
   height: calc(100% - 52px - 28px);
-  display: grid; grid-template-columns: 56px minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr);
+  display: grid; grid-template-columns: 56px minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr) auto;
 }
-.app > .rail { grid-row: 1; grid-column: 1; }
+.app > .rail { grid-row: 1 / 3; grid-column: 1; }
 .app > .workspace { grid-row: 1; grid-column: 2; }
-.app > .panel { grid-row: 1; grid-column: 3; }
+.app > .filmstrip { grid-row: 2; grid-column: 2; }
+.app > .panel { grid-row: 1 / 3; grid-column: 3; }
 .app.panel-hidden { grid-template-columns: 56px minmax(0, 1fr) 0; }
 .app.panel-hidden > .panel { display: none; }
 
@@ -233,6 +234,35 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 .rail .wb-sep { width: 28px; border: 0; border-top: 1px solid var(--border); margin: 4px 0; flex: none; }
 /* (The rail's buttons, their pressed look and the color dots on Pen and
    Highlighter are the shared bar's: section 8a.) */
+
+/* The filmstrip (below the board, section 8h): the page buttons, then the pages in a row. */
+.filmstrip { position: relative; display: flex; gap: 8px; align-items: stretch; min-width: 0;
+  background: var(--surface); border-top: 1px solid var(--border); padding: 6px 8px; }
+.film-tools { display: grid; grid-template-columns: repeat(2, 32px); grid-auto-rows: 30px; gap: 2px; align-content: center; }
+.film-tools .icon-btn { width: 32px; height: 30px; }
+.film-tools .icon-btn svg.icon { width: 18px; height: 18px; }
+.page-list { display: flex; gap: 10px; list-style: none; margin: 0; padding: 4px; overflow-x: auto; flex: 1; min-width: 0; }
+.thumb { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 3px; border-radius: 8px;
+  cursor: pointer; border: 2px solid transparent; user-select: none; -webkit-user-select: none; }
+.thumb:hover { background: var(--surface-2); }
+/* The page on show: a thick outline in the brand color, and "on show" read aloud (not color alone). */
+.thumb.here { border-color: var(--brand); background: var(--brand-tint); }
+/* Other picked pages: a dashed outline, and a tick by the number. */
+.thumb[aria-selected="true"]:not(.here) { border-color: var(--brand); border-style: dashed; }
+.page-list.many .thumb[aria-selected="true"] .thumb-num::before { content: "\2713  "; font-weight: 700; }
+.thumb:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+.thumb-svg { height: 72px; width: auto; display: block; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); background: #ffffff; }
+.thumb-num { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text); }
+.thumb.drop-before { box-shadow: -5px 0 0 -1px var(--brand); }
+.thumb.drop-after { box-shadow: 5px 0 0 -1px var(--brand); }
+/* The + between pages, under the mouse. */
+.film-insert { position: absolute; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; z-index: 2;
+  border-radius: 50%; border: 0; background: var(--brand); color: var(--brand-contrast); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow); }
+.film-insert[hidden] { display: none; }
+.film-insert svg.icon { width: 14px; height: 14px; }
+#btnPages { display: none; }                      /* (a phone only: see the phone layout) */
+@media (forced-colors: active) { .thumb.here { outline: 3px solid Highlight; } }
 
 /* =====================================================================
    4. THE BOARD (middle): the staging area with the page on it.
@@ -464,11 +494,16 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
    ===================================================================== */
 @media (max-width: 760px) {
   .wordmark-text, .version-badge { display: none; }
-  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) var(--sheet-h, 33vh) auto; }
-  .app.panel-hidden { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 29px auto; }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto var(--sheet-h, 33vh) auto; }
+  .app.panel-hidden { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto 29px auto; }
   .app > .workspace { grid-row: 1; grid-column: 1; }
-  .app > .panel { grid-row: 2; grid-column: 1; border-left: 0; border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(0,0,0,.10); }
-  .app > .rail { grid-row: 3; grid-column: 1; flex-direction: row; justify-content: safe center; padding: 4px 8px;
+  /* The filmstrip folds away behind the Pages button in the top bar. */
+  .app > .filmstrip { grid-row: 2; grid-column: 1; display: none; }
+  .app.film-open > .filmstrip { display: flex; }
+  #btnPages { display: inline-flex; }
+  .thumb-svg { height: 52px; }
+  .app > .panel { grid-row: 3; grid-column: 1; border-left: 0; border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(0,0,0,.10); }
+  .app > .rail { grid-row: 4; grid-column: 1; flex-direction: row; justify-content: safe center; padding: 4px 8px;
     border-right: 0; border-top: 1px solid var(--border); overflow-x: auto; }
   .rail .wb-sep { display: none; }                 /* (no room for lines between the bunches) */
   .app > .rail { gap: 2px; padding: 4px; }
@@ -999,6 +1034,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <button class="icon-btn" id="btnNew" title="New board: pick a page size" aria-label="New board" aria-haspopup="dialog"><span data-icon="filePlus"></span></button>
       <!-- On a phone, Picture lives here (the rail has no room); on wider screens it is on the rail. -->
       <button class="icon-btn" id="btnPicture" title="Add a picture (I): from a file, or paste one" aria-label="Add a picture"><span data-icon="image"></span></button>
+      <!-- On a phone the filmstrip folds away; this shows it (section 8h). -->
+      <button class="icon-btn" id="btnPages" title="Pages" aria-label="Pages" aria-pressed="false" aria-controls="filmstrip"><span data-icon="pages"></span></button>
     </div>
     <div class="sep" aria-hidden="true"></div>
     <div class="group">
@@ -1047,6 +1084,24 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   </main>
 
   <!-- ===================================================================
+       THE FILMSTRIP (below the board): the pages, numbered, with buttons
+       to add, copy, move and delete them (section 8h).
+       =================================================================== -->
+  <section class="filmstrip" id="filmstrip" aria-label="Filmstrip">
+    <div class="film-tools" role="group" aria-label="Page actions">
+      <button class="icon-btn" id="btnPageAdd" aria-label="Add a page after this one" title="Add a page after this one (Ctrl+Enter)"><span data-icon="plus"></span></button>
+      <button class="icon-btn" id="btnPageDup" aria-label="Copy this page" title="Copy this page (Ctrl+Shift+D)"><span data-icon="copy"></span></button>
+      <button class="icon-btn" id="btnPageLeft" aria-label="Move page left" title="Move page left (Alt+Left)"><span data-icon="chevronLeft"></span></button>
+      <button class="icon-btn" id="btnPageRight" aria-label="Move page right" title="Move page right (Alt+Right)"><span data-icon="chevronRight"></span></button>
+      <button class="icon-btn" id="btnPageDel" aria-label="Delete this page" title="Delete this page (Delete)"><span data-icon="trash"></span></button>
+    </div>
+    <ul class="page-list" id="pageList" role="listbox" aria-label="Pages" aria-orientation="horizontal" aria-multiselectable="true" aria-describedby="filmHelp"></ul>
+    <p class="sr-only" id="filmHelp">Left and Right go to the page before or after; with Shift they pick the pages on the way. Alt with Left or Right moves the picked pages. Delete removes them. Enter goes back to the board.</p>
+    <!-- The + that shows between pages under the mouse (the + button above does the same from the keyboard). -->
+    <button class="film-insert" id="filmInsert" type="button" tabindex="-1" aria-hidden="true" title="Add a page here" hidden><span data-icon="plus"></span></button>
+  </section>
+
+  <!-- ===================================================================
        INSPECTOR (right; a sheet along the bottom on a phone).
        =================================================================== -->
   <aside class="panel" id="sidePanel" tabindex="-1" aria-label="Inspector">
@@ -1084,6 +1139,16 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   <div class="dlg-foot">
     <button class="btn" data-close>Cancel</button>
     <button class="btn primary" id="btnNewGo">Start the board</button>
+  </div>
+</dialog>
+
+<!-- Asking first (deleting pages with marks on them): askConfirm in section 8h. -->
+<dialog id="confirmDlg" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+  <div class="dlg-head"><h2 id="confirmTitle">Are you sure?</h2></div>
+  <div class="dlg-body"><p id="confirmText"></p></div>
+  <div class="dlg-foot">
+    <button class="btn" id="confirmNo" type="button">Cancel</button>
+    <button class="btn primary" id="confirmYes" type="button">Yes</button>
   </div>
 </dialog>
 
@@ -3637,7 +3702,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.2.4';
+const APP_VERSION = '0.3.0';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -3735,6 +3800,12 @@ const ICONS = {
   reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
   type: '<path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  // The filmstrip's buttons (section 8h).
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  chevronLeft: '<path d="m15 18-6-6 6-6"/>',
+  chevronRight: '<path d="m9 18 6-6-6-6"/>',
+  pages: '<rect x="3" y="14" width="5" height="7" rx="1"/><rect x="10" y="14" width="5" height="7" rx="1"/><rect x="17" y="14" width="4" height="7" rx="1"/><rect x="3" y="3" width="18" height="8" rx="1"/>',
   // The layers list's eye and padlock (section 8g).
   eye: '<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M10.73 5.08a10.74 10.74 0 0 1 11.2 6.57 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-1.44 2.49"/><path d="M14.08 14.16a3 3 0 0 1-4.24-4.24"/><path d="M17.48 17.5a10.75 10.75 0 0 1-15.42-5.15 1 1 0 0 1 0-.7 10.75 10.75 0 0 1 4.45-5.14"/><path d="m2 2 20 20"/>',
@@ -3930,7 +4001,7 @@ function newBoard(sizeId) {
 }
 
 let board = newBoard('letter');
-let pageIndex = 0;                       // the page on show (always 0 until the filmstrip arrives)
+let pageIndex = 0;                       // the page on show (the filmstrip changes it: section 8h)
 const page = () => board.pages[pageIndex];
 
 const history = { undo: [], redo: [] };
@@ -3940,13 +4011,16 @@ let savedState = JSON.stringify(board);  // the board as it stood after the last
  * Keep a change, so it can be undone. Call this AFTER changing `board`.
  * label says what it was, for "Undid pen stroke" and the buttons' tooltips.
  */
-function commit(label, mergeKey) {
+function commit(label, mergeKey, pages) {
   // mergeKey: quick repeats of the same small change (arrow-key nudges of
   // the same things, within a second) are joined into ONE undo step.
+  // pages: which page to show after undoing it and after redoing it
+  // ({ undoPage, redoPage }, by id); usually just the page on show.
   const now = performance.now();
   const merge = mergeKey && history.mergeKey === mergeKey && now - history.mergeAt < 1000 && history.undo.length;
   if (!merge) {
-    history.undo.push({ label, state: savedState });
+    const here = page().id;
+    history.undo.push({ label, state: savedState, undoPage: pages ? pages.undoPage : here, redoPage: pages ? pages.redoPage : here });
     if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
   }
   history.mergeKey = mergeKey || null;
@@ -3954,6 +4028,7 @@ function commit(label, mergeKey) {
   history.redo.length = 0;               // a new change makes the old "redo" path disappear
   savedState = JSON.stringify(board);
   updateUndoButtons();
+  scheduleThumb();                       // (the page's thumbnail in the filmstrip catches up a moment later)
 }
 /** Undo (dir = -1) or redo (dir = 1) one change. */
 function stepHistory(dir) {
@@ -3965,10 +4040,14 @@ function stepHistory(dir) {
   finishEdit();                          // (and typing is finished first, so it can be undone too)
   history.mergeKey = null;               // the next nudge starts a new undo step
   const entry = from.pop();
-  to.push({ label: entry.label, state: savedState });
+  to.push({ label: entry.label, state: savedState, undoPage: entry.undoPage, redoPage: entry.redoPage });
+  const before = page().id;
   board = JSON.parse(entry.state);       // our own copy, made by commit(): safe to read back
   savedState = entry.state;
-  pageIndex = clamp(pageIndex, 0, board.pages.length - 1);
+  // Show the page the change was on (section 8h), so what changed is in view.
+  const want = board.pages.findIndex((p) => p.id === (dir < 0 ? entry.undoPage : entry.redoPage));
+  pageIndex = want >= 0 ? want : clamp(pageIndex, 0, board.pages.length - 1);
+  if (page().id !== before) { leavePage(); pagePicks = new Set(); }
   renderAll();
   announce((dir < 0 ? 'Undid ' : 'Redid ') + entry.label);
 }
@@ -4127,6 +4206,7 @@ function renderAll() {
   renderInspector();
   renderStatus();
   updateUndoButtons();
+  renderFilmstrip();                   // (section 8h)
   if (view.fit) fitView(view.fit, false); else applyView();
 }
 
@@ -6676,7 +6756,9 @@ function layersSection() {
   const d = section('layers', 'Layers', plural(page().items.length, 'mark'),
     layersTree, layersNote,
     el('p', { class: 'hint', id: 'layersHelp', text: 'Top first. Up and Down pick, Right and Left open and close groups, Space adds to what is picked, F2 describes, H hides, L locks, Alt+Up and Alt+Down move, Delete removes. Rows can be dragged up and down too.' }));
-  d.addEventListener('toggle', () => { if (d.open) { layersSig = ''; renderLayers(); } });
+  // Opening it draws the rows. (A panel made already open also sends "toggle", a moment
+  // later: renderLayers then finds nothing changed, so a row being renamed is left alone.)
+  d.addEventListener('toggle', () => { if (d.open) renderLayers(); });
   return d;
 }
 
@@ -6770,7 +6852,10 @@ function renameRow(r) {
     if (e.key === 'Enter') { e.preventDefault(); finish(true); }
     else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
   });
-  input.addEventListener('blur', () => finish(true));
+  // Leaving the box keeps what was typed. (Checked a moment later: when the
+  // Inspector is redrawn, the list is moved and the box briefly loses focus,
+  // then gets it back, and that is not a leave.)
+  input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) finish(true); }, 0));
 }
 /** Open or close a group row. */
 function toggleLayerGroup(r) {
@@ -7043,6 +7128,415 @@ function alignFields() {
 }
 
 /* =====================================================================
+   8h. PAGES AND THE FILMSTRIP
+   ---------------------------------------------------------------------
+   A board holds pages (board.pages), and one is on show (pageIndex).
+   The filmstrip along the bottom shows them all, numbered, with what is
+   drawn on them (a small live copy, redrawn a moment after each change).
+
+   It is a listbox (one Tab stop): Left and Right go to the page before or
+   after (Shift: pick the pages on the way too), Home and End to the ends,
+   Alt+Left and Alt+Right move the picked pages, Delete removes them,
+   Enter puts the keyboard back on the board. Ctrl/Cmd+click picks pages
+   one at a time and Shift+click a run of them. From anywhere: Page Up and
+   Page Down go to the page before or after, Ctrl/Cmd+Enter adds a page,
+   Ctrl/Cmd+Shift+D copies the picked pages.
+
+   The buttons beside it do the same (add, copy, move left, move right,
+   delete), so nothing needs a drag (WCAG 2.5.7); pages can be dragged too.
+   A new page copies the size and color of the page on show. Deleting
+   pages that have marks on them asks first; undo always brings them back.
+   ===================================================================== */
+const MAX_PAGES = 500;
+const capFirst = (text) => text.charAt(0).toUpperCase() + text.slice(1);               // a safety limit, far more than a lesson needs
+let pagePicks = new Set();           // ids of the pages picked in the filmstrip (always holds the page on show)
+let filmSig = '';                    // what the filmstrip showed last time (rebuilt only when it changed)
+let thumbTimer = 0;                  // the wait before redrawing the page on show's thumbnail
+let filmDrag = null;                 // the page ids being dragged in the filmstrip
+
+/** The picked pages' places in the board, in order (the page on show is always one of them). */
+function pickedPageIndexes() {
+  pagePicks.add(page().id);
+  return board.pages.map((p, i) => (pagePicks.has(p.id) ? i : -1)).filter((i) => i >= 0);
+}
+/** "page 3", or "pages 2 to 4", or "3 pages". */
+function pagesWords(idx) {
+  if (idx.length === 1) return 'page ' + (idx[0] + 1);
+  const run = idx.every((v, k) => k === 0 || v === idx[k - 1] + 1);
+  return run ? 'pages ' + (idx[0] + 1) + ' to ' + (idx[idx.length - 1] + 1) : plural(idx.length, 'page');
+}
+
+/** Leave the page on show tidily: drop a stroke or a drag, finish typing, let go of what is picked. */
+function leavePage() {
+  if (live) cancelStroke();
+  cancelObjectGesture();
+  finishEdit();
+  closeMenu(true);
+  sel.ids = new Set(); sel.angle = 0;
+  groupPath = [];
+  layerFocus = null;
+}
+/**
+ * Show page i. keepPicks: keep the pages already picked in the filmstrip
+ * (Shift+arrow), otherwise the page on show becomes the only one picked.
+ */
+function goToPage(i, keepPicks, quiet) {
+  i = clamp(i, 0, board.pages.length - 1);
+  if (i !== pageIndex) leavePage();
+  pageIndex = i;
+  if (!keepPicks) pagePicks = new Set();
+  pagePicks.add(page().id);
+  // A page of another size: fit it, unless the view was zoomed by hand.
+  renderAll();
+  if (!quiet) announce('Page ' + (i + 1) + ' of ' + board.pages.length + ', ' + pageMarksWords(page()));
+}
+/** "5 marks", or "blank". */
+const pageMarksWords = (pg) => (pg.items.length ? plural(pg.items.length, 'mark') : 'blank');
+
+/** A copy of a page, with new ids for it, its marks and its groups (so nothing is shared). */
+function clonePage(pg) {
+  const c = JSON.parse(JSON.stringify(pg));
+  c.id = uid('p');
+  const groupIds = new Map();
+  const newGroup = (g) => { if (!groupIds.has(g)) groupIds.set(g, uid('g')); return groupIds.get(g); };
+  for (const it of c.items) {
+    it.id = uid('i');
+    if (it.groups) it.groups = it.groups.map(newGroup);
+  }
+  if (c.groupAlt) {
+    const alt = {};
+    for (const [g, words] of Object.entries(c.groupAlt)) if (groupIds.has(g)) alt[groupIds.get(g)] = words;
+    c.groupAlt = alt;
+    if (!Object.keys(alt).length) delete c.groupAlt;
+  }
+  return c;
+}
+
+/** Add a blank page at place `at` (the size and color of the page on show), and go to it. */
+function addPage(at) {
+  if (board.pages.length >= MAX_PAGES) { toast('A board holds up to ' + MAX_PAGES + ' pages.'); return; }
+  const from = page();
+  const np = newPage(from.w, from.h);
+  np.color = from.color;
+  at = clamp(at, 0, board.pages.length);
+  leavePage();
+  board.pages.splice(at, 0, np);
+  pageIndex = at;
+  pagePicks = new Set([np.id]);
+  commit('adding page ' + (at + 1), null, { undoPage: from.id, redoPage: np.id });
+  renderAll();
+  announce('Added page ' + (at + 1) + ' of ' + board.pages.length + ': blank, the size of the last one');
+}
+/** Copy the picked pages (marks and all); the copies go right after the last of them, and are picked. */
+function duplicatePages() {
+  const idx = pickedPageIndexes();
+  if (board.pages.length + idx.length > MAX_PAGES) { toast('A board holds up to ' + MAX_PAGES + ' pages.'); return; }
+  const from = page().id;
+  const copies = idx.map((i) => clonePage(board.pages[i]));
+  const at = idx[idx.length - 1] + 1;
+  leavePage();
+  board.pages.splice(at, 0, ...copies);
+  pageIndex = at;
+  pagePicks = new Set(copies.map((p) => p.id));
+  commit('copying ' + pagesWords(idx), null, { undoPage: from, redoPage: copies[0].id });
+  renderAll();
+  announce('Copied ' + pagesWords(idx) + '. ' + (copies.length === 1 ? 'The copy is page ' : 'The copies start at page ') + (at + 1) + ' of ' + board.pages.length);
+}
+/** Delete the picked pages (asking first if anything is drawn on them). A board always keeps one page. */
+async function deletePages() {
+  const idx = pickedPageIndexes();
+  if (idx.length >= board.pages.length) { announce('A board keeps at least one page'); toast('A board keeps at least one page. Clear the page instead (Inspector, Page).'); return; }
+  const marks = idx.reduce((n, i) => n + board.pages[i].items.length, 0);
+  if (marks) {
+    const yes = await askConfirm('Delete ' + pagesWords(idx) + '?',
+      capFirst(pagesWords(idx)) + (idx.length === 1 ? ' has ' : ' have ') + plural(marks, 'mark') + ' on ' + (idx.length === 1 ? 'it' : 'them') + '. Undo (Ctrl+Z) brings ' + (idx.length === 1 ? 'it' : 'them') + ' back.',
+      'Delete');
+    if (!yes) return;
+  }
+  const firstId = board.pages[idx[0]].id;
+  leavePage();
+  const gone = new Set(idx.map((i) => board.pages[i].id));
+  board.pages = board.pages.filter((p) => !gone.has(p.id));
+  pageIndex = clamp(idx[0], 0, board.pages.length - 1);
+  pagePicks = new Set([page().id]);
+  commit('deleting ' + pagesWords(idx), null, { undoPage: firstId, redoPage: page().id });
+  renderAll();
+  toast('Deleted ' + pagesWords(idx) + '. Undo (Ctrl+Z) brings ' + (idx.length === 1 ? 'it' : 'them') + ' back.');
+  announce('Deleted ' + pagesWords(idx) + '. Now on page ' + (pageIndex + 1) + ' of ' + board.pages.length);
+}
+/** Move the picked pages one place left (-1) or right (+1). Pages already at that end stay. */
+function movePages(dir) {
+  const idx = pickedPageIndexes(), pages = board.pages, shown = page().id;
+  const picked = new Set(idx.map((i) => pages[i].id));
+  let moved = false;
+  // Step from the end they move toward, so picked pages side by side keep their order.
+  const order = dir < 0 ? pages.map((_, i) => i) : pages.map((_, i) => pages.length - 1 - i);
+  for (const i of order) {
+    const j = i + dir;
+    if (j < 0 || j >= pages.length || !picked.has(pages[i].id) || picked.has(pages[j].id)) continue;
+    [pages[i], pages[j]] = [pages[j], pages[i]];
+    moved = true;
+  }
+  if (!moved) { announce(dir < 0 ? 'Already the first page' : 'Already the last page'); return; }
+  pageIndex = pages.findIndex((p) => p.id === shown);    // (the same page stays on show)
+  finishPageMove(idx, [...picked]);
+}
+/** Put the picked (or dragged) pages before the page now at place `at`. */
+function movePagesTo(ids, at) {
+  const pages = board.pages, moving = new Set(ids);
+  const before = pages.slice(0, at).filter((p) => !moving.has(p.id)).length;   // where they land once taken out
+  const keep = pages.filter((p) => !moving.has(p.id));
+  keep.splice(before, 0, ...pages.filter((p) => moving.has(p.id)));
+  if (keep.every((p, i) => p === pages[i])) return;  // (dropped where they were)
+  const idx = pages.map((p, i) => (moving.has(p.id) ? i : -1)).filter((i) => i >= 0), shown = page().id;
+  board.pages = keep;
+  pageIndex = keep.findIndex((p) => p.id === shown);
+  finishPageMove(idx, ids);
+}
+/** After a move: keep the page on show, keep the change, say where the moved pages (ids) went. */
+function finishPageMove(oldIdx, ids) {
+  if (pageIndex < 0) pageIndex = 0;
+  const nowIdx = board.pages.map((p, i) => (ids.includes(p.id) ? i : -1)).filter((i) => i >= 0);
+  commit('moving ' + pagesWords(oldIdx));
+  renderAll();
+  announce(oldIdx.length === 1 ? 'Page ' + (oldIdx[0] + 1) + ' moved to ' + (nowIdx[0] + 1) + ' of ' + board.pages.length
+    : 'Moved ' + pagesWords(oldIdx) + ' to ' + pagesWords(nowIdx));
+}
+
+/* ---- Asking first (a small dialog with two buttons) ---- */
+/** Ask a yes-or-no question. Resolves true for the yes button, false for Cancel, Escape or closing. */
+function askConfirm(title, text, yesWords) {
+  const dlg = $('confirmDlg');
+  $('confirmTitle').textContent = title;
+  $('confirmText').textContent = text;
+  $('confirmYes').textContent = yesWords;
+  const back = document.activeElement;
+  return new Promise((resolve) => {
+    const done = (answer) => {
+      dlg.removeEventListener('close', onClose);
+      $('confirmYes').removeEventListener('click', onYes);
+      if (dlg.open) dlg.close();
+      if (back && back.focus) back.focus({ preventScroll: true });
+      resolve(answer);
+    };
+    const onYes = () => done(true);
+    const onClose = () => done(false);
+    $('confirmYes').addEventListener('click', onYes);
+    dlg.addEventListener('close', onClose);
+    dlg.showModal();
+    $('confirmNo').focus();                          // the safe answer has the focus first
+  });
+}
+
+/* ---- Drawing the filmstrip ---- */
+/** Rebuild the filmstrip when the pages, their order, the page on show or the picks have changed. */
+function renderFilmstrip() {
+  const list = $('pageList');
+  const idx = pickedPageIndexes();
+  // (Not what is drawn: a change on the page on show only redraws its own thumbnail, in scheduleThumb.)
+  const sig = JSON.stringify([board.pages.map((p) => [p.id, p.w, p.h]), pageIndex, idx]);
+  if (sig === filmSig) { scheduleThumb(); return; }
+  filmSig = sig;
+  const hadFocus = list.contains(document.activeElement);
+  const n = board.pages.length;
+  const many = idx.length > 1;
+  list.classList.toggle('many', many);
+  list.replaceChildren(...board.pages.map((pg, i) => {
+    const here = i === pageIndex, picked = idx.includes(i);
+    const li = el('li', {
+      role: 'option', id: 'thumb-' + pg.id, 'data-index': String(i), class: 'thumb' + (here ? ' here' : ''),
+      'aria-selected': String(picked), 'aria-current': here ? 'page' : null, tabindex: here ? '0' : '-1', draggable: 'true',
+      'aria-label': 'Page ' + (i + 1) + ' of ' + n + (here ? ', on show' : '') + ', ' + pageMarksWords(pg)
+    });
+    const svg = svgEl('svg', { class: 'thumb-svg', viewBox: '0 0 ' + pg.w + ' ' + pg.h, 'aria-hidden': 'true', focusable: 'false', 'data-pid': pg.id });
+    svg.style.aspectRatio = pg.w + ' / ' + pg.h;
+    svg.append(...thumbContent(pg));
+    li.append(svg, el('span', { class: 'thumb-num', 'aria-hidden': 'true', text: String(i + 1) }));
+    return li;
+  }));
+  // The buttons: grayed out (not hidden) when they can't act, so they don't jump about.
+  const atStart = idx.every((v, k) => v === k), atEnd = idx.every((v, k) => v === n - idx.length + k);
+  const what = many ? idx.length + ' pages' : 'this page';
+  const setBtn = (id, words, keys, off) => { const b = $(id); b.disabled = !!off; b.setAttribute('aria-label', words); b.title = words + (keys ? ' (' + keys + ')' : ''); };
+  setBtn('btnPageAdd', 'Add a page after this one', 'Ctrl+Enter', n >= MAX_PAGES);
+  setBtn('btnPageDup', 'Copy ' + what, 'Ctrl+Shift+D', n + idx.length > MAX_PAGES);
+  setBtn('btnPageLeft', 'Move ' + (many ? 'pages' : 'page') + ' left', 'Alt+Left', atStart);
+  setBtn('btnPageRight', 'Move ' + (many ? 'pages' : 'page') + ' right', 'Alt+Right', atEnd);
+  setBtn('btnPageDel', 'Delete ' + what, 'Delete', idx.length >= n);
+  if (hadFocus) focusThumb();
+  const cur = $('thumb-' + page().id);
+  if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+/** A page's thumbnail drawing: its color, then its highlights and ink (the same drawing as the board). */
+function thumbContent(pg) {
+  const hl = svgEl('g', { class: 'hl-layer' + (isDarkColor(pg.color) ? ' on-dark' : '') }), ink = svgEl('g');
+  for (const it of pg.items) (it.type === 'highlight' ? hl : ink).append(itemElement(it));
+  return [svgEl('rect', { x: 0, y: 0, width: pg.w, height: pg.h, fill: isHex(pg.color) ? pg.color : '#ffffff' }), hl, ink];
+}
+/** Redraw the page on show's thumbnail a moment after a change (drawing many strokes in a row redraws it once). */
+function scheduleThumb() {
+  clearTimeout(thumbTimer);
+  thumbTimer = setTimeout(() => {
+    const pg = page(), li = $('thumb-' + pg.id);
+    if (!li) return;
+    li.querySelector('svg').replaceChildren(...thumbContent(pg));
+    li.setAttribute('aria-label', 'Page ' + (pageIndex + 1) + ' of ' + board.pages.length + ', on show, ' + pageMarksWords(pg));
+  }, 300);
+}
+function focusThumb() {
+  const li = $('thumb-' + page().id);
+  if (li) li.focus({ preventScroll: true });
+}
+
+/* ---- The filmstrip's keys, clicks and drags ---- */
+function wireFilmstrip() {
+  const list = $('pageList');
+  const indexOf = (node) => { const li = node.closest && node.closest('li[data-index]'); return li ? Number(li.dataset.index) : -1; };
+  $('btnPageAdd').addEventListener('click', () => addPage(pageIndex + 1));
+  $('btnPageDup').addEventListener('click', duplicatePages);
+  $('btnPageLeft').addEventListener('click', () => movePages(-1));
+  $('btnPageRight').addEventListener('click', () => movePages(1));
+  $('btnPageDel').addEventListener('click', deletePages);
+  $('confirmNo').addEventListener('click', () => $('confirmDlg').close());   // (Cancel in the asking-first dialog)
+
+  list.addEventListener('keydown', (e) => {
+    const n = board.pages.length, k = e.key;
+    const stop = () => { e.preventDefault(); e.stopPropagation(); };
+    if (e.altKey && (k === 'ArrowLeft' || k === 'ArrowRight')) { stop(); movePages(k === 'ArrowLeft' ? -1 : 1); focusThumb(); return; }
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(k) && !e.altKey) {
+      stop();
+      const back = k === 'ArrowLeft' || k === 'ArrowUp';
+      const to = k === 'Home' ? 0 : k === 'End' ? n - 1 : clamp(pageIndex + (back ? -1 : 1), 0, n - 1);
+      if (e.shiftKey) {
+        // Shift: pick every page on the way.
+        const a = Math.min(to, pageIndex), b = Math.max(to, pageIndex);
+        for (let i = a; i <= b; i++) pagePicks.add(board.pages[i].id);
+      }
+      goToPage(to, e.shiftKey);
+      focusThumb();
+      return;
+    }
+    if (k === 'Delete' || k === 'Backspace') { stop(); deletePages(); return; }
+    if (k === 'Enter' && !e.ctrlKey && !e.metaKey) { stop(); $('board').focus(); return; }
+    if (k === 'Escape' && pagePicks.size > 1) { stop(); pagePicks = new Set(); renderFilmstrip(); announce('Just page ' + (pageIndex + 1) + ' picked'); return; }
+    if ((k === 'F10' && e.shiftKey) || k === 'ContextMenu') {
+      stop();
+      const r = $('thumb-' + page().id).getBoundingClientRect();
+      openMenu(r.left + r.width / 2, r.top, pageMenuEntries());
+    }
+  });
+  list.addEventListener('click', (e) => {
+    const i = indexOf(e.target);
+    if (i < 0) return;
+    const id = board.pages[i].id;
+    if (e.ctrlKey || e.metaKey) {
+      // Ctrl/Cmd+click: pick or unpick one page (the page on show stays picked).
+      if (i !== pageIndex) { if (pagePicks.has(id)) pagePicks.delete(id); else pagePicks.add(id); }
+      renderFilmstrip(); focusThumb();
+      announce(capFirst(pagesWords(pickedPageIndexes())) + ' picked');
+      return;
+    }
+    if (e.shiftKey) {
+      // Shift+click: pick the run of pages from the page on show to this one.
+      const a = Math.min(i, pageIndex), b = Math.max(i, pageIndex);
+      pagePicks = new Set();
+      for (let j = a; j <= b; j++) pagePicks.add(board.pages[j].id);
+      renderFilmstrip(); focusThumb();
+      announce(capFirst(pagesWords(pickedPageIndexes())) + ' picked');
+      return;
+    }
+    goToPage(i, false);
+    focusThumb();
+  });
+  // Right-click on a page: its menu (the same as the buttons).
+  list.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    const i = indexOf(e.target);
+    if (i < 0) return;
+    if (!pagePicks.has(board.pages[i].id) || i === pageIndex) goToPage(i, false, true);
+    openMenu(e.clientX, e.clientY, pageMenuEntries());
+  });
+
+  // Dragging pages (the buttons and Alt+arrows do the same without a drag).
+  const clearMarks = () => list.querySelectorAll('.drop-before, .drop-after').forEach((n) => n.classList.remove('drop-before', 'drop-after'));
+  const dropAt = (e) => {
+    const li = e.target.closest && e.target.closest('li[data-index]');
+    if (!li) return null;
+    const r = li.getBoundingClientRect(), i = Number(li.dataset.index);
+    const after = e.clientX > r.left + r.width / 2;
+    return { li, at: after ? i + 1 : i, after };
+  };
+  list.addEventListener('dragstart', (e) => {
+    const i = indexOf(e.target);
+    if (i < 0) return;
+    const id = board.pages[i].id;
+    // Dragging a picked page drags all the picked pages; any other page goes on its own.
+    filmDrag = pagePicks.has(id) ? pickedPageIndexes().map((j) => board.pages[j].id) : [id];
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+  });
+  list.addEventListener('dragover', (e) => {
+    if (!filmDrag) return;
+    const d = dropAt(e);
+    clearMarks();
+    if (!d) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    d.li.classList.add(d.after ? 'drop-after' : 'drop-before');
+  });
+  list.addEventListener('drop', (e) => {
+    const d = dropAt(e);
+    clearMarks();
+    if (!filmDrag || !d) return;
+    e.preventDefault();
+    movePagesTo(filmDrag, d.at);
+    filmDrag = null;
+  });
+  list.addEventListener('dragend', () => { filmDrag = null; clearMarks(); });
+
+  // The + between pages: shows where the mouse is near a gap, and adds a page there.
+  // (A shortcut for the mouse: the + button and Ctrl+Enter do it from anywhere.)
+  const ins = $('filmInsert');
+  let insAt = -1;
+  list.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse' || filmDrag) return;
+    const lis = [...list.children], box = list.parentElement.getBoundingClientRect();
+    insAt = -1;
+    for (let i = 0; i <= lis.length; i++) {
+      // The gap before page i (and after the last page).
+      const x = i < lis.length ? lis[i].getBoundingClientRect().left - 5 : lis[lis.length - 1].getBoundingClientRect().right + 5;
+      if (Math.abs(e.clientX - x) < 10) { insAt = i; ins.style.left = Math.round(x - box.left - 11) + 'px'; break; }
+    }
+    ins.hidden = insAt < 0;
+  });
+  list.parentElement.addEventListener('pointerleave', () => { ins.hidden = true; insAt = -1; });
+  ins.addEventListener('pointerenter', () => { ins.hidden = false; });
+  ins.addEventListener('click', () => { if (insAt >= 0) addPage(insAt); ins.hidden = true; });
+
+  // Phones: the filmstrip folds away behind the Pages button in the top bar.
+  $('btnPages').addEventListener('click', () => {
+    const open = !$('app').classList.contains('film-open');
+    $('app').classList.toggle('film-open', open);
+    $('btnPages').setAttribute('aria-pressed', String(open));
+    if (open) focusThumb();
+  });
+}
+/** The right-click menu for the picked pages. */
+function pageMenuEntries() {
+  const idx = pickedPageIndexes(), n = board.pages.length;
+  const what = idx.length > 1 ? idx.length + ' pages' : 'this page';
+  return [
+    { label: 'Add a page after this one', keys: MOD_KEY + '+Enter', disabled: n >= MAX_PAGES, run: () => addPage(pageIndex + 1) },
+    { label: 'Copy ' + what, keys: MOD_KEY + '+Shift+D', disabled: n + idx.length > MAX_PAGES, run: duplicatePages },
+    '-',
+    { label: 'Move left', keys: 'Alt+Left', disabled: idx.every((v, k) => v === k), run: () => movePages(-1) },
+    { label: 'Move right', keys: 'Alt+Right', disabled: idx.every((v, k) => v === n - idx.length + k), run: () => movePages(1) },
+    '-',
+    { label: 'Delete ' + what, keys: 'Del', disabled: idx.length >= n, run: deletePages }
+  ];
+}
+
+/* =====================================================================
    9. TOOLS AND PRESETS
    The rail and the floating pill are the shared annotation bar (section
    8a), laid out as a "rail": one button per tool down the left, and the
@@ -7259,7 +7753,11 @@ function renderInspector() {
   renderLayers();
 
   body.scrollTop = scrollTop;
-  if (treeHadFocus) { focusLayer(); return; }
+  if (treeHadFocus) {
+    const renaming = layersTree.querySelector('.layer-rename');   // (typing a description in a row: carry on)
+    if (renaming) renaming.focus(); else focusLayer();
+    return;
+  }
   if (focusLabel) {
     const again = [...body.querySelectorAll('input, select, button, summary')].find((n) =>
       n.getAttribute('aria-label') === focusLabel || (n.labels && n.labels[0] && n.labels[0].textContent === focusLabel));
@@ -7598,6 +8096,13 @@ function pageSection() {
     el('button', { class: 'btn small', type: 'button', disabled: sameSize(p.w, p.h) ? true : null,
       onclick: () => resizePage(p.h, p.w, p.w > p.h ? 'portrait' : 'landscape') }, iconSvg('turn'), 'Turn the page'),
     el('button', { class: 'btn small', type: 'button', disabled: p.items.length ? null : true, onclick: clearPage }, iconSvg('trash'), 'Clear the page')));
+  if (board.pages.length > 1) {
+    // Every page this size (section 8h). Nothing on them stretches.
+    const differ = board.pages.some((o) => !sameSize(o.w, p.w) || !sameSize(o.h, p.h));
+    rows.push(el('div', { class: 'btn-row' }, el('button', { class: 'btn small', type: 'button', disabled: differ ? null : true,
+      onclick: () => { for (const o of board.pages) { o.w = p.w; o.h = p.h; } commit('size of all pages'); filmSig = ''; renderAll(); announce('All ' + board.pages.length + ' pages are now ' + sizeWords(p)); } },
+      'Make every page this size')));
+  }
   rows.push(el('p', { class: 'hint', text: 'A new size never stretches what is drawn: it stays where it is, and anything past the edge waits in the staging area.' }));
   return section('page', 'Page', found ? found.size.short + (found.turned ? ', turned' : '') : 'Custom', ...rows);
 }
@@ -7641,6 +8146,10 @@ function colorsSection() {
       el('button', { class: 'btn small', type: 'button', disabled: board.staging ? null : true,
         onclick: () => { board.staging = null; commit('staging area color'); renderPage(); renderInspector(); announce('The staging area follows light and dark mode again'); } },
         iconSvg('reset'), 'Use the default staging color')),
+    board.pages.length > 1 ? el('div', { class: 'btn-row' }, el('button', { class: 'btn small', type: 'button',
+      disabled: board.pages.every((o) => o.color === p.color) ? true : null,
+      onclick: () => { for (const o of board.pages) o.color = p.color; commit('color of all pages'); filmSig = ''; renderAll(); announce('Every page is this color now'); } },
+      'Make every page this color')) : null,
     el('p', { class: 'hint', text: 'The staging area is the space around the page. Its default follows light and dark mode.' })
   ];
   return section('colors', 'Colors', null, ...rows);
@@ -7755,7 +8264,14 @@ const HELP_KEYS = [
   ['[ and ]', 'Smaller or larger: Small, Medium, Large'],
   ['Shift while drawing', 'A straight line'],
   ['Escape', 'Step back: drop a stroke being drawn, put back a move, let go of what is picked, leave a group, then Select'],
-  ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo (Ctrl+Y redoes too)'],
+  ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo (Ctrl+Y redoes too); it shows the page the change was on'],
+  ['Page Up / Page Down', 'The page before or after'],
+  ['Ctrl+Enter', 'Add a page after this one (the same size and color)'],
+  ['Ctrl+Shift+D', 'Copy the picked pages, marks and all'],
+  ['Filmstrip: Left / Right, Home / End', 'Go to the page before or after, or the first or last (Shift: pick the pages on the way)'],
+  ['Filmstrip: Alt+Left / Alt+Right', 'Move the picked pages'],
+  ['Filmstrip: Ctrl+click, Shift+click', 'Pick pages one at a time, or a run of them'],
+  ['Filmstrip: Delete, Enter', 'Delete the picked pages (asks first if they have marks); back to the board'],
   ['Ctrl+wheel, or pinch', 'Zoom around the pointer'],
   ['Ctrl+plus / Ctrl+minus', 'Zoom in / out (with the pointer over the board, or the board focused)'],
   ['Ctrl+0', 'Fit the page'],
@@ -7946,6 +8462,7 @@ function jumpRegion(dir) {
     { box: $('toolRail'), target: () => document.querySelector('#toolRail .wb-btn[tabindex="0"]') },
     { box: $('board'), target: () => $('board') },
     { box: $('quickBar'), target: () => $('quickBar').querySelector('[role="radio"][tabindex="0"]') },
+    { box: $('filmstrip'), target: () => $('thumb-' + page().id) },
     { box: $('sidePanel'), target: () => (inspectorOpen() ? ($('inspBody').querySelector('summary') || $('sidePanel')) : null) },
     { box: $('statusBar'), target: () => $('zoomSel') }
   ].filter((r) => { const t = r.target(); return t && t.offsetParent !== null; });
@@ -7968,6 +8485,9 @@ function wireKeys() {
     // Undo and redo (in a text field, the field's own undo comes first), and Ctrl/Cmd+A picks everything.
     if (mod && !e.altKey && !typing) {
       const k = e.key.toLowerCase();
+      // Pages (section 8h): Ctrl/Cmd+Enter adds one after this page, Ctrl/Cmd+Shift+D copies the picked pages.
+      if (e.key === 'Enter' && !e.shiftKey && !editing) { e.preventDefault(); addPage(pageIndex + 1); return; }
+      if (k === 'd' && e.shiftKey && !editing) { e.preventDefault(); duplicatePages(); return; }
       if (k === 'z' && !e.shiftKey) { e.preventDefault(); stepHistory(-1); return; }
       if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); stepHistory(1); return; }
       if (k === 'a' && !e.shiftKey) { e.preventDefault(); selectAll(); return; }
@@ -7994,6 +8514,17 @@ function wireKeys() {
     if (mod || e.altKey || typing) return;            // the rest are plain keys, not while typing
 
     if (e.key === '?' || e.key === 'F1') { e.preventDefault(); openHelp(); return; }
+    // Page Up and Page Down: the page before or after (from the board, the rail or the filmstrip;
+    // in the Inspector they still scroll it).
+    if ((e.key === 'PageUp' || e.key === 'PageDown') && !$('sidePanel').contains(document.activeElement) && !editing) {
+      e.preventDefault();
+      const to = pageIndex + (e.key === 'PageUp' ? -1 : 1);
+      if (to < 0 || to >= board.pages.length) { announce(to < 0 ? 'This is the first page' : 'This is the last page'); return; }
+      const inStrip = $('pageList').contains(document.activeElement);
+      goToPage(to, false);
+      if (inStrip) focusThumb();
+      return;
+    }
     // Shift+F10 or the Menu key, with the board focused: the right-click menu, from the keyboard.
     if (((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu') && document.activeElement === $('board')) {
       e.preventDefault();
@@ -8122,6 +8653,13 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.3.0', date: '2026-10-19', notes: [
+    'Pages: a filmstrip along the bottom shows every page, numbered, with what is drawn on it. Add a page (the + button, Ctrl+Enter, or the + that shows between pages under the mouse), copy pages (Ctrl+Shift+D), move them (the arrow buttons, Alt+Left and Alt+Right, or drag), and delete them (asks first when they have marks). A new page takes the size and color of the page on show.',
+    'Pick several pages with Ctrl+click or Shift+click (or Shift and the arrow keys) to copy, move or delete them together. Right-click a page for the same choices.',
+    'Page Up and Page Down go to the page before or after. Undo and redo show the page the change was on.',
+    'The Inspector can make every page the same size, or the same color.',
+    'Fixed: renaming a row in the layers list could stop after the first letter when the Inspector was redrawn just then.'
+  ] },
   { version: '0.2.4', date: '2026-10-19', notes: [
     'Descriptions (alt text): every mark gets one as it is made ("Red arrow pointing right", "Sticky note: check this date"). Change it in the Inspector\'s Description field or with F2 in the layers list (the same thing); the reset button puts the written one back. A group can have one of its own. Decorative marks are skipped by screen readers.',
     'The layers list, in the Inspector: one row per mark, top first, groups that open, and highlights in a band of their own under the ink. Pick, describe (F2), hide (H), lock (L), and move rows with Alt+Up and Alt+Down or by dragging.',
@@ -8198,6 +8736,7 @@ function start() {
   wireClipboard();
   wireMenu();
   wireLayers();
+  wireFilmstrip();
   $('btnPicture').addEventListener('click', choosePictures);
   // When the fonts have loaded, measure words again (they may have been measured in a stand-in font).
   if (document.fonts && document.fonts.load) {

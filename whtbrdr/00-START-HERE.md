@@ -20,8 +20,11 @@
 > **Then 0.2.3:** copy, cut, paste, duplicate, front and back, lock, groups
 > (double-click to work inside one) and the right-click menu (section 8f).
 > **Then 0.2.4:** descriptions (alt text), the layers list, snapping and
-> Line up (section 8g). That finishes milestone 2. Waiting for Dave's review
-> of 0.2.4; next is milestone 3 (0.3.0, pages). **Phone testing is on hold**
+> Line up (section 8g). That finishes milestone 2.
+>
+> **Then 0.3.0:** many pages and the filmstrip (section 8h). Milestone 3 is
+> split in three (0.3.0 pages, 0.3.1 backgrounds and the grid, 0.3.2 step
+> numbers; see the spec). Waiting for Dave's review of 0.3.0. **Phone testing is on hold**
 > until Dave has time: check builds on the desktop only. The extension is
 > unchanged (1.3.2).
 
