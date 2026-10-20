@@ -35,8 +35,12 @@
 > take away the ink at the end.
 >
 > **Then 0.3.3:** backgrounds (dots, lines, graph paper), the coordinate
-> grid and the background picture (section 8j). Next is step numbers
-> (0.3.4). Waiting for Dave's review of 0.3.3. **Phone testing is on hold**
+> grid and the background picture (section 8j).
+>
+> **Then 0.3.4:** step numbers across pages (section 8k), units (in, cm,
+> mm, pt) in the Page section, and Escape in Present mode going back to the
+> Pointer first. That finishes milestone 3. Waiting for Dave's review of
+> 0.3.4; next is milestone 4 (documents). **Phone testing is on hold**
 > until Dave has time: check builds on the desktop only. The extension is
 > unchanged (1.3.2).
 

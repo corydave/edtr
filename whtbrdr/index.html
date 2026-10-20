@@ -398,7 +398,7 @@ body.presenting .toast { bottom: 84px; }                         /* (above the f
 /* The board's pointer for each tool (crosshair for drawing; handles set their own). */
 #board[data-tool="select"] { cursor: default; }
 #board[data-tool="text"] { cursor: text; }
-#board[data-tool="jot"], #board[data-tool="stamp"] { cursor: copy; }
+#board[data-tool="jot"], #board[data-tool="stamp"], #board[data-tool="step"] { cursor: copy; }
 /* A file being dragged over the board: a dashed edge says "drop it here". */
 .workspace.dropping { outline: 3px dashed var(--brand); outline-offset: -6px; }
 /* The typing box: no look of its own except a dashed edge, so the words look as they will on the page. */
@@ -3758,7 +3758,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.3.3';
+const APP_VERSION = '0.3.4';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -3861,6 +3861,8 @@ const ICONS = {
   // Present mode (section 8i): a screen on a stand, and disappearing ink (a dashed squiggle).
   present: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
   fade: '<path d="M3 17c3-7 6-7 8-3s5 4 10-4" stroke-dasharray="2.5 3.5"/>',
+  // A step number (section 8k): a disc with a 1.
+  step: '<circle cx="12" cy="12" r="9"/><path d="M10.5 9.5 12.5 8v8"/>',
   // The filmstrip's buttons (section 8h).
   plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
   copy: '<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
@@ -3913,6 +3915,24 @@ const DEFAULT_HIGHLIGHTERS = WB_HIGHLIGHTERS.map((h) => ({ name: h.name, color: 
 const SIZE_LIMITS = { pen: [0.5, 40], highlighter: [4, 60] };
 const PT_PER_PX = 72 / 96;               // 1 CSS pixel at 100% zoom is 0.75 points
 
+/* Units (0.3.4). Everything is STORED in points (72 to the inch, as in PDF);
+   the Inspector SHOWS the units picked in its Page section: inches,
+   centimeters, millimeters or points. One choice for every measurement in
+   WHTBRDR (page sizes, positions, background spacing, the grid's squares),
+   kept with the person's settings, not with a board. Its first value
+   follows the browser's language: inches for US English, centimeters
+   everywhere else. The same table as DSKEDTR's, with the numbers a ruler
+   will need ("ruler": points between labeled marks, the number each label
+   counts up by, and the small marks between), for when WHTBRDR gets one. */
+const UNITS = {
+  //    name             short  points in one     field step  decimals  ruler
+  in: { name: 'Inches',      short: 'in', pt: 72,        step: 0.125, places: 3, ruler: { major: 72, label: 1, subs: [16, 8, 4, 2, 1] } },
+  cm: { name: 'Centimeters', short: 'cm', pt: 72 / 2.54, step: 0.1,   places: 2, ruler: { major: 72 / 2.54, label: 1, subs: [10, 5, 2, 1] } },
+  mm: { name: 'Millimeters', short: 'mm', pt: 72 / 25.4, step: 1,     places: 1, ruler: { major: 720 / 25.4, label: 10, subs: [10, 5, 2, 1] } },
+  pt: { name: 'Points',      short: 'pt', pt: 1,         step: 1,     places: 1, ruler: { major: 72, label: 72, subs: [8, 4, 2, 1] } }
+};
+const LOCALE_UNITS = /^en(-(US|LR))?([^a-z-]|$)/i.test(navigator.language || 'en-US') ? 'in' : 'cm';
+
 const copyPresets = (list) => list.map((p) => ({ ...p }));
 
 /** Read the settings, checking every value. */
@@ -3928,8 +3948,12 @@ function loadSettings() {
     sheet: typeof raw.sheet === 'number' && raw.sheet > 0 && raw.sheet < 0.95 ? raw.sheet : 0,   // phone sheet: a share of the screen
     open: {},                                                                    // Inspector sections that are open
     fingerPans: ['auto', 'on', 'off'].includes(raw.fingerPans) ? raw.fingerPans : 'auto',
-    units: raw.units === 'mm' ? 'mm' : 'in',                                     // for a custom page size
-    tool: ['select', 'pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'eraser', 'stamp'].includes(raw.tool) ? raw.tool : 'pen',
+    units: Object.hasOwn(UNITS, raw.units) ? raw.units : LOCALE_UNITS,            // for every measurement (see UNITS)
+    tool: ['select', 'pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'eraser', 'stamp', 'step'].includes(raw.tool) ? raw.tool : 'pen',
+    // New step numbers (section 8k): which pen's color (blue at first), the number's color, and the white ring.
+    stepColor: Number.isInteger(raw.stepColor) ? clamp(raw.stepColor, 0, WB_PENS.length - 1) : 1,
+    stepText: isHex(raw.stepText) ? raw.stepText.toLowerCase() : '#ffffff',
+    stepRing: raw.stepRing !== false,
     eraserMode: raw.eraserMode === 'part' ? 'part' : 'whole',                    // whole strokes, or part of a stroke
     keepShape: raw.keepShape !== false,                                          // Inspector: width and height change together
     stayInTool: raw.stayInTool !== false,
@@ -3976,6 +4000,24 @@ function saveSettings() {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) { /* storage full or blocked: fine */ }
 }
 let settings = loadSettings();
+/** The units picked, and turning points into them and back. */
+const unit = () => UNITS[settings.units] || UNITS.in;
+/** Points -> a number in the units showing, rounded for a field (2.54 cm, 0.25 in). */
+const toU = (pt) => { const u = unit(), f = 10 ** u.places; return Math.round(pt / u.pt * f) / f; };
+/** A number typed in the units showing -> points. */
+const fromU = (v) => v * unit().pt;
+/** Centimeters or millimeters: metric defaults (5 mm graph paper, an A4 first page). */
+const isMetric = () => settings.units === 'cm' || settings.units === 'mm';
+/** The units menu (the Page section, and Position and size). One setting for all of WHTBRDR. */
+function unitsField(label) {
+  return selectField(label || 'Units', settings.units, Object.entries(UNITS).map(([k, u]) => [k, u.name + ' (' + u.short + ')']), (v) => {
+    if (!Object.hasOwn(UNITS, v)) return;
+    settings.units = v;
+    saveSettings();
+    renderInspector();
+    announce('Measurements now in ' + unit().name.toLowerCase());
+  });
+}
 
 /* =====================================================================
    3. PAGE SIZES
@@ -4013,7 +4055,7 @@ function sizeWords(page) {
   const found = findSize(page.w, page.h);
   if (found && !found.turned) return found.size.name + ' (' + found.size.words.split(',')[0] + ')';
   if (found) return found.size.name + ', turned';
-  return 'Custom, ' + round2(page.w / PT_PER_IN) + ' x ' + round2(page.h / PT_PER_IN) + ' in';
+  return 'Custom, ' + toU(page.w) + ' x ' + toU(page.h) + ' ' + unit().short;
 }
 
 /* =====================================================================
@@ -4061,7 +4103,7 @@ function newBoard(sizeId) {
   return { app: APP_ID, version: 1, staging: null, pages: [newPage(size.w, size.h)] };
 }
 
-let board = newBoard('letter');
+let board = newBoard(isMetric() ? 'a4' : 'letter');   // (the first page: A4 where people measure in centimeters)
 let pageIndex = 0;                       // the page on show (the filmstrip changes it: section 8h)
 const page = () => board.pages[pageIndex];
 
@@ -4090,7 +4132,8 @@ function commit(label, mergeKey, pages) {
   savedState = JSON.stringify(board);
   updateUndoButtons();
   scheduleThumb();                       // (the page's thumbnail in the filmstrip catches up a moment later)
-  lensDirty = true;                      // (and the magnifier's copy of the page, while presenting)
+  lensDirty = true;
+  stepCache = null;                      // (and the step numbers: section 8k)                      // (and the magnifier's copy of the page, while presenting)
 }
 /** Undo (dir = -1) or redo (dir = 1) one change. */
 function stepHistory(dir) {
@@ -4144,6 +4187,7 @@ function itemElement(item) {
 }
 /** Draw one item (shapes, text and notes are drawn in section 8d). */
 function drawItem(item) {
+  if (item.type === 'step') return stepElement(item);           // (section 8k)
   if (item.type === 'text') return textElement(item);
   if (item.type === 'note') return noteElement(item);
   if (item.type === 'picture') return pictureElement(item);
@@ -4165,10 +4209,13 @@ function drawItem(item) {
  * screen readers hear, and (later) its alt text in exports.
  */
 function itemWords(item) {
+  // A step's number stays live: words someone added come after it ("Step 3: click Submit").
+  if (item.type === 'step') return autoWords(item) + (item.alt ? ': ' + item.alt : '');
   return item.alt || autoWords(item);
 }
 /** The words written for an item: "Blue pen stroke", "Red arrow pointing right", "Sticky note: check this date". */
 function autoWords(item) {
+  if (item.type === 'step') return 'Step ' + stepInfo(item).label;
   if (item.type === 'text') return 'Text: ' + shortWords(item.text);
   if (item.type === 'note') return 'Sticky note' + (item.text.trim() ? ': ' + shortWords(item.text) : ' (empty)');
   if (item.type === 'picture') return 'Picture: ' + item.name;
@@ -4227,6 +4274,7 @@ function buildBoardSvg() {
 
 /** Redraw the page and everything on it. */
 function renderPage() {
+  stepCache = null;                                // (the step numbers are worked out again: section 8k)
   const p = page();
   for (const r of [pageHalo, pageRect, pageEdge]) {
     r.setAttribute('x', 0); r.setAttribute('y', 0);
@@ -4497,6 +4545,7 @@ function wireBoardPointers() {
     if (tool === 'text') { e.preventDefault(); textPointerDown(e); return; }   // (preventDefault: the typing box keeps the focus)
     if (tool === 'jot') { e.preventDefault(); jotPointerDown(e); return; }
     if (tool === 'stamp') { const pt = toPage(e.clientX, e.clientY); placeStamp(pt.x, pt.y); return; }
+    if (tool === 'step') { const pt = toPage(e.clientX, e.clientY); placeStep(pt.x, pt.y); return; }
     startStroke(e);
   });
 
@@ -4751,7 +4800,7 @@ function clearLive() {
 
 /* ---- The size ring: shows how wide the pen is, under a mouse or stylus ---- */
 function showRing(e) {
-  const ringless = tool === 'select' || SHAPE_TYPES.includes(tool) || tool === 'text' || tool === 'jot' || tool === 'stamp'
+  const ringless = tool === 'select' || SHAPE_TYPES.includes(tool) || tool === 'text' || tool === 'jot' || tool === 'stamp' || tool === 'step'
     || tool === 'laser' || tool === 'spotlight' || tool === 'magnifier';   // (Present mode's pointing tools draw nothing)
   if (e.pointerType === 'touch' || spaceDown || ringless || (gesture && gesture.kind !== 'draw' && gesture.kind !== 'erase')) { hideRing(); return; }
   const pt = toPage(e.clientX, e.clientY);
@@ -4922,6 +4971,7 @@ function itemInBox(item, b, inside) {
  */
 function transformItem(item, m) {
   const grow = Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
+  if (item.type === 'step') return { ...transformBox(item, m, true), rot: 0 };                   // (steps stay round and upright: section 8k)
   if (isBox(item)) return transformBox(item, m, item.type === 'text' || item.type === 'stamp');   // (section 8d; text and stamps keep their shape)
   if (isLineLike(item)) {
     const a = mApply(m, item.x1, item.y1), b = mApply(m, item.x2, item.y2);
@@ -5527,11 +5577,11 @@ function endErase() {
    words are drawn into the page as SVG text.
    ===================================================================== */
 const SHAPE_TYPES = ['arrow', 'line', 'rect', 'ellipse'];
-const BOX_TYPES = ['rect', 'ellipse', 'text', 'note', 'picture', 'stamp'];
+const BOX_TYPES = ['rect', 'ellipse', 'text', 'note', 'picture', 'stamp', 'step'];
 const STROKE_TYPES = ['ink', 'highlight'];
 // Words for each kind of item, for screen readers and the status bar.
 const TYPE_WORDS = { ink: 'pen stroke', highlight: 'highlight', arrow: 'arrow', line: 'line', rect: 'rectangle',
-  ellipse: 'ellipse', text: 'text', note: 'sticky note', picture: 'picture', stamp: 'stamp' };
+  ellipse: 'ellipse', text: 'text', note: 'sticky note', picture: 'picture', stamp: 'stamp', step: 'step number' };
 const TEXT_LINE_HEIGHT = 1.25;           // space between lines, as a share of the letters' size (the extension's)
 const NOTE_PAD = 8;                      // room inside a sticky note's edge, in points
 const NOTE_FONT_PT = 11;                 // a sticky note's letters (the extension's 15 px)
@@ -5547,7 +5597,7 @@ const isBox = (it) => BOX_TYPES.includes(it.type);
 const isLineLike = (it) => it.type === 'line' || it.type === 'arrow';
 const hasWords = (it) => it.type === 'text' || it.type === 'note';
 /** Picked by pressing anywhere in its box (words, notes, pictures, stamps), not just on a line. */
-const isSolid = (it) => hasWords(it) || it.type === 'picture' || it.type === 'stamp';
+const isSolid = (it) => hasWords(it) || it.type === 'picture' || it.type === 'stamp' || it.type === 'step';
 
 /* ---- Where a box item's points are ---- */
 /** A point given in a box item's own directions (u across from its top-left corner, v down), on the page. */
@@ -5848,6 +5898,8 @@ function placeInMiddle() {
     newNote(c.x - NOTE_START[0] / 2, c.y - NOTE_START[1] / 2);
   } else if (tool === 'stamp') {
     placeStamp(c.x, c.y, true);
+  } else if (tool === 'step') {
+    placeStep(c.x, c.y, true);
   }
 }
 
@@ -6466,9 +6518,11 @@ function placeCopies(source, step, groupAlt) {
   if (p.items.length + source.length > MAX_ITEMS_PER_PAGE) { toast('This page is full.'); return; }
   const newGroup = new Map();                             // old group id -> new one, so copies make groups of their own
   const m = mTranslate(step, step);
+  let seq = nextStepSeq();
   const copies = source.map((it) => {
     const c = transformItem(JSON.parse(JSON.stringify(it)), m);
     c.id = uid('i');
+    if (c.type === 'step') { c.seq = seq++; delete c.restart; }   // a copied step becomes the next number (section 8k)
     const rel = (it.groups || []).map((g) => {
       if (!newGroup.has(g)) {
         newGroup.set(g, uid('g'));
@@ -6731,7 +6785,9 @@ const unitHasOwn = (u) => (u.kind === 'group' ? !!(page().groupAlt && page().gro
  * so a text's description keeps following its words. Returns true if it changed.
  */
 function describeUnit(u, text) {
-  const typed = cleanAlt(text);
+  let typed = cleanAlt(text);
+  // A step keeps its number: only the words after "Step 3" are kept (section 8k).
+  if (u.kind === 'item' && u.item.type === 'step') typed = typed.replace(/^step\s+[0-9a-z]+\s*[:.,-]?\s*/i, '');
   const own = typed && typed !== unitAutoWords(u) ? typed : '';
   if (u.kind === 'group') {
     if (((page().groupAlt || {})[u.gid] || '') === own) return false;
@@ -6757,6 +6813,7 @@ function describeTip(u) {
   const t = u.item.type;
   if (t === 'text' || t === 'note') return 'Written from its words, and kept up to date as they change. Type here to say something else.';
   if (t === 'ink') return 'A computer can\'t tell what a drawing means: say what it shows ("Circle around the answer").';
+  if (t === 'step') return 'Its number is written for you and stays up to date. Words typed here come after it ("Step 3: click Submit").';
   if (t === 'picture') return 'Say what the picture shows, not its file name.';
   return 'Written for you. Type here to say it better.';
 }
@@ -7173,10 +7230,10 @@ function alignPicked(how) {
   const units = pickedUnitBoxes();
   if (!units.length) return;
   if (pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return; }
-  const toPage = settings.alignTo === 'page' || units.length < 2;
+  const onPage = settings.alignTo === 'page' || units.length < 2;
   const p = page();
   let r;
-  if (toPage) r = { x0: 0, y0: 0, x1: p.w, y1: p.h };
+  if (onPage) r = { x0: 0, y0: 0, x1: p.w, y1: p.h };
   else r = { x0: Math.min(...units.map((u) => u.b.x0)), y0: Math.min(...units.map((u) => u.b.y0)), x1: Math.max(...units.map((u) => u.b.x1)), y1: Math.max(...units.map((u) => u.b.y1)) };
   for (const { items, b } of units) {
     let dx = 0, dy = 0;
@@ -7188,7 +7245,7 @@ function alignPicked(how) {
     if (how === 'bottom') dy = r.y1 - b.y1;
     if (dx || dy) shiftItems(items, dx, dy);
   }
-  const words = 'Lined up ' + ALIGN_WORDS[how] + ' to ' + (toPage ? 'the page' : 'each other');
+  const words = 'Lined up ' + ALIGN_WORDS[how] + ' to ' + (onPage ? 'the page' : 'each other');
   commit(words.toLowerCase());
   renderPage();
   selectionChanged();
@@ -7446,7 +7503,7 @@ function renderFilmstrip() {
   const list = $('pageList');
   const idx = pickedPageIndexes();
   // (Not what is drawn: a change on the page on show only redraws its own thumbnail, in scheduleThumb.)
-  const sig = JSON.stringify([board.pages.map((p) => [p.id, p.w, p.h]), pageIndex, idx]);
+  const sig = filmSignature(idx);
   if (sig === filmSig) { scheduleThumb(); return; }
   filmSig = sig;
   const hadFocus = list.contains(document.activeElement);
@@ -7458,7 +7515,7 @@ function renderFilmstrip() {
     const li = el('li', {
       role: 'option', id: 'thumb-' + pg.id, 'data-index': String(i), class: 'thumb' + (here ? ' here' : ''),
       'aria-selected': String(picked), 'aria-current': here ? 'page' : null, tabindex: here ? '0' : '-1', draggable: 'true',
-      'aria-label': 'Page ' + (i + 1) + ' of ' + n + (here ? ', on show' : '') + ', ' + pageMarksWords(pg)
+      'aria-label': thumbWords(pg, i), title: thumbTitle(pg, i)
     });
     const svg = svgEl('svg', { class: 'thumb-svg', viewBox: '0 0 ' + pg.w + ' ' + pg.h, 'aria-hidden': 'true', focusable: 'false', 'data-pid': pg.id });
     svg.style.aspectRatio = pg.w + ' / ' + pg.h;
@@ -7492,8 +7549,26 @@ function scheduleThumb() {
     const pg = page(), li = $('thumb-' + pg.id);
     if (!li) return;
     li.querySelector('svg').replaceChildren(...thumbContent(pg));
-    li.setAttribute('aria-label', 'Page ' + (pageIndex + 1) + ' of ' + board.pages.length + ', on show, ' + pageMarksWords(pg));
+    li.setAttribute('aria-label', thumbWords(pg, pageIndex));
+    li.title = thumbTitle(pg, pageIndex);
+    // (A change of step numbers here renumbers later pages: then their thumbnails are redrawn too.)
+    if (filmSignature() !== filmSig) renderFilmstrip();
   }, 300);
+}
+/** What the filmstrip shows, in one line of text: the pages, their sizes and step numbers, the page on show,
+    the picked pages. (The step numbers are in it, so thumbnails are redrawn when steps renumber: section 8k.) */
+function filmSignature(idx = pickedPageIndexes()) {
+  return JSON.stringify([board.pages.map((p) => [p.id, p.w, p.h, pageStepsWords(p)]), pageIndex, idx]);
+}
+/** What a page's thumbnail says: "Page 2 of 5, on show, 6 marks, steps 4 to 7". */
+function thumbWords(pg, i) {
+  const steps = pageStepsWords(pg);
+  return 'Page ' + (i + 1) + ' of ' + board.pages.length + (i === pageIndex ? ', on show' : '') + ', ' + pageMarksWords(pg) + (steps ? ', ' + steps : '');
+}
+/** Its tooltip: "Page 2: steps 4 to 7". */
+function thumbTitle(pg, i) {
+  const steps = pageStepsWords(pg);
+  return 'Page ' + (i + 1) + (steps ? ': ' + capFirst(steps) : '');
 }
 function focusThumb() {
   const li = $('thumb-' + page().id);
@@ -7677,8 +7752,17 @@ function pageMenuEntries() {
    B / W: a black or a white screen, as in PowerPoint (also . and ,).
    Any key, or a click, brings the page back.
 
-   ESCAPE: stops (after dropping a stroke being drawn, or leaving a black
-   or white screen first), back on the page you ended on.
+   ESCAPE steps back one thing at a time (0.3.4, Dave's rule): it drops a
+   stroke being drawn, or brings the page back from a black or white
+   screen; with any tool but the Pointer, it goes back to the Pointer; and
+   with the Pointer, it stops presenting, back on the page you ended on.
+   In the browser's full screen, Escape normally belongs to the browser
+   (it leaves full screen at once). Where the browser allows it (Chrome,
+   Edge), WHTBRDR asks to hear Escape itself, so the rule above holds; the
+   browser then leaves full screen when Escape is held down. Leaving full
+   screen any other way follows the same rule: with a drawing tool, back
+   to the Pointer and on presenting in the window (F, or the bar's Full
+   screen button, goes back to full screen); with the Pointer, it stops.
 
    SCREEN READERS hear "Page 4 of 12" and the page's title (its first
    words) on each page; the board's name lists what is on the page, in
@@ -7733,14 +7817,16 @@ function buildPresent() {
   const btn = (label, icon, fn, extra) => { const b = wbButton(label, iconSvg(icon), fn, extra); b.setAttribute('aria-label', label.replace(/ \(.*\)$/, '')); return b; };
   const fadeBtn = btn('Disappearing ink: strokes fade after a few seconds', 'fade', () => setDisappearing(!present.disappearing));
   fadeBtn.setAttribute('aria-pressed', 'false');
+  const fullBtn = btn('Full screen (F)', 'fit', () => toggleFullScreen());
+  fullBtn.setAttribute('aria-pressed', 'false');
   const groups = [
     el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Ink' }, fadeBtn,
       btn('Undo (Ctrl+Z)', 'undo', () => stepHistory(-1))),
     el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Pages' },
       btn('Page before (Left)', 'chevronLeft', () => presentStep(-1)), pageNum,
       btn('Next page (Right)', 'chevronRight', () => presentStep(1))),
-    el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Stop' },
-      btn('Stop presenting (Esc)', 'x', () => stopPresent()))
+    el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Stop' }, fullBtn,
+      btn('Stop presenting (Esc with the Pointer)', 'x', () => stopPresent()))
   ];
   presentBar = wbBuildBar({
     layout: 'flat',
@@ -7758,6 +7844,7 @@ function buildPresent() {
   });
   presentBar.root.classList.add('present-bar');
   presentBar.fadeBtn = fadeBtn;
+  presentBar.fullBtn = fullBtn;
   presentBar.pageNum = pageNum;
   // A layer for disappearing ink, on top of the page's own marks (in page points, like them).
   const fade = svgEl('g', { class: 'present-fade' });
@@ -7781,8 +7868,15 @@ function buildPresent() {
     if (tool === 'magnifier') drawLens();
   }, true);
   window.addEventListener('resize', () => { if (presenting) sizeLaser(); });
-  // Leaving the browser's full screen (its own Escape) stops presenting too.
-  document.addEventListener('fullscreenchange', () => { if (presenting && !document.fullscreenElement && present.wentFull) stopPresent(); });
+  // Leaving the browser's full screen (its own Escape, or holding Escape where WHTBRDR hears it)
+  // follows the Escape rule: with a drawing tool, back to the Pointer and on presenting in the
+  // window; with the Pointer, stop.
+  document.addEventListener('fullscreenchange', () => {
+    if (!presenting || document.fullscreenElement || !present.wentFull) return;
+    present.wentFull = false;
+    if (navigator.keyboard && navigator.keyboard.unlock) navigator.keyboard.unlock();
+    if (!presentEscape()) { toast('Out of full screen. F (or Full screen on the bar) goes back.'); updatePresentUI(); }
+  });
 }
 
 /** Start presenting: from the first page (fromFirst) or the page on show. */
@@ -7799,11 +7893,7 @@ function startPresent(fromFirst) {
   if (fromFirst) { pageIndex = 0; pagePicks = new Set(); }
   document.body.classList.add('presenting');
   presentEls.wrap.hidden = false;
-  // The browser's full screen, where it is allowed (it needs a click or a key, which this always is).
-  const root = document.documentElement;
-  if (root.requestFullscreen) {
-    root.requestFullscreen({ navigationUI: 'hide' }).then(() => { if (presenting) present.wentFull = true; }).catch(() => { /* not allowed: the window will do */ });
-  }
+  enterFullScreen();
   setTool('select', false);
   setDisappearing(false, true);
   sizeLaser();
@@ -7812,7 +7902,38 @@ function startPresent(fromFirst) {
   updatePresentUI();
   wakeBar();
   $('board').focus({ preventScroll: true });
-  announce('Presenting. ' + presentPageWords() + '. Right arrow or Space for the next page; Escape to stop.');
+  announce('Presenting. ' + presentPageWords() + '. Right arrow or Space for the next page; Escape stops.');
+}
+
+/**
+ * The browser's full screen, where it is allowed (it needs a click or a key,
+ * which starting or the Full screen button always is). Then, where the
+ * browser has Keyboard Lock (Chrome, Edge), Escape is asked for, so it
+ * reaches WHTBRDR instead of ending full screen at once (see the top).
+ */
+function enterFullScreen() {
+  const root = document.documentElement;
+  if (!root.requestFullscreen || document.fullscreenElement) return;
+  root.requestFullscreen({ navigationUI: 'hide' }).then(() => {
+    if (!presenting) return;
+    present.wentFull = true;
+    if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock(['Escape']).catch(() => { /* not allowed: the browser keeps Escape */ });
+    updatePresentUI();
+  }).catch(() => { /* not allowed: the window will do */ });
+}
+function leaveFullScreen() {
+  if (navigator.keyboard && navigator.keyboard.unlock) navigator.keyboard.unlock();
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+}
+/** Escape (or leaving full screen) while presenting: back to the Pointer first, then stop. Returns true if it stopped. */
+function presentEscape() {
+  if (tool !== 'select') {
+    setTool('select', false);
+    announce('Pointer. Escape again stops presenting.');
+    return false;
+  }
+  stopPresent();
+  return true;
 }
 
 /** Stop presenting, back on the page you ended on. Asks about the ink if any was made. */
@@ -7824,7 +7945,7 @@ async function stopPresent() {
   cancelObjectGesture();
   setBlank(null, true);
   clearFadeInk();
-  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  leaveFullScreen();
   document.body.classList.remove('presenting');
   presentEls.wrap.hidden = true;
   presentEls.spot.hidden = true;
@@ -7865,6 +7986,7 @@ function updatePresentUI() {
   if (!presenting || !presentBar) return;
   presentBar.pageNum.textContent = (pageIndex + 1) + ' / ' + board.pages.length;
   presentBar.fadeBtn.setAttribute('aria-pressed', String(!!present.disappearing));
+  presentBar.fullBtn.setAttribute('aria-pressed', String(!!document.fullscreenElement));
   lensDirty = true;
   if (tool === 'magnifier') drawLens();
 }
@@ -7872,7 +7994,7 @@ function updatePresentUI() {
 function presentStep(step) {
   const to = pageIndex + step;
   if (to < 0) { announce('This is the first page'); return; }
-  if (to >= board.pages.length) { announce('End of the presentation. Escape to stop.'); toast('End of the presentation. Press Escape to stop.'); return; }
+  if (to >= board.pages.length) { announce('End of the presentation. Escape with the Pointer stops.'); toast('End of the presentation. Escape (with the Pointer) stops.'); return; }
   presentGo(to);
 }
 /** Go to page i while presenting. */
@@ -7882,6 +8004,18 @@ function presentGo(i) {
   goToPage(i, false, true);
   updatePresentUI();
   announce(presentPageWords());
+}
+
+/** F, or the bar's Full screen button: into the browser's full screen, or out of it (presenting carries on). */
+function toggleFullScreen() {
+  if (document.fullscreenElement) {
+    present.wentFull = false;                       // (leaving on purpose: not an Escape)
+    leaveFullScreen();
+    announce('Full screen off; still presenting');
+    setTimeout(updatePresentUI, 100);
+  } else {
+    enterFullScreen();
+  }
 }
 
 /* ---- Black and white screens ---- */
@@ -8038,9 +8172,11 @@ function presentKeys(e) {
     done();
     if (live) { cancelStroke(); announce('Stroke dropped'); return; }
     if (cancelObjectGesture()) return;
-    stopPresent();
+    presentEscape();                                  // (a drawing tool: back to the Pointer; the Pointer: stop)
     return;
   }
+  // F: full screen again (after leaving it), or out of it.
+  if ((k === 'f' || k === 'F') && !e.shiftKey) { done(); toggleFullScreen(); return; }
   if (k === 'F5' || k === 'F6' || k === 'F1' || k === '?') { done(); return; }   // (no reload, and no panels to jump to)
   // A page number, then Enter.
   if (/^[0-9]$/.test(k)) {
@@ -8122,11 +8258,12 @@ function wirePresent() {
    ===================================================================== */
 const BG_KINDS = [
   { id: 'none',    name: 'None' },
-  { id: 'dots',    name: 'Dots',                          spacing: 18,    color: '#94a3b8' },   // a dot every quarter inch
-  { id: 'ruled-s', name: 'Lines, small',                  spacing: 20.25, color: '#93c5fd' },   // college ruled (9/32 in)
-  { id: 'ruled-l', name: 'Lines, large, with a margin',   spacing: 24.75, color: '#93c5fd' },   // wide ruled (11/32 in)
-  { id: 'graph-s', name: 'Graph paper, small',            spacing: 18,    color: '#a7c4ea' },   // quarter-inch squares
-  { id: 'graph-l', name: 'Graph paper, large',            spacing: 36,    color: '#a7c4ea' }    // half-inch squares
+  // spacing: in points, where people measure in inches; metric: where they use centimeters or millimeters.
+  { id: 'dots',    name: 'Dots',                        spacing: 18,    metric: 5 * PT_PER_MM,  color: '#94a3b8' },  // a quarter inch, or 5 mm
+  { id: 'ruled-s', name: 'Lines, small',                spacing: 20.25, metric: 7 * PT_PER_MM,  color: '#93c5fd' },  // college ruled (9/32 in), or 7 mm
+  { id: 'ruled-l', name: 'Lines, large, with a margin', spacing: 24.75, metric: 9 * PT_PER_MM,  color: '#93c5fd' },  // wide ruled (11/32 in), or 9 mm
+  { id: 'graph-s', name: 'Graph paper, small',          spacing: 18,    metric: 5 * PT_PER_MM,  color: '#a7c4ea' },  // quarter-inch, or 5 mm squares
+  { id: 'graph-l', name: 'Graph paper, large',          spacing: 36,    metric: 10 * PT_PER_MM, color: '#a7c4ea' }   // half-inch, or 1 cm squares
 ];
 const BG_MARGIN_COLOR = '#f87171';          // the wide-ruled margin line (notebook red)
 const GRID_DEFAULT = { quad: 'four', square: 18, units: 1, every: 2, labels: true, axes: true, color: '#94a3b8' };
@@ -8135,6 +8272,10 @@ const GRID_AXIS_COLOR = '#1f2937';          // the axes and their numbers: dark,
 const BGPIC_FITS = [['fit', 'Fit (all of it shows)'], ['fill', 'Fill (covers the page)'], ['center', 'Centered, its own size']];
 const GRID_FONT = '"' + WB_FONTS[0].family + '", system-ui, sans-serif';   // the grid's letters and numbers: Atkinson Hyperlegible
 const bgKind = (id) => BG_KINDS.find((k) => k.id === id) || BG_KINDS[0];
+/** A kind's usual spacing: in inches or in metric, as the units picked (the Page section's "Measure in"). */
+const bgSpacing = (k) => round2(isMetric() ? k.metric : k.spacing);
+/** The grid's usual square: a quarter inch, or 5 mm. */
+const gridSquare = () => round2(isMetric() ? 5 * PT_PER_MM : 18);
 const fmtNum = (n) => String(Math.round(n * 1000) / 1000);   // 0.5, 2, 1.25 (no long tails)
 
 /** Everything under a page's marks, as SVG: the picture, the lines and the grid (in that order). */
@@ -8167,7 +8308,7 @@ function bgPicNode(pg) {
    of dots is quick to draw. A dot is a line of length 0 with round ends. */
 function bgNode(pg) {
   const bg = pg.bg, kind = bgKind(bg.kind);
-  const s = clamp(bg.spacing || kind.spacing, 6, 144);
+  const s = clamp(bg.spacing || bgSpacing(kind), 6, 144);
   const color = isHex(bg.color) ? bg.color : kind.color;
   const g = svgEl('g', { class: 'page-bg' });
   const d = [];
@@ -8278,7 +8419,7 @@ function setPageBg(kind) {
   else {
     const k = bgKind(kind), was = p.bg;
     // A new kind starts with its own spacing and color; a color set by hand (colorSet) is kept.
-    p.bg = { kind, color: k.color, spacing: k.spacing };
+    p.bg = { kind, color: k.color, spacing: bgSpacing(k) };
     if (was && was.colorSet) { p.bg.color = was.color; p.bg.colorSet = true; }
   }
   commit('page background');
@@ -8287,7 +8428,7 @@ function setPageBg(kind) {
 }
 function setPageGrid(on) {
   const p = page();
-  if (on) p.grid = { ...GRID_DEFAULT }; else delete p.grid;
+  if (on) p.grid = { ...GRID_DEFAULT, square: gridSquare() }; else delete p.grid;
   commit(on ? 'coordinate grid' : 'no coordinate grid');
   renderPage(); renderInspector();
   announce(on ? 'Coordinate grid on: four quadrants, the origin in the middle' : 'Coordinate grid off');
@@ -8347,9 +8488,8 @@ function backgroundSection() {
     rows.push(colorField('Lines', isHex(bg.color) ? bg.color : bgKind(bg.kind).color,
       (v) => { bg.color = v; renderPage(); },
       (v) => { bg.color = v; bg.colorSet = true; commit('background color'); renderPage(); renderInspector(); }));
-    const mm = settings.units === 'mm', per = mm ? PT_PER_MM : PT_PER_IN;
-    rows.push(numberField('Spacing (' + (mm ? 'mm' : 'in') + ')', round2((bg.spacing || bgKind(bg.kind).spacing) / per), mm ? 0.5 : 0.0625,
-      round2(6 / per), round2(144 / per), (v) => { bg.spacing = round2(v * per); commit('background spacing'); renderPage(); renderInspector(); }));
+    rows.push(numberField('Spacing (' + unit().short + ')', toU(bg.spacing || bgSpacing(bgKind(bg.kind))), unit().step,
+      toU(6), toU(144), (v) => { bg.spacing = round2(fromU(v)); commit('background spacing'); renderPage(); renderInspector(); }));
   }
   if (board.pages.length > 1) rows.push(allPagesButton('bg', 'this background'));
   rows.push(el('p', { class: 'hint', text: 'Under everything you draw. It can\'t be picked or erased.' }));
@@ -8363,9 +8503,8 @@ function gridSection() {
   if (g) {
     const L = gridLayout(p);
     rows.push(selectField('Quadrants', g.quad, [['four', 'All four'], ['first', 'The first only']], (v) => changeGrid('quad', v, v === 'four' ? 'all four quadrants' : 'the first quadrant')));
-    const mm = settings.units === 'mm', per = mm ? PT_PER_MM : PT_PER_IN;
-    rows.push(numberField('Square (' + (mm ? 'mm' : 'in') + ')', round2(L.sq / per), mm ? 1 : 0.0625, round2(9 / per), round2(72 / per),
-      (v) => changeGrid('square', round2(v * per), 'square size')));
+    rows.push(numberField('Square (' + unit().short + ')', toU(L.sq), unit().step, toU(9), toU(72),
+      (v) => changeGrid('square', round2(fromU(v)), 'square size')));
     rows.push(numberField('A square is', Number(g.units) || 1, 'any', 0.001, 1000, (v) => changeGrid('units', v, 'each square is ' + fmtNum(v))));
     rows.push(numberField('Number every', clamp(Math.round(g.every || 1), 1, 50), 1, 1, 50, (v) => changeGrid('every', Math.round(v), 'a number every ' + plural(Math.round(v), 'square'))));
     const check = (label, field) => {
@@ -8414,6 +8553,248 @@ function wireBackdrops() {
 }
 
 /* =====================================================================
+   8k. STEP NUMBERS, ACROSS PAGES
+   ---------------------------------------------------------------------
+   IMGEDTR's step markers (a numbered disc, with a white ring), with one
+   addition: they count on from page to page, and any step can start the
+   count again.
+     { id, type: 'step', x, y, w, h, rot: 0, seq, color, textColor, ring,
+       restart: { start, style } (only on a step that starts new numbering) }
+   seq is the order steps were put down (one more than the biggest so far).
+
+   HOW THE NUMBERS ARE WORKED OUT (stepRun): all the steps on all the pages
+   make one run, page by page, and on each page in seq order. Each step is
+   the one before plus one, so deleting a step closes the gap, and moving
+   a page renumbers everything after it. A step with `restart` starts again
+   from its own first number, in its own style (1 2 3, A B C or a b c), and
+   the steps after it count on from there until the next restart.
+   A copied page's steps take their places in the run: a copy of a page
+   with steps 4 to 6, put after it, becomes 7 to 9. A restart on a copied
+   page stays a restart, so a copied "lesson 2" page still starts at 1.
+
+   N puts a step in the middle of what the board shows (picked, so the
+   arrow keys move it) and picks the Step tool; with the tool, a click puts
+   one where you click. The description is written for it ("Step 3"); any
+   words added in the Inspector come after the number, which stays live:
+   "Step 3: click Submit".
+   ===================================================================== */
+const STEP_SIZES = { S: 24, M: 33, L: 48 };          // a step's width, in points (M is IMGEDTR's 44 pixels)
+const STEP_STYLES = [['123', '1 2 3'], ['ABC', 'A B C'], ['abc', 'a b c']];
+let stepCache = null;                                 // the run, worked out once per drawing (see stepRun)
+
+/** 1 -> "1", or "A" / "a" for lettered steps (27 -> "AA"). (IMGEDTR's stepLabel.) */
+function stepLabel(n, style) {
+  if (style !== 'ABC' && style !== 'abc') return String(n);
+  let s = '';
+  let k = Math.max(1, n);
+  while (k > 0) { k--; s = String.fromCharCode(65 + (k % 26)) + s; k = Math.floor(k / 26); }
+  return style === 'abc' ? s.toLowerCase() : s;
+}
+/** The steps on one page, in the order they count (seq). */
+const pageSteps = (pg) => pg.items.filter((i) => i.type === 'step').sort((a, b) => a.seq - b.seq);
+/**
+ * Every step's number: a Map from its id to { n, style, label, pageIndex,
+ * order (its place in the whole run), prev (the step before it, or null),
+ * seg (which restart it counts from: the id of that step, or 'start') }.
+ */
+function stepRun() {
+  if (stepCache) return stepCache;
+  const run = new Map();
+  let n = 0, style = '123', seg = 'start', prev = null, order = 0;
+  board.pages.forEach((pg, pi) => {
+    for (const st of pageSteps(pg)) {
+      if (st.restart) {
+        n = clamp(Math.round(st.restart.start) || 1, 0, 9999);
+        style = st.restart.style || '123';
+        seg = st.id;
+      } else n++;
+      const info = { n, style, label: stepLabel(n, style), pageIndex: pi, order: order++, prev, seg };
+      run.set(st.id, info);
+      prev = { id: st.id, label: info.label, pageIndex: pi };
+    }
+  });
+  stepCache = run;
+  return run;
+}
+const stepInfo = (it) => stepRun().get(it.id) || { n: 1, style: '123', label: '1', pageIndex: pageIndex, prev: null, seg: 'start' };
+/** The next seq: one more than the biggest on any page. */
+const nextStepSeq = () => board.pages.reduce((m, pg) => pg.items.reduce((mm, i) => (i.type === 'step' ? Math.max(mm, i.seq || 0) : mm), m), 0) + 1;
+
+/** Draw a step: a disc (with a white ring) and its number, always upright. */
+function stepElement(it) {
+  const g = svgEl('g', { transform: 'translate(' + wbFmt(it.x) + ' ' + wbFmt(it.y) + ')' });
+  const r = Math.min(it.w, it.h) / 2;
+  if (it.ring !== false) {
+    g.append(svgEl('circle', { cx: wbFmt(r), cy: wbFmt(r), r: wbFmt(r), fill: '#ffffff', filter: 'url(#noteShadow)' }));
+    g.append(svgEl('circle', { cx: wbFmt(r), cy: wbFmt(r), r: wbFmt(r * 0.86), fill: it.color }));
+  } else {
+    g.append(svgEl('circle', { cx: wbFmt(r), cy: wbFmt(r), r: wbFmt(r), fill: it.color, filter: 'url(#noteShadow)' }));
+  }
+  const label = stepInfo(it).label;
+  const size = r * (label.length > 2 ? 0.72 : label.length > 1 ? 0.9 : 1.08);
+  const t = svgEl('text', { x: wbFmt(r), y: wbFmt(r + size * 0.36), 'text-anchor': 'middle', 'font-size': wbFmt(size), 'font-weight': 700,
+    'font-family': '"' + WB_FONTS[0].family + '", system-ui, sans-serif', fill: it.textColor || '#ffffff' });
+  t.textContent = label;                               // (a number or letters the app worked out: never typed text)
+  g.append(t);
+  return g;
+}
+
+/* ---- Putting steps down ---- */
+/** A new step's color: one of the pens' colors, picked in the pill (blue at first, as in IMGEDTR). */
+const stepColor = () => (settings.pens[settings.stepColor] || settings.pens[1] || settings.pens[0]).color;
+function placeStep(x, y, pick) {
+  if (page().items.length >= MAX_ITEMS_PER_PAGE) { toast('This page is full.'); return; }
+  const s = STEP_SIZES[settings.size] || STEP_SIZES.M;
+  const it = { id: uid('i'), type: 'step', x: round2(x - s / 2), y: round2(y - s / 2), w: s, h: s, rot: 0,
+    seq: nextStepSeq(), color: stepColor(), textColor: settings.stepText, ring: settings.stepRing };
+  page().items.push(it);
+  renderPage();
+  commit('step ' + stepInfo(it).label);
+  afterCreate(it, pick);
+}
+/** N: a step in the middle of what the board shows, picked (the arrow keys move it), and the Step tool. */
+function dropStepInMiddle() {
+  if (tool !== 'step') setTool('step', false);
+  const c = viewMiddle();
+  placeStep(c.x, c.y, true);
+}
+
+/* ---- Changing the order ---- */
+/**
+ * Type a number: the step moves to that place among the steps on its page
+ * (and the others there shift to make room). Steps on other pages keep
+ * their numbers, so a step can only take a number its own page has.
+ */
+function setStepNumber(it, n) {
+  const p = page(), list = pageSteps(p), me = stepInfo(it);
+  // The steps on this page that count from the same start as this one.
+  const same = list.filter((s) => stepInfo(s).seg === me.seg);
+  const numbers = same.map((s) => stepInfo(s).n);
+  const lo = Math.min(...numbers), hi = Math.max(...numbers);
+  const want = clamp(Math.round(n), lo, hi);
+  const target = same.find((s) => stepInfo(s).n === want);
+  if (!target || target === it) { announce(want === me.n ? 'Already step ' + me.label : 'On this page it can be ' + stepLabel(lo, me.style) + ' to ' + stepLabel(hi, me.style)); renderInspector(); return; }
+  // Put it in the target's place: take the page's seq numbers, in order, and hand them out again.
+  const seqs = list.map((s) => s.seq);
+  const order = list.filter((s) => s !== it);
+  order.splice(order.indexOf(target) + (list.indexOf(target) > list.indexOf(it) ? 1 : 0), 0, it);
+  order.forEach((s, i) => { s.seq = seqs[i]; });
+  stepCache = null;
+  commit('step number');
+  renderPage(); renderInspector();
+  announce('Now step ' + stepInfo(it).label + (want !== Math.round(n) ? ' (on this page it can be ' + stepLabel(lo, me.style) + ' to ' + stepLabel(hi, me.style) + ')' : ''));
+}
+/** Earlier (-1) or Later (1): swap places with the step before or after it on this page. */
+function shiftStep(it, dir) {
+  const list = pageSteps(page()), i = list.indexOf(it), j = i + dir;
+  if (j < 0 || j >= list.length) { announce(dir < 0 ? 'It is the first step on this page' : 'It is the last step on this page'); return; }
+  [it.seq, list[j].seq] = [list[j].seq, it.seq];
+  stepCache = null;
+  commit(dir < 0 ? 'step earlier' : 'step later');
+  renderPage(); renderInspector();
+  announce('Now step ' + stepInfo(it).label);
+}
+/** Start new numbering at this step (or count on from the step before again). */
+function setStepRestart(it, on, start, style) {
+  if (on) it.restart = { start: clamp(Math.round(start) || 1, 0, 9999), style: STEP_STYLES.some(([v]) => v === style) ? style : '123' };
+  else delete it.restart;
+  stepCache = null;
+  commit(on ? 'new numbering' : 'numbering carries on');
+  renderPage(); renderInspector();
+  announce(on ? 'New numbering: this is step ' + stepInfo(it).label : 'Counts on: this is step ' + stepInfo(it).label);
+}
+/** "Continues from step 6 on page 2", "The first step", "Starts new numbering at 1". */
+function stepContinuesWords(it) {
+  const me = stepInfo(it);
+  if (it.restart) return 'Starts new numbering at ' + me.label + '.';
+  if (!me.prev) return 'The first step of the board.';
+  return 'Continues from step ' + me.prev.label + (me.prev.pageIndex === me.pageIndex ? ' on this page.' : ' on page ' + (me.prev.pageIndex + 1) + '.');
+}
+/** "steps 4 to 7", "step 3", or '' - for a page in the filmstrip. */
+function pageStepsWords(pg) {
+  const list = pageSteps(pg);
+  if (!list.length) return '';
+  const a = stepInfo(list[0]).label, b = stepInfo(list[list.length - 1]).label;
+  return list.length === 1 ? 'step ' + a : 'steps ' + a + ' to ' + b;
+}
+
+/* ---- The Inspector, for picked steps ---- */
+function stepFields(steps) {
+  const rows = [];
+  const change = (label, fn) => { for (const it of steps) fn(it); stepCache = null; commit(label); renderPage(); renderInspector(); };
+  if (steps.length === 1) {
+    const it = steps[0], me = stepInfo(it);
+    rows.push(el('p', { class: 'hint', text: stepContinuesWords(it) }));
+    // The number (a letter style counts the same way: A is 1, B is 2...).
+    rows.push(numberField('Number', me.n, 1, 0, 9999, (v) => setStepNumber(it, v)));
+    rows.push(el('div', { class: 'field' }, el('span', { class: 'label', text: 'Order' }),
+      el('div', { class: 'btn-row', style: 'margin:0' },
+        el('button', { class: 'btn small', type: 'button', onclick: () => shiftStep(it, -1) }, 'Earlier'),
+        el('button', { class: 'btn small', type: 'button', onclick: () => shiftStep(it, 1) }, 'Later'))));
+    const box = el('input', { type: 'checkbox', id: fid(), checked: it.restart ? true : null });
+    box.addEventListener('change', () => setStepRestart(it, box.checked, 1, me.style));   // (new numbering starts at 1, in the same style)
+    rows.push(el('label', { class: 'check', for: box.id }, box, el('span', { text: 'Start new numbering here' })));
+    if (it.restart) {
+      rows.push(numberField('Start at', it.restart.start, 1, 0, 9999, (v) => setStepRestart(it, true, v, it.restart.style)));
+      rows.push(selectField('Style', it.restart.style || '123', STEP_STYLES, (v) => setStepRestart(it, true, it.restart.start, v)));
+    }
+  }
+  rows.push(colorField('Number color', steps[0].textColor || '#ffffff',
+    (v) => { for (const it of steps) { it.textColor = v; refreshItemEl(it); } },
+    (v) => { change('number color', (it) => { it.textColor = v; }); announce('Number color changed'); }));
+  const ring = el('input', { type: 'checkbox', id: fid(), checked: steps.every((s) => s.ring !== false) ? true : null });
+  ring.addEventListener('change', () => { change(ring.checked ? 'white ring' : 'no white ring', (it) => { it.ring = ring.checked; }); });
+  rows.push(el('label', { class: 'check', for: ring.id }, ring, el('span', { text: 'White ring' })));
+  rows.push(sliderField('Size', round2(steps[0].w), 16, 120, 1, 'points',
+    (v) => { for (const it of steps) { resizeStep(it, v); refreshItemEl(it); } renderSelection(); },
+    (v) => { change('step size', (it) => resizeStep(it, v)); announce('Size ' + v + ' points'); }));
+  return rows;
+}
+/** A step's new width (it stays round, around its middle). */
+function resizeStep(it, w) {
+  const cx = it.x + it.w / 2, cy = it.y + it.h / 2;
+  it.w = it.h = round2(w);
+  it.x = round2(cx - w / 2); it.y = round2(cy - w / 2);
+}
+
+/* ---- The Step tool's own buttons: its color in the pill ---- */
+let stepBtn = null, stepColors = null;
+function buildStepTool() {
+  stepBtn = wbButton('Step number (N) - click to put one down; they count on across pages', iconSvg('step'), () => setTool('step'));
+  stepBtn.setAttribute('aria-label', 'Step number');
+  stepBtn.setAttribute('aria-pressed', 'false');
+  stepBtn.dataset.tool = 'step';
+  // The pens' five colors, as a radio group like the pill's own (the shared bar's builder).
+  stepColors = wbColorGroup('pen', settings.pens.map((p) => p.color), (i) => {
+    settings.stepColor = i;
+    if (tool !== 'step') setTool('step', false); else toolChanged();
+    announce(settings.pens[i].name + ' steps');
+  });
+  stepColors.root.setAttribute('aria-label', 'Step color');
+  return stepBtn;
+}
+/** The Step tool's settings in the Inspector (nothing picked). */
+function stepToolRows() {
+  const next = (() => {
+    // What the next step on this page will be.
+    const list = pageSteps(page());
+    const last = list[list.length - 1];
+    if (last) return stepLabel(stepInfo(last).n + 1, stepInfo(last).style);
+    let n = 0, style = '123';
+    for (let i = 0; i < pageIndex; i++) for (const st of pageSteps(board.pages[i])) { const s = stepInfo(st); n = s.n; style = s.style; }
+    return stepLabel(n + 1, style);
+  })();
+  const ring = el('input', { type: 'checkbox', id: fid(), checked: settings.stepRing ? true : null });
+  ring.addEventListener('change', () => { settings.stepRing = ring.checked; saveSettings(); announce(ring.checked ? 'New steps have a white ring' : 'New steps have no ring'); });
+  return [
+    el('p', { class: 'hint', text: 'The next step on this page will be ' + next + '.' }),
+    colorField('Number color', settings.stepText, () => {}, (v) => { settings.stepText = v; saveSettings(); announce('New steps: number color changed'); }),
+    el('label', { class: 'check', for: ring.id }, ring, el('span', { text: 'White ring' })),
+    el('p', { class: 'hint', text: 'Click to put a step down; N puts one in the middle. They count on from page to page: pick a step to start new numbering there, or to change its number. Its color and size (S, M, L) are in the pill.' })
+  ];
+}
+
+/* =====================================================================
    9. TOOLS AND PRESETS
    The rail and the floating pill are the shared annotation bar (section
    8a), laid out as a "rail": one button per tool down the left, and the
@@ -8424,9 +8805,9 @@ function wireBackdrops() {
    ===================================================================== */
 let tool = settings.tool;
 // The tools this version has (the rest of the shared bar's arrive in the next versions).
-const TOOLS_HERE = ['select', 'pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'eraser', 'stamp'];
+const TOOLS_HERE = ['select', 'pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'eraser', 'stamp', 'step'];
 const TOOL_NAMES = { select: 'Select', pen: 'Pen', highlighter: 'Highlighter', arrow: 'Arrow', line: 'Line', rect: 'Rectangle',
-  ellipse: 'Ellipse', text: 'Text', jot: 'Sticky note', eraser: 'Eraser', stamp: 'Stamp',
+  ellipse: 'Ellipse', text: 'Text', jot: 'Sticky note', eraser: 'Eraser', stamp: 'Stamp', step: 'Step number',
   laser: 'Laser pointer', spotlight: 'Spotlight', magnifier: 'Magnifying glass' };   // (the last three: Present mode)
 let bar = null;                          // the shared bar (built at start-up)
 let stampBtn = null;                     // the app's own Stamp button on the rail (below the shared bar's tools)
@@ -8443,6 +8824,7 @@ function buildBar() {
   stampBtn.setAttribute('aria-pressed', 'false');
   stampBtn.dataset.tool = 'stamp';
   buildStampRadios();
+  buildStepTool();                               // (the Step tool and its colors: section 8k)
   bar = wbBuildBar({
     layout: 'rail',
     label: 'Drawing tools',
@@ -8453,9 +8835,10 @@ function buildBar() {
     tips: { eraser: 'press E again to switch between whole strokes and part of a stroke; [ and ] size it',
             jot: 'click where it goes; J drops one in the middle' },
     fold: true,                                  // on a phone, the four shapes are one Shapes button (the CSS decides)
-    after: [picBtn, stampBtn],
-    // The Stamp tool's choices in the pill: the four stamps, then S / M / L.
-    hostStrip: (id) => (id === 'stamp' ? { nodes: [stampRadios.root], sizes: true, name: 'Stamp' } : null),
+    after: [picBtn, stampBtn, stepBtn],
+    // The Stamp tool's choices in the pill: the four stamps, then S / M / L. The Step tool's: its color, then S / M / L.
+    hostStrip: (id) => (id === 'stamp' ? { nodes: [stampRadios.root], sizes: true, name: 'Stamp' }
+      : id === 'step' ? { nodes: [stepColors.root], sizes: true, name: 'Step number' } : null),
     strip: $('quickBar'),
     penColors: settings.pens.map((p) => p.color),
     highlighterColors: settings.highlighters.map((h) => h.color),
@@ -8476,6 +8859,8 @@ function refreshBar() {
   // The app's own tools first (the bar works out the Tab stop from what is pressed).
   stampBtn.setAttribute('aria-pressed', String(tool === 'stamp'));
   stampRadios.set();
+  stepBtn.setAttribute('aria-pressed', String(tool === 'step'));
+  stepColors.set(settings.stepColor, settings.pens.map((p) => p.color));
   bar.refresh({
     tool,
     pen: settings.penIndex,
@@ -8653,7 +9038,7 @@ function renderInspector() {
 function toolSection() {
   if (tool === 'select') return selectToolSection();
   if (tool === 'eraser') return eraserSection();
-  if (SHAPE_TYPES.includes(tool) || tool === 'text' || tool === 'jot' || tool === 'stamp') return makingSection();
+  if (SHAPE_TYPES.includes(tool) || tool === 'text' || tool === 'jot' || tool === 'stamp' || tool === 'step') return makingSection();
   const kind = tool;
   const list = kind === 'highlighter' ? settings.highlighters : settings.pens;
   const at = kind === 'highlighter' ? settings.hlIndex : settings.penIndex;
@@ -8735,6 +9120,8 @@ function makingSection() {
         onclick: () => { delete settings.stampColors[def.id]; toolChanged(); announce(def.name + ' stamps: color set back'); } }, iconSvg('reset'), 'Reset its color')));
     }
     rows.push(el('p', { class: 'hint', text: 'Click to put a stamp down (its middle where you click). Pick which stamp in the pill at the top of the board; S, M and L size it. Stamps stay square.' }));
+  } else if (tool === 'step') {
+    rows.push(...stepToolRows());
   } else {
     rows.push(selectField('Paper', String(settings.noteColor), NOTE_COLOR_NAMES.map((n, i) => [String(i), n]), (v) => {
       settings.noteColor = clamp(Number(v) || 0, 0, WB_NOTE_COLORS.length - 1); saveSettings();
@@ -8850,6 +9237,9 @@ function selectionSection() {
       change(stamps, 'stamp', (it) => { it.stamp = stampDef(v).id; }); announce(stampDef(v).name + ' stamp');
     }));
   }
+  // Step numbers (section 8k): their number and order (one step), number color, ring and size.
+  const steps = items.filter((i) => i.type === 'step');
+  if (steps.length) rows.push(...stepFields(steps));
   if (pictures.length === 1) {
     const pic = pictures[0];
     rows.push(el('p', { class: 'hint', text: pic.name + ': ' + pic.nw + ' x ' + pic.nh + ' pixels.' }));
@@ -8902,10 +9292,7 @@ function numberField(label, value, step, min, max, onDone, disabled) {
    (So everything a drag can do can be done from the keyboard too.) */
 function geometrySection() {
   const items = pickedItems();
-  const unitIsMm = settings.units === 'mm';
-  const per = unitIsMm ? PT_PER_MM : PT_PER_IN, u = unitIsMm ? 'mm' : 'in';
-  const show = (pt) => (unitIsMm ? Math.round(pt / per * 10) / 10 : round2(pt / per));
-  const step = unitIsMm ? 1 : 0.05;
+  const u = unit().short, show = toU, step = unit().step;     // (the units picked: see UNITS)
   const far = 100 * PT_PER_IN;                                // 100 inches either way is plenty
   const f = selFrame(items, sel.angle, false);              // the marks' own size, along the frame as it is turned
   // X and Y: the left and top of everything picked, straight across the page.
@@ -8921,14 +9308,14 @@ function geometrySection() {
   const keep = el('input', { type: 'checkbox', id: fid(), checked: settings.keepShape ? true : null });
   keep.addEventListener('change', () => { settings.keepShape = keep.checked; saveSettings(); });
   return section('geom', 'Position and size', null,
-    numberField('X (' + u + ')', show(x0), step, -show(far), show(far), (v) => { transformSelection(mTranslate(v * per - x0, 0), 'moving'); announce('Moved'); }),
-    numberField('Y (' + u + ')', show(y0), step, -show(far), show(far), (v) => { transformSelection(mTranslate(0, v * per - y0), 'moving'); announce('Moved'); }),
-    numberField('Width (' + u + ')', show(w), step, unitIsMm ? 1 : 0.05, show(far), (v) => {
-      const k = keepAway(v * per / w);
+    numberField('X (' + u + ')', show(x0), step, -show(far), show(far), (v) => { transformSelection(mTranslate(fromU(v) - x0, 0), 'moving'); announce('Moved'); }),
+    numberField('Y (' + u + ')', show(y0), step, -show(far), show(far), (v) => { transformSelection(mTranslate(0, fromU(v) - y0), 'moving'); announce('Moved'); }),
+    numberField('Width (' + u + ')', show(w), step, step, show(far), (v) => {
+      const k = keepAway(fromU(v) / w);
       resize(k, settings.keepShape && !f.lockV ? k : 1);
     }, f.lockU),
-    numberField('Height (' + u + ')', show(h), step, unitIsMm ? 1 : 0.05, show(far), (v) => {
-      const k = keepAway(v * per / h);
+    numberField('Height (' + u + ')', show(h), step, step, show(far), (v) => {
+      const k = keepAway(fromU(v) / h);
       resize(settings.keepShape && !f.lockU ? k : 1, k);
     }, f.lockV),
     el('label', { class: 'check', for: keep.id }, keep, el('span', { text: 'Keep the shape (width and height change together)' })),
@@ -8938,18 +9325,22 @@ function geometrySection() {
       transformSelection(mRotateAround(d, c[0], c[1]), 'turning');
       announce('Turned to ' + v + ' degrees');
     }),
-    selectField('Units', u, [['in', 'Inches'], ['mm', 'Millimeters']], (v) => { settings.units = v === 'mm' ? 'mm' : 'in'; saveSettings(); renderInspector(); }),
+    unitsField(),
     el('p', { class: 'hint', text: 'Width and height are measured along the frame, as it is turned. X and Y are the left and top of what is picked. Turn counts from how it stood when you picked it.' }));
 }
 
 /* ---- Page: its size ---- */
+let customSizeOpen = false;            // "Custom size" was picked: show its width and height (even for a named size)
 function pageSection() {
   const p = page();
   const found = findSize(p.w, p.h);
-  const sizeValue = found ? found.size.id : 'custom';
+  const sizeValue = found && !customSizeOpen ? found.size.id : 'custom';
   const options = PAGE_SIZES.map((s) => [s.id, s.name]).concat([['custom', 'Custom size']]);
   const rows = [
+    // The units, for every measurement in WHTBRDR (0.3.4): first, as everything below follows them.
+    unitsField('Measure in'),
     selectField('Size', sizeValue, options, (v) => {
+      customSizeOpen = v === 'custom';
       if (v === 'custom') { renderInspector(); return; }
       const s = PAGE_SIZES.find((x) => x.id === v);
       // A turned page stays turned when it changes size (a portrait 16:9 becomes a portrait 4:3).
@@ -8958,25 +9349,20 @@ function pageSection() {
     }, true)
   ];
   if (!found || sizeValue === 'custom') {
-    // A custom size, in inches (or millimeters: 25.4 to the inch).
-    const unitIsMm = settings.units === 'mm';
-    const per = unitIsMm ? PT_PER_MM : PT_PER_IN;
-    const [lo, hi] = unitIsMm ? [25, 2540] : [1, 100];
+    // A custom size, in the units picked above (from 1 inch to 100 inches).
+    const lo = toU(72), hi = toU(7200);
     const num = (label, valuePt, apply) => {
       const id = fid();
-      const n = el('input', { type: 'number', id, min: lo, max: hi, step: unitIsMm ? 1 : 0.125, value: round2(valuePt / per) });
+      const n = el('input', { type: 'number', id, min: lo, max: hi, step: unit().step, value: toU(valuePt) });
       n.addEventListener('change', () => {
         const v = Number(n.value);
-        if (!isFinite(v) || n.value === '') { n.value = round2(valuePt / per); return; }
-        apply(clamp(v, lo, hi) * per);
+        if (!isFinite(v) || n.value === '') { n.value = toU(valuePt); return; }
+        apply(fromU(clamp(v, lo, hi)));
       });
-      return el('div', { class: 'field' }, el('label', { for: id, text: label + (unitIsMm ? ' (mm)' : ' (in)') }), n);
+      return el('div', { class: 'field' }, el('label', { for: id, text: label + ' (' + unit().short + ')' }), n);
     };
     rows.push(num('Width', p.w, (w) => resizePage(w, p.h, 'custom size')));
     rows.push(num('Height', p.h, (h) => resizePage(p.w, h, 'custom size')));
-    rows.push(selectField('Units', unitIsMm ? 'mm' : 'in', [['in', 'Inches'], ['mm', 'Millimeters']], (v) => {
-      settings.units = v === 'mm' ? 'mm' : 'in'; saveSettings(); renderInspector();
-    }));
   }
   rows.push(el('div', { class: 'btn-row' },
     el('button', { class: 'btn small', type: 'button', disabled: sameSize(p.w, p.h) ? true : null,
@@ -9060,6 +9446,8 @@ function renderStatus() {
     $('stTool').textContent = 'Sticky note: ' + NOTE_COLOR_NAMES[settings.noteColor] + ' paper';
   } else if (tool === 'stamp') {
     $('stTool').textContent = 'Stamp: ' + stampDef(settings.stamp).name + ', ' + WB_SIZES[settings.size].name;
+  } else if (tool === 'step') {
+    $('stTool').textContent = 'Step number: ' + settings.pens[settings.stepColor].name + ', ' + WB_SIZES[settings.size].name;
   } else {
     $('stTool').textContent = tool === 'eraser' ? 'Eraser: ' + eraserWords() : 'Select';
   }
@@ -9144,6 +9532,7 @@ const HELP_KEYS = [
   ['E', 'Eraser (E again: whole strokes or part of a stroke)'],
   ['I, Ctrl+V, or drop a file', 'Add a picture (PNG, JPEG, GIF or WebP; hidden data such as GPS is left out)'],
   ['G', 'Stamp: a check, an X, a star or a question mark (pick which in the pill)'],
+  ['N', 'A step number in the middle (picked: the arrow keys move it), and the Step tool; steps count on across pages'],
   ['P', 'Pen'],
   ['H', 'Highlighter'],
   ['1 to 5', 'A pen: black, blue, red, green, purple'],
@@ -9153,7 +9542,9 @@ const HELP_KEYS = [
   ['Escape', 'Step back: drop a stroke being drawn, put back a move, let go of what is picked, leave a group, then Select'],
   ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo (Ctrl+Y redoes too); it shows the page the change was on'],
   ['Page Up / Page Down', 'The page before or after'],
-  ['F5 / Shift+F5', 'Present: from the first page / from this page (Escape stops)'],
+  ['F5 / Shift+F5', 'Present: from the first page / from this page'],
+  ['Presenting: Escape', 'Back to the Pointer; with the Pointer, stop presenting'],
+  ['Presenting: F', 'Full screen on or off (presenting carries on)'],
   ['Presenting: Right, Space, Page Down, Enter', 'Next page (Left, Page Up, Backspace: the page before; Home and End: the ends)'],
   ['Presenting: a number, then Enter', 'Go to that page'],
   ['Presenting: K, S, M', 'Laser pointer, spotlight, magnifying glass (+ and - zoom it)'],
@@ -9440,7 +9831,7 @@ function wireKeys() {
     if (e.key === 'Enter' && document.activeElement === $('board')) {
       const one = sel.ids.size === 1 ? pickedItems()[0] : null;
       if (one && hasWords(one)) { e.preventDefault(); startEdit(one, false); return; }
-      if (SHAPE_TYPES.includes(tool) || tool === 'text' || tool === 'jot' || tool === 'stamp') { e.preventDefault(); placeInMiddle(); return; }
+      if (SHAPE_TYPES.includes(tool) || tool === 'text' || tool === 'jot' || tool === 'stamp' || tool === 'step') { e.preventDefault(); placeInMiddle(); return; }
     }
     // Delete or Backspace: delete what is picked.
     if ((e.key === 'Delete' || e.key === 'Backspace') && sel.ids.size) { e.preventDefault(); deleteSelection(); return; }
@@ -9466,6 +9857,8 @@ function wireKeys() {
     // The app's own tools' keys (not in the shared bar): G stamps, I a picture.
     const letter = e.key.toLowerCase();
     if (letter === 'g') { setTool('stamp'); return; }
+    // N: a step number in the middle (picked, so the arrow keys move it), and the Step tool (section 8k).
+    if (letter === 'n') { e.preventDefault(); dropStepInMiddle(); return; }
     if (letter === 'i') { e.preventDefault(); choosePictures(); return; }
     // Space + drag slides the board (only with the pointer over it or the board focused,
     // so Space still presses buttons everywhere else).
@@ -9575,6 +9968,13 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.3.4', date: '2026-10-20', notes: [
+    'Step numbers (N, or the Step tool on the rail): numbered discs, as in IMGEDTR, that count on from page to page. Deleting one closes the gap; moving or copying a page renumbers what comes after. Any step can start new numbering (from any number, in 1 2 3, A B C or a b c). Pick a step to type its number, move it earlier or later, or change its number color, ring and size; it says what it continues from.',
+    'Each step is described for you ("Step 3"); words you add come after the live number ("Step 3: click Submit"). The filmstrip says which steps each page has.',
+    'Units: inches, centimeters, millimeters or points, picked once at the top of the Page section, for every measurement (page size, position and size, background spacing, the grid). The first choice follows your browser\'s language, and with centimeters a new board starts on A4, with 5 mm graph paper and grid squares.',
+    'Present mode: Escape first goes back to the Pointer; with the Pointer, it stops. In Chrome and Edge, Escape no longer drops out of full screen on the way (hold it to leave full screen). F, or the new Full screen button on the bar, goes in and out of full screen while presenting.',
+    'Fixed: picking "Custom size" for the page now shows its width and height.'
+  ] },
   { version: '0.3.3', date: '2026-10-20', notes: [
     'Backgrounds (Inspector, with nothing picked): dots, small lines, large lines with a margin, and small or large graph paper, each with its own line color and spacing.',
     'The coordinate grid, for graphing: all four quadrants or the first only, squares worth any amount, a number every so many squares, axes with arrows, and the origin wherever you want it.',

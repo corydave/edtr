@@ -1,5 +1,15 @@
 # WHTBRDR - changelog
 
+## 0.3.4 - 2026-10-20 - Step numbers, units, and a gentler Escape
+
+- **Step numbers** (N, or the new Step tool on the rail, below Stamp): numbered discs, as in IMGEDTR, that count on from page to page. N puts one in the middle of the board (picked, so the arrow keys move it); with the tool, a click puts one where you click. Their color is one of the five pen colors in the pill (blue at first), sized S / M / L; they stay round and upright.
+- **The numbering:** all the steps make one run, page by page. Delete a step and the gap closes; move or copy a page and everything after renumbers (a copied page with steps 4 to 6 becomes 7 to 9). Any step can **start new numbering**, from any number, in 1 2 3, A B C or a b c; a copied page keeps its restart, so a copied "lesson 2" page still starts at 1.
+- **For a picked step:** type its number (it moves to that place among the steps on its page), Earlier and Later, Start new numbering here (with Start at and Style), number color, white ring and size, and a line saying what it continues from ("Continues from step 6 on page 2"). Copies take the next numbers.
+- **Descriptions:** each step is "Step 3"; words added in the Description field come after the live number ("Step 3: click Submit"). The filmstrip says which steps each page has ("Page 2: Steps 4 to 7").
+- **Units:** inches, centimeters, millimeters or points, one choice at the top of the Page section ("Measure in", also in Position and size) for every measurement: page size, position and size, background spacing, the grid's squares. The first choice follows your browser's language. With centimeters or millimeters, a new board starts on A4, and new backgrounds and grids use 5 mm dots and squares (1 cm for large graph paper).
+- **Present mode, Escape:** from any tool it goes back to the Pointer first; with the Pointer, it stops. In Chrome and Edge, Escape no longer drops out of full screen on the way (hold it down to leave full screen). **F**, or the new Full screen button on the bar, goes in and out of full screen while presenting.
+- **Fixed:** picking "Custom size" for the page now shows its width and height.
+
 ## 0.3.3 - 2026-10-20 - Backgrounds and the coordinate grid
 
 - **Backgrounds** (Inspector, with nothing picked): dots, small lines (college ruled), large lines with a red margin line (wide ruled), and small or large graph paper. Each has its own line color and spacing (in inches or millimeters).
