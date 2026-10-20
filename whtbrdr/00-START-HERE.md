@@ -39,10 +39,17 @@
 >
 > **Then 0.3.4:** step numbers across pages (section 8k), units (in, cm,
 > mm, pt) in the Page section, and Escape in Present mode going back to the
-> Pointer first. That finishes milestone 3. Waiting for Dave's review of
-> 0.3.4; next is milestone 4 (documents). **Phone testing is on hold**
+> Pointer first. That finishes milestone 3. **Phone testing is on hold**
 > until Dave has time: check builds on the desktop only. The extension is
 > unchanged (1.3.2).
+>
+> **Then 0.4.0:** PDFs and pictures open as pages (section 8l), with the
+> "Save it as a PDF first" dialog for Office files. **There are two
+> editions now:** `index-online.html` is the SOURCE (edit it), and
+> `python3 build-offline.py` makes `index.html` from it, with pdf.js
+> (in `vendor/`) packed inside. Never edit `index.html` by hand. After
+> `_edtr-suite/paste_whtbrdr_bar.py`, rebuild too. Waiting for Dave's
+> review of 0.4.0; next is 0.4.1 (highlights that quote the PDF's words).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**
@@ -56,7 +63,9 @@ the extension's annotation bar in, then carry on milestone by milestone.
 | --- | --- |
 | `00-START-HERE.md` | This file |
 | `WHTBRDR-SPEC.md` | The full plan: pages, tools, step numbers, objects, filmstrip, Present mode, export, accessibility, security, milestones, open questions |
-| `index.html` | WHTBRDR 0.1.0, one self-contained file. It is the source: edit it directly |
+| `index-online.html` | The app's SOURCE since 0.4.0: edit this one. It fetches pdf.js from jsDelivr (SRI-pinned) when a PDF is opened |
+| `index.html` | The offline edition, MADE by `build-offline.py` from `index-online.html`, with pdf.js inside. The site serves it. Don't edit it by hand |
+| `build-offline.py`, `vendor/` | The build (checks the vendor files against their fingerprints first), and pdf.js 5.7.284 with its license |
 
 Put the folder at `productivity-suite/whtbrdr/` (the spec's source folder).
 

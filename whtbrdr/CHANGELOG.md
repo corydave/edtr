@@ -1,5 +1,20 @@
 # WHTBRDR - changelog
 
+## 0.4.0 - 2026-10-20 - Open PDFs and pictures
+
+- **Open** (Ctrl+O, the new folder button in the top bar, or "Open a PDF or pictures" on the splash): every page of a PDF becomes a page of the same size, with the PDF under everything you draw, so it can't be picked, moved or erased by accident. A picture becomes a page the size of the picture (as its background picture, so it can still be faded). New pages go in after the page on show; on a board that is still one blank page, they take its place. One undo step either way.
+- **Drop** a PDF on the board or the filmstrip to open it the same way. A picture dropped on the filmstrip becomes a page where it lands; dropped on the board, it is still a picture you can move. Several files at once work too.
+- **Sharp at any zoom:** pdf.js paints the whole page (2048 pixels on its long side), and when you zoom in past that, it paints just the part on screen again at your screen's own sharpness, a moment after zooming stops. The filmstrip gets small copies, nearest pages first (200 pages took under 4 seconds in testing).
+- **A PDF page in the Inspector:** its file, its page number and size (read only: a PDF page keeps the PDF's size), Turn the page (a quarter at a time; what you drew stays put) and Clear the page. Lines or a grid from Background can go over it. "Make every page this size" leaves PDF pages alone.
+- **Password-locked PDFs** ask for the password in a dialog ("That password didn't open..." when it is wrong). It goes straight to pdf.js and is never kept: the field is emptied at once.
+- **Office files** (Word, PowerPoint, Excel, Pages, Keynote, Numbers, OpenDocument) open a "Save it as a PDF first" dialog with the steps for that program and for Google's, and a button to open the PDF. It says why: converting it here would mean sending it to a server.
+- **Turned away, with a reason:** a damaged PDF, a file that is neither a PDF nor a picture, a PDF over 100 MB. A PDF page bigger than 100 inches is shrunk to fit. The board's 500-page limit applies, and the toast says how many pages were left out.
+- **Two editions,** the suite's way, as in PDFEDTR: `index-online.html` is now the source (edit it), and fetches pdf.js 5.7.284 from jsDelivr with SRI fingerprints the first time a PDF is opened. `build-offline.py` makes `index.html`, the edition the site serves, with pdf.js packed inside (gzip, then base64, about 700 KB) from `vendor/`; it checks the files against the same fingerprints first, and the page checks them again before unpacking. The offline edition makes no network call at all.
+- **Security:** the CSP adds `blob:` to script-src and worker-src (pdf.js runs from a blob: address the page makes itself, after the fingerprint check; worker-src keeps `'self'` for the service worker). The online edition's connect-src adds `https://cdn.jsdelivr.net`, and the build takes it out again. PDF JavaScript never runs, links in a PDF can't be clicked, and pictures inside a PDF are limited to 60 megapixels.
+- The help panel: Ctrl+O in the shortcuts, a Getting started step for opening, the About tab says which edition is running and credits pdf.js. "What is coming" was months out of date (it still listed the filmstrip and Present mode); it now names what is actually next.
+- `sw.js` keeps the online edition under its own name, so visiting it never replaces the offline page the installed app opens with.
+- `_edtr-suite/paste_whtbrdr_bar.py` now pastes the bar into `index-online.html`; run `build-offline.py` after it.
+
 ## 0.3.4 - 2026-10-20 - Step numbers, units, and a gentler Escape
 
 - **Step numbers** (N, or the new Step tool on the rail, below Stamp): numbered discs, as in IMGEDTR, that count on from page to page. N puts one in the middle of the board (picked, so the arrow keys move it); with the tool, a click puts one where you click. Their color is one of the five pen colors in the pill (blue at first), sized S / M / L; they stay round and upright.

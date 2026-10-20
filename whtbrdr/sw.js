@@ -43,11 +43,14 @@ self.addEventListener('fetch', (event) => {
 
   // The page: the network first (so every launch gets the newest version),
   // and the stored copy when there is no network. A fresh copy is kept for next time.
+  // (0.4.0: the online edition, index-online.html, is kept under its own name, so it never
+  // takes the place of the offline edition that the app opens with.)
   if (req.mode === 'navigate') {
+    const key = /index-online\.html$/.test(url.pathname) ? url.pathname : './index.html';
     event.respondWith(fetch(req).then((res) => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); }
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(key, copy)); }
       return res;
-    }).catch(() => caches.match('./index.html')));
+    }).catch(() => caches.match(key)));
     return;
   }
   // Other files (the manifest, the icons): the stored copy first, then the network
