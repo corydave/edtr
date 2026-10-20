@@ -349,6 +349,22 @@ section[tabindex="-1"]:focus { outline: none; }   /* focus lands here from the n
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
 .hero-actions .btn { background: var(--fg); color: var(--bg); }
 .hero-actions .btn-line { background: var(--surface); }
+/* Start creating (2026-10-20): the main way in, so it's bigger than the
+   buttons beside it, with an arrow that nudges on hover (not when motion is
+   turned down). It takes the text colour as its fill, like the other hero
+   button, so it reads in day and night mode alike. */
+.hero-actions .btn-create { min-height: 56px; padding: 0 24px; font-size: 1.15rem; border-radius: 12px; }
+.btn-create svg { width: 20px; height: 20px; }
+@media (prefers-reduced-motion: no-preference) {
+  .btn-create svg { transition: transform .15s; }
+  .btn-create:hover svg { transform: translateX(3px); }
+}
+/* The small one in the top bar. */
+.top-create { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 10px;
+  background: var(--fg); color: var(--bg); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.top-create:hover { filter: brightness(1.15); }
+/* On a phone the top bar is tight, and the hero's big button is right there anyway. */
+@media (max-width: 480px) { .top-create { display: none; } }
 .pills { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .pills li { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
   font-size: .95rem; font-weight: 700; }
@@ -439,6 +455,7 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
       <a href="#story">The story</a>
       <a href="#faq">Questions</a>
     </nav>
+    <a class="top-create" href="/create/">Start creating</a>
     <a class="icon-btn" id="gh-top" href="https://github.com/corydave/edtr" target="_blank" rel="noopener noreferrer"
        aria-label="Source code on GitHub (opens in a new tab)" title="Source code on GitHub"></a>
     <!-- Night mode toggle. Its icon shows where it will take you: a moon in light mode, a sun in dark. -->
@@ -463,7 +480,9 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
       screen recording, vector art, 3D models and page layout. No account, no uploads, no installer.
       Open one and start making.</p>
     <div class="hero-actions">
-      <a class="btn" href="#apps">Browse the apps</a>
+      <!-- Start creating: into EDTR Studio, every app in one window (edtrapps.com/create/). -->
+      <a class="btn btn-create" href="/create/">Start creating<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+      <a class="btn-line" href="#apps">Browse the apps</a>
       <a class="btn-line" href="https://github.com/corydave/edtr" target="_blank" rel="noopener noreferrer" id="gh-hero">Source on GitHub<span class="sr-only"> (opens in a new tab)</span></a>
     </div>
     <ul class="pills" aria-label="At a glance">
