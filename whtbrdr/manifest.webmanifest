@@ -1,0 +1,15 @@
+{
+  "name": "WHTBRDR",
+  "short_name": "WHTBRDR",
+  "description": "A whiteboard in your browser: draw on pages of any size with pens, highlighters, shapes, text and sticky notes. Nothing is uploaded.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1115",
+  "theme_color": "#9f1239",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,5 +1,12 @@
 # WHTBRDR - changelog
 
+## 0.3.1 - 2026-10-19 - Install it, and a splash
+
+- **Installable:** Install in the top bar (shown only when the browser allows it) or at the foot of the splash gives WHTBRDR its own window and icon. It opens with no network: `sw.js` keeps the page and the icons (never your boards). With a network, each launch loads the newest version, and the splash checks for updates (Update now when there is one). On iPhone and iPad the splash says how to add it to the Home Screen.
+- **The splash** at start-up, the family's: a picture of WHTBRDR in use, then **New board** (the page as it is, ready to draw on), **Pick a page size**, **Draw on a picture**, the "See what WHTBRDR can do" tour, the other apps and the credits. A picture pasted or dropped on the splash closes it and goes onto the page. Escape or the X goes straight to the board.
+- **Icons:** `icon.svg` and a full set of PNGs (192, 512, a maskable 512 for phones that crop, Apple's 180, a 32 favicon), drawn by `make-icons.py` from the same numbers. `whtbrdr-thumb.webp` is the hub picture, for when WHTBRDR is listed.
+- **Next:** Present mode (0.3.2), pulled forward from milestone 6.
+
 ## 0.3.0 - 2026-10-19 - Pages
 
 - **The filmstrip** along the bottom shows every page, numbered, with a small live copy of what is drawn on it. The page on show has a thick outline (and "on show" for screen readers); other picked pages a dashed one and a tick.

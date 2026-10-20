@@ -24,7 +24,14 @@
 >
 > **Then 0.3.0:** many pages and the filmstrip (section 8h). Milestone 3 is
 > split in three (0.3.0 pages, 0.3.1 backgrounds and the grid, 0.3.2 step
-> numbers; see the spec). Waiting for Dave's review of 0.3.0. **Phone testing is on hold**
+> numbers; see the spec).
+>
+> **Then 0.3.1:** installable, with the splash (Dave asked for it early):
+> `manifest.webmanifest`, `sw.js`, the icons (`make-icons.py` draws the
+> PNGs from the same numbers as `icon.svg`), and `whtbrdr-thumb.webp` (the
+> hub picture; the splash's `APP_HERO` is the same picture, smaller).
+> **Present mode is queued next as 0.3.2**, then backgrounds (0.3.3) and
+> step numbers (0.3.4). Waiting for Dave's review of 0.3.1. **Phone testing is on hold**
 > until Dave has time: check builds on the desktop only. The extension is
 > unchanged (1.3.2).
 
