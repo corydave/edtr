@@ -19,9 +19,9 @@
 >
 > **Then 0.2.3:** copy, cut, paste, duplicate, front and back, lock, groups
 > (double-click to work inside one) and the right-click menu (section 8f).
-> Waiting for Dave's review of 0.2.3.
-> 0.2.3 was split in two: **0.2.4 is next** (the layers list, snapping and
-> alignment, alt text and the Description field). **Phone testing is on hold**
+> **Then 0.2.4:** descriptions (alt text), the layers list, snapping and
+> Line up (section 8g). That finishes milestone 2. Waiting for Dave's review
+> of 0.2.4; next is milestone 3 (0.3.0, pages). **Phone testing is on hold**
 > until Dave has time: check builds on the desktop only. The extension is
 > unchanged (1.3.2).
 

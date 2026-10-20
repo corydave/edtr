@@ -188,6 +188,8 @@ svg.icon { width: 20px; height: 20px; flex: none; stroke: currentColor;
 .btn:hover:not(:disabled) { border-color: var(--brand); }
 .btn.primary { background: var(--brand); color: var(--brand-contrast); border-color: var(--brand); font-weight: 600; }
 .btn.small { min-height: 30px; padding: 0 10px; font-size: 13px; }
+.btn.icon-only { width: 34px; padding: 0; }      /* an icon with no words: its name is in aria-label and its tip */
+.btn:disabled { opacity: .45; cursor: not-allowed; }
 kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-width: 2px;
   border-radius: 4px; padding: 1px 5px; background: var(--surface-2); white-space: nowrap; }
 
@@ -280,6 +282,39 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 .ctx-sep { height: 1px; margin: 4px 6px; background: var(--border); }
 @media (pointer: coarse) { .ctx-item { min-height: 44px; } }
 @media (forced-colors: active) { .ctx-item:focus { outline: 2px solid Highlight; } }
+/* Where a drag snapped: a pink line right across the board (section 8g). */
+.snap-guide { stroke: #db2777; stroke-width: 1; }
+@media (forced-colors: active) { .snap-guide { stroke: Highlight; } }
+/* The Description field and its reset button, side by side. */
+.desc-row { display: flex; gap: 6px; }
+.desc-row input { flex: 1; min-width: 0; }
+/* The layers list (section 8g): one row per mark, top first. */
+.layer-tree { list-style: none; margin: 0 0 6px; padding: 2px; max-height: 320px; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.layer-row { display: flex; align-items: center; gap: 6px; min-height: 30px; padding-right: 4px; border-radius: 6px;
+  font-size: 13px; cursor: pointer; user-select: none; }
+.layer-row:hover { background: var(--surface-2); }
+.layer-row[aria-selected="true"] { background: var(--brand-tint); box-shadow: inset 3px 0 0 var(--brand); }
+.layer-row:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.layer-row.is-hidden .layer-name { opacity: .55; font-style: italic; }
+/* The first highlight row starts the band of highlights (they are drawn under the ink). */
+.layer-row.band-start { margin-top: 18px; position: relative; }
+.layer-row.band-start::before { content: 'Highlights, under the ink'; position: absolute; left: 6px; top: -17px;
+  font-size: 11px; color: var(--text-muted); pointer-events: none; }
+.layer-row.drop-above { box-shadow: inset 0 2px 0 var(--brand); }
+.layer-row.drop-below { box-shadow: inset 0 -2px 0 var(--brand); }
+.layer-chev { flex: none; width: 14px; text-align: center; color: var(--text-muted); }
+.layer-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, .25); }
+.layer-dot.none { background: none; box-shadow: none; }
+.layer-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.layer-act { flex: none; display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center;
+  border-radius: 4px; color: var(--text-muted); opacity: .7; }
+.layer-act .icon { width: 15px; height: 15px; }
+.layer-row:hover .layer-act, .layer-act.on { opacity: 1; }
+.layer-act:hover { background: var(--surface-2); color: var(--text); }
+.layer-rename { flex: 1; min-width: 0; font: inherit; padding: 2px 4px; }
+@media (pointer: coarse) { .layer-row { min-height: 44px; } .layer-act { width: 36px; height: 36px; opacity: 1; } }
+@media (forced-colors: active) { .layer-row[aria-selected="true"] { outline: 2px solid Highlight; } }
 /* The board's pointer for each tool (crosshair for drawing; handles set their own). */
 #board[data-tool="select"] { cursor: default; }
 #board[data-tool="text"] { cursor: text; }
@@ -3602,7 +3637,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.2.3';
+const APP_VERSION = '0.2.4';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -3700,6 +3735,20 @@ const ICONS = {
   reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
   type: '<path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>',
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  // The layers list's eye and padlock (section 8g).
+  eye: '<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M10.73 5.08a10.74 10.74 0 0 1 11.2 6.57 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-1.44 2.49"/><path d="M14.08 14.16a3 3 0 0 1-4.24-4.24"/><path d="M17.48 17.5a10.75 10.75 0 0 1-15.42-5.15 1 1 0 0 1 0-.7 10.75 10.75 0 0 1 4.45-5.14"/><path d="m2 2 20 20"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  unlock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  // Lining up (section 8g): the line shows the edge or middle things line up on.
+  alignLeft: '<path d="M3 2v20"/><rect x="7" y="5" width="13" height="5" rx="1.5"/><rect x="7" y="14" width="8" height="5" rx="1.5"/>',
+  alignCenter: '<path d="M12 2v20"/><rect x="4" y="5" width="16" height="5" rx="1.5"/><rect x="7" y="14" width="10" height="5" rx="1.5"/>',
+  alignRight: '<path d="M21 2v20"/><rect x="4" y="5" width="13" height="5" rx="1.5"/><rect x="9" y="14" width="8" height="5" rx="1.5"/>',
+  alignTop: '<path d="M2 3h20"/><rect x="5" y="7" width="5" height="13" rx="1.5"/><rect x="14" y="7" width="5" height="8" rx="1.5"/>',
+  alignMiddle: '<path d="M2 12h20"/><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="7" width="5" height="10" rx="1.5"/>',
+  alignBottom: '<path d="M2 21h20"/><rect x="5" y="4" width="5" height="13" rx="1.5"/><rect x="14" y="9" width="5" height="8" rx="1.5"/>',
+  spaceAcross: '<path d="M2 3v18M22 3v18"/><rect x="5" y="7" width="4" height="10" rx="1"/><rect x="15" y="7" width="4" height="10" rx="1"/>',
+  spaceDown: '<path d="M3 2h18M3 22h18"/><rect x="7" y="5" width="10" height="4" rx="1"/><rect x="7" y="15" width="10" height="4" rx="1"/>',
   stamp: '<path d="M5 22h14"/><path d="M19.27 13.73A2.5 2.5 0 0 0 17.5 13h-11A2.5 2.5 0 0 0 4 15.5V17a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1.5c0-.66-.26-1.3-.73-1.77Z"/><path d="M14 13V8.5C14 7 15 7 15 5a3 3 0 0 0-6 0c0 2 1 2 1 3.5V13"/>'
 };
 /** Make an <svg> icon from the table above (fixed text from ICONS only - never anything from a person or a file). */
@@ -3751,7 +3800,9 @@ function loadSettings() {
     tool: ['select', 'pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'eraser', 'stamp'].includes(raw.tool) ? raw.tool : 'pen',
     eraserMode: raw.eraserMode === 'part' ? 'part' : 'whole',                    // whole strokes, or part of a stroke
     keepShape: raw.keepShape !== false,                                          // Inspector: width and height change together
-    stayInTool: raw.stayInTool !== false,                                        // after making a shape, text or note, keep the tool (the extension's way)
+    stayInTool: raw.stayInTool !== false,
+    snap: raw.snap !== false,                                                    // moving and drawing snap to the page and other marks (section 8g)
+    alignTo: raw.alignTo === 'page' ? 'page' : 'selection',                      // Line up: to each other, or to the page                                        // after making a shape, text or note, keep the tool (the extension's way)
     font: WB_FONTS.some((f) => f.id === raw.font) ? raw.font : WB_FONTS[0].id,   // for new text: Atkinson Hyperlegible first
     noteColor: Number.isInteger(raw.noteColor) ? clamp(raw.noteColor, 0, WB_NOTE_COLORS.length - 1) : 0,   // a new sticky note's paper
     stamp: ['check', 'x', 'star', 'question'].includes(raw.stamp) ? raw.stamp : 'check',   // the stamp the Stamp tool puts down
@@ -3772,7 +3823,7 @@ function loadSettings() {
     s.exact.highlighter = exactOk(raw.exact.highlighter, 'highlighter');
   }
   if (raw.open && typeof raw.open === 'object') {
-    for (const key of ['tool', 'page', 'colors', 'sel', 'geom']) if (raw.open[key] === true) s.open[key] = true;
+    for (const key of ['tool', 'page', 'colors', 'sel', 'geom', 'layers']) if (raw.open[key] === true) s.open[key] = true;
   }
   // A saved preset keeps its color if it is a real color. Settings from
   // 0.1.0 (no "bar" mark) held that version's stand-in colors, so they are
@@ -3843,16 +3894,23 @@ function sizeWords(page) {
        pages: [ {
          id, w, h,               the page's size in points
          color: '#ffffff',       the page's color
-         items: [ ... ]          what is drawn on it, bottom first
+         items: [ ... ],         what is drawn on it, bottom first
+         groupAlt: { gid: '...' } a description written for a group (only when someone wrote one; section 8g)
        } ]
      }
    A stroke item looks like this:
      { id, type: 'ink' or 'highlight', color: '#1d4ed8', size: 3,
        pressure: true or false, pts: [[x, y, p], ...] }
-   Arrows, lines, rectangles, ellipses, text and sticky notes are items
-   too; their shapes are listed at the top of section 8d.
    where x and y are in points from the page's top-left corner, and p is
    how hard the stylus pressed (0 to 1; 0.5 when there is no stylus).
+   Arrows, lines, rectangles, ellipses, text and sticky notes are items
+   too; their shapes are listed at the top of section 8d.
+   Any item can also carry (each one only when it applies):
+     groups: ['gA', 'gB']   the groups it is in, outermost first (section 8f)
+     locked: true           clicks, drags and the eraser go through it (8f)
+     hidden: true           not drawn, and not picked by clicks (8g)
+     alt: '...'             a description someone wrote (8g; otherwise one is written for it)
+     decorative: true       carries no meaning: screen readers and exports skip it (8g)
 
    UNDO keeps whole copies of the board as text (JSON). Before each change
    is kept, the copy from just before it goes onto the undo list. That is
@@ -3937,8 +3995,14 @@ const boardHasWork = () => board.pages.some((p) => p.items.length > 0);
    small wobbles of a hand.
    ===================================================================== */
 
-/** The SVG element for one item (shapes, text and notes are drawn in section 8d). */
+/** The SVG element for one item. A hidden item (section 8g) is made but not shown. */
 function itemElement(item) {
+  const node = drawItem(item);
+  if (item.hidden) node.setAttribute('display', 'none');
+  return node;
+}
+/** Draw one item (shapes, text and notes are drawn in section 8d). */
+function drawItem(item) {
   if (item.type === 'text') return textElement(item);
   if (item.type === 'note') return noteElement(item);
   if (item.type === 'picture') return pictureElement(item);
@@ -3953,13 +4017,29 @@ function itemElement(item) {
   });
 }
 
-/** A few words for an item, for screen readers: "Blue pen stroke", "Red arrow", "Sticky note: check this date". */
+/**
+ * An item's description: the one someone wrote in the Inspector or the
+ * layers list (item.alt, section 8g), or else the one written for it here.
+ * It is the item's name everywhere: the layers list, "Picked: ...", what
+ * screen readers hear, and (later) its alt text in exports.
+ */
 function itemWords(item) {
+  return item.alt || autoWords(item);
+}
+/** The words written for an item: "Blue pen stroke", "Red arrow pointing right", "Sticky note: check this date". */
+function autoWords(item) {
   if (item.type === 'text') return 'Text: ' + shortWords(item.text);
   if (item.type === 'note') return 'Sticky note' + (item.text.trim() ? ': ' + shortWords(item.text) : ' (empty)');
   if (item.type === 'picture') return 'Picture: ' + item.name;
   if (item.type === 'stamp') { const d = stampDef(item.stamp); const w = item.color === d.color ? d.colorName + ' ' + d.words : d.name; return w + ' stamp'; }
+  if (item.type === 'arrow') return colorName(item) + ' arrow pointing ' + arrowWay(item);
   return colorName(item) + ' ' + TYPE_WORDS[item.type];          // the shared bar's color names (section 8d)
+}
+/** Which way an arrow points, in eight steps: "right", "down and left"... (y grows downward on the page). */
+function arrowWay(item) {
+  const ways = ['right', 'down and right', 'down', 'down and left', 'left', 'up and left', 'up', 'up and right'];
+  const step = Math.round(Math.atan2(item.y2 - item.y1, item.x2 - item.x1) / (Math.PI / 4));
+  return ways[(step + 8) % 8];
 }
 
 /* =====================================================================
@@ -4029,6 +4109,7 @@ function renderPage() {
   else $('workspace').style.removeProperty('--staging');
   describeBoard();
   renderSelection();
+  renderLayers();                                  // (only redrawn if the list is open and something it shows changed)
 }
 
 /** Tell screen readers what is on the page, in one line. */
@@ -4310,6 +4391,7 @@ function wireBoardPointers() {
       gesture = null;
     }
     if (!pointers.size) boardEl.classList.remove('panning');
+    if (!gesture) clearSnapGuides();                 // (a drag that snapped has ended: its pink lines go)
   };
   boardEl.addEventListener('pointerup', finish);
   boardEl.addEventListener('pointercancel', finish);
@@ -4627,7 +4709,7 @@ function itemHit(item, x, y, reach, inside) {
  */
 function itemAt(x, y, reach, withLocked) {
   const items = page().items;
-  const ok = (it) => withLocked || !it.locked;
+  const ok = (it) => !it.hidden && (withLocked || !it.locked);     // (hidden items are never under the pointer)
   for (let i = items.length - 1; i >= 0; i--) if (ok(items[i]) && items[i].type !== 'highlight' && itemHit(items[i], x, y, reach)) return items[i];
   for (let i = items.length - 1; i >= 0; i--) if (ok(items[i]) && items[i].type === 'highlight' && itemHit(items[i], x, y, reach)) return items[i];
   for (let i = items.length - 1; i >= 0; i--) if (ok(items[i]) && isHollow(items[i]) && itemHit(items[i], x, y, reach, true)) return items[i];
@@ -4680,7 +4762,7 @@ function selectionWords(items = pickedItems()) {
   if (!items.length) return 'nothing picked';
   if (items.length === 1) return itemWords(items[0]) + (items[0].locked ? ' (locked)' : '');
   // One group, picked as a whole where you are working: "Group: 2 pen strokes and 1 arrow".
-  if (new Set(items.map(unitOf)).size === 1 && unitOf(items[0]).startsWith('g:')) return 'Group: ' + countWords(items) + (items.some((i) => i.locked) ? ' (locked)' : '');
+  if (new Set(items.map(unitOf)).size === 1 && unitOf(items[0]).startsWith('g:')) return groupWords(unitOf(items[0]).slice(2), items) + (items.some((i) => i.locked) ? ' (locked)' : '');
   return plural(items.length, 'mark') + ': ' + countWords(items);
 }
 /** "2 pen strokes, 1 arrow and 1 sticky note" */
@@ -4848,6 +4930,7 @@ function renderSelection() {
       }
     }
   }
+  parts.push(...snapGuideEls());                   // pink lines where a drag snapped (section 8g)
   selG.replaceChildren(...parts);
   updateInspectorDot();
 }
@@ -4910,7 +4993,7 @@ function moveBox(e) {
   const b = { x0: Math.min(g.x0, g.x1), y0: Math.min(g.y0, g.y1), x1: Math.max(g.x0, g.x1), y1: Math.max(g.y0, g.y1) };
   const ids = new Set(g.base);
   // Only what is where you are working, and not locked; touching part of a group picks all of it.
-  for (const it of page().items) if (inPath(it) && !it.locked && itemInBox(it, b, g.inside)) unitIds(it).forEach((id) => ids.add(id));
+  for (const it of page().items) if (inPath(it) && !it.locked && !it.hidden && itemInBox(it, b, g.inside)) unitIds(it).forEach((id) => ids.add(id));
   sel.ids = ids; sel.angle = startAngle(ids);
   renderSelection();
 }
@@ -4953,7 +5036,9 @@ function beginTransform(e, how, clickedId) {
     startX: e.clientX, startY: e.clientY, start: toPage(e.clientX, e.clientY), moved: false,
     frame: f, angle0: sel.angle,
     originals: items.map((it) => JSON.parse(JSON.stringify(it))),
-    index: new Map(page().items.map((it, i) => [it.id, i]))
+    index: new Map(page().items.map((it, i) => [it.id, i])),
+    // Snapping (section 8g): the lines to snap to (worked out once, at the start), and the marks' upright box.
+    targets: snapTargets(sel.ids), box0: boxOf(items)
   };
   if (how.kind === 'turn') {
     g.center = framePoint(f, 0.5, 0.5);
@@ -4978,7 +5063,8 @@ function moveTransform(e) {
       const ox = o['x' + other], oy = o['y' + other], len = Math.hypot(x - ox, y - oy);
       const a = Math.round(Math.atan2(y - oy, x - ox) / (Math.PI / 4)) * (Math.PI / 4);
       x = ox + Math.cos(a) * len; y = oy + Math.sin(a) * len;
-    }
+      snapGuides = [];
+    } else [x, y] = snapPoint(e.altKey ? null : g.targets, x, y);   // (Alt: no snapping)
     const moved = { ...o, ['x' + n]: round2(x), ['y' + n]: round2(y) };
     sel.angle = Math.atan2(moved.y2 - moved.y1, moved.x2 - moved.x1);
     showReplaced(g, [moved]);
@@ -4987,9 +5073,12 @@ function moveTransform(e) {
   let m;
   if (g.how === 'move') {
     let dx = pt.x - g.start.x, dy = pt.y - g.start.y;
-    if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }   // Shift: straight across or straight down
+    let holdX = false, holdY = false;
+    if (e.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) { dy = 0; holdY = true; } else { dx = 0; holdX = true; } }   // Shift: straight across or straight down
+    [dx, dy] = snapMove(e.altKey ? null : g.targets, g.box0, dx, dy, holdX, holdY);    // (Alt: no snapping)
     m = mTranslate(dx, dy);
   } else if (g.how === 'turn') {
+    snapGuides = [];
     let total = g.angle0 + Math.atan2(pt.y - g.center[1], pt.x - g.center[0]) - g.a0;
     if (e.shiftKey) total = Math.round(total / (Math.PI / 12)) * (Math.PI / 12);   // Shift: steps of 15 degrees
     m = mRotateAround(total - g.angle0, g.center[0], g.center[1]);
@@ -4997,7 +5086,16 @@ function moveTransform(e) {
   } else {
     // Stretching from a handle: work in the frame's own directions (u across, v down).
     const f = g.frame, h = g.handle;
-    const q = mApply(mRotate(-f.angle), pt.x, pt.y);
+    // Snapping the handle to a line works while the frame stands upright (u and v are then just x and y).
+    let px = pt.x, py = pt.y;
+    snapGuides = [];
+    if (!e.altKey && g.targets && Math.abs(f.angle) < 1e-6) {
+      const sx = h.fu !== 0.5 && !f.lockU ? bestSnap([px], g.targets.xs) : null;
+      const sy = h.fv !== 0.5 && !f.lockV ? bestSnap([py], g.targets.ys) : null;
+      if (sx) { px += sx.delta; snapGuides.push({ axis: 'x', at: sx.at }); }
+      if (sy) { py += sy.delta; snapGuides.push({ axis: 'y', at: sy.at }); }
+    }
+    const q = mApply(mRotate(-f.angle), px, py);
     const au = f.u0 + (f.u1 - f.u0) * (1 - h.fu), av = f.v0 + (f.v1 - f.v0) * (1 - h.fv);   // the opposite side stays put
     const hu = f.u0 + (f.u1 - f.u0) * h.fu, hv = f.v0 + (f.v1 - f.v0) * h.fv;               // where the handle began
     let sx = h.fu === 0.5 || f.lockU ? 1 : (q[0] - au) / (hu - au);
@@ -5049,6 +5147,7 @@ function endTransform() {
 /** Drop a change being made with the pointer: put the board back as it was at the last kept change. */
 function cancelObjectGesture() {
   if (!gesture) return false;
+  snapGuides = [];                                   // (no pink lines left behind)
   if (gesture.kind === 'press') { clearTimeout(gesture.timer); gesture = null; return true; }
   if (gesture.kind === 'shape') { if (gesture.el) gesture.el.remove(); gesture = null; return true; }
   if (gesture.kind === 'box') { gesture = null; selectionChanged(); return true; }
@@ -5101,7 +5200,7 @@ function deleteSelection() {
 /** Ctrl+A: everything where you are working (inside the group, or the whole page), but not what is locked. */
 function selectAll() {
   const ids = unitsHere(false).flatMap((u) => u.ids);
-  if (!ids.length) { announce(page().items.length ? 'Everything here is locked' : 'Nothing on the page to pick'); return; }
+  if (!ids.length) { announce(page().items.length ? 'Everything here is locked or hidden' : 'Nothing on the page to pick'); return; }
   setSelection(ids);
 }
 /** Tab and Shift+Tab with the board focused: step through the marks where you are working, in reading
@@ -5111,7 +5210,7 @@ function tabThrough(back) {
   // One stop per unit, placed where its first mark (in reading order) is.
   const stops = [], seen = new Set();
   for (const it of readingOrder()) {
-    if (!inPath(it)) continue;
+    if (!inPath(it) || it.hidden) continue;           // (hidden marks are reached in the layers list instead)
     const key = unitOf(it);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -5123,7 +5222,8 @@ function tabThrough(back) {
   const next = at < 0 ? (back ? -1 : 0) : at + (back ? -1 : 1);
   if (next < 0 || next >= stops.length) return false;
   setSelection(stops[next], false);
-  announce(selectionWords() + ', ' + (next + 1) + ' of ' + stops.length);
+  const decorative = pickedItems().every((i) => i.decorative);
+  announce(selectionWords() + (decorative ? ' (decorative)' : '') + ', ' + (next + 1) + ' of ' + stops.length);
   return true;
 }
 
@@ -5178,7 +5278,7 @@ function eraseAt(x, y) {
     const out = [];
     for (const it of p.items) {
       // Strokes are cut where the eraser rubs; shapes and text go whole; sticky notes stay (they have Delete).
-      const hit = !it.locked && it.type !== 'note' && it.type !== 'picture' && itemHit(it, x, y, r);   // (locked marks stay too)
+      const hit = !it.locked && !it.hidden && it.type !== 'note' && it.type !== 'picture' && itemHit(it, x, y, r);   // (locked marks stay too)
       const pieces = !hit ? null : isStroke(it) ? splitStroke(it, x, y, r) : [];
       if (!pieces) { out.push(it); continue; }      // untouched (or only brushed past): kept as it is
       out.push(...pieces);
@@ -5187,7 +5287,7 @@ function eraseAt(x, y) {
     if (changed) p.items = out;
   } else {
     const before = p.items.length;
-    p.items = p.items.filter((it) => it.locked || it.type === 'note' || it.type === 'picture' || !itemHit(it, x, y, r));   // (locked marks, notes and pictures stay: they have Delete)
+    p.items = p.items.filter((it) => it.locked || it.hidden || it.type === 'note' || it.type === 'picture' || !itemHit(it, x, y, r));   // (locked marks, notes and pictures stay: they have Delete)
     changed = p.items.length !== before;
   }
   if (changed) { gesture.count++; renderPage(); }
@@ -5484,9 +5584,12 @@ const penColor = () => settings.pens[settings.penIndex].color;
 function startShape(e) {
   if (page().items.length >= MAX_ITEMS_PER_PAGE) { toast('This page is full. Undo some marks, or start a new board.'); return; }
   const pt = toPage(e.clientX, e.clientY);
-  const x = round2(pt.x), y = round2(pt.y);
-  gesture = { kind: 'shape', pointerId: e.pointerId, x0: x, y0: y, item: null, el: null };
+  const targets = snapTargets(new Set());              // (section 8g: the corners snap to the page and other marks)
+  const [sx, sy] = snapPoint(e.altKey ? null : targets, pt.x, pt.y);
+  const x = round2(sx), y = round2(sy);
+  gesture = { kind: 'shape', pointerId: e.pointerId, x0: x, y0: y, item: null, el: null, targets };
   shapeTo(x, y, false);
+  renderSelection();
 }
 /** Where the shape being drawn ends (Shift: lines at 45 degree steps, squares, circles). */
 function shapeTo(x, y, snap) {
@@ -5511,7 +5614,12 @@ function shapeTo(x, y, snap) {
 }
 function moveShape(e) {
   const pt = toPage(e.clientX, e.clientY);
-  shapeTo(pt.x, pt.y, e.shiftKey);
+  // Shift keeps the shape (45 degree lines, squares, circles); otherwise the corner snaps (not with Alt).
+  let x = pt.x, y = pt.y;
+  if (e.shiftKey) snapGuides = [];
+  else [x, y] = snapPoint(e.altKey ? null : gesture.targets, x, y);
+  shapeTo(x, y, e.shiftKey);
+  renderSelection();
 }
 function endShape() {
   const g = gesture;
@@ -5590,7 +5698,7 @@ function newNote(x, y) {
 /** The top text (or note) under a page point, or null. */
 function wordsAt(x, y, type) {
   const items = page().items;
-  for (let i = items.length - 1; i >= 0; i--) if (items[i].type === type && !items[i].locked && itemHit(items[i], x, y, 4 / scale())) return items[i];
+  for (let i = items.length - 1; i >= 0; i--) if (items[i].type === type && !items[i].locked && !items[i].hidden && itemHit(items[i], x, y, 4 / scale())) return items[i];
   return null;
 }
 /** Press with the Text tool: type in the text under it, or start a new one. */
@@ -6022,7 +6130,7 @@ function unitIds(it) {
 function unitsHere(withLocked) {
   const seen = new Map();
   for (const it of page().items) {
-    if (!inPath(it) || (it.locked && !withLocked)) continue;
+    if (!inPath(it) || it.hidden || (it.locked && !withLocked)) continue;   // (hidden marks: not picked by Ctrl+A)
     const key = unitOf(it);
     if (!seen.has(key)) seen.set(key, { key, ids: [], first: it });
     seen.get(key).ids.push(it.id);
@@ -6065,6 +6173,7 @@ function ungroupSelection() {
     }
   }
   if (!n) { announce('Nothing picked is a group'); return; }
+  tidyGroupAlt();                                         // (a group that is gone keeps no description: section 8g)
   commit('ungrouping');
   selectionChanged();
   announce('Ungrouped: ' + selectionWords());
@@ -6111,12 +6220,22 @@ function reorder(how) {
   const items = p.items.slice();
   if (how === 'front') p.items = items.filter((i) => !picked.has(i.id)).concat(items.filter((i) => picked.has(i.id)));
   else if (how === 'back') p.items = items.filter((i) => picked.has(i.id)).concat(items.filter((i) => !picked.has(i.id)));
-  else if (how === 'forward') {
-    // Each picked item swaps with the one just above it (from the top down, so they keep their own order).
-    for (let i = items.length - 2; i >= 0; i--) if (picked.has(items[i].id) && !picked.has(items[i + 1].id)) [items[i], items[i + 1]] = [items[i + 1], items[i]];
-    p.items = items;
-  } else {
-    for (let i = 1; i < items.length; i++) if (picked.has(items[i].id) && !picked.has(items[i - 1].id)) [items[i], items[i - 1]] = [items[i - 1], items[i]];
+  else {
+    // One step: highlights and the rest are drawn on layers of their own, so
+    // each picked item swaps with the next item of its own kind above (or
+    // below) it. The two kinds are taken one at a time, each keeping its places.
+    for (const hl of [true, false]) {
+      const places = [];
+      items.forEach((it, i) => { if ((it.type === 'highlight') === hl) places.push(i); });
+      const band = places.map((i) => items[i]);
+      if (how === 'forward') {
+        // From the top down, so picked items next to each other keep their own order.
+        for (let i = band.length - 2; i >= 0; i--) if (picked.has(band[i].id) && !picked.has(band[i + 1].id)) [band[i], band[i + 1]] = [band[i + 1], band[i]];
+      } else {
+        for (let i = 1; i < band.length; i++) if (picked.has(band[i].id) && !picked.has(band[i - 1].id)) [band[i], band[i - 1]] = [band[i - 1], band[i]];
+      }
+      places.forEach((at, k) => { items[at] = band[k]; });
+    }
     p.items = items;
   }
   const words = { front: 'to the front', back: 'to the back', forward: 'forward', backward: 'backward' }[how];
@@ -6141,7 +6260,7 @@ function copySelection(cut) {
   if (!sel.ids.size) return null;
   if (cut && pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return null; }
   const words = selectionWords();
-  clip = { items: copiesOfPicked(), token: uid('clip'), pastes: 0 };
+  clip = { items: copiesOfPicked(), token: uid('clip'), pastes: 0, groupAlt: groupAltOf(pickedItems()) };
   if (cut) {
     page().items = page().items.filter((it) => !sel.ids.has(it.id));
     sel.ids = new Set(); sel.angle = 0;
@@ -6153,7 +6272,7 @@ function copySelection(cut) {
   return 'WHTBRDR: ' + words + ' [' + clip.token + ']';
 }
 /** Put copies on the page: a little down and to the right each time, inside the group being worked in. They are picked. */
-function placeCopies(source, step) {
+function placeCopies(source, step, groupAlt) {
   const p = page();
   if (p.items.length + source.length > MAX_ITEMS_PER_PAGE) { toast('This page is full.'); return; }
   const newGroup = new Map();                             // old group id -> new one, so copies make groups of their own
@@ -6161,7 +6280,13 @@ function placeCopies(source, step) {
   const copies = source.map((it) => {
     const c = transformItem(JSON.parse(JSON.stringify(it)), m);
     c.id = uid('i');
-    const rel = (it.groups || []).map((g) => { if (!newGroup.has(g)) newGroup.set(g, uid('g')); return newGroup.get(g); });
+    const rel = (it.groups || []).map((g) => {
+      if (!newGroup.has(g)) {
+        newGroup.set(g, uid('g'));
+        if (groupAlt && groupAlt[g]) setGroupAlt(newGroup.get(g), groupAlt[g]);   // a copied group keeps its description
+      }
+      return newGroup.get(g);
+    });
     const gs = groupPath.concat(rel);
     if (gs.length) c.groups = gs; else delete c.groups;
     return c;
@@ -6174,7 +6299,7 @@ function pasteClip() {
   if (!clip || !clip.items.length) { announce('Nothing copied yet'); return; }
   finishEdit();
   clip.pastes++;
-  const copies = placeCopies(clip.items, 12 * clip.pastes);
+  const copies = placeCopies(clip.items, 12 * clip.pastes, clip.groupAlt);
   if (!copies) return;
   commit('pasting ' + selectionWords(copies));
   setSelection(copies.map((c) => c.id), false);
@@ -6182,7 +6307,7 @@ function pasteClip() {
 }
 function duplicateSelection() {
   if (!sel.ids.size) return;
-  const copies = placeCopies(copiesOfPicked(), 12);
+  const copies = placeCopies(copiesOfPicked(), 12, groupAltOf(pickedItems()));
   if (!copies) return;
   commit('duplicating ' + selectionWords(copies));
   setSelection(copies.map((c) => c.id), false);
@@ -6325,6 +6450,596 @@ function contextMenuAt(clientX, clientY, fromPointer) {
     } else if (!hit && sel.ids.size) setSelection([], false);
   }
   openMenu(clientX, clientY, menuEntries());
+}
+
+/* =====================================================================
+   8g. DESCRIPTIONS, THE LAYERS LIST, SNAPPING AND LINING UP
+   ---------------------------------------------------------------------
+   DESCRIPTIONS (alt text). Every mark has a description written for it
+   as it is made ("Red arrow pointing right", "Sticky note: check this
+   date"; autoWords in section 5). Typing one in the Inspector's
+   Description field, or renaming its row in the layers list (F2: the
+   same thing), replaces it (item.alt); the reset button puts the written
+   one back. A group can have a description of its own too, kept on the
+   page (page.groupAlt), for screen readers to hear for the group as a
+   whole. Decorative marks (item.decorative) carry no meaning: screen
+   readers and, later, exports skip them. Everything typed is cleaned to
+   one plain line of at most 250 characters, and only ever shown with
+   textContent, never as HTML.
+
+   THE LAYERS LIST: a tree in the Inspector, one row per mark, top first,
+   with groups as rows that open. Highlights are always drawn under the
+   ink, so they sit in a band of their own at the bottom of the list, and
+   move only among themselves. Keys (while the list has focus): Up and
+   Down pick, Right and Left open and close groups, Space adds to what is
+   picked, F2 describes, H hides, L locks, Alt+Up and Alt+Down move,
+   Delete removes. A row can also be dragged among its neighbors.
+
+   SNAPPING: moving, stretching, dragging a line's end and drawing a
+   shape snap to the page's edges and middle and to the edges and middles
+   of other marks, within 6 screen pixels, with a pink guide line where it
+   snapped. Alt held while dragging turns it off (and so does the switch
+   in the Select tool's settings).
+
+   LINING UP: align left edges, centers, right edges, tops, middles or
+   bottoms, to each other or to the page, and space three or more evenly.
+   A group counts as one.
+   ===================================================================== */
+const ALT_MAX = 250;              // the longest description (screen readers read it all at once)
+const SNAP_PX = 6;                // how near (in screen pixels) a snap pulls
+const LAYER_ROWS_MAX = 500;       // the most rows the layers list draws (a page can hold thousands of strokes)
+
+/* ---- Descriptions ---- */
+/** A group's description: the one written for it, or "Group: 2 rectangles and 1 arrow". */
+function groupWords(gid, members) {
+  const p = page();
+  return (p.groupAlt && p.groupAlt[gid]) || 'Group: ' + countWords(members);
+}
+/** Keep (or with '' forget) a group's own description. */
+function setGroupAlt(gid, text) {
+  const p = page();
+  if (text) { if (!p.groupAlt) p.groupAlt = {}; p.groupAlt[gid] = text; return; }
+  if (p.groupAlt) { delete p.groupAlt[gid]; if (!Object.keys(p.groupAlt).length) delete p.groupAlt; }
+}
+/** The descriptions of every group these items are in (for copy and paste, section 8f). */
+function groupAltOf(items) {
+  const p = page(), out = {};
+  if (!p.groupAlt) return out;
+  for (const it of items) for (const g of it.groups || []) if (p.groupAlt[g]) out[g] = p.groupAlt[g];
+  return out;
+}
+/** Forget descriptions of groups that no longer exist (after Ungroup). */
+function tidyGroupAlt() {
+  const p = page();
+  if (!p.groupAlt) return;
+  const alive = new Set(p.items.flatMap((i) => i.groups || []));
+  for (const g of Object.keys(p.groupAlt)) if (!alive.has(g)) delete p.groupAlt[g];
+  if (!Object.keys(p.groupAlt).length) delete p.groupAlt;
+}
+/** Typed words made safe and tidy: one line, no control characters, at most ALT_MAX long. */
+function cleanAlt(text) {
+  return String(text).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, ALT_MAX);
+}
+/**
+ * What one description belongs to: { kind: 'item', item } for one mark,
+ * { kind: 'group', gid, items } for one whole group (where you are
+ * working), or null when several separate marks are picked.
+ */
+function describedUnit(items) {
+  if (!items.length) return null;
+  const units = new Set(items.map(unitOf));
+  if (units.size !== 1) return null;
+  const key = [...units][0];
+  if (key.startsWith('g:')) return { kind: 'group', gid: key.slice(2), items };
+  return { kind: 'item', item: items[0] };
+}
+const unitWords = (u) => (u.kind === 'group' ? groupWords(u.gid, u.items) : itemWords(u.item));
+const unitAutoWords = (u) => (u.kind === 'group' ? 'Group: ' + countWords(u.items) : autoWords(u.item));
+const unitHasOwn = (u) => (u.kind === 'group' ? !!(page().groupAlt && page().groupAlt[u.gid]) : !!u.item.alt);
+/**
+ * Write a description (or, with '', put the written one back), as one undo
+ * step. Typing exactly the written-for-you words counts as putting it back,
+ * so a text's description keeps following its words. Returns true if it changed.
+ */
+function describeUnit(u, text) {
+  const typed = cleanAlt(text);
+  const own = typed && typed !== unitAutoWords(u) ? typed : '';
+  if (u.kind === 'group') {
+    if (((page().groupAlt || {})[u.gid] || '') === own) return false;
+    setGroupAlt(u.gid, own);
+  } else {
+    if ((u.item.alt || '') === own) return false;
+    if (own) u.item.alt = own; else delete u.item.alt;
+  }
+  commit(own ? 'describing: ' + own : 'putting back the written description');
+  return true;
+}
+/** Mark items decorative (or not), as one undo step. */
+function setDecorative(items, on) {
+  for (const it of items) { if (on) it.decorative = true; else delete it.decorative; }
+  commit((on ? 'marking decorative: ' : 'marking meaningful: ') + selectionWords(items));
+  renderPage();
+  selectionChanged();
+  announce(on ? 'Decorative: screen readers will skip it' : 'Not decorative: screen readers will read its description');
+}
+/** A tip under the Description field, for what is being described. */
+function describeTip(u) {
+  if (u.kind === 'group') return 'Screen readers hear this for the group as a whole.';
+  const t = u.item.type;
+  if (t === 'text' || t === 'note') return 'Written from its words, and kept up to date as they change. Type here to say something else.';
+  if (t === 'ink') return 'A computer can\'t tell what a drawing means: say what it shows ("Circle around the answer").';
+  if (t === 'picture') return 'Say what the picture shows, not its file name.';
+  return 'Written for you. Type here to say it better.';
+}
+/** The Description field and the Decorative switch, for the top of the Inspector's Picked section. */
+function describeFields(items) {
+  const rows = [];
+  const u = describedUnit(items);
+  if (u) {
+    const id = fid();
+    const input = el('input', { type: 'text', id, maxlength: String(ALT_MAX), value: unitWords(u), autocomplete: 'off', spellcheck: 'true' });
+    input.addEventListener('change', () => {
+      if (describeUnit(u, input.value)) { renderPage(); selectionChanged(); announce('Description: ' + unitWords(u)); }
+    });
+    // Enter keeps what was typed, as a change (the field is one line).
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.dispatchEvent(new Event('change')); } });
+    const reset = unitHasOwn(u)
+      ? el('button', { class: 'btn small icon-only', type: 'button', title: 'Put back the description written for it', 'aria-label': 'Put back the written description',
+        onclick: () => { describeUnit(u, ''); renderPage(); selectionChanged(); announce('Description written for you: ' + unitWords(u)); } }, iconSvg('reset'))
+      : null;
+    rows.push(el('div', { class: 'field stack' }, el('label', { for: id, text: 'Description' }), el('div', { class: 'desc-row' }, input, reset)),
+      el('p', { class: 'hint', text: describeTip(u) }));
+  } else {
+    rows.push(el('p', { class: 'hint', text: 'Pick one mark (or one group) to describe it.' }));
+  }
+  const all = items.every((i) => i.decorative), some = items.some((i) => i.decorative);
+  const box = el('input', { type: 'checkbox', id: fid(), checked: all ? true : null });
+  box.indeterminate = some && !all;                   // (some are and some aren't)
+  box.addEventListener('change', () => setDecorative(items, box.checked));
+  rows.push(el('label', { class: 'check', for: box.id }, box, el('span', { text: 'Decorative (it carries no meaning: screen readers skip it)' })));
+  return rows;
+}
+
+/* ---- Hide and lock, for any list of items (the layers list's eye and padlock) ---- */
+function setFlag(items, key) {
+  if (!items.length) return;
+  const on = !items.every((i) => i[key]);
+  const words = selectionWords(items);
+  for (const it of items) { if (on) it[key] = true; else delete it[key]; }
+  const verb = key === 'hidden' ? (on ? 'hiding' : 'showing') : (on ? 'locking' : 'unlocking');
+  commit(verb + ' ' + words);
+  renderPage();
+  selectionChanged();
+  announce(key === 'hidden' ? (on ? 'Hidden: ' : 'Shown: ') + words : (on ? 'Locked: ' : 'Unlocked: ') + words);
+}
+
+/* ---- The layers list ---- */
+const layersOpenGroups = new Set();   // group rows opened in the list ('g:' + id), for this visit
+let layerFocus = null;                // the row holding the keyboard's place (the one with tabindex 0)
+let layersSig = '';                   // what the list showed last time, so it is only rebuilt when something changed
+let layerDrag = null;                 // the row being dragged
+// The list itself is made once and moved into each new Inspector, so it keeps its place.
+const layersTree = el('ul', { class: 'layer-tree', id: 'layerTree', role: 'tree', 'aria-label': 'Layers, top first',
+  'aria-describedby': 'layersHelp', 'aria-multiselectable': 'true' });
+const layersNote = el('p', { class: 'hint', id: 'layersNote' });
+
+/**
+ * The rows, top first. Each: { id, level, parent, items, group, item, hl, path, open }.
+ * id: the item's id, or 'g:' + the group's id. items: every mark the row stands for.
+ * hl: it is all highlights (they are drawn under the ink, so they go last).
+ * path: the groups above the row (where you are working when it is picked).
+ */
+function layerRows() {
+  const all = page().items;
+  const index = new Map(all.map((it, i) => [it.id, i]));
+  const rows = [];
+  const walk = (list, depth, parent) => {
+    // The units at this depth: a group (by its id at this depth), or a mark on its own.
+    const units = new Map();
+    for (const it of list) {
+      const gs = it.groups || [];
+      const key = gs.length > depth ? 'g:' + gs[depth] : it.id;
+      if (!units.has(key)) units.set(key, []);
+      units.get(key).push(it);
+    }
+    // Top first, as drawn: anything with ink above all highlights, then by place in the page's list.
+    const rank = (members) => {
+      const ink = members.filter((m) => m.type !== 'highlight');
+      return (ink.length ? all.length : 0) + Math.max(...(ink.length ? ink : members).map((m) => index.get(m.id)));
+    };
+    const sorted = [...units].map(([key, members]) => ({ key, members, rank: rank(members) })).sort((a, b) => b.rank - a.rank);
+    for (const u of sorted) {
+      const isGroup = u.key.startsWith('g:');
+      const row = {
+        id: u.key, level: depth + 1, parent, items: u.members,
+        group: isGroup ? u.key.slice(2) : null, item: isGroup ? null : u.members[0],
+        hl: u.members.every((m) => m.type === 'highlight'),
+        path: (u.members[0].groups || []).slice(0, depth),
+        open: isGroup && layersOpenGroups.has(u.key)
+      };
+      rows.push(row);
+      if (row.open) walk(u.members, depth + 1, row.id);
+    }
+  };
+  walk(all, 0, null);
+  return rows;
+}
+const rowWords = (r) => (r.group ? groupWords(r.group, r.items) : itemWords(r.item));
+const rowPicked = (r) => r.items.every((i) => sel.ids.has(i.id));
+const rowFlag = (r, key) => r.items.every((i) => i[key]);
+const rowUnit = (r) => (r.group ? { kind: 'group', gid: r.group, items: r.items } : { kind: 'item', item: r.item });
+const rowDomId = (id) => 'layer-' + id.replace(':', '-');
+const shownRows = () => layerRows().slice(0, LAYER_ROWS_MAX);
+
+/** The Layers section of the Inspector (always there; the rows are drawn only while it is open). */
+function layersSection() {
+  const d = section('layers', 'Layers', plural(page().items.length, 'mark'),
+    layersTree, layersNote,
+    el('p', { class: 'hint', id: 'layersHelp', text: 'Top first. Up and Down pick, Right and Left open and close groups, Space adds to what is picked, F2 describes, H hides, L locks, Alt+Up and Alt+Down move, Delete removes. Rows can be dragged up and down too.' }));
+  d.addEventListener('toggle', () => { if (d.open) { layersSig = ''; renderLayers(); } });
+  return d;
+}
+
+/** Draw the rows (only when something they show has changed). */
+function renderLayers() {
+  if (!settings.open.layers || !layersTree.isConnected) return;
+  const all = layerRows(), rows = all.slice(0, LAYER_ROWS_MAX);
+  if (!rows.some((r) => r.id === layerFocus)) layerFocus = rows.length ? (rows.find(rowPicked) || rows[0]).id : null;
+  const sig = JSON.stringify([pageIndex, layerFocus, all.length, rows.map((r) => [r.id, rowWords(r), rowPicked(r), r.open, r.level,
+    rowFlag(r, 'hidden'), rowFlag(r, 'locked'), rowFlag(r, 'decorative'), r.item ? r.item.color : 0])]);
+  if (sig === layersSig) return;
+  layersSig = sig;
+  const hadFocus = layersTree.contains(document.activeElement) && !document.activeElement.matches('input');
+  const lis = [];
+  let inkSeen = false;
+  rows.forEach((r) => {
+    const hidden = rowFlag(r, 'hidden'), locked = rowFlag(r, 'locked'), decorative = rowFlag(r, 'decorative');
+    const words = rowWords(r);
+    const label = words + (r.group ? ', group of ' + plural(r.items.length, 'mark') : '') + (hidden ? ', hidden' : '')
+      + (locked ? ', locked' : '') + (decorative ? ', decorative' : '') + (r.hl && r.level === 1 ? ', under the ink' : '');
+    const li = el('li', {
+      role: 'treeitem', id: rowDomId(r.id), 'data-row': r.id, 'aria-level': String(r.level),
+      'aria-selected': String(rowPicked(r)), 'aria-expanded': r.group ? String(r.open) : null,
+      tabindex: r.id === layerFocus ? '0' : '-1', 'aria-label': label, draggable: 'true',
+      class: 'layer-row' + (hidden ? ' is-hidden' : '') + (r.hl && r.level === 1 && inkSeen ? ' band-start' : '')
+    });
+    if (r.level === 1 && !r.hl) inkSeen = true;
+    if (r.hl && r.level === 1) inkSeen = false;        // (only the first highlight row starts the band)
+    li.style.paddingLeft = (4 + (r.level - 1) * 16) + 'px';
+    // The pieces (all hidden from screen readers: the row's label says it all).
+    const chev = el('span', { class: 'layer-chev', 'aria-hidden': 'true', text: r.group ? (r.open ? '▾' : '▸') : '' });
+    const dot = el('span', { class: 'layer-dot', 'aria-hidden': 'true' });
+    if (r.item && isHex(r.item.color)) dot.style.background = r.item.color; else dot.classList.add('none');
+    const name = el('span', { class: 'layer-name', text: words });
+    // The eye and the padlock: for the mouse (the keyboard has H and L).
+    const eye = el('span', { class: 'layer-act' + (hidden ? ' on' : ''), 'data-act': 'hide', 'aria-hidden': 'true', title: hidden ? 'Show (H)' : 'Hide (H)' }, iconSvg(hidden ? 'eyeOff' : 'eye'));
+    const lock = el('span', { class: 'layer-act' + (locked ? ' on' : ''), 'data-act': 'lock', 'aria-hidden': 'true', title: locked ? 'Unlock (L)' : 'Lock (L)' }, iconSvg(locked ? 'lock' : 'unlock'));
+    li.append(chev, dot, name, eye, lock);
+    lis.push(li);
+  });
+  layersTree.replaceChildren(...lis);
+  layersTree.hidden = !rows.length;                   // (an empty tree would confuse screen readers)
+  layersNote.textContent = !rows.length ? 'Nothing on this page yet.'
+    : all.length > rows.length ? 'Showing the top ' + rows.length + ' of ' + all.length + ' rows.' : '';
+  layersNote.hidden = !layersNote.textContent;
+  if (hadFocus) focusLayer();
+}
+/** Put the keyboard on the row that holds the list's place. */
+function focusLayer() {
+  const li = layerFocus && document.getElementById(rowDomId(layerFocus));
+  if (li) li.focus();
+}
+/** Pick a row's marks (add: add them to what is picked, or take them away), where the row sits. */
+function pickRow(r, add) {
+  layerFocus = r.id;
+  groupPath = r.path.slice();                      // working inside the groups the row is in
+  const ids = r.items.map((i) => i.id);
+  let next = ids;
+  if (add) {
+    next = new Set(sel.ids);
+    const had = ids.every((id) => next.has(id));
+    for (const id of ids) { if (had) next.delete(id); else next.add(id); }
+  }
+  if (tool !== 'select') setTool('select', false);
+  setSelection(next, false);
+  announce(sel.ids.size ? 'Picked ' + selectionWords() : 'Nothing picked');
+  focusLayer();
+}
+/** F2 or a double-click: type a new description right in the row. */
+function renameRow(r) {
+  const li = document.getElementById(rowDomId(r.id));
+  if (!li) return;
+  const name = li.querySelector('.layer-name');
+  const input = el('input', { type: 'text', class: 'layer-rename', maxlength: String(ALT_MAX), value: rowWords(r), 'aria-label': 'Description', autocomplete: 'off' });
+  name.replaceWith(input);
+  li.draggable = false;                               // (so the words can be picked with the mouse)
+  input.focus();
+  input.select();
+  let done = false;
+  const finish = (keep) => {
+    if (done) return;
+    done = true;
+    if (keep && describeUnit(rowUnit(r), input.value)) announce('Description: ' + rowWords(r));
+    layersSig = '';
+    renderPage();
+    selectionChanged();
+    focusLayer();
+  };
+  input.addEventListener('keydown', (e) => {
+    e.stopPropagation();                              // (the list's and the app's keys stand down while typing)
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', () => finish(true));
+}
+/** Open or close a group row. */
+function toggleLayerGroup(r) {
+  if (layersOpenGroups.has(r.id)) layersOpenGroups.delete(r.id); else layersOpenGroups.add(r.id);
+  layersSig = '';
+  renderLayers();
+  focusLayer();
+}
+/** Move a dragged row's marks to just above (or below) another row's, among the same neighbors. */
+function moveRowNextTo(d, r, above) {
+  if (d.items.some((i) => i.locked)) { announce('Something in it is locked. Unlock it first.'); return; }
+  const p = page(), moving = new Set(d.items.map((i) => i.id));
+  const rest = p.items.filter((i) => !moving.has(i.id));
+  const places = r.items.map((i) => rest.indexOf(i));
+  const at = above ? Math.max(...places) + 1 : Math.min(...places);   // later in the list is drawn on top
+  rest.splice(at, 0, ...p.items.filter((i) => moving.has(i.id)));
+  p.items = rest;
+  commit('moving ' + rowWords(d) + (above ? ' above ' : ' below ') + rowWords(r));
+  renderPage();
+  selectionChanged();
+  announce('Moved ' + rowWords(d) + (above ? ' above ' : ' below ') + rowWords(r));
+}
+/** Can row d be dropped next to row r? Only among its neighbors (same parent), in the same band. */
+const canDropNextTo = (d, r) => d && r && d.id !== r.id && d.parent === r.parent && d.hl === r.hl;
+
+function wireLayers() {
+  const tree = layersTree;
+  const rowOf = (node) => { const li = node.closest && node.closest('li[data-row]'); return li ? layerRows().find((r) => r.id === li.dataset.row) : null; };
+  tree.addEventListener('keydown', (e) => {
+    if (e.target.matches('input')) return;            // (typing a description)
+    const rows = shownRows();
+    const i = rows.findIndex((r) => r.id === layerFocus);
+    if (i < 0) return;
+    const r = rows[i], k = e.key, mod = e.ctrlKey || e.metaKey;
+    const stop = () => { e.preventDefault(); e.stopPropagation(); };
+    if (e.altKey && (k === 'ArrowUp' || k === 'ArrowDown')) {
+      stop();
+      if (!rowPicked(r)) pickRow(r);
+      reorder(k === 'ArrowUp' ? 'forward' : 'backward');
+      focusLayer();
+      return;
+    }
+    if (!e.altKey && (k === 'ArrowDown' || k === 'ArrowUp' || k === 'Home' || k === 'End')) {
+      stop();
+      const j = k === 'Home' ? 0 : k === 'End' ? rows.length - 1 : clamp(i + (k === 'ArrowDown' ? 1 : -1), 0, rows.length - 1);
+      pickRow(rows[j], false);
+      return;
+    }
+    if (k === 'ArrowRight' && r.group) { stop(); if (!r.open) toggleLayerGroup(r); else if (rows[i + 1]) pickRow(rows[i + 1]); return; }
+    if (k === 'ArrowLeft') {
+      stop();
+      if (r.group && r.open) toggleLayerGroup(r);
+      else if (r.parent) { const up = rows.find((x) => x.id === r.parent); if (up) pickRow(up); }
+      return;
+    }
+    if (k === 'F2') { stop(); renameRow(r); return; }
+    if (!mod && !e.altKey && (k === 'h' || k === 'H')) { stop(); setFlag(r.items, 'hidden'); return; }
+    if (!mod && !e.altKey && (k === 'l' || k === 'L')) { stop(); setFlag(r.items, 'locked'); return; }
+    if (k === ' ') { stop(); pickRow(r, true); return; }
+    if (k === 'Enter') {
+      stop();
+      if (r.group) toggleLayerGroup(r);
+      else if (hasWords(r.item) && !r.item.locked && !r.item.hidden) { pickRow(r); startEdit(r.item, false); }
+      return;
+    }
+    if (k === 'Delete' || k === 'Backspace') { stop(); if (!rowPicked(r)) pickRow(r); deleteSelection(); focusLayer(); }
+  });
+  tree.addEventListener('click', (e) => {
+    const r = rowOf(e.target);
+    if (!r || e.target.closest('input')) return;
+    const act = e.target.closest('[data-act]');
+    if (act) { layerFocus = r.id; setFlag(r.items, act.dataset.act === 'hide' ? 'hidden' : 'locked'); return; }
+    if (e.target.closest('.layer-chev') && r.group) { layerFocus = r.id; toggleLayerGroup(r); return; }
+    pickRow(r, e.shiftKey || e.ctrlKey || e.metaKey);
+  });
+  tree.addEventListener('dblclick', (e) => {
+    const r = rowOf(e.target);
+    if (r && !e.target.closest('[data-act], input')) renameRow(r);
+  });
+  // Dragging rows up and down (a mouse, among neighbors; the keyboard has Alt+Up and Alt+Down).
+  const clearMarks = () => tree.querySelectorAll('.drop-above, .drop-below').forEach((n) => n.classList.remove('drop-above', 'drop-below'));
+  tree.addEventListener('dragstart', (e) => {
+    const r = rowOf(e.target);
+    if (!r) return;
+    layerDrag = r;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');         // (some browsers only start a drag with some data)
+  });
+  tree.addEventListener('dragover', (e) => {
+    const r = rowOf(e.target);
+    clearMarks();
+    if (!canDropNextTo(layerDrag, r)) return;         // not allowed here: the browser shows "no"
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const li = e.target.closest('li[data-row]'), box = li.getBoundingClientRect();
+    li.classList.add(e.clientY < box.top + box.height / 2 ? 'drop-above' : 'drop-below');
+  });
+  tree.addEventListener('drop', (e) => {
+    const r = rowOf(e.target);
+    clearMarks();
+    if (!canDropNextTo(layerDrag, r)) return;
+    e.preventDefault();
+    const box = e.target.closest('li[data-row]').getBoundingClientRect();
+    moveRowNextTo(layerDrag, r, e.clientY < box.top + box.height / 2);
+    layerDrag = null;
+  });
+  tree.addEventListener('dragend', () => { layerDrag = null; clearMarks(); });
+}
+
+/* ---- Snapping ---- */
+let snapGuides = [];          // the pink lines to show: [{ axis: 'x' or 'y', at }] in page points
+/** An item's upright box, { x0, y0, x1, y1 } (its marks only, no padding). */
+function boxOf(items) {
+  const f = selFrame(items, 0, false);
+  return { x0: f.u0, y0: f.v0, x1: f.u1, y1: f.v1 };
+}
+/** Lines things can snap to: the page's edges and middle, and every other shown mark's edges and middle. */
+function snapTargets(skipIds) {
+  if (!settings.snap) return null;                    // snapping is switched off (the Select tool's settings)
+  const p = page();
+  const xs = [0, p.w / 2, p.w], ys = [0, p.h / 2, p.h];
+  let n = 0;
+  for (const it of p.items) {
+    if (skipIds.has(it.id) || it.hidden) continue;
+    if (++n > 2000) break;                            // (enough: a full page snaps to its first 2000 marks)
+    const b = boxOf([it]);
+    xs.push(b.x0, (b.x0 + b.x1) / 2, b.x1);
+    ys.push(b.y0, (b.y0 + b.y1) / 2, b.y1);
+  }
+  return { xs, ys };
+}
+/** The smallest nudge that puts one of `values` on one of `targets` (within reach), as { delta, at }, or null. */
+function bestSnap(values, targets) {
+  const reach = SNAP_PX / scale();
+  let best = null;
+  for (const v of values) for (const t of targets) {
+    const d = t - v;
+    if (Math.abs(d) <= reach && (!best || Math.abs(d) < Math.abs(best.delta))) best = { delta: d, at: t };
+  }
+  return best;
+}
+/** Snap one point (a line's end, a shape's corner). Returns [x, y], and sets the guides. */
+function snapPoint(targets, x, y) {
+  snapGuides = [];
+  if (!targets) return [x, y];
+  const sx = bestSnap([x], targets.xs), sy = bestSnap([y], targets.ys);
+  if (sx) { x += sx.delta; snapGuides.push({ axis: 'x', at: sx.at }); }
+  if (sy) { y += sy.delta; snapGuides.push({ axis: 'y', at: sy.at }); }
+  return [x, y];
+}
+/** Snap a move: the box b moved by dx, dy. Each way can be held still (Shift: straight across or down). */
+function snapMove(targets, b, dx, dy, holdX, holdY) {
+  snapGuides = [];
+  if (!targets) return [dx, dy];
+  if (!holdX) {
+    const s = bestSnap([b.x0 + dx, (b.x0 + b.x1) / 2 + dx, b.x1 + dx], targets.xs);
+    if (s) { dx += s.delta; snapGuides.push({ axis: 'x', at: s.at }); }
+  }
+  if (!holdY) {
+    const s = bestSnap([b.y0 + dy, (b.y0 + b.y1) / 2 + dy, b.y1 + dy], targets.ys);
+    if (s) { dy += s.delta; snapGuides.push({ axis: 'y', at: s.at }); }
+  }
+  return [dx, dy];
+}
+/** The guide lines, in screen pixels, right across the board (drawn with the frame, in renderSelection). */
+function snapGuideEls() {
+  const size = boardSize();
+  return snapGuides.map((g) => {
+    const s = toScreen(g.at, g.at);
+    return g.axis === 'x'
+      ? svgEl('line', { class: 'snap-guide', x1: round2(s[0]), y1: 0, x2: round2(s[0]), y2: round2(size.h) })
+      : svgEl('line', { class: 'snap-guide', x1: 0, y1: round2(s[1]), x2: round2(size.w), y2: round2(s[1]) });
+  });
+}
+/** Take the guides away (a drag has ended). */
+function clearSnapGuides() {
+  if (!snapGuides.length) return;
+  snapGuides = [];
+  renderSelection();
+}
+function snapField() {
+  const box = el('input', { type: 'checkbox', id: fid(), checked: settings.snap ? true : null });
+  box.addEventListener('change', () => { settings.snap = box.checked; saveSettings(); announce(box.checked ? 'Snapping on' : 'Snapping off'); });
+  return el('label', { class: 'check', for: box.id }, box, el('span', { text: 'Snap to the page and other marks (hold Alt while dragging to skip it)' }));
+}
+
+/* ---- Lining up ---- */
+/** The picked marks as units (a group counts as one), each with its upright box. */
+function pickedUnitBoxes() {
+  const units = new Map();
+  for (const it of pickedItems()) {
+    const k = unitOf(it);
+    if (!units.has(k)) units.set(k, []);
+    units.get(k).push(it);
+  }
+  return [...units.values()].map((items) => ({ items, b: boxOf(items) }));
+}
+/** Move these items by dx, dy (in place, no undo step of its own). */
+function shiftItems(items, dx, dy) {
+  const m = mTranslate(dx, dy), ids = new Set(items.map((i) => i.id)), list = page().items;
+  list.forEach((it, i) => { if (ids.has(it.id)) list[i] = transformItem(it, m); });
+}
+const ALIGN_WORDS = { left: 'left edges', center: 'centers', right: 'right edges', top: 'tops', middle: 'middles', bottom: 'bottoms' };
+/** Line up the picked marks: to each other (two or more), or to the page (one, or when asked). */
+function alignPicked(how) {
+  const units = pickedUnitBoxes();
+  if (!units.length) return;
+  if (pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return; }
+  const toPage = settings.alignTo === 'page' || units.length < 2;
+  const p = page();
+  let r;
+  if (toPage) r = { x0: 0, y0: 0, x1: p.w, y1: p.h };
+  else r = { x0: Math.min(...units.map((u) => u.b.x0)), y0: Math.min(...units.map((u) => u.b.y0)), x1: Math.max(...units.map((u) => u.b.x1)), y1: Math.max(...units.map((u) => u.b.y1)) };
+  for (const { items, b } of units) {
+    let dx = 0, dy = 0;
+    if (how === 'left') dx = r.x0 - b.x0;
+    if (how === 'center') dx = (r.x0 + r.x1) / 2 - (b.x0 + b.x1) / 2;
+    if (how === 'right') dx = r.x1 - b.x1;
+    if (how === 'top') dy = r.y0 - b.y0;
+    if (how === 'middle') dy = (r.y0 + r.y1) / 2 - (b.y0 + b.y1) / 2;
+    if (how === 'bottom') dy = r.y1 - b.y1;
+    if (dx || dy) shiftItems(items, dx, dy);
+  }
+  const words = 'Lined up ' + ALIGN_WORDS[how] + ' to ' + (toPage ? 'the page' : 'each other');
+  commit(words.toLowerCase());
+  renderPage();
+  selectionChanged();
+  announce(words);
+}
+/** Equal gaps between three or more (across or down), keeping the outer two where they are. */
+function distributePicked(across) {
+  const units = pickedUnitBoxes();
+  if (units.length < 3) { announce('Pick three or more to space them evenly'); return; }
+  if (pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return; }
+  const lo = across ? 'x0' : 'y0', hi = across ? 'x1' : 'y1';
+  units.sort((a, b) => a.b[lo] - b.b[lo]);
+  const first = units[0].b, last = units[units.length - 1].b;
+  const total = units.reduce((sum, u) => sum + (u.b[hi] - u.b[lo]), 0);
+  const gap = (last[hi] - first[lo] - total) / (units.length - 1);
+  let at = first[lo];
+  for (const { items, b } of units) {
+    const d = at - b[lo];
+    if (d) shiftItems(items, across ? d : 0, across ? 0 : d);
+    at += b[hi] - b[lo] + gap;
+  }
+  commit('spacing evenly ' + (across ? 'across' : 'down'));
+  renderPage();
+  selectionChanged();
+  announce('Spaced evenly ' + (across ? 'across' : 'up and down'));
+}
+/** The Inspector's "Line up" buttons, for what is picked. */
+function alignFields() {
+  const units = pickedUnitBoxes().length;
+  const b = (icon, label, fn, disabled) => el('button', { class: 'btn small icon-only', type: 'button', title: label, 'aria-label': label,
+    disabled: disabled ? true : null, onclick: fn }, iconSvg(icon));
+  const to = selectField('To', units < 2 ? 'page' : settings.alignTo, [['selection', 'Each other'], ['page', 'The page']], (v) => {
+    settings.alignTo = v; saveSettings(); renderInspector(); announce('Line up to ' + (v === 'page' ? 'the page' : 'each other'));
+  });
+  if (units < 2) to.querySelector('select').disabled = true;   // (one thing lines up with the page)
+  return el('div', { class: 'field stack', role: 'group', 'aria-labelledby': 'alignLabel' },
+    el('span', { class: 'label', id: 'alignLabel', text: 'Line up' }),
+    el('div', { class: 'btn-row' },
+      b('alignLeft', 'Align left edges', () => alignPicked('left')), b('alignCenter', 'Align centers', () => alignPicked('center')),
+      b('alignRight', 'Align right edges', () => alignPicked('right')), b('alignTop', 'Align tops', () => alignPicked('top')),
+      b('alignMiddle', 'Align middles', () => alignPicked('middle')), b('alignBottom', 'Align bottoms', () => alignPicked('bottom'))),
+    el('div', { class: 'btn-row' },
+      b('spaceAcross', 'Space evenly across', () => distributePicked(true), units < 3),
+      b('spaceDown', 'Space evenly up and down', () => distributePicked(false), units < 3)),
+    to);
 }
 
 /* =====================================================================
@@ -6529,19 +7244,22 @@ function renderInspector() {
     ? (document.activeElement.getAttribute('aria-label') || (document.activeElement.labels && document.activeElement.labels[0] && document.activeElement.labels[0].textContent))
     : null;
 
+  const treeHadFocus = layersTree.contains(document.activeElement);   // (the layers list is moved into the new panel)
   $('inspTitle').textContent = 'Inspector';
   if (sel.ids.size) {
     // Something is picked: its settings (the page's come back when nothing is).
     $('inspSub').textContent = 'What is picked';
     // (Something locked can't be changed, so it gets no place and size fields.)
-    if (pickedLocked()) body.replaceChildren(selectionSection());
-    else body.replaceChildren(selectionSection(), geometrySection());
+    if (pickedLocked()) body.replaceChildren(selectionSection(), layersSection());
+    else body.replaceChildren(selectionSection(), geometrySection(), layersSection());
   } else {
     $('inspSub').textContent = TOOL_NAMES[tool] + ' and page';
-    body.replaceChildren(toolSection(), pageSection(), colorsSection());
+    body.replaceChildren(toolSection(), pageSection(), colorsSection(), layersSection());
   }
+  renderLayers();
 
   body.scrollTop = scrollTop;
+  if (treeHadFocus) { focusLayer(); return; }
   if (focusLabel) {
     const again = [...body.querySelectorAll('input, select, button, summary')].find((n) =>
       n.getAttribute('aria-label') === focusLabel || (n.labels && n.labels[0] && n.labels[0].textContent === focusLabel));
@@ -6656,7 +7374,7 @@ function selectToolSection() {
     'On a touch screen: tap to pick, drag to move, and press and hold an empty spot for a selection box.',
     'With the board focused, Tab and Shift+Tab step through the marks on the page.'
   ];
-  return section('tool', 'Select', null, el('ul', { class: 'hint tips' }, ...tips.map((s) => el('li', { text: s }))));
+  return section('tool', 'Select', null, snapField(), el('ul', { class: 'hint tips' }, ...tips.map((s) => el('li', { text: s }))));
 }
 
 /* ---- Eraser ---- */
@@ -6690,6 +7408,7 @@ function selectionSection() {
   if (pickedLocked()) {
     return section('sel', 'Picked', plural(items.length, 'mark'),
       el('p', { class: 'hint', text: 'Picked: ' + words + '. It is locked: clicks, drags and the eraser go straight through it, so you can draw on top.' }),
+      ...describeFields(items),                       // (a locked mark can still be described: section 8g)
       el('div', { class: 'btn-row' },
         el('button', { class: 'btn small', type: 'button', onclick: toggleLock }, 'Unlock'),
         el('button', { class: 'btn small', type: 'button', onclick: () => setSelection([]) }, iconSvg('x'), 'Let go')));
@@ -6711,7 +7430,7 @@ function selectionSection() {
     commit(label + ' of ' + words);
     renderPage(); renderInspector(); renderStatus();
   };
-  const rows = [el('p', { class: 'hint', text: 'Picked: ' + words + '.' })];
+  const rows = [el('p', { class: 'hint', text: 'Picked: ' + words + '.' }), ...describeFields(items)];
   if (inked.length) {
     const mixed = inked.some((i) => i.color !== inked[0].color);
     rows.push(colorField('Color', inked[0].color,
@@ -6776,7 +7495,8 @@ function selectionSection() {
     el('div', { class: 'btn-row' },
       pickedUnits() >= 2 ? arrange('Group', 'Group', groupSelection) : null,
       pickedHasGroup() ? arrange('Ungroup', 'Ungroup', ungroupSelection) : null,
-      arrange('Lock', 'Lock', toggleLock))));
+      arrange('Lock', 'Lock', toggleLock))),
+    alignFields());
   rows.push(el('p', { class: 'hint', text: 'Arrow keys nudge (Shift: 10 points). Delete removes. Escape lets go. Right-click (or Shift+F10) for copy, paste, order and groups; double-click a group to work inside it. Drag the corners to resize (Shift keeps the shape) and the round handle to turn (Shift: 15 degree steps).'
     + (worded.length ? ' Enter, or a double-click, types in a text or sticky note.' : '') + (items.length === 1 && isLineLike(items[0]) ? ' Drag either end to move just that end.' : '') }));
   return section('sel', 'Picked', plural(items.length, 'mark'), ...rows);
@@ -7014,6 +7734,10 @@ const HELP_KEYS = [
   ['Ctrl+G / Ctrl+Shift+G', 'Group / ungroup'],
   ['Double-click a group', 'Work inside it (Escape steps back out)'],
   ['Ctrl+Shift+L', 'Lock or unlock: a locked mark ignores clicks, drags and the eraser'],
+  ['Alt while dragging', 'No snapping (moving, resizing and drawing shapes snap to the page and other marks)'],
+  ['Layers list: Up / Down, Right / Left', 'Pick the next row; open or close a group'],
+  ['Layers list: Space, F2', 'Add a row to what is picked; describe it (its alt text)'],
+  ['Layers list: H, L, Alt+Up / Alt+Down', 'Hide or show; lock or unlock; move it up or down'],
   ['Shift while resizing or turning', 'Keep the shape / turn in 15 degree steps'],
   ['A / L / R / O', 'Arrow, line, rectangle, ellipse (Shift while drawing: 45 degree steps, squares, circles)'],
   ['T', 'Text: click and type; Escape or Ctrl+Enter finishes'],
@@ -7398,6 +8122,13 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.2.4', date: '2026-10-19', notes: [
+    'Descriptions (alt text): every mark gets one as it is made ("Red arrow pointing right", "Sticky note: check this date"). Change it in the Inspector\'s Description field or with F2 in the layers list (the same thing); the reset button puts the written one back. A group can have one of its own. Decorative marks are skipped by screen readers.',
+    'The layers list, in the Inspector: one row per mark, top first, groups that open, and highlights in a band of their own under the ink. Pick, describe (F2), hide (H), lock (L), and move rows with Alt+Up and Alt+Down or by dragging.',
+    'Snapping: moving, resizing, dragging a line\'s end and drawing a shape snap to the page\'s edges and middle and to other marks, with a pink guide. Hold Alt to skip it, or switch it off in the Select tool\'s settings.',
+    'Line up: align edges, centers or middles to each other or to the page, and space three or more evenly, from the Inspector. A group counts as one.',
+    'Bring forward and send backward now step past marks you can see: a highlight moves among the highlights, ink among the ink.'
+  ] },
   { version: '0.2.3', date: '2026-10-19', notes: [
     'Copy, cut, paste and duplicate (Ctrl+C, X, V, D). Copies stay inside WHTBRDR: the clipboard only gets a short note, so pasting never brings in outside data (a copied picture still pastes in as a picture). Each paste lands a little down and to the right.',
     'Order: bring to front or forward, send backward or to the back (Ctrl+] and Ctrl+[, with Shift for all the way). Highlights stay under the ink.',
@@ -7466,6 +8197,7 @@ function start() {
   wirePictures();
   wireClipboard();
   wireMenu();
+  wireLayers();
   $('btnPicture').addEventListener('click', choosePictures);
   // When the fonts have loaded, measure words again (they may have been measured in a stand-in font).
   if (document.fonts && document.fonts.load) {

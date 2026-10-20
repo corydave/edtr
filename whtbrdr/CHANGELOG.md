@@ -1,5 +1,15 @@
 # WHTBRDR - changelog
 
+## 0.2.4 - 2026-10-19 - Describe it, list it, line it up
+
+- **Descriptions (alt text):** every mark gets a description as it is made: "Red arrow pointing right", "Yellow highlight", "Text: Read page 4", "Sticky note: check this date", "Picture: diagram.png". Text and sticky notes follow their own words. The Inspector's **Description** field (at the top of what is picked) replaces it; the reset button puts the written one back. A whole group can have a description of its own, which copy and paste carry along. The description is the mark's name everywhere: the layers list, "Picked: ...", Tab, the menus.
+- **Decorative:** a switch for marks that carry no meaning; screen readers skip them (and exports will, later). Typed descriptions are cleaned to one plain line of at most 250 characters and only ever shown as text.
+- **The layers list** (an Inspector section, open it once and it stays open): one row per mark, top first, with a color dot; groups open with Right and close with Left, nested as grouped. Highlights sit in a band of their own at the bottom, as they are drawn under the ink. Up and Down pick, Space adds, F2 (or a double-click) describes, H hides, L locks, Alt+Up and Alt+Down move, Delete removes, Enter types in a text or note. The eye and padlock on each row do the same with the mouse, and rows can be dragged among their neighbors.
+- **Hide:** a hidden mark isn't drawn and can't be clicked, boxed, erased or reached by Tab or Ctrl/Cmd+A; the layers list brings it back.
+- **Snapping:** moving, resizing, dragging a line's end and drawing a shape snap to the page's edges and middle and to other marks' edges and middles, with a pink guide line. Hold Alt to skip it, or switch it off in the Select tool's settings.
+- **Line up** (Inspector): align left edges, centers, right edges, tops, middles or bottoms, to each other or to the page (one mark lines up with the page), and space three or more evenly across or down. A group counts as one.
+- **Order:** Bring forward and Send backward now step past a mark of the same kind: a highlight past the next highlight, ink past the next ink (each kind is drawn on its own layer, so a step past the other kind showed no change).
+
 ## 0.2.3 - 2026-10-19 - Copy, arrange, group and lock
 
 - **Copy, cut, paste, duplicate** (Ctrl/Cmd+C, X, V, D). Copies stay inside WHTBRDR: the computer's clipboard only gets a short note ("WHTBRDR: 2 rectangles") with a one-off code, and Paste brings the marks back only while that note is still there, so pasting can never read outside text or data into a board. A copied picture from anywhere still pastes in as a picture (0.2.2). Each paste lands a little further down and to the right; copied groups paste as new groups of their own.
