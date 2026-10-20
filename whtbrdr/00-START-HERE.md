@@ -7,16 +7,23 @@
 > review of 0.1.1; then milestone 2 (0.2.0). See "Where 0.1.1 stands" below.
 >
 > **Later the same day: 0.2.0 built** (Select and the eraser; milestone 2 is
-> split into 0.2.0-0.2.3, listed in the spec's Milestones). The extension is
+> split into 0.2.0-0.2.4, listed in the spec's Milestones). The extension is
 > 1.3.1 (its eraser follows S/M/L). Waiting for Dave's review of 0.2.0.
 > How it works: sections 8b (picking, the frame, moving, stretching, turning)
 > and 8c (the eraser) of `index.html`.
 >
 > **Then 0.2.1:** arrow, line, rectangle, ellipse, text and sticky notes
 > (section 8d, with the two fonts built in). **Then 0.2.2:** pictures and
-> stamps (section 8e), and the phone rail folds its shapes. Waiting for Dave's
-> review of 0.2.2; next is 0.2.3 (lock, group, layers, snapping, copy/paste,
-> menus, alt text). The extension is 1.3.2 (shared bar only).
+> stamps (section 8e), and the phone rail folds its shapes. The extension is
+> 1.3.2 (shared bar only).
+>
+> **Then 0.2.3:** copy, cut, paste, duplicate, front and back, lock, groups
+> (double-click to work inside one) and the right-click menu (section 8f).
+> Waiting for Dave's review of 0.2.3.
+> 0.2.3 was split in two: **0.2.4 is next** (the layers list, snapping and
+> alignment, alt text and the Description field). **Phone testing is on hold**
+> until Dave has time: check builds on the desktop only. The extension is
+> unchanged (1.3.2).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**

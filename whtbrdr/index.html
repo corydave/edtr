@@ -262,7 +262,24 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 .sel-handle { fill: #ffffff; stroke: var(--brand); stroke-width: 1.5; }
 .sel-stem { stroke: var(--brand); stroke-width: 1.5; }
 .sel-box { fill: var(--brand); fill-opacity: .08; stroke: var(--brand); stroke-width: 1; stroke-dasharray: 4 3; }
-@media (forced-colors: active) { .sel-frame, .sel-stem, .sel-box { stroke: Highlight; } .sel-handle { stroke: Highlight; fill: Canvas; } }
+.sel-frame.locked { stroke: var(--text-muted); stroke-dasharray: 2 3; }   /* locked: a gray dotted frame, and no handles */
+.group-frame { fill: none; stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 8 4; opacity: .7; }   /* the group being worked inside */
+@media (forced-colors: active) { .sel-frame, .sel-stem, .sel-box { stroke: Highlight; } .sel-handle { stroke: Highlight; fill: Canvas; }
+  .sel-frame.locked, .group-frame { stroke: GrayText; } }
+/* The right-click menu (section 8f): a small list of buttons, kept on screen. */
+.ctx-menu { position: fixed; z-index: 60; min-width: 220px; max-height: calc(100vh - 8px); overflow-y: auto; padding: 4px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+  font: 13.5px/1.2 var(--ui-font); }
+.ctx-menu[hidden] { display: none; }
+.ctx-item { all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  width: 100%; min-height: 30px; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
+.ctx-item:hover, .ctx-item:focus { background: var(--brand-tint); }
+.ctx-item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.ctx-item[aria-disabled="true"] { color: var(--text-muted); cursor: default; background: none; }
+.ctx-keys { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.ctx-sep { height: 1px; margin: 4px 6px; background: var(--border); }
+@media (pointer: coarse) { .ctx-item { min-height: 44px; } }
+@media (forced-colors: active) { .ctx-item:focus { outline: 2px solid Highlight; } }
 /* The board's pointer for each tool (crosshair for drawing; handles set their own). */
 #board[data-tool="select"] { cursor: default; }
 #board[data-tool="text"] { cursor: text; }
@@ -990,6 +1007,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <textarea class="text-editor" id="textEditor" spellcheck="true" wrap="off" hidden></textarea>
     <!-- The file chooser for pictures (opened by Picture or I; never shown itself). -->
     <input type="file" id="picFile" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden tabindex="-1" aria-hidden="true">
+    <!-- The right-click menu (also Shift+F10 or the Menu key): filled in each time it opens (section 8f). -->
+    <div class="ctx-menu" id="ctxMenu" role="menu" aria-label="Actions" hidden></div>
   </main>
 
   <!-- ===================================================================
@@ -3583,7 +3602,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.2.2';
+const APP_VERSION = '0.2.3';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -4173,6 +4192,7 @@ let live = null;                   // the stroke being drawn: { item, el, pointe
 let penSeen = false;               // has a stylus touched this board?
 let spaceDown = false;             // is Space held (Space + drag slides the board)?
 let pointerOverBoard = false;      // is the mouse over the board? (for Ctrl + / - zoom)
+let lastBoardPointer = { type: '', at: -Infinity };   // the last press on the board: a mouse, pen or finger, and when
 
 /** Should a finger slide the page right now, rather than draw? */
 function fingerPans() {
@@ -4193,6 +4213,7 @@ function wireBoardPointers() {
       if (tool === 'text' || tool === 'jot') { e.preventDefault(); return; }
     }
     // (The board takes focus by itself on a press, so keys like Escape reach it.)
+    lastBoardPointer = { type: e.pointerType, at: performance.now() };   // (for the right-click menu)
     if (e.pointerType === 'pen' && !penSeen) {
       penSeen = true;
       if (settings.fingerPans === 'auto') toast('Stylus found. Your finger now slides the page, so your hand can rest on it. (Change this in the Inspector.)');
@@ -4224,7 +4245,7 @@ function wireBoardPointers() {
       boardEl.classList.add('panning');
       return;
     }
-    if (e.button !== 0) return;                      // right button: nothing yet (menus come later in milestone 2)
+    if (e.button !== 0) return;                      // right button: its menu opens on the contextmenu event below
     // A handle of the frame round what is picked (with any tool): stretch or turn.
     const handle = sel.ids.size ? handleAt(e.clientX, e.clientY) : null;
     if (handle) { beginTransform(e, handle); return; }
@@ -4294,13 +4315,26 @@ function wireBoardPointers() {
   boardEl.addEventListener('pointercancel', finish);
   boardEl.addEventListener('pointerenter', () => { pointerOverBoard = true; });
   boardEl.addEventListener('pointerleave', () => { pointerOverBoard = false; hideRing(); });
-  boardEl.addEventListener('contextmenu', (e) => e.preventDefault());   // a long press must not open the browser's menu
-  // Double-click a text or sticky note with Select: type in it.
+  // Right-click: our own menu (section 8f), never the browser's. A finger's
+  // long press also asks for a menu, but on a touch screen that press is for
+  // the selection box, so it opens nothing. The Menu key and Shift+F10 come
+  // through the keys (section 13); if a browser still sends this event for
+  // them, it opens the menu for what is picked.
+  boardEl.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    if (dialogOpen() || editing || !$('ctxMenu').hidden) return;
+    if (lastBoardPointer.type === 'touch') return;
+    const fromPointer = performance.now() - lastBoardPointer.at < 1500;   // (just pressed: a mouse or pen)
+    if (fromPointer) contextMenuAt(e.clientX, e.clientY, true); else menuFromKeys();
+  });
+  // Double-click with Select: on a group, work inside it; on a text or sticky note, type in it.
   boardEl.addEventListener('dblclick', (e) => {
     if (tool !== 'select' || dialogOpen()) return;
     const pt = toPage(e.clientX, e.clientY);
     const hit = itemAt(pt.x, pt.y, 4 / scale());
-    if (hit && hasWords(hit)) startEdit(hit, false);
+    if (!hit) return;
+    if (inPath(hit) && enterGroup(hit)) return;
+    if (hasWords(hit)) startEdit(hit, false);
   });
 
   // The mouse wheel: Ctrl/Cmd + wheel zooms around the pointer (a trackpad
@@ -4588,12 +4622,15 @@ function itemHit(item, x, y, reach, inside) {
  * anything on top of the highlights (ink, shapes, text, notes) by its line
  * or box, then the highlights (drawn underneath), then the insides of
  * rectangles and ellipses (so a big empty shape never hides what is in it).
+ * Locked items are passed over (clicks go straight through them), unless
+ * withLocked is true: the right-click menu uses that, so they can be unlocked.
  */
-function itemAt(x, y, reach) {
+function itemAt(x, y, reach, withLocked) {
   const items = page().items;
-  for (let i = items.length - 1; i >= 0; i--) if (items[i].type !== 'highlight' && itemHit(items[i], x, y, reach)) return items[i];
-  for (let i = items.length - 1; i >= 0; i--) if (items[i].type === 'highlight' && itemHit(items[i], x, y, reach)) return items[i];
-  for (let i = items.length - 1; i >= 0; i--) if (isHollow(items[i]) && itemHit(items[i], x, y, reach, true)) return items[i];
+  const ok = (it) => withLocked || !it.locked;
+  for (let i = items.length - 1; i >= 0; i--) if (ok(items[i]) && items[i].type !== 'highlight' && itemHit(items[i], x, y, reach)) return items[i];
+  for (let i = items.length - 1; i >= 0; i--) if (ok(items[i]) && items[i].type === 'highlight' && itemHit(items[i], x, y, reach)) return items[i];
+  for (let i = items.length - 1; i >= 0; i--) if (ok(items[i]) && isHollow(items[i]) && itemHit(items[i], x, y, reach, true)) return items[i];
   return null;
 }
 /** Does the line from a to c cross the box b = { x0, y0, x1, y1 }? (Liang-Barsky clipping: the line
@@ -4641,7 +4678,9 @@ function transformItem(item, m) {
 /** A few words for what is picked: "Blue pen stroke", or "3 marks: 2 pen strokes and 1 highlight". */
 function selectionWords(items = pickedItems()) {
   if (!items.length) return 'nothing picked';
-  if (items.length === 1) return itemWords(items[0]);
+  if (items.length === 1) return itemWords(items[0]) + (items[0].locked ? ' (locked)' : '');
+  // One group, picked as a whole where you are working: "Group: 2 pen strokes and 1 arrow".
+  if (new Set(items.map(unitOf)).size === 1 && unitOf(items[0]).startsWith('g:')) return 'Group: ' + countWords(items) + (items.some((i) => i.locked) ? ' (locked)' : '');
   return plural(items.length, 'mark') + ': ' + countWords(items);
 }
 /** "2 pen strokes, 1 arrow and 1 sticky note" */
@@ -4757,7 +4796,7 @@ function frameHandles(f) {
 /** The handle under a pointer (client coordinates), or null. The nearer one wins (the suite rule). */
 function handleAt(clientX, clientY) {
   const f = selFrame();
-  if (!f) return null;
+  if (!f || pickedLocked()) return null;          // locked: no handles to grab
   const r = $('board').getBoundingClientRect();
   const x = clientX - r.left, y = clientY - r.top;
   const reach = suiteHandleReach(HANDLE_MOUSE_PX);
@@ -4778,12 +4817,23 @@ function renderSelection() {
     const b = toScreen(Math.max(gesture.x0, gesture.x1), Math.max(gesture.y0, gesture.y1));
     parts.push(svgEl('rect', { class: 'sel-box', x: a[0], y: a[1], width: Math.max(1, b[0] - a[0]), height: Math.max(1, b[1] - a[1]) }));
   }
+  // Working inside a group: a faint dashed frame round the whole group, so you can see where you are.
+  if (groupPath.length) {
+    const members = page().items.filter(inPath);
+    const gf = members.length ? selFrame(members, 0) : null;
+    if (gf) {
+      const gc = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([fu, fv]) => { const p = framePoint(gf, fu, fv); return toScreen(p[0], p[1]).map(round2).join(','); });
+      parts.push(svgEl('polygon', { class: 'group-frame', points: gc.join(' ') }));
+    } else groupPath = [];                         // the group is gone (undo, delete...): back on the page
+  }
   const f = selFrame();
   if (f) {
+    const locked = pickedLocked();
     const corners = [[0, 0], [1, 0], [1, 1], [0, 1]].map(([fu, fv]) => { const p = framePoint(f, fu, fv); return toScreen(p[0], p[1]).map(round2).join(','); });
-    parts.push(svgEl('polygon', { class: 'sel-frame', points: corners.join(' ') }));
+    parts.push(svgEl('polygon', { class: locked ? 'sel-frame locked' : 'sel-frame', points: corners.join(' ') }));
     // While something is being moved or stretched, the handles step aside so the marks show clearly.
-    if (!(gesture && gesture.kind === 'transform' && gesture.moved)) {
+    // Something locked has no handles at all: it can't be moved or changed.
+    if (!locked && !(gesture && gesture.kind === 'transform' && gesture.moved)) {
       const px = suiteHandlePx(HANDLE_MOUSE_PX), round = suiteHandleRound(HANDLE_MOUSE_PX);
       const deg = round2(f.angle * 180 / Math.PI);
       for (const h of frameHandles(f)) {
@@ -4817,15 +4867,18 @@ function pointerDownSelect(e) {
   const reach = (e.pointerType === 'touch' ? 12 : 5) / scale();
   const hit = itemAt(pt.x, pt.y, reach);
   if (hit) {
+    // Clicking something outside the group being worked in steps back out onto the page.
+    if (!inPath(hit)) leaveGroups(false);
+    const unit = unitIds(hit);                       // a whole group, or just the item (section 8f)
     if (e.shiftKey) {
       // Shift+click: add it, or take it away.
       const ids = new Set(sel.ids);
-      if (ids.has(hit.id)) ids.delete(hit.id); else ids.add(hit.id);
+      if (ids.has(hit.id)) unit.forEach((id) => ids.delete(id)); else unit.forEach((id) => ids.add(id));
       setSelection(ids);
       gesture = { kind: 'tap', pointerId: e.pointerId };
       return;
     }
-    if (!sel.ids.has(hit.id)) setSelection([hit.id]);
+    if (!sel.ids.has(hit.id)) setSelection(unit);
     beginTransform(e, { kind: 'move' }, hit.id);
     return;
   }
@@ -4856,12 +4909,16 @@ function moveBox(e) {
   if (e.altKey) g.inside = true;
   const b = { x0: Math.min(g.x0, g.x1), y0: Math.min(g.y0, g.y1), x1: Math.max(g.x0, g.x1), y1: Math.max(g.y0, g.y1) };
   const ids = new Set(g.base);
-  for (const it of page().items) if (itemInBox(it, b, g.inside)) ids.add(it.id);
+  // Only what is where you are working, and not locked; touching part of a group picks all of it.
+  for (const it of page().items) if (inPath(it) && !it.locked && itemInBox(it, b, g.inside)) unitIds(it).forEach((id) => ids.add(id));
   sel.ids = ids; sel.angle = startAngle(ids);
   renderSelection();
 }
 function endBox() {
+  const g = gesture;
   gesture = null;
+  // A click on an empty spot (a box too small to pick anything), inside a group: step back out onto the page.
+  if (groupPath.length && !sel.ids.size && Math.hypot(g.x1 - g.x0, g.y1 - g.y0) * scale() < 3) leaveGroups(true);
   selectionChanged();
   announce(sel.ids.size ? 'Picked ' + selectionWords() : 'Nothing picked');
 }
@@ -4889,6 +4946,7 @@ function endPress() {
 function beginTransform(e, how, clickedId) {
   const items = pickedItems();
   if (!items.length) return;
+  if (pickedLocked()) { gesture = { kind: 'tap', pointerId: e.pointerId }; return; }   // locked: picked, but it won't move
   const f = selFrame(items);
   const g = {
     kind: 'transform', how: how.kind, handle: how, pointerId: e.pointerId, clickedId,
@@ -4972,7 +5030,11 @@ function endTransform() {
   $('board').style.cursor = '';
   if (!g.moved) {
     // A click (no drag) on one of several picked items picks just that one.
-    if (g.clickedId && sel.ids.size > 1) setSelection([g.clickedId]);
+    if (g.clickedId && sel.ids.size > 1) {
+      const clicked = page().items.find((i) => i.id === g.clickedId);
+      const unit = clicked ? unitIds(clicked) : [g.clickedId];
+      if (unit.length < sel.ids.size) setSelection(unit);     // (a click on a picked group keeps the group)
+    }
     renderSelection();
     return;
   }
@@ -5009,6 +5071,7 @@ function cancelObjectGesture() {
 /* ---- Changing what is picked from the keyboard and the Inspector ---- */
 /** Change every picked item by the matrix m, as one undo step. mergeKey joins quick repeats (arrow nudges) into one. */
 function transformSelection(m, label, mergeKey) {
+  if (pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return; }
   const items = page().items;
   let n = 0;
   items.forEach((it, i) => { if (sel.ids.has(it.id)) { items[i] = transformItem(it, m); n++; } });
@@ -5020,11 +5083,13 @@ function transformSelection(m, label, mergeKey) {
 }
 /** Arrow keys: nudge by 1 point (Shift: 10). Quick repeats are one undo step. */
 function nudge(dx, dy) {
+  if (pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return; }
   transformSelection(mTranslate(dx, dy), 'nudging', 'nudge:' + [...sel.ids].join(','));
   announce('Nudged');
 }
 function deleteSelection() {
   if (!sel.ids.size) return;
+  if (pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return; }
   const words = selectionWords();
   page().items = page().items.filter((it) => !sel.ids.has(it.id));
   sel.ids = new Set(); sel.angle = 0;
@@ -5033,20 +5098,32 @@ function deleteSelection() {
   selectionChanged();
   toast('Deleted ' + words + '. Undo (Ctrl+Z) brings it back.');
 }
+/** Ctrl+A: everything where you are working (inside the group, or the whole page), but not what is locked. */
 function selectAll() {
-  if (!page().items.length) { announce('Nothing on the page to pick'); return; }
-  setSelection(page().items.map((i) => i.id));
+  const ids = unitsHere(false).flatMap((u) => u.ids);
+  if (!ids.length) { announce(page().items.length ? 'Everything here is locked' : 'Nothing on the page to pick'); return; }
+  setSelection(ids);
 }
-/** Tab and Shift+Tab with the board focused: step through the page's marks in reading order.
+/** Tab and Shift+Tab with the board focused: step through the marks where you are working, in reading
+    order. A group is one stop, and locked marks are stops too (so the keyboard can reach and unlock them).
     Returns false at either end, so Tab carries on out of the board as usual. */
 function tabThrough(back) {
-  const order = readingOrder();
-  if (!order.length) return false;
-  const at = sel.ids.size === 1 ? order.findIndex((it) => sel.ids.has(it.id)) : -1;
+  // One stop per unit, placed where its first mark (in reading order) is.
+  const stops = [], seen = new Set();
+  for (const it of readingOrder()) {
+    if (!inPath(it)) continue;
+    const key = unitOf(it);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    stops.push(unitIds(it));
+  }
+  if (!stops.length) return false;
+  const same = (ids) => ids.length === sel.ids.size && ids.every((id) => sel.ids.has(id));
+  const at = stops.findIndex(same);
   const next = at < 0 ? (back ? -1 : 0) : at + (back ? -1 : 1);
-  if (next < 0 || next >= order.length) return false;
-  setSelection([order[next].id], false);
-  announce(itemWords(order[next]) + ', ' + (next + 1) + ' of ' + order.length);
+  if (next < 0 || next >= stops.length) return false;
+  setSelection(stops[next], false);
+  announce(selectionWords() + ', ' + (next + 1) + ' of ' + stops.length);
   return true;
 }
 
@@ -5101,7 +5178,7 @@ function eraseAt(x, y) {
     const out = [];
     for (const it of p.items) {
       // Strokes are cut where the eraser rubs; shapes and text go whole; sticky notes stay (they have Delete).
-      const hit = it.type !== 'note' && it.type !== 'picture' && itemHit(it, x, y, r);
+      const hit = !it.locked && it.type !== 'note' && it.type !== 'picture' && itemHit(it, x, y, r);   // (locked marks stay too)
       const pieces = !hit ? null : isStroke(it) ? splitStroke(it, x, y, r) : [];
       if (!pieces) { out.push(it); continue; }      // untouched (or only brushed past): kept as it is
       out.push(...pieces);
@@ -5110,7 +5187,7 @@ function eraseAt(x, y) {
     if (changed) p.items = out;
   } else {
     const before = p.items.length;
-    p.items = p.items.filter((it) => it.type === 'note' || it.type === 'picture' || !itemHit(it, x, y, r));   // (notes and pictures stay: they have Delete)
+    p.items = p.items.filter((it) => it.locked || it.type === 'note' || it.type === 'picture' || !itemHit(it, x, y, r));   // (locked marks, notes and pictures stay: they have Delete)
     changed = p.items.length !== before;
   }
   if (changed) { gesture.count++; renderPage(); }
@@ -5513,7 +5590,7 @@ function newNote(x, y) {
 /** The top text (or note) under a page point, or null. */
 function wordsAt(x, y, type) {
   const items = page().items;
-  for (let i = items.length - 1; i >= 0; i--) if (items[i].type === type && itemHit(items[i], x, y, 4 / scale())) return items[i];
+  for (let i = items.length - 1; i >= 0; i--) if (items[i].type === type && !items[i].locked && itemHit(items[i], x, y, 4 / scale())) return items[i];
   return null;
 }
 /** Press with the Text tool: type in the text under it, or start a new one. */
@@ -5807,9 +5884,13 @@ function wirePictures() {
   document.addEventListener('paste', (e) => {
     if (dialogOpen() || isTyping(e.target) || !e.clipboardData) return;
     const files = [...e.clipboardData.items].filter((i) => i.kind === 'file' && /^image\//.test(i.type)).map((i) => i.getAsFile()).filter(Boolean);
-    if (!files.length) return;
-    e.preventDefault();
-    takePictures(files);
+    if (files.length) { e.preventDefault(); takePictures(files); return; }
+    // No picture: marks copied in WHTBRDR come back, but only while our own
+    // note (with its one-off code) is still on the clipboard (section 8f).
+    // Nothing on the clipboard is ever read into the page.
+    if (editing || !clip) return;
+    const text = e.clipboardData.getData('text/plain');
+    if (text === '' || text.includes(clip.token)) { e.preventDefault(); pasteClip(); }
   });
   // Drop files on the board: they go where they are dropped.
   const ws = $('workspace');
@@ -5894,6 +5975,356 @@ function setStamp(id) {
   settings.stamp = stampDef(id).id;
   if (tool !== 'stamp') { setTool('stamp', false); } else toolChanged();
   announce(stampDef(id).name + ' stamp');
+}
+
+/* =====================================================================
+   8f. ORGANIZING: COPY AND PASTE, ORDER, LOCK, GROUPS
+   ---------------------------------------------------------------------
+   GROUPS. An item in a group carries the group's id in its `groups` list,
+   outermost first: { ..., groups: ['gA', 'gB'] } is in group gB, which is
+   inside group gA. Where you are working (`groupPath`) decides what one
+   click picks: on the page itself a click picks a whole outermost group;
+   double-click steps inside it, and then a click picks one of its parts
+   (or a group inside it). Escape steps back out.
+
+   LOCK. A locked item ({ ..., locked: true }) ignores clicks, drags, the
+   selection box, Ctrl+A and the eraser, so pens draw straight over it.
+   Tab and the right-click menu still reach it, so it can be unlocked from
+   the keyboard, and the page's menu has "Unlock all on this page".
+
+   COPY AND PASTE stay inside WHTBRDR: the copies are kept here (`clip`),
+   and the computer's clipboard only gets a short note naming them, with a
+   one-off code. Paste brings the copies back only when that note is still
+   on the clipboard, so a paste can only ever bring back your own marks,
+   never outside data. (A picture copied from anywhere still pastes in as a
+   picture: section 8e.)
+   ===================================================================== */
+let groupPath = [];          // the group being worked inside, outermost first (empty: the page itself)
+let clip = null;             // what was copied: { items, token, pastes }
+const MOD_KEY = /Mac|iPhone|iPad/.test(navigator.platform || '') ? 'Cmd' : 'Ctrl';   // for the menus' key hints
+const MOD_ARIA = MOD_KEY === 'Cmd' ? 'Meta' : 'Control';                             // the same key, as screen readers name it
+
+/** Is the item inside the group being worked in (always true on the page itself)? */
+const inPath = (it) => groupPath.every((g, i) => (it.groups || [])[i] === g);
+/** What one click picks, where you are working: the group the item is in at this level, or the item itself. */
+function unitOf(it) {
+  const gs = it.groups || [];
+  return gs.length > groupPath.length ? 'g:' + gs[groupPath.length] : it.id;
+}
+/** The ids of everything in the item's unit (a group's members, or just the item). */
+function unitIds(it) {
+  const u = unitOf(it);
+  if (!u.startsWith('g:')) return [it.id];
+  const gid = u.slice(2), level = groupPath.length;
+  return page().items.filter((x) => inPath(x) && (x.groups || [])[level] === gid).map((x) => x.id);
+}
+/** Every unit where you are working, bottom first: [{ key, ids, first }]. Locked ones only when asked. */
+function unitsHere(withLocked) {
+  const seen = new Map();
+  for (const it of page().items) {
+    if (!inPath(it) || (it.locked && !withLocked)) continue;
+    const key = unitOf(it);
+    if (!seen.has(key)) seen.set(key, { key, ids: [], first: it });
+    seen.get(key).ids.push(it.id);
+  }
+  return [...seen.values()];
+}
+/** How many units the picked items make (2 or more can be grouped). */
+const pickedUnits = () => new Set(pickedItems().map(unitOf)).size;
+/** Is anything picked locked? (Then it can't be moved, changed or deleted until unlocked.) */
+const pickedLocked = () => pickedItems().some((i) => i.locked);
+/** Leave the group being worked in (all the way out). */
+function leaveGroups(say) {
+  if (!groupPath.length) return;
+  groupPath = [];
+  renderSelection();
+  if (say) announce('Back on the page');
+}
+
+/* ---- Groups ---- */
+function groupSelection() {
+  const items = pickedItems();
+  if (pickedUnits() < 2) { announce('Pick two or more things to group them'); return; }
+  if (pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return; }
+  const g = uid('g'), level = groupPath.length;
+  // The new group goes in at this level: inside the group being worked in, around what was picked.
+  for (const it of items) { const gs = it.groups || []; it.groups = [...gs.slice(0, level), g, ...gs.slice(level)]; }
+  commit('grouping ' + selectionWords(items));
+  selectionChanged();
+  announce('Grouped: ' + selectionWords());
+}
+function ungroupSelection() {
+  const level = groupPath.length;
+  let n = 0;
+  for (const it of pickedItems()) {
+    const gs = it.groups || [];
+    if (gs.length > level) {
+      it.groups = gs.filter((_, i) => i !== level);
+      if (!it.groups.length) delete it.groups;
+      n++;
+    }
+  }
+  if (!n) { announce('Nothing picked is a group'); return; }
+  commit('ungrouping');
+  selectionChanged();
+  announce('Ungrouped: ' + selectionWords());
+}
+/** Is a picked unit a group at this level (so Ungroup applies)? */
+const pickedHasGroup = () => pickedItems().some((it) => (it.groups || []).length > groupPath.length);
+/** Double-click on a group: work inside it, picking the part under the pointer. */
+function enterGroup(hit) {
+  const gs = hit.groups || [];
+  if (gs.length <= groupPath.length) return false;
+  groupPath = gs.slice(0, groupPath.length + 1);
+  setSelection(unitIds(hit), false);
+  announce('Inside the group. Picked ' + selectionWords() + '. Escape steps back out.');
+  return true;
+}
+
+/* ---- Lock ---- */
+function toggleLock() {
+  const items = pickedItems();
+  if (!items.length) return;
+  const lock = !items.every((i) => i.locked);
+  for (const it of items) { if (lock) it.locked = true; else delete it.locked; }
+  commit((lock ? 'locking ' : 'unlocking ') + selectionWords(items));
+  selectionChanged();
+  announce(lock ? 'Locked: it ignores clicks and drags now. Pick it with Tab or a right-click to unlock it.' : 'Unlocked');
+}
+function unlockAll() {
+  const locked = page().items.filter((i) => i.locked);
+  if (!locked.length) return;
+  for (const it of locked) delete it.locked;
+  commit('unlocking all on this page');
+  setSelection(locked.map((i) => i.id), false);
+  announce('Unlocked ' + plural(locked.length, 'mark') + ', now picked');
+}
+
+/* ---- Order (front and back) ----
+   The page's items are drawn bottom first, so moving one later in the list
+   brings it forward. (Highlights always stay under ink: they are drawn on a
+   layer of their own.) */
+function reorder(how) {
+  const p = page(), picked = new Set(sel.ids);
+  if (!picked.size) return;
+  if (pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return; }
+  const items = p.items.slice();
+  if (how === 'front') p.items = items.filter((i) => !picked.has(i.id)).concat(items.filter((i) => picked.has(i.id)));
+  else if (how === 'back') p.items = items.filter((i) => picked.has(i.id)).concat(items.filter((i) => !picked.has(i.id)));
+  else if (how === 'forward') {
+    // Each picked item swaps with the one just above it (from the top down, so they keep their own order).
+    for (let i = items.length - 2; i >= 0; i--) if (picked.has(items[i].id) && !picked.has(items[i + 1].id)) [items[i], items[i + 1]] = [items[i + 1], items[i]];
+    p.items = items;
+  } else {
+    for (let i = 1; i < items.length; i++) if (picked.has(items[i].id) && !picked.has(items[i - 1].id)) [items[i], items[i - 1]] = [items[i - 1], items[i]];
+    p.items = items;
+  }
+  const words = { front: 'to the front', back: 'to the back', forward: 'forward', backward: 'backward' }[how];
+  commit('moving ' + selectionWords() + ' ' + words);
+  renderPage();
+  announce((how === 'front' || how === 'forward' ? 'Brought ' : 'Sent ') + words);
+}
+
+/* ---- Copy, cut, paste, duplicate ---- */
+/** Copies of the picked items, with groups made relative to where you are working. */
+function copiesOfPicked() {
+  const level = groupPath.length;
+  return pickedItems().map((it) => {
+    const c = JSON.parse(JSON.stringify(it));
+    delete c.locked;                                      // copies are never locked
+    if (c.groups) { c.groups = c.groups.slice(level); if (!c.groups.length) delete c.groups; }
+    return c;
+  });
+}
+/** Copy (or cut) what is picked. Returns the note for the computer's clipboard. */
+function copySelection(cut) {
+  if (!sel.ids.size) return null;
+  if (cut && pickedLocked()) { announce('Something picked is locked. Unlock it first.'); return null; }
+  const words = selectionWords();
+  clip = { items: copiesOfPicked(), token: uid('clip'), pastes: 0 };
+  if (cut) {
+    page().items = page().items.filter((it) => !sel.ids.has(it.id));
+    sel.ids = new Set(); sel.angle = 0;
+    commit('cutting ' + words);
+    renderPage();
+    selectionChanged();
+  }
+  announce((cut ? 'Cut ' : 'Copied ') + words);
+  return 'WHTBRDR: ' + words + ' [' + clip.token + ']';
+}
+/** Put copies on the page: a little down and to the right each time, inside the group being worked in. They are picked. */
+function placeCopies(source, step) {
+  const p = page();
+  if (p.items.length + source.length > MAX_ITEMS_PER_PAGE) { toast('This page is full.'); return; }
+  const newGroup = new Map();                             // old group id -> new one, so copies make groups of their own
+  const m = mTranslate(step, step);
+  const copies = source.map((it) => {
+    const c = transformItem(JSON.parse(JSON.stringify(it)), m);
+    c.id = uid('i');
+    const rel = (it.groups || []).map((g) => { if (!newGroup.has(g)) newGroup.set(g, uid('g')); return newGroup.get(g); });
+    const gs = groupPath.concat(rel);
+    if (gs.length) c.groups = gs; else delete c.groups;
+    return c;
+  });
+  p.items.push(...copies);
+  renderPage();
+  return copies;
+}
+function pasteClip() {
+  if (!clip || !clip.items.length) { announce('Nothing copied yet'); return; }
+  finishEdit();
+  clip.pastes++;
+  const copies = placeCopies(clip.items, 12 * clip.pastes);
+  if (!copies) return;
+  commit('pasting ' + selectionWords(copies));
+  setSelection(copies.map((c) => c.id), false);
+  announce('Pasted ' + selectionWords());
+}
+function duplicateSelection() {
+  if (!sel.ids.size) return;
+  const copies = placeCopies(copiesOfPicked(), 12);
+  if (!copies) return;
+  commit('duplicating ' + selectionWords(copies));
+  setSelection(copies.map((c) => c.id), false);
+  announce('Duplicated: ' + selectionWords());
+}
+function wireClipboard() {
+  // Ctrl/Cmd+C and X: the browser asks the page for something to copy. We
+  // keep the copies, and give the clipboard a short note with the one-off code.
+  const onCopy = (e, cut) => {
+    if (dialogOpen() || isTyping(e.target) || editing || !sel.ids.size || !e.clipboardData) return;
+    const note = copySelection(cut);
+    if (!note) return;
+    e.clipboardData.setData('text/plain', note);
+    e.preventDefault();
+  };
+  document.addEventListener('copy', (e) => onCopy(e, false));
+  document.addEventListener('cut', (e) => onCopy(e, true));
+}
+/** The menu's Copy and Cut can't use the browser's copy event: the note is written to the clipboard if the browser allows. */
+function copyFromMenu(cut) {
+  const note = copySelection(cut);
+  if (note && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(note).catch(() => { /* fine: Paste still works here */ });
+}
+
+/* ---- The right-click menu ----
+   Built from fixed words only (textContent), as a menu a keyboard can use:
+   Up and Down move, Home and End jump, Enter or Space choose, Escape or Tab
+   close it and put focus back where it was. Shift+F10 or the Menu key opens
+   it with the board focused. Everything in it is also on a key or in the
+   Inspector. */
+let menuReturn = null;          // where focus goes back to when the menu closes
+function openMenu(x, y, entries) {
+  const menu = $('ctxMenu');
+  menuReturn = document.activeElement;
+  const nodes = [];
+  for (const en of entries) {
+    if (en === '-') { if (nodes.length && !nodes[nodes.length - 1].classList.contains('ctx-sep')) nodes.push(el('div', { class: 'ctx-sep', role: 'separator' })); continue; }
+    const b = el('button', { type: 'button', class: 'ctx-item', role: 'menuitem', tabindex: '-1',
+      'aria-disabled': en.disabled ? 'true' : null, 'aria-keyshortcuts': en.aria || null },
+      el('span', { class: 'ctx-label', text: en.label }), en.keys ? el('span', { class: 'ctx-keys', text: en.keys, 'aria-hidden': 'true' }) : null);
+    b.addEventListener('click', () => { if (en.disabled) return; closeMenu(true); en.run(); });
+    nodes.push(b);
+  }
+  if (nodes.length && nodes[nodes.length - 1].classList.contains('ctx-sep')) nodes.pop();
+  menu.replaceChildren(...nodes);
+  menu.hidden = false;
+  // Kept inside the window.
+  const r = menu.getBoundingClientRect();
+  menu.style.left = clamp(x, 4, window.innerWidth - r.width - 4) + 'px';
+  menu.style.top = clamp(y, 4, window.innerHeight - r.height - 4) + 'px';
+  const first = menu.querySelector('.ctx-item:not([aria-disabled])');
+  if (first) first.focus();
+}
+function closeMenu(keepFocusHere) {
+  const menu = $('ctxMenu');
+  if (menu.hidden) return;
+  menu.hidden = true;
+  if (!keepFocusHere && menuReturn && menuReturn.focus) menuReturn.focus({ preventScroll: true });
+  else $('board').focus({ preventScroll: true });
+}
+function wireMenu() {
+  const menu = $('ctxMenu');
+  menu.addEventListener('keydown', (e) => {
+    const items = [...menu.querySelectorAll('.ctx-item:not([aria-disabled])')];
+    const at = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(at + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault(); items[e.key === 'Home' ? 0 : items.length - 1].focus();
+    } else if (e.key === 'Escape' || e.key === 'Tab') {
+      e.preventDefault(); closeMenu();
+    }
+    // The app's own keys stand down while the menu is open (so a letter can't
+    // switch tools behind it); Enter and Space still press the item, as buttons do.
+    e.stopPropagation();
+  });
+  // A press anywhere else, the window losing focus, or a resize closes it.
+  document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !menu.contains(e.target)) closeMenu(true); }, true);
+  window.addEventListener('blur', () => closeMenu(true));
+  window.addEventListener('resize', () => closeMenu(true));
+}
+/** What the menu offers, for what is picked (or for the page, when nothing is). */
+function menuEntries() {
+  const M = MOD_KEY;
+  const paste = { label: 'Paste', keys: M + '+V', aria: MOD_ARIA + '+V', disabled: !clip, run: pasteClip };
+  if (!sel.ids.size) {
+    const anyLocked = page().items.some((i) => i.locked);
+    return [paste, { label: 'Pick everything', keys: M + '+A', aria: MOD_ARIA + '+A', disabled: !page().items.length, run: selectAll },
+      anyLocked ? { label: 'Unlock all on this page', run: unlockAll } : null,
+      groupPath.length ? { label: 'Back out of the group', keys: 'Esc', run: () => leaveGroups(true) } : null].filter(Boolean);
+  }
+  const items = pickedItems();
+  if (pickedLocked()) {
+    return [{ label: 'Unlock', keys: M + '+Shift+L', aria: MOD_ARIA + '+Shift+L', run: toggleLock },
+      { label: 'Copy', keys: M + '+C', aria: MOD_ARIA + '+C', run: () => copyFromMenu(false) }, paste];
+  }
+  const one = items.length === 1 ? items[0] : null;
+  const isGroupUnit = pickedUnits() === 1 && items.length > 1;
+  return [
+    { label: 'Cut', keys: M + '+X', aria: MOD_ARIA + '+X', run: () => copyFromMenu(true) },
+    { label: 'Copy', keys: M + '+C', aria: MOD_ARIA + '+C', run: () => copyFromMenu(false) },
+    paste,
+    { label: 'Duplicate', keys: M + '+D', aria: MOD_ARIA + '+D', run: duplicateSelection },
+    { label: 'Delete', keys: 'Del', aria: 'Delete', run: deleteSelection },
+    '-',
+    { label: 'Bring to front', keys: M + '+Shift+]', run: () => reorder('front') },
+    { label: 'Bring forward', keys: M + '+]', run: () => reorder('forward') },
+    { label: 'Send backward', keys: M + '+[', run: () => reorder('backward') },
+    { label: 'Send to back', keys: M + '+Shift+[', run: () => reorder('back') },
+    '-',
+    { label: 'Group', keys: M + '+G', aria: MOD_ARIA + '+G', disabled: pickedUnits() < 2, run: groupSelection },
+    { label: 'Ungroup', keys: M + '+Shift+G', aria: MOD_ARIA + '+Shift+G', disabled: !pickedHasGroup(), run: ungroupSelection },
+    isGroupUnit ? { label: 'Work inside the group', keys: 'Double-click', run: () => enterGroup(items[0]) } : null,
+    { label: 'Lock', keys: M + '+Shift+L', aria: MOD_ARIA + '+Shift+L', run: toggleLock },
+    '-',
+    one && hasWords(one) ? { label: 'Type in it', keys: 'Enter', run: () => startEdit(one, false) } : null,
+    one && one.type === 'picture' ? { label: 'Its own size', run: () => { pictureRealSize(one); commit('real size of ' + itemWords(one)); renderPage(); selectionChanged(); } } : null
+  ].filter((e) => e !== null);
+}
+/** Shift+F10 or the Menu key: the menu, by what is picked (or in the board's middle when nothing is). */
+function menuFromKeys() {
+  const r = $('board').getBoundingClientRect();
+  const f = selFrame();
+  let x = r.left + r.width / 2, y = r.top + r.height / 2;
+  if (f) {
+    const mid = framePoint(f, 0.5, 0.5), sc = toScreen(mid[0], mid[1]);   // (toScreen counts from the board's corner)
+    x = clamp(r.left + sc[0], r.left, r.right); y = clamp(r.top + sc[1], r.top, r.bottom);
+  }
+  contextMenuAt(x, y, false);
+}
+/** Right-click (or Shift+F10 / the Menu key): pick what is under the pointer first, then open the menu there. */
+function contextMenuAt(clientX, clientY, fromPointer) {
+  if (fromPointer) {
+    const pt = toPage(clientX, clientY);
+    const hit = itemAt(pt.x, pt.y, 5 / scale(), true);       // (locked items too, so they can be unlocked)
+    if (hit && !sel.ids.has(hit.id)) {
+      if (!inPath(hit)) leaveGroups(false);
+      setSelection(unitIds(hit), false);
+    } else if (!hit && sel.ids.size) setSelection([], false);
+  }
+  openMenu(clientX, clientY, menuEntries());
 }
 
 /* =====================================================================
@@ -6102,7 +6533,9 @@ function renderInspector() {
   if (sel.ids.size) {
     // Something is picked: its settings (the page's come back when nothing is).
     $('inspSub').textContent = 'What is picked';
-    body.replaceChildren(selectionSection(), geometrySection());
+    // (Something locked can't be changed, so it gets no place and size fields.)
+    if (pickedLocked()) body.replaceChildren(selectionSection());
+    else body.replaceChildren(selectionSection(), geometrySection());
   } else {
     $('inspSub').textContent = TOOL_NAMES[tool] + ' and page';
     body.replaceChildren(toolSection(), pageSection(), colorsSection());
@@ -6253,6 +6686,14 @@ function refreshItemEl(item) {
 function selectionSection() {
   const items = pickedItems();
   const words = selectionWords(items);
+  // Locked: nothing can be changed until it is unlocked, so that is all this offers.
+  if (pickedLocked()) {
+    return section('sel', 'Picked', plural(items.length, 'mark'),
+      el('p', { class: 'hint', text: 'Picked: ' + words + '. It is locked: clicks, drags and the eraser go straight through it, so you can draw on top.' }),
+      el('div', { class: 'btn-row' },
+        el('button', { class: 'btn small', type: 'button', onclick: toggleLock }, 'Unlock'),
+        el('button', { class: 'btn small', type: 'button', onclick: () => setSelection([]) }, iconSvg('x'), 'Let go')));
+  }
   // Which settings apply depends on what is picked; each one changes only the items it fits.
   const inked = items.filter((i) => i.type !== 'note' && i.type !== 'picture');   // things drawn in an ink color (strokes, shapes, text, stamps)
   const papers = items.filter((i) => i.type === 'note');            // sticky notes: their paper color
@@ -6320,10 +6761,23 @@ function selectionSection() {
   if (items.length === 1 && hasWords(items[0])) {
     buttons.push(el('button', { class: 'btn small', type: 'button', onclick: () => startEdit(items[0], false) }, iconSvg('type'), 'Type in it'));
   }
-  buttons.push(el('button', { class: 'btn small', type: 'button', onclick: deleteSelection }, iconSvg('trash'), 'Delete'),
+  buttons.push(el('button', { class: 'btn small', type: 'button', onclick: duplicateSelection }, 'Duplicate'),
+    el('button', { class: 'btn small', type: 'button', onclick: deleteSelection }, iconSvg('trash'), 'Delete'),
     el('button', { class: 'btn small', type: 'button', onclick: () => setSelection([]) }, iconSvg('x'), 'Let go'));
   rows.push(el('div', { class: 'btn-row' }, ...buttons));
-  rows.push(el('p', { class: 'hint', text: 'Arrow keys nudge (Shift: 10 points). Delete removes. Escape lets go. Drag the corners to resize (Shift keeps the shape) and the round handle to turn (Shift: 15 degree steps).'
+  // Arrange (section 8f): in front of or behind other marks, groups, and lock.
+  // Each button names itself in full for screen readers ("Bring to front"), the short word is what shows.
+  const arrange = (label, full, fn) => el('button', { class: 'btn small', type: 'button', 'aria-label': full, onclick: fn }, label);
+  rows.push(el('div', { class: 'field stack', role: 'group', 'aria-labelledby': 'arrangeLabel' },
+    el('span', { class: 'label', id: 'arrangeLabel', text: 'Arrange' }),
+    el('div', { class: 'btn-row' },
+      arrange('Front', 'Bring to front', () => reorder('front')), arrange('Forward', 'Bring forward', () => reorder('forward')),
+      arrange('Backward', 'Send backward', () => reorder('backward')), arrange('Back', 'Send to back', () => reorder('back'))),
+    el('div', { class: 'btn-row' },
+      pickedUnits() >= 2 ? arrange('Group', 'Group', groupSelection) : null,
+      pickedHasGroup() ? arrange('Ungroup', 'Ungroup', ungroupSelection) : null,
+      arrange('Lock', 'Lock', toggleLock))));
+  rows.push(el('p', { class: 'hint', text: 'Arrow keys nudge (Shift: 10 points). Delete removes. Escape lets go. Right-click (or Shift+F10) for copy, paste, order and groups; double-click a group to work inside it. Drag the corners to resize (Shift keeps the shape) and the round handle to turn (Shift: 15 degree steps).'
     + (worded.length ? ' Enter, or a double-click, types in a text or sticky note.' : '') + (items.length === 1 && isLineLike(items[0]) ? ' Drag either end to move just that end.' : '') }));
   return section('sel', 'Picked', plural(items.length, 'mark'), ...rows);
 }
@@ -6548,11 +7002,18 @@ function startNewBoard(sizeId) {
 const HELP_KEYS = [
   ['V', 'Select: pick, move, resize and turn what is drawn'],
   ['Shift+click, drag a box', 'Pick more (Alt+drag: only what is wholly inside)'],
-  ['Ctrl+A', 'Pick everything on the page'],
+  ['Ctrl+A', 'Pick everything on the page (or in the group you are working inside); locked marks stay out'],
   ['Ctrl+click (with a pen)', 'Pick without leaving the pen'],
   ['Arrow keys (something picked)', 'Nudge it 1 point (Shift: 10)'],
   ['Delete or Backspace', 'Delete what is picked'],
-  ['Tab / Shift+Tab (board focused)', 'Step through the marks on the page'],
+  ['Tab / Shift+Tab (board focused)', 'Step through the marks on the page (a group is one stop; locked marks are stops too)'],
+  ['Right-click, Shift+F10, Menu key', 'The menu for what is picked: copy, paste, order, groups, lock'],
+  ['Ctrl+C / Ctrl+X / Ctrl+V', 'Copy, cut and paste marks (they stay in WHTBRDR; a copied picture pastes in too)'],
+  ['Ctrl+D', 'Duplicate what is picked'],
+  ['Ctrl+] / Ctrl+[', 'Bring forward / send backward (with Shift: all the way to the front / back)'],
+  ['Ctrl+G / Ctrl+Shift+G', 'Group / ungroup'],
+  ['Double-click a group', 'Work inside it (Escape steps back out)'],
+  ['Ctrl+Shift+L', 'Lock or unlock: a locked mark ignores clicks, drags and the eraser'],
   ['Shift while resizing or turning', 'Keep the shape / turn in 15 degree steps'],
   ['A / L / R / O', 'Arrow, line, rectangle, ellipse (Shift while drawing: 45 degree steps, squares, circles)'],
   ['T', 'Text: click and type; Escape or Ctrl+Enter finishes'],
@@ -6569,7 +7030,7 @@ const HELP_KEYS = [
   ['6 to 9', 'A highlighter: yellow, green, pink, blue'],
   ['[ and ]', 'Smaller or larger: Small, Medium, Large'],
   ['Shift while drawing', 'A straight line'],
-  ['Escape', 'Step back: drop a stroke being drawn, put back a move, let go of what is picked, then Select'],
+  ['Escape', 'Step back: drop a stroke being drawn, put back a move, let go of what is picked, leave a group, then Select'],
   ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo (Ctrl+Y redoes too)'],
   ['Ctrl+wheel, or pinch', 'Zoom around the pointer'],
   ['Ctrl+plus / Ctrl+minus', 'Zoom in / out (with the pointer over the board, or the board focused)'],
@@ -6786,6 +7247,17 @@ function wireKeys() {
       if (k === 'z' && !e.shiftKey) { e.preventDefault(); stepHistory(-1); return; }
       if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); stepHistory(1); return; }
       if (k === 'a' && !e.shiftKey) { e.preventDefault(); selectAll(); return; }
+      // Organizing what is picked (section 8f). Only when something is picked, so the
+      // browser keeps these keys otherwise (Ctrl+D bookmarks, Ctrl+G finds the next match).
+      // The square brackets are read by where they are on the keyboard (e.code), so
+      // they work the same on keyboards where Shift changes [ into {.
+      if (sel.ids.size && !editing) {
+        if (k === 'd' && !e.shiftKey) { e.preventDefault(); duplicateSelection(); return; }
+        if (e.code === 'BracketRight') { e.preventDefault(); reorder(e.shiftKey ? 'front' : 'forward'); return; }
+        if (e.code === 'BracketLeft') { e.preventDefault(); reorder(e.shiftKey ? 'back' : 'backward'); return; }
+        if (k === 'g') { e.preventDefault(); if (e.shiftKey) ungroupSelection(); else groupSelection(); return; }
+        if (k === 'l' && e.shiftKey) { e.preventDefault(); toggleLock(); return; }
+      }
     }
     // Zoom keys: only with the pointer over the board or the board focused, so the
     // browser's own zoom still works everywhere else for people who rely on it.
@@ -6798,13 +7270,20 @@ function wireKeys() {
     if (mod || e.altKey || typing) return;            // the rest are plain keys, not while typing
 
     if (e.key === '?' || e.key === 'F1') { e.preventDefault(); openHelp(); return; }
+    // Shift+F10 or the Menu key, with the board focused: the right-click menu, from the keyboard.
+    if (((e.key === 'F10' && e.shiftKey) || e.key === 'ContextMenu') && document.activeElement === $('board')) {
+      e.preventDefault();
+      menuFromKeys();
+      return;
+    }
     // Escape steps back one thing at a time: a stroke being drawn, then a
-    // move or erase under way, then what is picked, then back to Select.
+    // move or erase under way, then what is picked, then out of a group, then back to Select.
     if (e.key === 'Escape') {
       e.preventDefault();
       if (live) { cancelStroke(); announce('Stroke dropped'); }
       else if (cancelObjectGesture()) announce('Put back');
       else if (sel.ids.size) setSelection([]);
+      else if (groupPath.length) leaveGroups(true);
       else if (tool !== 'select') setTool('select');
       return;
     }
@@ -6919,6 +7398,13 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.2.3', date: '2026-10-19', notes: [
+    'Copy, cut, paste and duplicate (Ctrl+C, X, V, D). Copies stay inside WHTBRDR: the clipboard only gets a short note, so pasting never brings in outside data (a copied picture still pastes in as a picture). Each paste lands a little down and to the right.',
+    'Order: bring to front or forward, send backward or to the back (Ctrl+] and Ctrl+[, with Shift for all the way). Highlights stay under the ink.',
+    'Groups (Ctrl+G, Ctrl+Shift+G): a group picks, moves, resizes and turns as one. Double-click a group to work inside it (groups can hold groups); Escape or a click outside steps back out.',
+    'Lock (Ctrl+Shift+L): a locked mark ignores clicks, drags, the selection box and the eraser, so you can draw right over it. Tab and a right-click still reach it, to unlock it.',
+    'A right-click menu (also Shift+F10 or the Menu key) with all of these, and an Arrange row in the Inspector.'
+  ] },
   { version: '0.2.2', date: '2026-10-19', notes: [
     'Pictures: I (or the Picture button), paste one, or drop files on the board. PNG, JPEG, GIF (its first frame) and WebP, checked by their first bytes, under 30 MB and 60 megapixels. Each is redrawn on the way in, so hidden data such as GPS is left out, and kept at most 4096 pixels on its long side. They come in no bigger than 60% of the page, picked; "Its own size" in the Inspector puts one back to its size.',
     'Stamps (G): PDFEDTR\'s green check and red X, plus a star and a question mark. Pick one in the pill, S / M / L size it, click to put it down; they stay square, and their color can be changed for new ones or picked ones.',
@@ -6978,6 +7464,8 @@ function start() {
   buildBar();
   wireEditor();
   wirePictures();
+  wireClipboard();
+  wireMenu();
   $('btnPicture').addEventListener('click', choosePictures);
   // When the fonts have loaded, measure words again (they may have been measured in a stand-in font).
   if (document.fonts && document.fonts.load) {

@@ -1,5 +1,15 @@
 # WHTBRDR - changelog
 
+## 0.2.3 - 2026-10-19 - Copy, arrange, group and lock
+
+- **Copy, cut, paste, duplicate** (Ctrl/Cmd+C, X, V, D). Copies stay inside WHTBRDR: the computer's clipboard only gets a short note ("WHTBRDR: 2 rectangles") with a one-off code, and Paste brings the marks back only while that note is still there, so pasting can never read outside text or data into a board. A copied picture from anywhere still pastes in as a picture (0.2.2). Each paste lands a little further down and to the right; copied groups paste as new groups of their own.
+- **Order:** bring to front or forward, send backward or to the back (Ctrl/Cmd+] and Ctrl/Cmd+[, with Shift for all the way). Highlights stay under the ink, as always.
+- **Groups** (Ctrl/Cmd+G, Ctrl/Cmd+Shift+G): a click on any part picks the whole group, and it moves, resizes, turns, copies and deletes as one. Groups can hold groups. Double-click a group to work inside it (a faint dashed frame shows which group); Escape or a click outside steps back out. Ctrl/Cmd+A and the selection box pick only within the group you are in. Tab treats a group as one stop.
+- **Lock** (Ctrl/Cmd+Shift+L): a locked mark ignores clicks, drags, the selection box, Ctrl/Cmd+A and the eraser, so you can draw right over it. Tab and a right-click still reach it (it shows a gray dotted frame with no handles), and the page's menu has "Unlock all on this page".
+- **The right-click menu** (also Shift+F10 or the Menu key with the board focused): Cut, Copy, Paste, Duplicate, Delete, the four order moves, Group, Ungroup, Work inside the group, Lock, and Type in it or Its own size where they fit. Arrow keys, Home and End move through it; Escape closes it and puts focus back. A long press on a touch screen stays the selection box.
+- **Inspector:** Duplicate, and an Arrange row (Front, Forward, Backward, Back, Group, Ungroup, Lock). Something locked shows only Unlock and Let go.
+- The help panel lists the new keys.
+
 ## 0.2.2 - 2026-10-19 - Pictures and stamps
 
 - **Pictures:** I (or the Picture button), paste (Ctrl/Cmd+V), or drop files on the board. PNG, JPEG, GIF (its first frame) and WebP, recognized by their first bytes, under 30 MB and 60 megapixels (read from the file's header before it is opened). Every picture is redrawn on the way in, so hidden data such as GPS and camera details is left out, and kept at most 4096 pixels on its long side. They come in no bigger than 60% of the page, picked; "Its own size" puts one back to its size. Pictures are kept apart from the undo list, so undo never copies their bytes.
