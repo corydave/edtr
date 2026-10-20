@@ -11,6 +11,12 @@
 > 1.3.1 (its eraser follows S/M/L). Waiting for Dave's review of 0.2.0.
 > How it works: sections 8b (picking, the frame, moving, stretching, turning)
 > and 8c (the eraser) of `index.html`.
+>
+> **Then 0.2.1:** arrow, line, rectangle, ellipse, text and sticky notes
+> (section 8d, with the two fonts built in). **Then 0.2.2:** pictures and
+> stamps (section 8e), and the phone rail folds its shapes. Waiting for Dave's
+> review of 0.2.2; next is 0.2.3 (lock, group, layers, snapping, copy/paste,
+> menus, alt text). The extension is 1.3.2 (shared bar only).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**

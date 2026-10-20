@@ -1,5 +1,23 @@
 # WHTBRDR - changelog
 
+## 0.2.2 - 2026-10-19 - Pictures and stamps
+
+- **Pictures:** I (or the Picture button), paste (Ctrl/Cmd+V), or drop files on the board. PNG, JPEG, GIF (its first frame) and WebP, recognized by their first bytes, under 30 MB and 60 megapixels (read from the file's header before it is opened). Every picture is redrawn on the way in, so hidden data such as GPS and camera details is left out, and kept at most 4096 pixels on its long side. They come in no bigger than 60% of the page, picked; "Its own size" puts one back to its size. Pictures are kept apart from the undo list, so undo never copies their bytes.
+- **Stamps (G):** PDFEDTR's green check and red X, plus an orange star and a blue question mark. Pick one in the pill (S / M / L size it) and click; Enter puts one in the middle. They stay square; their color can be set for new ones (Inspector, with the tool) or changed on picked ones, and a picked stamp can be switched to another.
+- **Eraser:** leaves pictures alone (they have Delete), takes stamps away whole.
+- **Phones:** the four shapes fold into one Shapes button (the four sit in the pill while one is in use), separators go, and Picture moves to the top bar, so every tool fits on the rail without scrolling.
+- The shared bar learned the fold, a home's own tools on its rail, and their choices in its pill, and no longer shows the browser's blue flash on a tap; the extension took it as 1.3.2 (nothing changes there).
+
+## 0.2.1 - 2026-10-19 - The extension's tools
+
+- **Arrow (A), line (L), rectangle (R), ellipse (O)** on the rail, in the pen colors and S / M / L, drawn like the extension's (Shift: 45 degree steps, squares, circles).
+- **Text (T):** click and type, Enter for a new line, Escape or Ctrl/Cmd+Enter to finish. F switches the font: Atkinson Hyperlegible (the default) or Comfortaa, both built into the app from the extension's own files (SIL Open Font License). A pen color, size or font picked while typing restyles the words.
+- **Sticky notes:** J drops one in the middle, or pick the tool and click where it goes; it grows to fit its words. The Inspector sets new notes' paper, and a picked note's paper (four colors, or any).
+- **One model for everything:** shapes, text and notes pick, move, resize and turn like strokes. One line or arrow gets a handle on each end. Double-click or Enter types in a text or note again. The Inspector shows only what fits what is picked: color, paper, line width, font, letter size, Type in it.
+- **Keyboard:** with the board focused, Enter puts a new shape, text or note in the middle, picked.
+- **Stay in this tool** (on, the extension's way); off, each new thing is picked and Select comes back.
+- **Eraser:** shapes and text go whole; sticky notes stay (they have Delete).
+
 ## 0.2.0 - 2026-10-19 - Pick it up, move it, rub it out
 
 - **Select (V):** click picks, Shift+click adds or takes away, dragging on an empty spot draws a selection box (anything it touches; Alt for only what is wholly inside), Ctrl/Cmd+A picks everything on the page, and Ctrl/Cmd+click picks without leaving a pen.
