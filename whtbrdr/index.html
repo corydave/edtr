@@ -573,6 +573,17 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 .exp-group { border: 0; padding: 0; margin: 0 0 12px; }
 .exp-group legend { font-weight: 600; font-size: 13.5px; margin-bottom: 4px; padding: 0; }
 .exp-group .check { display: flex; align-items: center; gap: 8px; min-height: 30px; }
+/* The descriptions check in the Export dialog: a note with a left edge, never a stop sign (it only warns). */
+/* The samples: one wide button each, its name over a line about it. */
+.sample-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.sample-btn { display: grid; gap: 2px; width: 100%; text-align: left; padding: 10px 12px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.sample-btn:hover { border-color: var(--brand); background: var(--brand-tint); }
+.sample-btn span { color: var(--text-muted); font-size: 13px; }
+.sample-btn:hover span { color: var(--text); }
+.exp-check { border-left: 3px solid var(--brand); background: var(--brand-tint); border-radius: 0 6px 6px 0; padding: 8px 12px; margin-top: 10px; }
+.exp-check p { margin: 0 0 4px; }
+.exp-check ul { margin: 0; padding: 0; list-style: none; }
+.exp-check li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 32px; }
 #expPickedRow[hidden], #expPicOpts[hidden] { display: none; }
 .office-steps { margin: 0 0 12px; padding-left: 22px; }
 .office-steps li { margin-bottom: 6px; line-height: 1.45; }
@@ -1294,7 +1305,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 </dialog>
 
 <!-- Export (section 8n): PDF or pictures. -->
-<dialog id="exportDlg" aria-labelledby="exportTitle" aria-describedby="expNote">
+<dialog id="exportDlg" aria-labelledby="exportTitle" aria-describedby="expNote expCheckWords">
   <div class="dlg-head"><h2 id="exportTitle">Export</h2>
     <button class="icon-btn" data-close title="Close" aria-label="Close"><span data-icon="x"></span></button></div>
   <div class="dlg-body">
@@ -1317,11 +1328,30 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       </fieldset>
       <p class="hint" id="expScaleNote"></p>
     </div>
+    <fieldset class="exp-group" id="expPdfOpts"><legend>Marks</legend>
+      <label class="check"><input type="radio" name="expMarks" value="editable"><span>Kept editable (other PDF apps can still move or change them)</span></label>
+      <label class="check"><input type="radio" name="expMarks" value="flat"><span>Drawn in (part of the page: nobody can move them)</span></label>
+    </fieldset>
     <p class="hint" id="expNote"></p>
+    <!-- The descriptions check (section 8n): marks screen readers would hear only a written-for-you name for. -->
+    <div class="exp-check" id="expCheck" hidden>
+      <p id="expCheckWords"></p>
+      <ul id="expCheckList"></ul>
+    </div>
   </div>
   <div class="dlg-foot">
     <button class="btn" data-close type="button">Cancel</button>
     <button class="btn primary" id="expGo" type="button">Export</button>
+  </div>
+</dialog>
+
+<!-- The samples (section 8o): three ready-made boards to try things on. -->
+<dialog id="samplesDlg" aria-labelledby="samplesTitle" aria-describedby="samplesText">
+  <div class="dlg-head"><h2 id="samplesTitle">Samples</h2>
+    <button class="icon-btn" data-close title="Close" aria-label="Close"><span data-icon="x"></span></button></div>
+  <div class="dlg-body">
+    <p class="hint" id="samplesText">A ready-made board to try things on. Change anything: Save keeps your own copy.</p>
+    <ul class="sample-list" id="samplesList"></ul>
   </div>
 </dialog>
 
@@ -3917,7 +3947,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.5.1';
+const APP_VERSION = '0.5.2';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -5230,12 +5260,18 @@ function pruneSelection() {
   for (const id of [...sel.ids]) if (!here.has(id)) sel.ids.delete(id);
   if (!sel.ids.size) sel.angle = 0;
 }
-/** Everything on the page, in reading order: top to bottom, then left to right. */
-function readingOrder() {
-  const top = (it) => Math.min(...itemPoints(it).map((p) => p[1]));
-  const left = (it) => Math.min(...itemPoints(it).map((p) => p[0]));
+/** Everything on the page on show, in reading order: top to bottom, then left to right. */
+const readingOrder = () => readingOrderOf(page());
+/** Everything on a page, in reading order (any page: an export reads every page, section 8n). */
+function readingOrderOf(pg) {
+  // Each mark's top and left are worked out once (a long stroke has thousands of points).
+  const at = new Map(pg.items.map((it) => {
+    const pts = itemPoints(it);
+    return [it, { top: Math.min(...pts.map((p) => p[1])), left: Math.min(...pts.map((p) => p[0])) }];
+  }));
+  const top = (it) => at.get(it).top, left = (it) => at.get(it).left;
   // Things whose tops are within a third of an inch count as one row.
-  return page().items.slice().sort((a, b) => (Math.abs(top(a) - top(b)) > 24 ? top(a) - top(b) : left(a) - left(b)));
+  return pg.items.slice().sort((a, b) => (Math.abs(top(a) - top(b)) > 24 ? top(a) - top(b) : left(a) - left(b)));
 }
 
 /* ---- The frame ----
@@ -9092,9 +9128,10 @@ const fmtNum = (n) => String(Math.round(n * 1000) / 1000);   // 0.5, 2, 1.25 (no
 function backdropNodes(pg, tier = 'page') {
   const out = [];
   if (pg.doc && tier !== 'export') out.push(...docNodes(pg, tier));   // (an export paints the PDF page itself: section 8n)
-  if (pg.bgPic) { const n = bgPicNode(pg); if (n) out.push(n); }
-  if (pg.bg && pg.bg.kind !== 'none') out.push(bgNode(pg));
-  if (pg.grid) out.push(gridNode(pg));
+  // Each one says what it is (data-back), so an export can tell screen readers about it (section 8n).
+  if (pg.bgPic) { const n = bgPicNode(pg); if (n) { n.setAttribute('data-back', 'picture'); out.push(n); } }
+  if (pg.bg && pg.bg.kind !== 'none') { const n = bgNode(pg); n.setAttribute('data-back', 'lines'); out.push(n); }
+  if (pg.grid) { const n = gridNode(pg); n.setAttribute('data-back', 'grid'); out.push(n); }
   return out;
 }
 
@@ -10755,7 +10792,7 @@ function collectBoard() {
 function suggestedName() {
   if (projectName) return projectName;
   const pdf = board.pages.find((p) => p.doc);
-  const base = pdf ? pdf.doc.name.replace(/\.pdf$/i, '') : 'whiteboard';
+  const base = sampleName || (pdf ? pdf.doc.name.replace(/\.pdf$/i, '') : 'whiteboard');   // (a sample is named for itself: section 8o)
   return base.replace(/[\\/:*?"<>|]+/g, '-').slice(0, 60) + '.whtbrdr';
 }
 /**
@@ -10895,6 +10932,7 @@ async function loadBoardFrom(raw, has, blob) {
 /** Put a loaded board on screen: a fresh start (no undo back past it). saved: it came from a file (no changes yet). */
 function useLoadedBoard(loaded, saved) {
   cancelStroke();
+  sampleName = '';                             // (openSample names its sample again just after)
   leavePage();
   board = loaded.board;
   pageIndex = 0;
@@ -11006,7 +11044,7 @@ function wireFiles() {
 }
 
 /* =====================================================================
-   8n. EXPORT: PDF AND PICTURES (0.5.1)
+   8n. EXPORT: PDF AND PICTURES (0.5.1; tags and editable marks 0.5.2)
    ---------------------------------------------------------------------
    Export (the top bar's Export button, or Ctrl/Cmd+Shift+E) opens a small
    dialog: the format, which pages, and for pictures their kind and size.
@@ -11035,9 +11073,14 @@ function wireFiles() {
    - Letters WHTBRDR's fonts don't have (they hold Latin letters) are written
      in Helvetica where it has them; anything else becomes "?" in a PDF (a
      picture export draws them with the computer's own fonts).
-   - Not yet (0.5.2): marks kept as editable PDF annotations, descriptions
-     for screen readers inside the PDF (tags), and the export dialog's count
-     of drawings with no description.
+   - A PDF's marks are either kept editable (0.5.2: each mark is a PDF
+     annotation, which Acrobat, Preview and other PDF apps can move, change
+     or delete; the default for a board that came from a PDF) or drawn in
+     (part of the page). Either way the PDF is "tagged" (0.5.2): screen
+     readers hear each mark's description, in reading order (pdfTags).
+   - Before a PDF, the dialog counts the pen strokes and pictures nobody has
+     described, with Go to it buttons (0.5.2). It warns; it never stops an
+     export (an annotation tool shouldn't stand between a teacher and a class).
 
    Exporting counts as having your work, so (the suite's rule) it clears
    the crash backup, as saving does. The board still says it has changes
@@ -11186,16 +11229,33 @@ function walkSvg(node, st, out) {
     }
   }
 }
-/** Everything on a page, as pieces, bottom first (the page color and a PDF page are painted separately). */
+/**
+ * Everything on a page, as pieces, bottom first (the page color and a PDF
+ * page are painted separately). The pieces of each mark, and of each thing
+ * under the marks (the background picture, the lines, the grid), sit
+ * between a { kind: 'begin', item } (or { kind: 'begin', back: 'grid' })
+ * and a { kind: 'end' }, so the PDF painter knows whose they are: for the
+ * descriptions screen readers hear, and for marks kept editable (0.5.2).
+ * Hidden marks are left out altogether.
+ */
 function pagePieces(pg) {
   const out = [];
   const base = { fill: '#000000', stroke: 'none', width: 1, cap: 'butt', join: 'miter', opacity: 1, font: 'atkinson', size: 16, anchor: 'start', italic: false, m: [1, 0, 0, 1, 0, 0], blend: null };
-  for (const n of backdropNodes(pg, 'export')) walkSvg(n, base, out);
+  for (const n of backdropNodes(pg, 'export')) {
+    out.push({ kind: 'begin', back: n.getAttribute('data-back') || 'lines' });
+    walkSvg(n, base, out);
+    out.push({ kind: 'end' });
+  }
+  const mark = (it, style) => {
+    out.push({ kind: 'begin', item: it });
+    walkSvg(itemElement(it), style, out);
+    out.push({ kind: 'end' });
+  };
   // Highlights first (multiplied onto the page, as on the board; see-through on a dark page), then the rest, in order.
   const dark = isDarkColor(pg.color);
   const hl = { ...base, blend: dark ? null : 'multiply', opacity: dark ? 0.55 : 1 };
-  for (const it of pg.items) if (it.type === 'highlight') walkSvg(itemElement(it), hl, out);
-  for (const it of pg.items) if (it.type !== 'highlight') walkSvg(itemElement(it), base, out);
+  for (const it of pg.items) if (!it.hidden && it.type === 'highlight') mark(it, hl);
+  for (const it of pg.items) if (!it.hidden && it.type !== 'highlight') mark(it, base);
   return out;
 }
 /** Where a picture goes inside its box (preserveAspectRatio): { x, y, w, h, clip }. nw, nh: its own size in pixels. */
@@ -11324,6 +11384,7 @@ async function pageCanvas(pg, s) {
   const bitmaps = new Map();                                        // (each picture decoded once)
   const clips = [];
   for (const p of pagePieces(pg)) {
+    if (p.kind === 'begin' || p.kind === 'end') continue;          // (whose pieces these are: only the PDF painter needs to know)
     if (p.kind === 'clip') {
       ctx.save(); clips.push(1);
       ctx.setTransform(s * p.m[0], s * p.m[1], s * p.m[2], s * p.m[3], s * p.m[4], s * p.m[5]);
@@ -11364,6 +11425,114 @@ async function pageCanvas(pg, s) {
   return canvas;
 }
 
+/* ---- What screen readers hear in a PDF (0.5.2) ----
+   A "tagged" PDF carries a second, hidden layer beside its look: a tree of
+   elements in reading order, each saying what it is. Screen readers, "Read
+   out loud" and reflow on phones read the tree, not the drawing. WHTBRDR's
+   tree is one Document holding, page by page:
+     Div      a PDF page's own words (the PDF page itself, placed whole)
+     P        a text or sticky note in a PDF whose marks are drawn in: its
+              own words, read as words
+     Figure   anything else that means something, with its description as
+              its Alt: each mark (or a group that has its own description),
+              the background picture, the coordinate grid
+     Annot    in a PDF whose marks are kept editable, each mark is an
+              annotation instead, and its element points at it
+   Everything else (the page's color, ruled lines, decorative marks) is an
+   "Artifact": drawn, but skipped by screen readers.
+   How it is made (the way DSKEDTR does it): while a page is drawn, each
+   element's drawing is wrapped in a numbered "marked content" sequence
+   (BDC ... EMC), and that number is filed under its element. At the end the
+   tree goes into the PDF: a StructTreeRoot, the elements, and a ParentTree
+   that leads from each page (and each annotation) back to its elements. */
+function pdfTags(out, L) {
+  const ctx = out.context;
+  const root = { ref: ctx.nextRef(), kids: [] };     // the Document element
+  const sheets = [];
+  let sheet = null, nextKey = 0;                     // nextKey: the ParentTree's numbers (pages and annotations share them)
+  return {
+    /** A new element at the end of the reading order: S is its kind ('Figure'...), alt its description. */
+    elem(S, alt, title) {
+      const e = { ref: ctx.nextRef(), S, alt, title, kids: [] };
+      root.kids.push(e);
+      return e;
+    },
+    /** Start a new page (its marked-content numbers start again at 0). */
+    beginSheet(page) { sheet = { page, mcids: [], annots: [], key: nextKey++ }; sheets.push(sheet); },
+    /** File the next marked-content number on this page under element e, and give it back (for its BDC). */
+    mcid(e) { const n = sheet.mcids.length; sheet.mcids.push(e); e.kids.push({ mcid: n, page: sheet.page }); return n; },
+    /** File an annotation (by its ref) under element e; gives the annotation's StructParent number. */
+    annot(e, ref) { const key = nextKey++; e.kids.push({ objr: ref, page: sheet.page }); sheet.annots.push([key, e]); return key; },
+    /** Write the tree into the PDF, and mark the PDF as tagged. */
+    finish() {
+      root.kids = root.kids.filter((e) => e.kids.length);   // (an element nothing was drawn for is left out)
+      const treeRef = ctx.nextRef();
+      for (const e of root.kids) {
+        const K = e.kids.map((k) => (k.objr ? ctx.obj({ Type: 'OBJR', Obj: k.objr, Pg: k.page.ref }) : ctx.obj({ Type: 'MCR', Pg: k.page.ref, MCID: k.mcid })));
+        const d = { Type: 'StructElem', S: e.S, P: root.ref, K };
+        if (e.alt) d.Alt = L.PDFHexString.fromText(e.alt);
+        if (e.title) d.T = L.PDFHexString.fromText(e.title);
+        ctx.assign(e.ref, ctx.obj(d));
+      }
+      ctx.assign(root.ref, ctx.obj({ Type: 'StructElem', S: 'Document', P: treeRef, K: root.kids.map((e) => e.ref) }));
+      // The ParentTree: a page's number -> its elements, by marked-content number; an annotation's number -> its element.
+      const pairs = [];
+      for (const sh of sheets) {
+        if (sh.mcids.length) {
+          pairs.push([sh.key, ctx.obj(sh.mcids.map((e) => e.ref))]);
+          sh.page.node.set(L.PDFName.of('StructParents'), L.PDFNumber.of(sh.key));
+        }
+        for (const [key, e] of sh.annots) pairs.push([key, e.ref]);
+        sh.page.node.set(L.PDFName.of('Tabs'), L.PDFName.of('S'));   // Tab moves through annotations in reading order
+      }
+      pairs.sort((a, b) => a[0] - b[0]);                 // (a number tree's numbers go in order)
+      const parentTree = ctx.register(ctx.obj({ Nums: pairs.flat() }));
+      ctx.assign(treeRef, ctx.obj({ Type: 'StructTreeRoot', K: root.ref, ParentTree: parentTree, ParentTreeNextKey: nextKey }));
+      out.catalog.set(L.PDFName.of('StructTreeRoot'), treeRef);
+      out.catalog.set(L.PDFName.of('MarkInfo'), ctx.obj({ Marked: true }));
+    }
+  };
+}
+/**
+ * A page's marks as screen readers meet them, in reading order: [{ alt, plain, items }].
+ * A mark is one unit with its own description; a group with a description
+ * of its own (section 8g) is one unit with that description. Hidden and
+ * decorative marks are left out (decorative ones are drawn as Artifacts).
+ */
+function exportUnits(pg) {
+  const units = [], byKey = new Map();
+  for (const it of readingOrderOf(pg)) {
+    if (it.hidden || it.decorative) continue;
+    // The outermost group round it that has a description of its own, if any.
+    const gid = (it.groups || []).find((g) => pg.groupAlt && pg.groupAlt[g]);
+    const key = gid ? 'g:' + gid : 'i:' + it.id;
+    if (!byKey.has(key)) {
+      // plain: a text or a note described only by its own words. A PDF can carry those words as words
+      // (a paragraph, P) rather than as a description ("Text: ..."), so they read like the page's own.
+      const plain = !gid && hasWords(it) && !it.alt;
+      const u = { alt: gid ? pg.groupAlt[gid] : plain ? it.text.replace(/\s+/g, ' ').trim() : itemWords(it), plain, items: [] };
+      byKey.set(key, u);
+      units.push(u);
+    }
+    byKey.get(key).items.push(it);
+  }
+  return units;
+}
+/** The coordinate grid in words: "Coordinate grid: x from -10 to 10, y from -12 to 12, each square 1". */
+function gridAlt(pg) {
+  const G = gridLayout(pg), u = pg.grid.units || 1, first = pg.grid.quad === 'first';
+  const x0 = first ? 0 : -G.ox * u, x1 = (G.nx - G.ox) * u, y0 = first ? 0 : -G.oy * u, y1 = (G.ny - G.oy) * u;
+  return 'Coordinate grid: x from ' + fmtNum(x0) + ' to ' + fmtNum(x1) + ', y from ' + fmtNum(y0) + ' to ' + fmtNum(y1) + ', each square ' + fmtNum(u);
+}
+/** Wait for a PDF page's words (read by pdf.js, section 8l): highlights quote them, and a locked page's picture is described with them. */
+async function docTextReady(pg) {
+  if (!pg.doc) return null;
+  docTextFor(pg);                                    // (starts reading them, if that hasn't started)
+  const have = docTexts.get(docKey(pg.doc));
+  if (have && have.pending) await have.pending.catch(() => {});
+  return docTextFor(pg);
+}
+
 /* ---- PDF: pages written with pdf-lib ---- */
 /**
  * WHTBRDR's two fonts as TrueType, for a PDF (bold, Latin letters). They
@@ -11381,17 +11550,22 @@ function fontBytes(id) {
 /**
  * Write the pages as one PDF: { bytes, notes }. notes says what was done
  * differently ("page 3 is a picture of its PDF page: that PDF is locked").
+ * editable: true keeps each mark as a PDF annotation (Acrobat, Preview and
+ * other PDF apps can still move, change or delete it); false draws the
+ * marks into the page itself. Either way the PDF is tagged (see pdfTags).
  */
-async function buildPdf(pages, title) {
+async function buildPdf(pages, title, editable) {
   const { PDFLib, fontkit } = await loadPdfLib();
   const L = PDFLib;
   const out = await L.PDFDocument.create();
+  const ctx = out.context;
   out.registerFontkit(fontkit);
   out.setTitle(title, { showInWindowTitleBar: true });
   out.setLanguage('en');
   out.setCreator('WHTBRDR ' + APP_VERSION);
   out.setProducer('WHTBRDR ' + APP_VERSION + ' with pdf-lib ' + PDFLIB_VERSION);
   const notes = [];
+  const tags = pdfTags(out, L);
   // Fonts, the PDFs pages come from, pictures and see-through settings: each made once, used on every page.
   const fonts = {}, fontCover = {}, sources = new Map(), images = new Map(), states = new Map();
   let helvetica = null, unknownLetters = 0;
@@ -11426,77 +11600,85 @@ async function buildPdf(pages, title) {
     }
     return images.get(href);
   };
-  for (let n = 0; n < pages.length; n++) {
-    const pg = pages[n];
-    if (n && n % 10 === 0) announce('Writing page ' + (n + 1) + ' of ' + pages.length);
-    const page = out.addPage([pg.w, pg.h]);
-    const ops = (...list) => page.pushOperators(...list);
-    // See-through and multiply settings, named on this page as they are used.
-    const pageStates = new Map();
-    const gs = (opacity, blend) => {
-      const key = opacity.toFixed(3) + '|' + (blend || '');
-      if (!states.has(key)) {
-        const dict = { Type: 'ExtGState', CA: opacity, ca: opacity };
-        if (blend === 'multiply') dict.BM = 'Multiply';
-        states.set(key, out.context.register(out.context.obj(dict)));
-      }
-      if (!pageStates.has(key)) pageStates.set(key, page.node.newExtGState('GS', states.get(key)));
-      return pageStates.get(key);
-    };
-    // 1. The page's color (white under a PDF page).
-    const bg = hexRgb(pg.doc ? '#ffffff' : pg.color) || [1, 1, 1];
-    page.drawRectangle({ x: 0, y: 0, width: pg.w, height: pg.h, color: L.rgb(bg[0], bg[1], bg[2]) });
-    // 2. A PDF page: itself, untouched (as a "form", a piece of PDF placed on the page), turned and scaled as on the board.
-    if (pg.doc) {
-      const sp = await pdfPageOf(pg.doc);
-      const k = pg.doc.k || 1;
-      if (sp) {
-        const box = sp.getCropBox();
-        const emb = await out.embedPage(sp, { left: box.x, bottom: box.y, right: box.x + box.width, top: box.y + box.height });
-        const turn = (((sp.getRotation().angle || 0) + (pg.doc.rot || 0)) % 360 + 360) % 360;
-        const W0 = box.width * k, H0 = box.height * k;
-        // PDF turns are clockwise on screen; pdf-lib turns the other way, about the bottom-left corner.
-        const place = { 0: [0, 0, 0], 90: [0, W0, -90], 180: [W0, H0, 180], 270: [H0, 0, 90] }[turn] || [0, 0, 0];
-        page.drawPage(emb, { x: place[0], y: place[1], xScale: k, yScale: k, rotate: L.degrees(place[2]) });
-      } else {
-        // Locked (or unreadable by pdf-lib): a picture of the page, by pdf.js, at three times the screen's size.
-        const c = await pageCanvas({ ...pg, items: [], bg: null, grid: null, bgPic: null }, 3 * PX_PER_PT);
-        const png = await new Promise((res) => c.toBlob(res, 'image/png'));
-        const img = await out.embedPng(new Uint8Array(await png.arrayBuffer()));
-        page.drawImage(img, { x: 0, y: 0, width: pg.w, height: pg.h });
-        lockedPages.push(n + 1);
-      }
+  /** A see-through (and multiply) setting, made once for the whole PDF. */
+  const gsRef = (opacity, blend) => {
+    const key = opacity.toFixed(3) + '|' + (blend || '');
+    if (!states.has(key)) {
+      const dict = { Type: 'ExtGState', CA: opacity, ca: opacity };
+      if (blend === 'multiply') dict.BM = 'Multiply';
+      states.set(key, ctx.register(ctx.obj(dict)));
     }
-    // 3. Everything else, in the board's own coordinates: y grows downward, so the page is flipped once here.
-    ops(L.pushGraphicsState(), L.concatTransformationMatrix(1, 0, 0, -1, 0, pg.h));
+    return states.get(key);
+  };
+  /**
+   * Somewhere to draw: a page, or (page = null) an annotation's own little
+   * drawing (its "appearance", a form XObject with resources of its own).
+   * ops collects the drawing commands; name() gives the short name that a
+   * font, picture or setting goes by in it.
+   */
+  const target = (page) => {
+    const names = new Map(), res = { Font: {}, XObject: {}, ExtGState: {} };
+    let n = 0;
+    return {
+      ops: [], res,
+      name(kind, ref) {
+        const key = kind + ' ' + ref.toString();
+        if (!names.has(key)) {
+          let name;
+          if (page) name = kind === 'Font' ? page.node.newFontDictionary('F', ref) : kind === 'XObject' ? page.node.newXObject('X', ref) : page.node.newExtGState('GS', ref);
+          else { const s = { Font: 'F', XObject: 'X', ExtGState: 'GS' }[kind] + (++n); res[kind][s] = ref; name = L.PDFName.of(s); }
+          names.set(key, name);
+        }
+        return names.get(key);
+      }
+    };
+  };
+  /** Hand a target's commands to its page (a few thousand at a time: a long pen stroke is many commands). */
+  const flush = (page, ops) => { for (let i = 0; i < ops.length; i += 4000) page.pushOperators(...ops.slice(i, i + 4000)); };
+  /**
+   * Paint pieces (from pagePieces) into a target, in the board's own
+   * coordinates (the caller has flipped y). box, if given, grows to hold
+   * everything painted (an annotation's edges).
+   */
+  const paint = async (list, t, box) => {
+    const grow = (m, x, y) => {
+      if (!box) return;
+      const X = m[0] * x + m[2] * y + m[4], Y = m[1] * x + m[3] * y + m[5];
+      box.x0 = Math.min(box.x0, X); box.y0 = Math.min(box.y0, Y); box.x1 = Math.max(box.x1, X); box.y1 = Math.max(box.y1, Y);
+    };
     let clipDepth = 0;
-    for (const p of pagePieces(pg)) {
-      const [a, b, c, d, e, f] = p.m || [1, 0, 0, 1, 0, 0];
+    for (const p of list) {
+      if (p.kind === 'begin' || p.kind === 'end') continue;
+      const m = p.m || [1, 0, 0, 1, 0, 0];
+      const [a, b, c, d, e, f] = m;
       if (p.kind === 'clip') {
-        ops(L.pushGraphicsState(), L.concatTransformationMatrix(a, b, c, d, e, f), L.rectangle(p.x, p.y, p.w, p.h), L.clip(), L.endPath());
+        t.ops.push(L.pushGraphicsState(), L.concatTransformationMatrix(a, b, c, d, e, f), L.rectangle(p.x, p.y, p.w, p.h), L.clip(), L.endPath());
         clipDepth++;
         continue;
       }
-      if (p.kind === 'unclip') { if (clipDepth) { ops(L.popGraphicsState()); clipDepth--; } continue; }
-      ops(L.pushGraphicsState(), L.concatTransformationMatrix(a, b, c, d, e, f));
-      if (p.opacity < 1 || p.blend) ops(L.setGraphicsState(gs(p.opacity, p.blend)));
+      if (p.kind === 'unclip') { if (clipDepth) { t.ops.push(L.popGraphicsState()); clipDepth--; } continue; }
+      t.ops.push(L.pushGraphicsState(), L.concatTransformationMatrix(a, b, c, d, e, f));
+      if (p.opacity < 1 || p.blend) t.ops.push(L.setGraphicsState(t.name('ExtGState', gsRef(p.opacity, p.blend))));
       if (p.kind === 'path') {
         const fill = p.fill && p.fill !== 'none' ? hexRgb(p.fill) : null;
         const stroke = p.stroke && p.stroke !== 'none' && p.width > 0 ? hexRgb(p.stroke) : null;
         if (fill || stroke) {
+          // How far a line's edge reaches past its points (a sharp corner reaches further).
+          const reach = stroke ? p.width * (p.join === 'round' || p.join === 'bevel' ? 0.5 : 2) : 0;
           for (const seg of parsePath(p.d)) {
-            if (seg[0] === 'M') ops(L.moveTo(seg[1], seg[2]));
-            else if (seg[0] === 'L') ops(L.lineTo(seg[1], seg[2]));
-            else if (seg[0] === 'C') ops(L.appendBezierCurve(seg[1], seg[2], seg[3], seg[4], seg[5], seg[6]));
-            else ops(L.closePath());
+            if (seg[0] === 'M') t.ops.push(L.moveTo(seg[1], seg[2]));
+            else if (seg[0] === 'L') t.ops.push(L.lineTo(seg[1], seg[2]));
+            else if (seg[0] === 'C') t.ops.push(L.appendBezierCurve(seg[1], seg[2], seg[3], seg[4], seg[5], seg[6]));
+            else t.ops.push(L.closePath());
+            for (let i = 1; i + 1 < seg.length; i += 2) { grow(m, seg[i] - reach, seg[i + 1] - reach); grow(m, seg[i] + reach, seg[i + 1] + reach); }
           }
-          if (fill) ops(L.setFillingRgbColor(fill[0], fill[1], fill[2]));
+          if (fill) t.ops.push(L.setFillingRgbColor(fill[0], fill[1], fill[2]));
           if (stroke) {
-            ops(L.setStrokingRgbColor(stroke[0], stroke[1], stroke[2]), L.setLineWidth(p.width),
+            t.ops.push(L.setStrokingRgbColor(stroke[0], stroke[1], stroke[2]), L.setLineWidth(p.width),
               L.setLineCap(p.cap === 'round' ? L.LineCapStyle.Round : p.cap === 'square' ? L.LineCapStyle.Projecting : L.LineCapStyle.Butt),
               L.setLineJoin(p.join === 'round' ? L.LineJoinStyle.Round : p.join === 'bevel' ? L.LineJoinStyle.Bevel : L.LineJoinStyle.Miter));
           }
-          ops(fill && stroke ? L.fillAndStroke() : fill ? L.fill() : L.stroke());
+          t.ops.push(fill && stroke ? L.fillAndStroke() : fill ? L.fill() : L.stroke());
         }
       } else if (p.kind === 'text') {
         const font = await fontFor(p.font);
@@ -11513,27 +11695,193 @@ async function buildPdf(pages, title) {
         const dx = p.anchor === 'middle' ? -width / 2 : p.anchor === 'end' ? -width : 0;
         const col = hexRgb(p.fill) || [0, 0, 0];
         // Flip back for the letters (a PDF writes upward), at the baseline.
-        ops(L.concatTransformationMatrix(1, 0, 0, -1, p.x, p.y));
-        page.drawText(text, { x: dx, y: 0, size: p.size, font: use, color: L.rgb(col[0], col[1], col[2]) });
+        t.ops.push(L.concatTransformationMatrix(1, 0, 0, -1, p.x, p.y));
+        t.ops.push(...L.drawText(use.encodeText(text), { x: dx, y: 0, size: p.size, font: t.name('Font', use.ref), color: L.rgb(col[0], col[1], col[2]),
+          rotate: L.degrees(0), xSkew: L.degrees(0), ySkew: L.degrees(0) }));
+        grow(m, p.x + dx, p.y - p.size); grow(m, p.x + dx + width, p.y + p.size * 0.35);   // (from above the capitals to below the descenders)
       } else if (p.kind === 'image') {
         const img = await imageFor(p.href);
         if (img) {
           const at = placeImage(p, img.width, img.height);
-          if (at.clip) ops(L.rectangle(p.x, p.y, p.w, p.h), L.clip(), L.endPath());
-          const name = page.node.newXObject('Image', img.ref);
+          if (at.clip) t.ops.push(L.rectangle(p.x, p.y, p.w, p.h), L.clip(), L.endPath());
           // (A picture is drawn upward in a PDF, so it is flipped back too.)
-          ops(L.concatTransformationMatrix(at.w, 0, 0, -at.h, at.x, at.y + at.h), L.drawObject(name));
+          t.ops.push(L.concatTransformationMatrix(at.w, 0, 0, -at.h, at.x, at.y + at.h), L.drawObject(t.name('XObject', img.ref)));
+          const r = at.clip ? p : at;
+          grow(m, r.x, r.y); grow(m, r.x + r.w, r.y); grow(m, r.x, r.y + r.h); grow(m, r.x + r.w, r.y + r.h);
         }
       }
-      ops(L.popGraphicsState());
+      t.ops.push(L.popGraphicsState());
     }
-    while (clipDepth--) ops(L.popGraphicsState());
-    ops(L.popGraphicsState());
+    while (clipDepth--) t.ops.push(L.popGraphicsState());
+  };
+  /** Marked-content commands: begin an element's numbered sequence (BDC), begin an Artifact (BMC), end either (EMC). */
+  const bdc = (e) => L.PDFOperator.of('BDC', [L.PDFName.of(e.S), ctx.obj({ MCID: tags.mcid(e) })]);
+  const artifact = () => L.beginMarkedContent('Artifact');
+  const emc = () => L.endMarkedContent();
+  /** Wrap commands in an element's sequence (or an Artifact, when e is null). */
+  const wrap = (e, ops) => [e ? bdc(e) : artifact(), ...ops, emc()];
+
+  /** One mark kept editable: a PDF annotation, drawn by its own appearance, carrying its description. */
+  const annotate = async (pg, page, it, list, elem) => {
+    const box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+    const t = target(null);
+    t.ops.push(L.concatTransformationMatrix(1, 0, 0, -1, 0, pg.h));      // (the board's y grows downward)
+    await paint(list, t, box);
+    if (!isFinite(box.x0)) return;                                      // (nothing was drawn: a picture that's gone)
+    // Its rectangle, in the PDF's coordinates (y grows upward), with a point to spare round it.
+    const rect = [box.x0 - 1, pg.h - box.y1 - 1, box.x1 + 1, pg.h - box.y0 + 1].map((v) => Math.round(v * 100) / 100);
+    const ap = ctx.register(ctx.formXObject(t.ops, { BBox: rect, Resources: t.res }));
+    const dict = Object.assign(annotKind(it, pg, L), {
+      Type: 'Annot', Rect: rect, AP: { N: ap }, F: 4, P: page.ref,
+      NM: L.PDFString.of(it.id), M: L.PDFString.fromDate(new Date())
+    });
+    // The words: a text's or a note's own words (that is what these annotations show); otherwise its description.
+    const words = hasWords(it) ? it.text : it.decorative ? '' : itemWords(it);
+    if (words) dict.Contents = L.PDFHexString.fromText(words);
+    const ref = ctx.nextRef();
+    if (elem) dict.StructParent = tags.annot(elem, ref);
+    ctx.assign(ref, ctx.obj(dict));
+    page.node.addAnnot(ref);
+  };
+
+  // A highlight quotes the PDF words under it, and a locked page is described with its words: read them first.
+  for (const pg of pages) if (pg.doc) await docTextReady(pg);
+  for (let n = 0; n < pages.length; n++) {
+    const pg = pages[n];
+    if (n && n % 10 === 0) announce('Writing page ' + (n + 1) + ' of ' + pages.length);
+    const page = out.addPage([pg.w, pg.h]);
+    tags.beginSheet(page);
+    // The PDF page this page shows, if any (null when it's locked: then it is a picture).
+    const sp = pg.doc ? await pdfPageOf(pg.doc) : null;
+    // This page's elements, in reading order: the PDF page's words, the picture and grid under the marks, then the marks.
+    let docEl = null;
+    if (pg.doc) {
+      const words = (docTextFor(pg) || {}).text || '';
+      const where = docWords(pg.doc);
+      if (sp && words.trim()) docEl = tags.elem('Div', null, where);
+      else docEl = tags.elem('Figure', where.charAt(0).toUpperCase() + where.slice(1) + (words.trim() ? ': ' + words.replace(/\s+/g, ' ').trim() : ' (a picture of a page, with no words a screen reader can read)'));
+    }
+    const backEl = new Map();
+    if (pg.bgPic) backEl.set('picture', tags.elem('Figure', 'Background picture: ' + pg.bgPic.name));
+    if (pg.grid) backEl.set('grid', tags.elem('Figure', gridAlt(pg)));
+    const markEl = new Map();
+    for (const u of exportUnits(pg)) {
+      // Drawn in, a plain text is a paragraph of real words (P); kept editable, every mark is an annotation (Annot).
+      const e = editable ? tags.elem('Annot', u.alt) : u.plain ? tags.elem('P', null) : tags.elem('Figure', u.alt);
+      for (const it of u.items) markEl.set(it, e);
+    }
+
+    // 1. The page's color (white under a PDF page): not read.
+    const bg = hexRgb(pg.doc ? '#ffffff' : pg.color) || [1, 1, 1];
+    page.pushOperators(artifact());
+    page.drawRectangle({ x: 0, y: 0, width: pg.w, height: pg.h, color: L.rgb(bg[0], bg[1], bg[2]) });
+    page.pushOperators(emc());
+    // 2. A PDF page: itself, untouched (as a "form", a piece of PDF placed on the page), turned and scaled as on the board.
+    if (pg.doc) {
+      const k = pg.doc.k || 1;
+      page.pushOperators(bdc(docEl));
+      if (sp) {
+        const box = sp.getCropBox();
+        const emb = await out.embedPage(sp, { left: box.x, bottom: box.y, right: box.x + box.width, top: box.y + box.height });
+        const turn = (((sp.getRotation().angle || 0) + (pg.doc.rot || 0)) % 360 + 360) % 360;
+        const W0 = box.width * k, H0 = box.height * k;
+        // PDF turns are clockwise on screen; pdf-lib turns the other way, about the bottom-left corner.
+        const place = { 0: [0, 0, 0], 90: [0, W0, -90], 180: [W0, H0, 180], 270: [H0, 0, 90] }[turn] || [0, 0, 0];
+        page.drawPage(emb, { x: place[0], y: place[1], xScale: k, yScale: k, rotate: L.degrees(place[2]) });
+      } else {
+        // Locked (or unreadable by pdf-lib): a picture of the page, by pdf.js, at three times the screen's size.
+        const c = await pageCanvas({ ...pg, items: [], bg: null, grid: null, bgPic: null }, 3 * PX_PER_PT);
+        const png = await new Promise((res) => c.toBlob(res, 'image/png'));
+        const img = await out.embedPng(new Uint8Array(await png.arrayBuffer()));
+        page.drawImage(img, { x: 0, y: 0, width: pg.w, height: pg.h });
+        lockedPages.push(n + 1);
+      }
+      page.pushOperators(emc());
+    }
+    // 3. Everything else, in the board's own coordinates: y grows downward, so the page is flipped once here.
+    const t = target(page);
+    t.ops.push(L.pushGraphicsState(), L.concatTransformationMatrix(1, 0, 0, -1, 0, pg.h));
+    const pieces = pagePieces(pg);
+    for (let i = 0; i < pieces.length; i++) {
+      const start = pieces[i];
+      if (start.kind !== 'begin') continue;
+      // The pieces of this one thing: up to its 'end'.
+      let j = i + 1;
+      while (j < pieces.length && pieces[j].kind !== 'end') j++;
+      const list = pieces.slice(i + 1, j);
+      i = j;
+      if (start.item && editable) {
+        // Kept editable: an annotation of its own (drawn after the page's own drawing, by the PDF app).
+        await annotate(pg, page, start.item, list, markEl.get(start.item) || null);
+        continue;
+      }
+      const e = start.item ? markEl.get(start.item) || null : backEl.get(start.back) || null;
+      t.ops.push(e ? bdc(e) : artifact());
+      await paint(list, t);
+      t.ops.push(emc());
+    }
+    t.ops.push(L.popGraphicsState());
+    flush(page, t.ops);
   }
+  tags.finish();
   if (lockedPages.length) notes.push((lockedPages.length === 1 ? 'page ' + lockedPages[0] + ' is a picture of its PDF page' : pagesWords(lockedPages.map((x) => x - 1)) + ' are pictures of their PDF pages')
     + ' (a PDF locked with a password can\'t be copied)');
   if (unknownLetters) notes.push(plural(unknownLetters, 'letter') + ' the fonts don\'t have became "?"');
   return { bytes: await out.save(), notes };
+}
+/**
+ * The kind of PDF annotation a mark becomes, with the keys that kind needs,
+ * so a PDF app that redraws it (after it's moved or changed there) draws
+ * something close. The look itself comes from the appearance WHTBRDR draws.
+ *   pen stroke          Ink (the line through its points)
+ *   straight highlight  Highlight (the box it covers); a freehand one is Ink
+ *   line, arrow         Line (an arrow has a closed arrowhead at its end)
+ *   rectangle           Square (Polygon when it's turned)
+ *   ellipse             Circle
+ *   text, sticky note   FreeText (its words; a note has its paper color)
+ *   picture, stamp,     Stamp
+ *   step number
+ */
+function annotKind(it, pg, L) {
+  const P = (x, y) => [Math.round(x * 100) / 100, Math.round((pg.h - y) * 100) / 100];   // a board point in the PDF's coordinates
+  const C = hexRgb(it.color) || [0, 0, 0];
+  const BS = (w) => ({ Type: 'Border', W: Math.round(w * 100) / 100, S: 'S' });
+  const inkList = () => [it.pts.flatMap((q) => P(q[0], q[1]))];
+  if (it.type === 'ink') return { Subtype: 'Ink', InkList: inkList(), C, BS: BS(it.size) };
+  if (it.type === 'highlight') {
+    // Straight when every point lies within a quarter of its width of the line from its first point to its last.
+    const a = it.pts[0], b = it.pts[it.pts.length - 1], len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const straight = len > 0 && it.pts.every((q) => distToPolyline(q[0], q[1], [a, b]) <= it.size / 4);
+    if (!straight) return { Subtype: 'Ink', InkList: inkList(), C, BS: BS(it.size) };
+    // The box it covers: along the line (and half its width past each end, for its round ends), its width across.
+    let [s, e] = b[0] < a[0] ? [b, a] : [a, b];                     // (left to right, so "up" is up)
+    const ux = (e[0] - s[0]) / len, uy = (e[1] - s[1]) / len, r = it.size / 2;
+    const nx = uy, ny = -ux;                                          // across the line, toward the top of the page
+    const pt = (q, du, dn) => P(q[0] + ux * du + nx * dn, q[1] + uy * du + ny * dn);
+    // QuadPoints: top left, top right, bottom left, bottom right (the order PDF apps use).
+    return { Subtype: 'Highlight', QuadPoints: [...pt(s, -r, r), ...pt(e, r, r), ...pt(s, -r, -r), ...pt(e, r, -r)], C };
+  }
+  if (isLineLike(it)) {
+    const d = { Subtype: 'Line', L: [...P(it.x1, it.y1), ...P(it.x2, it.y2)], C, BS: BS(it.size), LE: ['None', it.type === 'arrow' ? 'ClosedArrow' : 'None'] };
+    if (it.type === 'arrow') d.IC = C;                                // (the arrowhead is filled)
+    return d;
+  }
+  if (it.type === 'rect') {
+    if (Math.abs(normAngle(it.rot || 0)) < 1e-6) return { Subtype: 'Square', C, BS: BS(it.size) };
+    return { Subtype: 'Polygon', Vertices: boxCorners(it).flatMap((q) => P(q[0], q[1])), C, BS: BS(it.size) };
+  }
+  if (it.type === 'ellipse') return { Subtype: 'Circle', C, BS: BS(it.size) };
+  if (it.type === 'text') {
+    return { Subtype: 'FreeText', DA: freeTextLook(L, it.size, C), BS: BS(0) };
+  }
+  if (it.type === 'note') {
+    return { Subtype: 'FreeText', DA: freeTextLook(L, it.size, hexRgb(NOTE_TEXT_COLOR)), C, BS: BS(0) };
+  }
+  return { Subtype: 'Stamp' };                                        // pictures, stamps, step numbers
+}
+/** A FreeText's "default appearance" (what a PDF app uses if it redraws the words): Helvetica, at its size, in its color. */
+function freeTextLook(L, size, rgb) {
+  return L.PDFString.of('/Helv ' + (Math.round(size * 100) / 100) + ' Tf ' + rgb.map((v) => Math.round(v * 1000) / 1000).join(' ') + ' rg');
 }
 
 /* ---- The Export dialog ---- */
@@ -11559,6 +11907,8 @@ function openExport() {
     const pic = pictureStore.get(board.pages[0].bgPic.pic);
     $('expKind').value = pic && pic.blob.type === 'image/jpeg' ? 'jpeg' : 'png';
   }
+  // Marks kept editable when the board came from a PDF (they were made to go back into it); drawn in otherwise.
+  dlg.querySelector('input[name="expMarks"][value="' + (board.pages.some((p) => p.doc) ? 'editable' : 'flat') + '"]').checked = true;
   $('expAllWords').textContent = 'All ' + plural(board.pages.length, 'page');
   $('expThisWords').textContent = 'This page (' + (pageIndex + 1) + ')';
   $('expPickedRow').hidden = picked.length < 2;
@@ -11575,6 +11925,7 @@ function updateExportDialog() {
   const which = dlg.querySelector('input[name="expPages"]:checked').value;
   const pages = exportPages(which);
   $('expPicOpts').hidden = fmt !== 'pictures';
+  $('expPdfOpts').hidden = fmt !== 'pdf';
   if (fmt === 'pictures') {
     const times = Number(dlg.querySelector('input[name="expScale"]:checked').value) || 2;
     const p = page(), s = pictureScale(p, times);
@@ -11583,9 +11934,70 @@ function updateExportDialog() {
     $('expNote').textContent = pages.length === 1 ? 'One ' + kind[1] + ' picture.' : 'A zip of ' + pages.length + ' ' + kind[1] + ' pictures, named page-01' + kind[2] + ' and so on.';
   } else {
     const pdfPages = pages.filter((p) => p.doc).length;
-    $('expNote').textContent = 'One PDF of ' + plural(pages.length, 'page') + '. ' + (pdfPages ? 'Pages from a PDF go out as themselves, untouched; ' : '')
-      + 'your marks are drawn on top, sharp at any zoom, with real words. Other apps can\'t move the marks. (Marks other apps can still edit, and descriptions for screen readers inside the PDF, come next.)';
+    const editable = dlg.querySelector('input[name="expMarks"]:checked').value === 'editable';
+    $('expNote').textContent = 'One PDF of ' + plural(pages.length, 'page') + '. ' + (pdfPages ? 'Pages from a PDF go out as themselves, untouched. ' : '')
+      + (editable ? 'Each mark is a PDF annotation: Acrobat, Preview and other PDF apps can move, change or delete it. '
+        : 'Your marks are drawn into the page, sharp at any zoom, with real words. ')
+      + 'Screen readers hear each mark\'s description, in reading order.';
   }
+  showDescriptionCheck(fmt === 'pdf' ? pages : []);
+}
+
+/* ---- The descriptions check (before a PDF) ---- */
+/**
+ * Marks a screen reader would hear only a written-for-you name for, because
+ * a computer can't tell what they show: pen strokes ("Black pen stroke") and
+ * pictures ("Picture: IMG_2041.jpg") nobody has described. Hidden and
+ * decorative marks don't count, nor marks in a group with a description of
+ * its own. Gives [{ index, items }]: one for each page that has any.
+ * (A first piece of 0.7.0's Accessibility checker.)
+ */
+function undescribed(pages) {
+  const out = [];
+  for (const pg of pages) {
+    const items = pg.items.filter((it) => (it.type === 'ink' || it.type === 'picture') && !it.alt && !it.hidden && !it.decorative
+      && !(it.groups || []).some((g) => pg.groupAlt && pg.groupAlt[g]));
+    if (items.length) out.push({ index: board.pages.indexOf(pg), items });
+  }
+  return out;
+}
+const CHECK_ROWS_MAX = 6;                    // pages listed in the check (more are counted, not listed)
+/** Fill in the check under the Export dialog's choices (or hide it). It warns, and never stops an export. */
+function showDescriptionCheck(pages) {
+  const found = undescribed(pages);
+  $('expCheck').hidden = !found.length;
+  const list = $('expCheckList');
+  list.replaceChildren();
+  if (!found.length) { $('expCheckWords').textContent = ''; return; }
+  const all = found.flatMap((f) => f.items);
+  $('expCheckWords').textContent = countWords(all) + (all.length === 1 ? ' has' : ' have') + ' no description: screen readers will hear only "'
+    + autoWords(all[0]) + '"' + (all.length > 1 ? ' and the like' : '') + '. Describe ' + (all.length === 1 ? 'it' : 'them') + ', or mark '
+    + (all.length === 1 ? 'it' : 'them') + ' decorative. You can still export.';
+  for (const f of found.slice(0, CHECK_ROWS_MAX)) {
+    const words = f.items.length === 1 ? 'Go to it' : 'Go to them';
+    // (Its spoken name starts with the words on it, so voice control finds it by what it says.)
+    const go = el('button', { class: 'btn small', type: 'button', text: words, 'aria-label': words + ' (page ' + (f.index + 1) + ')',
+      onclick: () => goToUndescribed(f.index, f.items.map((i) => i.id)) });
+    list.append(el('li', {}, el('span', { text: 'Page ' + (f.index + 1) + ': ' + countWords(f.items) }), go));
+  }
+  if (found.length > CHECK_ROWS_MAX) list.append(el('li', {}, el('span', { text: 'And ' + plural(found.length - CHECK_ROWS_MAX, 'more page') + '.' })));
+}
+/** Close the dialog, show the page, and pick the marks, with the Description field ready when it's one. */
+function goToUndescribed(index, ids) {
+  $('exportDlg').close();
+  if (tool !== 'select') setTool('select', false);
+  goToPage(index, false, true);
+  setSelection(ids, false);
+  announce('Page ' + (index + 1) + ': picked ' + selectionWords() + ', with no description. ' + (ids.length === 1 ? 'Describe it in the Inspector, or mark it decorative.' : 'Pick each one to describe it, or mark them decorative.'));
+  // The field gets the focus a moment later: a closing dialog hands the focus back to the Export button first.
+  setTimeout(() => {
+    const field = ids.length === 1 && document.querySelector('#inspBody .desc-row input');
+    if (!field) return;
+    const sec = field.closest('details');
+    if (sec && !sec.open) sec.open = true;           // (the Inspector's Picked section, if it was folded)
+    field.focus();
+    field.select();
+  }, 0);
 }
 /** Export with the dialog's choices. */
 async function runExport() {
@@ -11598,7 +12010,8 @@ async function runExport() {
   try {
     if (fmt === 'pdf') {
       let built;
-      try { built = await buildPdf(pages, base); } catch (err) {
+      const editable = dlg.querySelector('input[name="expMarks"]:checked').value === 'editable';
+      try { built = await buildPdf(pages, base, editable); } catch (err) {
         if (err && err.message === 'missing' || !pdfLibPromise) throw new Error(PDFJS_EDITION === 'online' ? 'the PDF writer could not be loaded from the internet (the offline edition, index.html, has it inside)' : 'the PDF writer could not be loaded');
         throw err;
       }
@@ -11648,6 +12061,277 @@ function wireExport() {
   $('btnExport').addEventListener('click', openExport);
   $('expGo').addEventListener('click', runExport);
   $('exportDlg').addEventListener('change', updateExportDialog);
+}
+
+/* =====================================================================
+   8o. SAMPLES (0.5.2)
+   ---------------------------------------------------------------------
+   Three ready-made boards to try things on, from the splash's Samples
+   card (and Help's Getting started):
+     Graphing a line     a coordinate grid with a line plotted on it, its
+                         points, and its rise and run
+     Worksheet           a PDF worksheet (the water cycle), marked up: words
+                         highlighted, answers typed, stamps, arrows, a note
+     Lesson slides       four 16:9 slides that teach planting a bean seed,
+                         with step numbers that carry on across the slides
+   Each is made here, in code (the worksheet's PDF too): nothing is
+   downloaded, and every word and drawing in them is WHTBRDR's own. A
+   sample goes through the same checks as a board file (cleanProject, in
+   section 8m), and every mark in it has a description (each is clean in
+   the Export dialog's check).
+   A sample opens as if it were just opened from a file: nothing to save
+   yet. Change it, and it asks to be saved like any other board.
+   ===================================================================== */
+const SAMPLES = [
+  { id: 'graph', name: 'Graphing a line', detail: 'A coordinate grid with y = 2x - 1 plotted on it' },
+  { id: 'worksheet', name: 'Marked-up worksheet', detail: 'A PDF about the water cycle, with highlights, answers and stamps' },
+  { id: 'lesson', name: 'Lesson slides', detail: 'Four 16:9 slides with step numbers that carry on across them' }
+];
+let sampleName = '';                         // the open sample's name, for "Save" ("Lesson slides.whtbrdr"); '' otherwise
+
+/** Open the Samples dialog. */
+function openSamples() {
+  suiteSplashClose();
+  if (presenting) return;
+  const dlg = $('samplesDlg');
+  dlg.showModal();
+  dlg.querySelector('.sample-btn').focus();
+}
+/** Open sample `id` in place of the board (asking first if the board has changes not saved). */
+async function openSample(id) {
+  const def = SAMPLES.find((s) => s.id === id);
+  if (!def) return;
+  if ($('samplesDlg').open) $('samplesDlg').close();
+  suiteSplashClose();
+  finishEdit();
+  if (!(await okToReplace())) return;
+  try {
+    const made = id === 'graph' ? sampleGraph() : id === 'worksheet' ? sampleWorksheet() : sampleLesson();
+    const files = made.files || {};
+    const raw = { app: APP_ID, format: PROJECT_FORMAT, board: { staging: null, pages: made.pages }, docs: made.docs || [], pictures: [] };
+    const loaded = await loadBoardFrom(raw, (f) => Object.hasOwn(files, f), async (f) => new Blob([files[f]]));
+    if (made.finish) await made.finish(loaded.board);              // (the worksheet's marks that sit on its words)
+    useLoadedBoard(loaded, true);
+    projectName = '';
+    projectHandle = null;
+    sampleName = def.name;
+    updateTitle();
+    toast('Sample: ' + def.name + ', ' + plural(board.pages.length, 'page') + '. Change anything; Save keeps your own copy.');
+  } catch (err) {
+    if (err && err.quiet) return;
+    toast('The sample could not be opened: ' + (err && err.message ? err.message : 'something went wrong') + '.');
+  }
+}
+function wireSamples() {
+  const list = $('samplesList');
+  for (const s of SAMPLES) {
+    list.append(el('li', {}, el('button', { class: 'sample-btn', type: 'button', onclick: () => openSample(s.id) },
+      el('strong', { text: s.name }), el('span', { text: s.detail }))));
+  }
+}
+
+/* ---- Making marks for a sample ---- */
+let sampleIds = 0;
+const sid = () => 'sm' + (++sampleIds);      // (ids only need to be different from each other)
+const sText = (x, y, text, o = {}) => ({ id: sid(), type: 'text', color: o.color || '#1f2937', size: o.size || 16, font: o.font || 'atkinson', text, x, y, w: 1, h: 1, rot: 0, ...(o.alt ? { alt: o.alt } : {}) });
+const sNote = (x, y, w, h, text, color = WB_NOTE_COLORS[0]) => ({ id: sid(), type: 'note', color, size: NOTE_FONT_PT, font: 'atkinson', text, x, y, w, h, rot: 0 });
+const sLine = (type, x1, y1, x2, y2, color, size, alt) => ({ id: sid(), type, color, size, x1, y1, x2, y2, ...(alt ? { alt } : {}) });
+const sShape = (type, x, y, w, h, color, size, alt) => ({ id: sid(), type, color, size, x, y, w, h, rot: 0, ...(alt ? { alt } : {}) });
+const sStamp = (stamp, x, y, size = 30) => ({ id: sid(), type: 'stamp', stamp, color: stampDef(stamp).color, x, y, w: size, h: size, rot: 0 });
+const sStep = (seq, x, y, size = 32) => ({ id: sid(), type: 'step', seq, x, y, w: size, h: size, rot: 0, color: '#1d4ed8', textColor: '#ffffff', ring: true });
+
+/* ---- Graphing a line ---- */
+/** Put marks in one group with a description of its own, so screen readers hear them as one thing (section 8g). */
+function sGroup(pg, words, ...items) {
+  const gid = 'sg' + (++sampleIds);
+  for (const it of items) it.groups = [gid];
+  (pg.groupAlt = pg.groupAlt || {})[gid] = words;
+  pg.items.push(...items);
+}
+function sampleGraph() {
+  // A landscape page with squares of 3/8 inch: x from -13 to 13, y from -10 to 10.
+  const pg = { w: 792, h: 612, color: '#ffffff', items: [], grid: { ...GRID_DEFAULT, quad: 'four', square: 27 } };
+  // Where a graph point (in units) is on the page: the grid's own layout (section 8j).
+  const G = gridLayout(pg);
+  const at = (x, y) => [round2(G.left + (G.ox + x) * G.sq), round2(G.top + (G.ny - G.oy - y) * G.sq)];
+  const blue = '#0046ad', red = '#dc2626', green = '#15803d';
+  const a = at(-4, -9), b = at(5, 9);
+  pg.items.push(sLine('line', a[0], a[1], b[0], b[1], blue, 3, 'The line y = 2x - 1, from (-4, -9) to (5, 9)'));
+  // The rise and run between two of its points: 1 across, then 2 up, each arrow with its label.
+  const p0 = at(-4, -9), p1 = at(-3, -9), p2 = at(-3, -7);
+  sGroup(pg, 'Run: 1 to the right, from (-4, -9) to (-3, -9)',
+    sLine('arrow', p0[0], p0[1], p1[0], p1[1], green, 2.5), sText(p0[0] + 8, p0[1] + 5, 'run 1', { color: green, size: 13 }));
+  sGroup(pg, 'Rise: 2 up, from (-3, -9) to (-3, -7)',
+    sLine('arrow', p1[0], p1[1], p2[0], p2[1], green, 2.5), sText(p1[0] + 8, (p1[1] + p2[1]) / 2 - 8, 'rise 2', { color: green, size: 13 }));
+  // Its points: a small red circle each, with its coordinates up and to the left (away from the line).
+  for (const [x, y] of [[-3, -7], [-1, -3], [3, 5], [4, 7]]) {
+    const c = at(x, y), words = '(' + x + ', ' + y + ')';
+    sGroup(pg, 'Point ' + words, sShape('ellipse', c[0] - 4, c[1] - 4, 8, 8, red, 3), sText(c[0] - 50, c[1] - 26, words, { color: red, size: 13 }));
+  }
+  const t = at(-12, 9);
+  pg.items.push(sText(t[0], t[1], 'y = 2x - 1', { color: blue, size: 30, font: 'comfortaa' }));
+  const n = at(5, -4);
+  pg.items.push(sNote(n[0] + 8, n[1], 200, 70, 'The slope is 2: up 2 for every 1 across. The line crosses the y-axis at -1.'));
+  return { pages: [pg] };
+}
+
+/* ---- The worksheet, and its PDF ---- */
+/**
+ * The worksheet's PDF, written here: an original worksheet, so nothing is
+ * downloaded and nothing needs a license. A PDF is mostly text: numbered
+ * objects (the catalog, the page, two fonts every PDF reader has built in,
+ * and the page's drawing), then a table of where each object starts, so a
+ * reader can jump to them. Every letter here is plain ASCII.
+ */
+function sampleWorksheetPdf() {
+  const ops = [];
+  const esc = (s) => s.replace(/[\\()]/g, '\\$&');             // ( ) and \ are special inside a PDF string
+  const text = (font, size, x, y, s, gray = 0) => ops.push(gray + ' g BT /' + font + ' ' + size + ' Tf ' + x + ' ' + y + ' Td (' + esc(s) + ') Tj ET');
+  const line = (x1, y1, x2, y2, w = 0.8) => ops.push('0.45 G ' + w + ' w ' + x1 + ' ' + y1 + ' m ' + x2 + ' ' + y2 + ' l S');
+  // A circle, as four curves (k: how far the control points sit).
+  const circle = (cx, cy, r) => {
+    const k = 0.5523 * r;
+    return cx - r + ' ' + cy + ' m ' + (cx - r) + ' ' + (cy + k) + ' ' + (cx - k) + ' ' + (cy + r) + ' ' + cx + ' ' + (cy + r) + ' c '
+      + (cx + k) + ' ' + (cy + r) + ' ' + (cx + r) + ' ' + (cy + k) + ' ' + (cx + r) + ' ' + cy + ' c '
+      + (cx + r) + ' ' + (cy - k) + ' ' + (cx + k) + ' ' + (cy - r) + ' ' + cx + ' ' + (cy - r) + ' c '
+      + (cx - k) + ' ' + (cy - r) + ' ' + (cx - r) + ' ' + (cy - k) + ' ' + (cx - r) + ' ' + cy + ' c h';
+  };
+  // (A PDF's y grows upward from the bottom of the page.)
+  text('F2', 26, 72, 712, 'The Water Cycle');
+  text('F1', 12, 72, 680, 'Name'); line(108, 678, 330, 678);
+  text('F1', 12, 350, 680, 'Date'); line(382, 678, 540, 678);
+  text('F2', 14, 72, 640, 'Read');
+  // The reading, a line at a time. *Starred* words are bold: each is its own run of letters (a change of
+  // font starts a new one), so a PDF reader knows exactly where it is, and the sample's highlights fit it.
+  [
+    'Water is always on the move. The sun warms lakes, rivers and oceans,',
+    'and some of the water rises into the air as an invisible gas called',
+    '*water vapor.* This is *evaporation.* High in the sky the air is cold, so',
+    'the vapor cools and turns back into tiny drops of water that gather',
+    'into clouds. This is *condensation.* When the drops grow too heavy, they',
+    'fall as rain, snow, sleet or hail. This is *precipitation.* The water',
+    'collects in oceans, lakes and the ground, and the cycle starts again.'
+  ].forEach((s, i) => {
+    // Each piece is shown (Tj) where the last one ended: a PDF moves along by itself as it writes.
+    const parts = s.split('*').map((p, k) => '/F' + (k % 2 ? 2 : 1) + ' 12 Tf (' + esc(p) + ') Tj').filter((p) => !/\(\) Tj$/.test(p));
+    ops.push('0 g BT 72 ' + (616 - i * 18) + ' Td ' + parts.join(' ') + ' ET');
+  });
+  text('F2', 14, 72, 478, 'Look');
+  // The picture: the sea, the land, the sun and a cloud, in a frame.
+  ops.push('0.75 0.87 0.98 rg 72 300 228 34 re f');                                   // the sea
+  ops.push('0.73 0.89 0.73 rg 300 300 m 440 404 l 540 330 l 540 300 l h f');         // the land (a hill)
+  ops.push('1 0.85 0.3 rg ' + circle(120, 420, 22) + ' f');                           // the sun
+  ops.push('0.93 g 0.6 G 1 w ' + circle(370, 440, 18) + ' B ' + circle(398, 452, 22) + ' B ' + circle(426, 440, 18) + ' B');   // a cloud
+  ops.push('0.45 G 0.8 w 72 300 468 166 re S');                                       // the frame
+  text('F1', 10, 150, 312, 'sea', 0.2); text('F1', 10, 108, 386, 'sun', 0.2);
+  text('F1', 10, 386, 410, 'cloud', 0.2); text('F1', 10, 470, 316, 'land', 0.2);
+  text('F2', 14, 72, 270, 'Answer');
+  text('F1', 12, 72, 246, '1. What makes water evaporate?'); line(90, 222, 540, 222);
+  text('F1', 12, 72, 196, '2. What is it called when water vapor turns into clouds?'); line(90, 172, 540, 172);
+  text('F1', 12, 72, 146, '3. Name two kinds of precipitation.'); line(90, 122, 540, 122);
+  text('F1', 12, 72, 96, '4. On the picture, draw arrows that show where the water goes.');
+  text('F1', 9, 72, 50, 'Water cycle worksheet - a WHTBRDR sample', 0.35);
+  const content = ops.join('\n');
+  const objs = [
+    '<< /Type /Catalog /Pages 2 0 R /Lang (en-US) >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>',
+    '<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream',
+    '<< /Title (Water cycle worksheet) /Creator (WHTBRDR ' + APP_VERSION + ', sample) >>'
+  ];
+  let pdf = '%PDF-1.4\n';
+  const starts = [];
+  objs.forEach((o, i) => { starts.push(pdf.length); pdf += (i + 1) + ' 0 obj\n' + o + '\nendobj\n'; });
+  const xref = pdf.length;
+  pdf += 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n' + starts.map((n) => String(n).padStart(10, '0') + ' 00000 n \n').join('');
+  pdf += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R /Info 7 0 R >>\nstartxref\n' + xref + '\n%%EOF\n';
+  return new TextEncoder().encode(pdf);
+}
+function sampleWorksheet() {
+  const H = 792, Y = (y) => H - y;            // the PDF's y (up from the bottom) as the board's (down from the top)
+  const blue = '#0046ad', red = '#dc2626';
+  const items = [
+    // The answers, typed on their lines, each marked.
+    sText(96, Y(222) - 22, 'The heat of the sun', { color: blue, font: 'comfortaa' }), { ...sStamp('check', 300, Y(222) - 26, 26), alt: 'Check: right' },
+    sText(96, Y(172) - 22, 'Condensation', { color: blue, font: 'comfortaa' }), { ...sStamp('check', 300, Y(172) - 26, 26), alt: 'Check: right' },
+    sText(96, Y(122) - 22, 'Rain and snow', { color: blue, font: 'comfortaa' }), { ...sStamp('star', 300, Y(122) - 26, 26), alt: 'Star: a great answer' },
+    sNote(406, 24, 170, 60, 'Great work! Look for condensation on a cold glass of water.', WB_NOTE_COLORS[3])
+  ];
+  const pg = { w: 612, h: 792, color: '#ffffff', doc: { src: 'w1', index: 0, name: 'Water cycle worksheet.pdf', rot: 0, k: 1 }, items };
+  // Question 4, answered on the picture: two arrows, each with its label.
+  sGroup(pg, 'Arrow from the sea up to the cloud: evaporation',
+    sLine('arrow', 200, Y(338), 352, Y(420), blue, 3), sText(180, Y(392), 'evaporation', { color: blue, size: 12, font: 'comfortaa' }));
+  sGroup(pg, 'Arrow from the cloud down to the land: rain',
+    sLine('arrow', 420, Y(424), 486, Y(374), blue, 3), sText(462, Y(426), 'rain', { color: blue, size: 12, font: 'comfortaa' }));
+  return {
+    pages: [pg],
+    docs: [{ id: 'w1', name: 'Water cycle worksheet.pdf', file: 'docs/1.pdf' }],
+    files: { 'docs/1.pdf': sampleWorksheetPdf() },
+    // Then the marks that sit on its words: found where pdf.js reads them (section 8l), so they fit any font.
+    async finish(b) {
+      const pg = b.pages[0];
+      if (!pg.doc) return;
+      const t = await readDocText(pg.doc);
+      const find = (word) => t.words.find((w) => w.text.replace(/[^a-z]/gi, '').toLowerCase() === word);
+      const marks = [];
+      for (const word of ['evaporation', 'condensation', 'precipitation']) {
+        const w = find(word);
+        if (!w) continue;
+        const size = round2(w.h * 1.15), y = round2(w.base - w.h * 0.3), tuck = size / 2;   // (its round ends stop at the word's ends)
+        marks.push({ id: sid(), type: 'highlight', color: WB_HIGHLIGHTERS[0].color, size, pressure: false, pts: [[round2(w.x0 + tuck), y, 0.5], [round2(w.x1 - tuck), y, 0.5]] });
+      }
+      // A red ring drawn round "water vapor" (a pen stroke: its description says what it marks).
+      const a = t.words.find((w, i) => w.text === 'water' && t.words[i + 1] && /^vapor/.test(t.words[i + 1].text));
+      if (a) {
+        const z = t.words[t.words.indexOf(a) + 1];
+        const cx = (a.x0 + z.x1) / 2, cy = a.base - a.h * 0.35, rx = (z.x1 - a.x0) / 2 + 3, ry = a.h * 0.9;
+        const pts = [];
+        for (let i = 0; i <= 40; i++) { const ang = -2.6 + i / 40 * Math.PI * 2.15; pts.push([round2(cx + Math.cos(ang) * rx), round2(cy + Math.sin(ang) * ry), 0.5]); }
+        marks.push({ id: sid(), type: 'ink', color: red, size: 2.5, pressure: false, pts, alt: 'Red circle around the words water vapor' });
+      }
+      pg.items.unshift(...marks);
+    }
+  };
+}
+
+/* ---- Lesson slides ---- */
+function sampleLesson() {
+  const W = 720, H = 405, green = '#15803d', ink = '#1f2937';
+  const slide = (items) => ({ w: W, h: H, color: '#f0fdf4', items });
+  const title = (words) => sText(40, 28, words, { color: green, size: 30, font: 'comfortaa' });
+  const step = (seq, y, words) => [sStep(seq, 40, y), sText(86, y + 4, words, { color: ink, size: 18 })];
+  return {
+    pages: [
+      slide([
+        sText(40, 110, 'Plant a bean seed', { color: green, size: 44, font: 'comfortaa' }),
+        sText(40, 190, 'What you need: a cup, some soil, a bean seed and water.', { color: ink, size: 20 }),
+        sText(40, 226, 'Five steps, about ten minutes.', { color: ink, size: 20 }),
+        { ...sStamp('star', 600, 60, 70), decorative: true }
+      ]),
+      slide([
+        title('Get it ready'),
+        ...step(1, 110, 'Fill the cup with soil, almost to the top.'),
+        ...step(2, 180, 'Poke a hole as deep as the first bend of your finger.'),
+        sLine('arrow', 610, 220, 610, 268, green, 3, 'Arrow pointing down into the cup'),
+        sShape('rect', 560, 280, 100, 95, '#a16207', 4, 'A cup'),
+        sText(626, 222, 'soil', { color: green, size: 16, font: 'comfortaa' })
+      ]),
+      slide([
+        title('Plant it'),
+        ...step(3, 110, 'Drop the seed in the hole and cover it with soil.'),
+        ...step(4, 180, 'Water it until the soil is damp, not soaking wet.'),
+        sNote(470, 260, 210, 60, 'Too much water rots the seed. A few spoonfuls is plenty.', WB_NOTE_COLORS[2])
+      ]),
+      slide([
+        title('Watch it grow'),
+        ...step(5, 110, 'Put the cup in a sunny window.'),
+        sNote(86, 180, 260, 60, 'Check it every day. The first leaves should show in about a week.'),
+        sStamp('check', 600, 250, 80)
+      ])
+    ]
+  };
 }
 
 /* =====================================================================
@@ -12353,6 +13037,10 @@ function startNewBoard(sizeId) {
   finishEdit();
   board = newBoard(sizeId);
   pageIndex = 0;
+  // A new board is not the file that was open: Save asks for a name, rather than writing over that file (0.5.2).
+  projectName = '';
+  projectHandle = null;
+  sampleName = '';
   commit('new board');
   view.fit = 'page';
   renderAll();
@@ -12455,14 +13143,17 @@ function buildHelp() {
       el('li', { text: 'Pictures: press I or the Picture button, paste one (Ctrl+V), or drop a file on the board. Stamps (G): pick a check, an X, a star or a question mark in the pill, then click to put them down.' }),
       el('li', { text: 'Pick the page size in the Inspector (Page), or start a new board with the first button in the top bar. Undo brings back anything, even a cleared page or the board before a new one.' }),
       el('li', { text: 'Open a PDF or pictures (Ctrl+O, or the folder button in the top bar), or drop a PDF on the board: every page becomes a page to draw on, after the one on show. A Word, PowerPoint or Excel file needs saving as a PDF first; WHTBRDR says how.' })),
+    el('h3', { text: 'Samples' }),
+    el('p', { text: 'Three ready-made boards to try things on: a graph on a coordinate grid, a marked-up PDF worksheet, and four lesson slides with step numbers.' }),
+    el('p', {}, el('button', { class: 'btn', type: 'button', text: 'Open a sample', onclick: () => { $('helpDlg').close(); openSamples(); } })),
     el('h3', { text: 'Using a stylus' }),
     el('p', { text: 'Once a stylus touches the board, a finger slides the page instead of drawing, so your hand can rest on the screen. The Inspector\'s "A finger" setting changes this.' }),
     el('h3', { text: 'What is coming' }),
-    el('p', { text: 'Next: PDFs whose marks other apps can still edit, descriptions for screen readers inside a PDF, and sample boards; then PowerPoint export and the accessibility checker.' }),
+    el('p', { text: 'Next: PowerPoint export, and an Accessibility tab with the full checker, reading order you can change, and a color-vision preview.' }),
     el('h3', { text: 'Saving' }),
     el('p', { text: 'Save (Ctrl+S, or the disk button in the top bar) keeps the whole board as a .whtbrdr file: every page, every mark, and the PDFs and pictures inside it. Open (Ctrl+O) brings it back. While you work, WHTBRDR also keeps a crash backup in this browser; if the tab closes before you save, the next start offers to pick up where you left off.' }),
     el('h3', { text: 'Sharing' }),
-    el('p', { text: 'Export (Ctrl+Shift+E) makes a PDF, or pictures (PNG, JPEG or WebP), of all the pages, this page or the picked ones. In a PDF, pages from a PDF stay as they were, with your marks drawn on top.' }));
+    el('p', { text: 'Export (Ctrl+Shift+E) makes a PDF, or pictures (PNG, JPEG or WebP), of all the pages, this page or the picked ones. In a PDF, pages from a PDF stay as they were. Your marks are either kept editable (Acrobat, Preview and other PDF apps can still move or change them) or drawn into the page. Either way, screen readers hear each mark\'s description, in reading order; the Export dialog says which pen strokes and pictures still need one.' }));
   // About
   const credits = el('div');
   $('paneAbout').replaceChildren(
@@ -12854,6 +13545,13 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.5.2', date: '2026-10-21', notes: [
+    'PDF export can keep your marks editable: each one becomes a PDF annotation (ink, highlight, line, square, circle, free text or stamp) that Acrobat, Preview and other PDF apps can still move, change or delete. It looks the same as on the board. This is the first choice for a board that came from a PDF; "Drawn in" is the first choice otherwise.',
+    'Exported PDFs are tagged: screen readers hear a PDF page\'s own words, then each mark\'s description, in reading order (a group with a description of its own is heard once, as the group). Texts and sticky notes drawn in are read as words. Decorative marks and ruled lines are skipped; the background picture and the coordinate grid are described.',
+    'The Export dialog counts the pen strokes and pictures that have no description, page by page, with Go to it buttons that pick them (and put the cursor in the Description field when it is one). It only warns: the export works either way.',
+    'Samples (the splash\'s new Samples card, or Help, Getting started): a graph on a coordinate grid, a marked-up PDF worksheet about the water cycle, and four lesson slides with step numbers. Each is made by WHTBRDR itself, nothing is downloaded, and every mark in them is described.',
+    'Fixed: after New board, Save wrote the new board over the file that was open. A new board now asks for a name the first time it is saved.'
+  ] },
   { version: '0.5.1', date: '2026-10-21', notes: [
     'Export (the new Export button, or Ctrl+Shift+E): a PDF, or pictures (PNG, JPEG or WebP at 1x, 2x or 3x), of all the pages, this page or the picked pages. Several pictures come as a zip.',
     'In a PDF, a page from a PDF goes back out as itself, untouched, and your marks are drawn on top as real PDF drawing: sharp at any zoom, with your words as words (WHTBRDR\'s fonts go inside the PDF).',
@@ -13015,6 +13713,7 @@ function start() {
   wireOpen();
   wireFiles();                       // (saving, the file handler, asking before the tab closes: section 8m)
   wireExport();                      // (PDF and pictures: section 8n)
+  wireSamples();                     // (the samples dialog: section 8o)
   $('btnPicture').addEventListener('click', choosePictures);
   // When the fonts have loaded, measure words again (they may have been measured in a stand-in font).
   if (document.fonts && document.fonts.load) {
@@ -13088,7 +13787,8 @@ function showSplash(found) {
         { icon: 'new', label: 'New board', detail: sizeWords(page()) + ', ready to draw on', run: () => $('board').focus(), primary: true },
         { icon: 'open', label: 'Open', detail: 'A saved board, a PDF or pictures', run: chooseOpen },
         { icon: 'size', label: 'Pick a page size', detail: 'Letter, A4, 16:9 slides, square, or your own', run: openNewDialog },
-        { icon: SPLASH_PICTURE_ICON, label: 'Draw on a picture', detail: 'A screenshot or photo, placed on the page', run: choosePictures }
+        { icon: SPLASH_PICTURE_ICON, label: 'Draw on a picture', detail: 'A screenshot or photo, placed on the page', run: choosePictures },
+        { icon: 'sample', label: 'Samples', detail: 'A graph, a marked-up worksheet, lesson slides', run: openSamples }
       ],
       // A backup an earlier session left (section 8m): a slim row under the cards.
       resume: found ? { detail: found.detail + ', ' + suiteWhen(found.savedAt), run: () => restoreBackup(found) } : null,

@@ -70,8 +70,15 @@
 > as vector, words as words) or pictures (section 8n). pdf-lib and fontkit
 > are in `vendor/` too now, and `make-export-fonts.py` keeps TrueType
 > copies of the fonts in `index-online.html` (run it if the fonts change,
-> then `build-offline.py`). Waiting for Dave's review of 0.5.1; next is
-> 0.5.2 (editable PDF marks, descriptions in the PDF, samples).
+> then `build-offline.py`).
+>
+> **Then 0.5.2:** PDF marks kept editable (each a PDF annotation) or drawn
+> in, both tagged for screen readers (section 8n: `pdfTags`,
+> `exportUnits`, `annotKind`); the Export dialog's descriptions check with
+> Go to it buttons; and three samples made in code (section 8o), the
+> worksheet's PDF included. That finishes milestone 5. Waiting for Dave's
+> review of 0.5.2; next is 0.7.0 (PowerPoint export and the Accessibility
+> tab).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**
