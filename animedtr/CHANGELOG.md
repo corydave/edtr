@@ -1,5 +1,49 @@
 # ANIMEDTR changelog
 
+## 0.23.0 - 2026-10-21
+
+**Pictures: crop, shape and border; drop shadows on anything** (Dave's
+picks: crop by dragging on the stage; rounded and circle shapes; shadow
+presets you can fine-tune; shadows on everything, not just pictures).
+
+- **Crop on the stage, like PowerPoint:** pick a picture and press **C**
+  (or **Crop** on the quick bar, in the Inspector's Look, or in the
+  right-click menu). Its handles become eight crop bars, on the sides and
+  the corners. Drag one in and that side is cut off: the box shrinks with
+  it and the picture stays exactly where it was. The parts cut off show
+  faintly, with a dashed line round the whole picture, while you crop.
+  Dragged back to within a few pixels of the picture's own edge, a side
+  snaps to it (Alt: no snapping).
+- **Slide the picture under its box:** in Crop mode, drag inside the
+  picture, or use the arrow keys (1%, Shift: 10%), to choose which part
+  shows. It never goes past the picture's own edge. **C**, **Enter** or
+  **Escape** ends Crop mode; it says how the picture is cropped.
+- **By the numbers:** Look has **Cut off (% of the picture)**: Left, Right,
+  Top and Bottom, and **Reset crop**. At least 5% always shows each way.
+  A crop is the picture's own, the same at every keyframe: when you crop,
+  every keyframe's box shrinks to match and moves so the picture stays
+  put, so a picture that moves, grows and turns keeps doing so, cropped
+  the same way all through. **Fit the box to the picture** now keeps the
+  crop's shape. **Replace picture** starts the new picture uncropped.
+- **Shape and border:** a picture's **Shape** is Rectangle, Rounded
+  rectangle (its **Corners**, 24 to start) or Oval or circle (a circle in a
+  square box). **Border** draws an outline round that shape, in any colour
+  and width.
+- **Drop shadows on anything:** pictures, shapes, lines, text and groups
+  have a new **Shadow** section. Start from **Soft**, **Close** or
+  **Lifted**, then change its colour, **Strength**, **Softness**,
+  **Distance** and which way it **Falls** (eight directions); changing a
+  number makes it **Your own**. It falls the same way however the thing
+  is turned, as if the light stays put, and fades with it. With several
+  things picked, **Arrange** has a Shadow for all of them at once.
+- **In the lesson:** cropping, shapes and shadows are SVG clip paths and
+  filters set as attributes, so the exported lesson's strict Content
+  Security Policy (no inline styles) is kept. A picture's name for a
+  screen reader is unchanged; the border and shadow are not read.
+- **Fixed:** a part of the Inspector that redraws itself (such as the
+  shadow's numbers appearing) now starts its fields with their values,
+  and keeps focus on the field you were in.
+
 ## 0.22.1 - 2026-10-16
 
 - Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.

@@ -236,6 +236,15 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 /* 0.20.0: a mask group's window, dashed on the overlay (it is never seen in the lesson itself). */
 /* 0.21.0: the Effects gallery: a card for each preset (a radio button), with a little picture that plays when pointed at or focused. */
 .fx-dlg { width: min(880px, calc(100vw - 24px)); }
+/* Crop mode (0.23.0): the cut-off parts faint, the whole picture's edge dashed, the crop bars dark with a light edge */
+.crop-ghost { opacity: .28; pointer-events: none; }
+.crop-whole { fill: none; stroke: var(--text-muted, #6b7280); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.crop-box { fill: none; stroke: #ffffff; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.crop-bar { stroke: #111827; stroke-linecap: square; }
+.crop-bar-edge { stroke: #ffffff; stroke-linecap: square; }
+.crop-nums { border: 0; padding: 0; margin: 4px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.crop-nums .field { grid-template-columns: 52px minmax(0, 1fr); }      /* (two across: a short label each) */
+.crop-nums legend { font-size: 12px; color: var(--text-muted); padding: 0; margin-bottom: 4px; }
 .morph-dlg { width: min(520px, calc(100vw - 24px)); }                  /* Morph into a shape (0.22.0): the shapes gallery in a dialog */
 .morph-dlg .dlg-body { max-height: min(70dvh, 560px); overflow-y: auto; }
 .morph-dlg h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin: 10px 0 6px; }
@@ -1668,6 +1677,14 @@ var ANIRuntime = (function () {
     return (typeof v === 'string' && COLOUR_RE.test(v.toLowerCase())) ? v.toLowerCase() : d;
   }
   function oneOf(v, list, d) { return list.indexOf(v) >= 0 ? v : d; }
+  /** A picture's shapes (0.23.0). */
+  var CROP_SHAPES = ['rect', 'round', 'oval'];
+  /** A drop shadow, checked (or null: none). */
+  function cleanShadow(sh) {
+    if (!isObj(sh)) return null;
+    return { dist: num(sh.dist, 0, 500, 8), dir: num(sh.dir, -360, 360, 135), blur: num(sh.blur, 0, 200, 12),
+      color: colour(sh.color, '#000000'), alpha: num(sh.alpha, 0, 1, 0.35) };
+  }
   function isObj(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
   function list(v, max) { return Array.isArray(v) ? v.slice(0, max) : []; }
 
@@ -1863,6 +1880,21 @@ var ANIRuntime = (function () {
         out.clipAt = int(o.clipAt, 0, LIMITS.frames, 0);
         out.always = o.always === true;
       }
+      if (type === 'image') {
+        // Cropping a picture (0.23.0): how much is cut off each side, as a share of the picture
+        // (left, top, right, bottom; 0 is none). At least 5% of it always shows. Its shape:
+        // a rectangle, a rounded rectangle (its corners: radius) or an oval. A border is the
+        // outline every shape has (stroke and strokeW), drawn round that shape.
+        var c = Array.isArray(o.crop) ? o.crop : [];
+        var cl = num(c[0], 0, 0.95, 0), ct = num(c[1], 0, 0.95, 0), cr = num(c[2], 0, 0.95, 0), cb = num(c[3], 0, 0.95, 0);
+        if (cl + cr > 0.95) { var kx = 0.95 / (cl + cr); cl *= kx; cr *= kx; }          // (too much off both sides: shared out)
+        if (ct + cb > 0.95) { var ky = 0.95 / (ct + cb); ct *= ky; cb *= ky; }
+        out.crop = [cl, ct, cr, cb];
+        out.cropShape = oneOf(o.cropShape, CROP_SHAPES, 'rect');
+      }
+      // A drop shadow (0.23.0), for anything: how far it falls and which way (degrees: 0 is to
+      // the right, 90 straight down), how soft it is, its colour and how strong.
+      out.shadow = cleanShadow(o.shadow);
       if (out.end >= 0 && out.end < out.start) out.end = -1;
       // Behaviours are read after every object exists (they point at each other).
       out._rawOn = isObj(o.on) ? o.on : {};
@@ -2850,6 +2882,23 @@ var ANIRuntime = (function () {
     var hlG = null;
     if (o.type === 'text') { hlG = svgEl(doc, 'g', { 'class': 'ani-hl', 'aria-hidden': 'true' }); look.appendChild(hlG); }
     look.appendChild(shape || kids);
+    // A picture's crop and border (0.23.0). The whole picture is drawn, bigger than its box when
+    // it is cropped, and a clip path (a rectangle, a rounded one or an oval: paint sets it) cuts
+    // it to the box. The border is an outline of that shape drawn on top. (Attributes only, no
+    // styles: an exported lesson allows no inline styles.)
+    var pic = null;
+    if (o.type === 'image') {
+      var pid = 'ani-pc-' + stageTag + (++nodeCount);
+      var clipEl = svgEl(doc, 'clipPath', { id: pid, clipPathUnits: 'userSpaceOnUse' });
+      var clipRect = svgEl(doc, 'rect'), clipOval = svgEl(doc, 'ellipse', { cx: 0, cy: 0 });
+      var edgeRect = svgEl(doc, 'rect', { fill: 'none', 'aria-hidden': 'true' }), edgeOval = svgEl(doc, 'ellipse', { cx: 0, cy: 0, fill: 'none', 'aria-hidden': 'true' });
+      look.insertBefore(clipEl, shape);
+      look.appendChild(edgeRect); look.appendChild(edgeOval);
+      pic = { id: pid, clip: clipEl, rect: clipRect, oval: clipOval, edgeRect: edgeRect, edgeOval: edgeOval, key: '' };
+    }
+    // A drop shadow (0.23.0), for anything: a filter on its look that blurs a copy of its shape,
+    // moves it and colours it, then draws the thing itself on top. Made when first needed (paint).
+    var shadow = { doc: doc, id: 'ani-sh-' + stageTag + (++nodeCount), filter: null, key: '' };
     // A box to type in (0.16.0). In a lesson: a real text box (an HTML <input>, inside the SVG
     // in a <foreignObject>, so it moves, fades and shows with the object, and the keyboard,
     // a screen reader and spelling tools all treat it as the text box it is). Anywhere else
@@ -2910,7 +2959,7 @@ var ANIRuntime = (function () {
     if (mode === 'player' && o.drop) g.setAttribute('class', (g.getAttribute('class') || 'ani-obj') + ' ani-target');   // a place to drop things
     if (mode === 'player' && input) g.setAttribute('class', 'ani-obj ani-field');
     var node = { g: g, look: look, shape: shape, kids: kids, hit: hit, ringOut: ringOut, ringIn: ringIn, wrapKey: '', dNow: o.d,
-      hint: hint, input: input, fo: fo, mark: null, hl: hlG };
+      hint: hint, input: input, fo: fo, mark: null, hl: hlG, pic: pic, shadow: shadow };
     if (o.type === 'group' && o.maskBy) {
       // A mask group (0.20.0). Its parts go in two places (createStage puts them there):
       //   <g class="ani-kids">
@@ -2982,6 +3031,7 @@ var ANIRuntime = (function () {
    * first), objects in their layer in stacking order (bottom first), and a
    * group's parts inside the group.
    */
+  var nodeCount = 0;                                 // (every picture's crop and every shadow gets its own id: 0.23.0)
   var stageCount = 0, stageTag = '';                 // (every stage on a page gets its own ids for masks: 0.20.0)
   function createStage(doc, p, mode) {
     stageTag = 's' + (++stageCount) + '-';
@@ -3049,6 +3099,73 @@ var ANIRuntime = (function () {
     });
   }
   /** Put one object's node where its values say, and give it its look (shape: a morphing outline's path data now). */
+  /**
+   * paintPicture - a picture in its box (0.23.0). crop says how much of each side is cut off
+   * (shares of the picture), so the whole picture is drawn bigger than the box, shifted so the
+   * part that shows fills it exactly. A clip path in the picture's shape cuts it to the box,
+   * and the border (its outline) follows the same shape.
+   */
+  function paintPicture(n, o, w, h) {
+    var s = n.shape, c = o.crop || [0, 0, 0, 0], P = n.pic;
+    var fw = w / Math.max(0.05, 1 - c[0] - c[2]), fh = h / Math.max(0.05, 1 - c[1] - c[3]);   // the whole picture's size
+    s.setAttribute('x', r2(-w / 2 - c[0] * fw)); s.setAttribute('y', r2(-h / 2 - c[1] * fh));
+    s.setAttribute('width', r2(fw)); s.setAttribute('height', r2(fh));
+    if (!P) return;                                   // (a picture made some other way: no crop)
+    var shape = o.cropShape || 'rect', oval = shape === 'oval';
+    var rad = shape === 'round' ? Math.min(o.radius, w / 2, h / 2) : 0;
+    var cropped = c[0] > 0 || c[1] > 0 || c[2] > 0 || c[3] > 0;
+    // Its edge, in its shape: the clip path, and the border on top.
+    [P.rect, P.edgeRect].forEach(function (r) {
+      r.setAttribute('x', r2(-w / 2)); r.setAttribute('y', r2(-h / 2)); r.setAttribute('width', r2(w)); r.setAttribute('height', r2(h)); r.setAttribute('rx', r2(rad));
+    });
+    [P.oval, P.edgeOval].forEach(function (e) { e.setAttribute('rx', r2(w / 2)); e.setAttribute('ry', r2(h / 2)); });
+    var want = oval ? P.oval : P.rect;
+    if (P.clip.firstChild !== want) { while (P.clip.firstChild) P.clip.removeChild(P.clip.firstChild); P.clip.appendChild(want); }
+    // Cut it only when something would show outside the shape (a plain picture has no clip at all).
+    if (cropped || oval || rad > 0) s.setAttribute('clip-path', 'url(#' + P.id + ')'); else s.removeAttribute('clip-path');
+    var border = o.stroke && o.strokeW > 0;
+    P.edgeRect.setAttribute('display', border && !oval ? 'inline' : 'none');
+    P.edgeOval.setAttribute('display', border && oval ? 'inline' : 'none');
+    if (border) [P.edgeRect, P.edgeOval].forEach(function (e) { e.setAttribute('stroke', o.stroke); e.setAttribute('stroke-width', o.strokeW); });
+  }
+
+  /**
+   * paintShadow - a drop shadow on anything (0.23.0). It falls the same way however the object
+   * is turned (as if the light stays put), so its direction is turned back by the object's own
+   * turn. The filter's area is the box with room all round for the blur and the distance (and
+   * more, as text and a group's parts can reach past their box).
+   */
+  function paintShadow(n, o, v, w, h) {
+    var sh = o.shadow, S = n.shadow;
+    if (!S) return;
+    if (!sh) { if (S.filter) { n.look.removeAttribute('filter'); S.key = ''; } return; }
+    var doc = S.doc;
+    if (!S.filter) {
+      S.filter = svgEl(doc, 'filter', { id: S.id, filterUnits: 'userSpaceOnUse', 'color-interpolation-filters': 'sRGB' });
+      S.blur = svgEl(doc, 'feGaussianBlur', { 'in': 'SourceAlpha' });
+      S.off = svgEl(doc, 'feOffset', { result: 'ani-moved' });
+      S.flood = svgEl(doc, 'feFlood');
+      var inside = svgEl(doc, 'feComposite', { in2: 'ani-moved', operator: 'in' });
+      var merge = svgEl(doc, 'feMerge');
+      merge.appendChild(svgEl(doc, 'feMergeNode'));
+      merge.appendChild(svgEl(doc, 'feMergeNode', { 'in': 'SourceGraphic' }));
+      [S.blur, S.off, S.flood, inside, merge].forEach(function (f) { S.filter.appendChild(f); });
+      n.g.insertBefore(S.filter, n.g.firstChild);
+    }
+    var a = (sh.dir - v.rot) * Math.PI / 180, dx = r2(sh.dist * Math.cos(a)), dy = r2(sh.dist * Math.sin(a));
+    var pad = sh.blur * 1.5 + sh.dist + Math.max(w, h) * 0.5 + 24;
+    var key = [dx, dy, sh.blur, sh.color, sh.alpha, r2(w), r2(h)].join('|');
+    if (S.key !== key) {
+      S.key = key;
+      S.filter.setAttribute('x', r2(-w / 2 - pad)); S.filter.setAttribute('y', r2(-h / 2 - pad));
+      S.filter.setAttribute('width', r2(w + 2 * pad)); S.filter.setAttribute('height', r2(h + 2 * pad));
+      S.blur.setAttribute('stdDeviation', r2(sh.blur / 2));
+      S.off.setAttribute('dx', dx); S.off.setAttribute('dy', dy);
+      S.flood.setAttribute('flood-color', sh.color); S.flood.setAttribute('flood-opacity', sh.alpha);
+    }
+    n.look.setAttribute('filter', 'url(#' + S.id + ')');
+  }
+
   function paint(stage, n, o, v, shape) {
     var w = Math.max(1, v.w), h = Math.max(1, v.h);
     // Its middle (turned round its pivot: 0.19.0), then the turn; everything inside is drawn round the middle.
@@ -3056,6 +3173,7 @@ var ANIRuntime = (function () {
     n.g.setAttribute('transform', 'translate(' + r2(mid.x) + ' ' + r2(mid.y) + ') rotate(' + r2(v.rot) + ')');
     // A spot (0.16.0) cannot be seen in a lesson (only its focus ring, and its mark once answered).
     n.look.setAttribute('opacity', o.spot && stage.mode !== 'editor' ? 0 : r2(v.opacity));
+    paintShadow(n, o, v, w, h);                        // (a drop shadow, if it has one: 0.23.0)
     // An answer's mark (a tick or a cross, 0.16.0) sits on its top-right corner.
     if (n.mark) n.mark.setAttribute('transform', 'translate(' + r2(w / 2 - 6) + ' ' + r2(-h / 2 + 6) + ')');
     var s = n.shape;
@@ -3071,8 +3189,7 @@ var ANIRuntime = (function () {
       // The outline's own box (vb) is stretched to fill the object's box.
       s.setAttribute('transform', 'translate(' + r2(-w / 2) + ' ' + r2(-h / 2) + ') scale(' + (w / o.vb[2]) + ' ' + (h / o.vb[3]) + ') translate(' + (-o.vb[0]) + ' ' + (-o.vb[1]) + ')');
     } else if (o.type === 'image') {
-      s.setAttribute('x', r2(-w / 2)); s.setAttribute('y', r2(-h / 2));
-      s.setAttribute('width', r2(w)); s.setAttribute('height', r2(h));
+      paintPicture(n, o, w, h);                         // (cropped, shaped and bordered: 0.23.0)
     } else if (o.type === 'field') {
       // A box to type in: white, with its colour as the outline (0.16.0).
       s.setAttribute('x', r2(-w / 2)); s.setAttribute('y', r2(-h / 2));
@@ -6404,7 +6521,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* =====================================================================
    1. BASICS
    ===================================================================== */
-const APP_VERSION = '0.22.1';
+const APP_VERSION = '0.23.0';
 const R = ANIRuntime;                 // short name for the shared runtime
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -6449,6 +6566,7 @@ const ICONS = {
   install: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 7v7M9 11.5l3 3 3-3"/>',
   morph: '<rect x="2.5" y="8" width="8" height="8" rx="1"/><circle cx="17.5" cy="12" r="4"/><path d="M11.5 6.5c1.5-1.6 3.4-2 5-1.4M15 3.6l1.6 1.5-1.4 1.7"/>',   // a morph: a square becoming a circle (0.22.0)
   sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/>',
+  crop: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',   // crop: two corners crossing (0.23.0)
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
   redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
   eye: '<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>',
@@ -7311,6 +7429,8 @@ function handleAt(e) {
   const o = pickedObj();
   if (!o || !isShown(o) || isLocked(o)) return null;
   // In Pivot mode (Q) the pivot dot comes first, even where it sits on a corner (0.19.0).
+  // In Crop mode (C) a picture's crop bars, or inside it to slide it (0.23.0).
+  if (cropMode) return cropHandleAt(e);
   if (pivotMode && selObjs().length === 1) { const pv = pivotSpotOnScreen(o); if (Math.hypot(pv.cx - e.clientX, pv.cy - e.clientY) <= handleSizes().reachPx + handleSizes().handlePx / 2) return pv; }
   let best = null, bestD = handleSizes().reachPx + handleSizes().handlePx / 2;
   handleSpots(o).forEach((s) => { const d = Math.hypot(s.cx - e.clientX, s.cy - e.clientY); if (d <= bestD) { best = s; bestD = d; } });
@@ -7344,7 +7464,12 @@ function drawOverlay() {
     overlay.append(g);
   });
   const o = pickedObj();
-  if (o && isShown(o) && !isLocked(o) && !(tool === 'points' && o.type === 'path')) {   // (in Edit points, its points instead)
+  if (o && cropMode && cropTarget() === o && isShown(o)) {                              // Crop mode: the crop bars instead (section 18za)
+    const v = displayValues(o), u = 1 / (screenScale() * scaleOf(containerMatrix(o)));
+    const g = svgEl('g', { transform: matrixAttr(objMatrix(o)) });
+    drawCropOverlay(g, o, v, u);
+    overlay.append(g);
+  } else if (o && isShown(o) && !isLocked(o) && !(tool === 'points' && o.type === 'path')) {   // (in Edit points, its points instead)
     const v = displayValues(o), u = 1 / (screenScale() * scaleOf(containerMatrix(o))), hs = handleSizes().handlePx * u;
     const g = svgEl('g', { transform: matrixAttr(objMatrix(o)) });
     const stem = handleSizes().turnPx * u;
@@ -7560,6 +7685,7 @@ stageWrap.addEventListener('pointerdown', (e) => {
     drag = { kind: h.kind, id: o.id, sx: h.sx, sy: h.sy, m, start: p, v, group: 'drag' + e.timeStamp, moved: false,
       ang0: Math.atan2(p.y - P.y, p.x - P.x) };
     if (h.kind === 'pivot') { drag.om = objMatrix(o); drag.from = pivotSnapshot(o); }   // (the pivot moves; the object must not: 11w-pivot.js)
+    if (h.kind === 'crop' || h.kind === 'cropPan') { drag.om = objMatrix(o); drag.from = cropSnapshot(o); drag.cropStart = toLocal(pt, drag.om); }   // (measured against the picture as it was: 11zb-pictures.js)
     return;
   }
   const id = pickTarget(e.target);
@@ -7588,7 +7714,7 @@ stageWrap.addEventListener('pointermove', (e) => {
   if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   const pt = toStage(e);
   $('stPointer').textContent = Math.round(pt.x) + ', ' + Math.round(pt.y);
-  if (!drag) { const hh = tool === 'select' && handleAt(e); stageWrap.style.cursor = hh ? (hh.kind === 'pivot' ? 'move' : 'pointer') : ''; if (tool === 'pen') penHover(pt); return; }
+  if (!drag) { const hh = tool === 'select' && handleAt(e); stageWrap.style.cursor = hh ? (hh.kind === 'pivot' || hh.kind === 'cropPan' ? 'move' : 'pointer') : ''; if (tool === 'pen') penHover(pt); return; }
   if (drag.kind === 'penHandle' || drag.kind.startsWith('pt')) { outlineMove(e, pt); return; }
   if (drag.kind === 'pencil') { pencilMove(pt); return; }
   if (drag.kind === 'pinch') {
@@ -7632,6 +7758,8 @@ stageWrap.addEventListener('pointermove', (e) => {
   const o = obj(drag.id); if (!o) return;
   const v = drag.v;
   if (drag.kind === 'pivot') { pivotDragMove(o, pt, e); return; }        // (11w-pivot.js)
+  if (drag.kind === 'crop') { cropDragMove(o, pt, e); return; }          // (11zb-pictures.js)
+  if (drag.kind === 'cropPan') { cropPanMove(o, pt); return; }
   if (drag.kind === 'size' && e.altKey) { sizeRoundPivot(o, v, p, e); return; }   // Alt: round the pivot (11w-pivot.js)
   if (drag.kind === 'size') {
     // Resize by a corner: the opposite corner stays put, even when the object is turned.
@@ -7720,6 +7848,10 @@ function endStageDrag(e) {
       setSelection([...d.keep, ...hits]);
       if (hits.length) announce(plural(sel.length, 'object') + ' picked.');
     } else if (entered) exitGroup();
+  } else if ((d.kind === 'crop' || d.kind === 'cropPan') && d.moved) {
+    endGroup();
+    const o = obj(d.id);
+    if (o) announce(o.name + ' is ' + cropWords(o) + '.');
   } else if (d.kind === 'pivot' && d.moved) {
     endGroup();
     const o = obj(d.id);
@@ -7774,6 +7906,7 @@ let nudgeSay = 0;
 stageWrap.addEventListener('keydown', (e) => {
   if (outlineKey(e)) return;                          // the Pen's and Edit points' own keys (section 18f)
   if (pivotKey(e)) return;                            // Pivot mode's own keys (section 18w)
+  if (cropKey(e)) return;                             // Crop mode's own keys (section 18za)
   const list = selObjs().filter((o) => !isLocked(o));
   const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   if (moves[e.key] && list.length && !e.altKey && !e.ctrlKey && !e.metaKey) {
@@ -7902,18 +8035,14 @@ async function replacePicture(o, file) {
     const pic = await readPicture(file);
     const id = newId('a');
     project.assets[id] = { data: pic.data, w: pic.w, h: pic.h };
-    commit(); o.asset = id; stageKey = ''; inspectorDirty = true;
+    commit(); o.asset = id; o.crop = [0, 0, 0, 0];   // (a new picture starts uncropped: 0.23.0)
+    stageKey = ''; inspectorDirty = true;
     announce('Picture replaced. The box stays the same; "Fit the box to the picture" fixes its shape.');
     requestRender();
   } catch (err) { announce(err.message); }
 }
 /** Make the box the picture's own shape (keeping its width). */
-function fitBoxToPicture(o) {
-  const a = project.assets[o.asset]; if (!a) return;
-  const v = displayValues(o);
-  editProps(o, { h: round1(v.w * a.h / a.w) });
-  announce('The box now has the picture\'s shape.');
-}
+function fitBoxToPicture(o) { fitBoxToCrop(o); }      // (the part that shows, when it is cropped: section 18za)
 // The file picker (one hidden input, used by the Picture tool and "Replace picture").
 let pictureTarget = null;               // null = add new pictures; an object = replace its picture
 $('pictureInput').addEventListener('change', () => {
@@ -8303,6 +8432,7 @@ function menuItems() {
     if (!inClip() && !entered && list.every((o) => o.type !== 'group' && o.type !== 'clip')) add('Make a clip', 'F8', makeClip);
     if (one && one.type === 'path') add(tool === 'points' ? 'Stop editing points' : 'Edit points', 'A', () => setTool(tool === 'points' ? 'select' : 'points'), isLocked(one));
     if (one && (one.type === 'rect' || one.type === 'ellipse')) add('Turn into an outline', '', () => convertToOutline(one), isLocked(one));
+    if (one && one.type === 'image' && list.length === 1) add(cropMode ? 'Done cropping' : 'Crop', 'C', () => toggleCropMode(), isLocked(one));   // (section 18za)
     // Shape tweens (section 18z): two picked shapes morph either way round; one shape morphs into a gallery shape.
     const mp = morphPair();
     if (mp) { add('Morph ' + mp[0].name + ' into ' + mp[1].name, '', () => morphInto(mp[0], mp[1])); add('Morph ' + mp[1].name + ' into ' + mp[0].name, '', () => morphInto(mp[1], mp[0])); }
@@ -9383,9 +9513,15 @@ function refreshLiveBlocks() {
     const k = b.key();
     if (k === b.last) return;
     b.last = k;
-    const fid = document.activeElement && b.box.contains(document.activeElement) ? document.activeElement.getAttribute('data-fid') : null;
+    const inside = document.activeElement && b.box.contains(document.activeElement) ? document.activeElement : null;
+    const fid = inside ? inside.getAttribute('data-fid') : null, fieldId = inside ? inside.id : '';
+    const before = bindings.length;
     b.box.replaceChildren(...[].concat(b.build()));
-    if (fid) { const again = b.box.querySelector('[data-fid="' + fid + '"]'); if (again) again.focus(); }
+    // The new fields start with their values (0.23.0: they used to wait for the next change).
+    bindings.slice(before).forEach((bd) => { const v = bd.get(); if (bd.check) bd.el.checked = !!v; else bd.el.value = v; if (bd.after) bd.after(); });
+    // Focus goes back to the same button or field in the new block (by its data-fid, or its id).
+    const again = fid ? b.box.querySelector('[data-fid="' + fid + '"]') : fieldId ? b.box.querySelector('#' + CSS.escape(fieldId)) : null;
+    if (again) again.focus();
   });
 }
 function refreshInspector() {
@@ -9510,7 +9646,9 @@ function buildObjectInspector(o, head, body) {
   } else if (o.type === 'image') {
     look.body.append(el('div', { class: 'row-btns' },
       actionBtn('image', 'Replace picture', () => choosePicture(o), 'Choose another picture for this box', 'pic-replace'),
-      actionBtn('fit', 'Fit the box to the picture', () => fitBoxToPicture(o), 'Give the box the picture\'s own shape', 'pic-fit')));
+      actionBtn('fit', 'Fit the box to the picture', () => fitBoxToPicture(o), 'Give the box the picture\'s own shape (as cropped)', 'pic-fit')),
+      // Crop, its shape and a border (section 18za): redrawn when they change, so the right fields show.
+      liveBlock(() => pictureLookKey(o), () => pictureLookBlock(o)));
   } else if (o.type === 'path' && o.open) {
     look.body.append(numField('Line width', () => o.strokeW, (n, gr) => { commit(gr); o.strokeW = n; requestRender(); }, { min: 0.5, max: 100, step: 0.5, popRange: '0.5 40' }));
   } else if (o.type === 'field') {
@@ -9527,6 +9665,13 @@ function buildObjectInspector(o, head, body) {
   if (o.type === 'rect' || o.type === 'ellipse') look.body.append(el('div', { class: 'row-btns' },
     actionBtn('penTool', 'Turn into an outline', () => convertToOutline(o), 'Make it an outline whose points you can move (Edit points)', 'to-outline')));
   parts.push(look.d);
+
+  // Shadow (0.23.0): a drop shadow for anything (section 18za). Not for a box to type in.
+  if (o.type !== 'field') {
+    const sh = section('shadow', 'Shadow', o.shadow ? SHADOW_PRESETS[shadowPreset(o.shadow)] ? SHADOW_PRESETS[shadowPreset(o.shadow)].label.toLowerCase() : 'your own' : '');
+    sh.body.append(liveBlock(() => shadowKey(o), () => shadowBlock(o)));
+    parts.push(sh.d);
+  }
 
   // Clip: which clip, and how it plays here (section 18h)
   if (o.type === 'clip') {
@@ -9643,11 +9788,17 @@ function buildManyInspector(head, body) {
   if (list.some((o) => o.type === 'group')) btns.append(actionBtn('group', 'Ungroup', ungroupSelected, 'Ungroup (Ctrl+Shift+G)'));
   if (maskCandidates()) btns.append(actionBtn('mask', 'Make a mask', makeMask, 'Show them only through the one in front (section 18x)', 'mk-many'));
   btns.append(actionBtn('sparkles', 'Add an effect...', openEffects, 'An effect for each of them, one after another if you like (E)', 'fx-many'));
+  // A shadow for all of them at once (section 18za). It shows what they share, or nothing if they differ.
+  const shadowable = list.filter((o) => o.type !== 'field' && !isLocked(o));
+  const shadowPick = !shadowable.length ? null : (selectField('Shadow', [['', 'Pick a shadow...'], ['none', 'None'], ...Object.entries(SHADOW_PRESETS).map(([k, p]) => [k, p.label])],
+    () => { const keys = [...new Set(shadowable.map((o) => shadowPreset(o.shadow)))]; return keys.length === 1 && keys[0] !== 'custom' ? keys[0] : ''; },
+    (v) => { if (v) setShadow(shadowable, v); }, { id: 'shMany' }));
   // Two shapes: morph either one into the other (section 18z). The first picked is named first.
   const mp = morphPair();
   if (mp) btns.append(actionBtn('morph', 'Morph ' + mp[0].name + ' into ' + mp[1].name, () => morphInto(mp[0], mp[1]), mp[0].name + ' turns into ' + mp[1].name + ', which is used up for the end', 'mo-pair'),
     actionBtn('morph', 'Morph ' + mp[1].name + ' into ' + mp[0].name, () => morphInto(mp[1], mp[0]), mp[1].name + ' turns into ' + mp[0].name + ', which is used up for the end', 'mo-pair2'));
   ar.body.append(btns);
+  if (shadowPick) ar.body.append(shadowPick);
   if (!entered) ar.body.append(selectField('Move to layer', [['', 'Pick a layer...']].concat(project.layers.slice().reverse().map((l) => [l.id, l.name])), () => '', (v) => { if (v) moveToLayer(sel.slice(), v); }));
   parts.push(ar.d);
   body.replaceChildren(...parts);
@@ -10483,6 +10634,7 @@ const HELP_KEYS = [
   ['Alt+Up / Alt+Down (in the layers list)', 'Move forward or back (layers: up or down)'],
   ['W', 'Preview the lesson'],
   ['E', 'Add an effect to the picked things (an entrance, an emphasis, an exit or a text effect), as keyframes at the play head'],
+  ['C', 'Crop the picked picture: drag a bar on its edge or corner in, or drag inside it (or use the arrows) to slide the picture under it; C, Enter or Escape when done'],
   ['Q', 'Pivot: drag the dot (or use the arrows, Shift for bigger steps) to move the point the picked object turns and resizes around; Q or Escape when done'],
   ['Alt + drag a corner', 'Resize round the pivot (it stays put)'],
   ['Up / Down (on the Inspector\u2019s handle, on a phone)', 'Make the Inspector sheet taller or shorter; Home closes it, Enter opens or closes it'],
@@ -10506,7 +10658,7 @@ function buildHelp() {
   $('paneStart').replaceChildren(
     el('h3', { text: 'Getting started' }),
     el('ol', null,
-      el('li', { text: 'Draw a shape, text box or picture from the tool rail, or start from a template (the Templates button: the water cycle, a bouncing ball, a motion path, clips and a flipbook, a labelled diagram, click to reveal, a quiz with a score, sort these, step by step, flip cards, match them, check your understanding, a waving robot, a torch in the deep, bullet points with effects, a butterfly\u2019s life (morphing), or the sample). A drawing from VCTREDTR (an SVG file: the Picture tool, a drop, or paste its SVG code) comes in as shapes you can animate one by one (from Inkscape, each part keeps its rotation centre as its pivot). Put things on layers to keep them tidy; group things that move together (Ctrl+G), and groups inside groups (an arm inside a body, a hand inside the arm) to animate each part on its own. Make a mask (pick a shape and what should show through it; the one in front is the window) for a spotlight, a wipe or a frame to look through. The Lesson\u2019s Colour scheme gives everything six colours that go together.' }),
+      el('li', { text: 'Draw a shape, text box or picture from the tool rail, or start from a template (the Templates button: the water cycle, a bouncing ball, a motion path, clips and a flipbook, a labelled diagram, click to reveal, a quiz with a score, sort these, step by step, flip cards, match them, check your understanding, a waving robot, a torch in the deep, bullet points with effects, a butterfly\u2019s life (morphing), or the sample). A drawing from VCTREDTR (an SVG file: the Picture tool, a drop, or paste its SVG code) comes in as shapes you can animate one by one (from Inkscape, each part keeps its rotation centre as its pivot). Put things on layers to keep them tidy; group things that move together (Ctrl+G), and groups inside groups (an arm inside a body, a hand inside the arm) to animate each part on its own. Make a mask (pick a shape and what should show through it; the one in front is the window) for a spotlight, a wipe or a frame to look through. Crop a picture (C, then drag its bars in), make it rounded or a circle, give it a border, and give anything a drop shadow (the Shadow section). The Lesson\u2019s Colour scheme gives everything six colours that go together.' }),
       el('li', { text: 'To animate it: move the play head along the timeline, move or change the object, then press K. It glides from where it was to where it is now. Add more keyframes the same way. Or press E for an effect (fly in, pop, pulse, fade out, typewriter, highlight...): it is written as keyframes you can change, and with several things picked they can go one after another. To morph one shape into another, pick both and choose Morph (right-click), or pick one and choose Morph into a shape... (Motion). Things turn (and W and H resize) round their pivot, the middle to start with: press Q, or Move it on the stage under Position and size, and drag the dot to a shoulder or a hinge so an arm swings from where it joins.' }),
       el('li', { text: 'Add markers (M) for the moments that matter, with a description each: they become the lesson\u2019s text version, and learners can step between them.' }),
       el('li', { text: 'Give an object a behaviour in the Inspector: when it is activated (a click, a tap, Enter or Space), or when it is pointed at or focused (to show a label, say). It becomes a button in the lesson. The whole lesson has behaviours too (Lesson, Behaviours): when it starts, when the play head reaches a marker, when a key is pressed. Say something shows the words under the lesson and reads them out; Open a web page opens it in a new tab.' }),
@@ -10660,6 +10812,7 @@ document.addEventListener('keydown', (e) => {
     case 'f': case 'F': choosePicture(); break;
     case 'w': case 'W': openPreview(); break;
     case 'q': case 'Q': togglePivotMode(); stageWrap.focus(); break;
+    case 'c': case 'C': toggleCropMode(); stageWrap.focus(); break;   // Crop a picture, section 18za
     case 'e': case 'E': openEffects(); break;                          // Effects: presets and text effects, section 18y   // Pivot (Flash's Free Transform key), section 18w
     case 'b': case 'B': setTool('pencil'); stageWrap.focus(); break;
     case ',': case '.': if (openClip() && openClip().flip) flipGo(e.key === ',' ? -1 : 1); else return; break;
@@ -10687,6 +10840,7 @@ function renderAll() {
   tidyDragDrop();                                     // a draggable's right places are places that exist (section 18l)
   tidyQuestions();                                    // answers answer questions that exist (section 18u)
   tidyMasks();                                        // a mask's window is one of its parts (section 18x)
+  tidyCropMode();                                     // Crop mode is for one picked picture (section 18za)
   snapPaths();                                        // things on motion paths start and end on their paths (section 18f)
   renderStage();
   renderTimeline();
@@ -14659,6 +14813,7 @@ function quickMain() {
   if (o && o.type === 'clip') { const c = R.clipOf(project, o.clip); return { icon: c && c.flip ? 'book' : 'film', word: c && c.flip ? 'Edit flipbook' : 'Edit clip', run: () => enterClip(o.clip) }; }
   if (o && o.type === 'group') return { icon: 'enter', word: 'Work on its parts', run: () => enterGroup(o.id) };
   if (o && o.type === 'path') return { icon: 'direct', word: 'Edit points', run: () => { setTool('points'); stageWrap.focus(); } };
+  if (o && o.type === 'image' && selObjs().length === 1 && !isLocked(o)) return { icon: 'crop', word: cropMode ? 'Done cropping' : 'Crop', key: 'C', run: () => { toggleCropMode(); stageWrap.focus(); } };   // (section 18za)
   const list = selObjs();
   if (list.length > 1 && !inClip() && !entered && list.every((x) => x.type !== 'group' && x.type !== 'clip')) return { icon: 'film', word: 'Make a clip', run: makeClip };
   return null;
@@ -14679,7 +14834,7 @@ function updateQuickBar() {
   if (a) {
     main.querySelector('.qb-icon').replaceChildren(iconSvg(a.icon));
     main.querySelector('.qb-word').textContent = a.word;
-    main.title = a.word + ' (Enter on the stage)';
+    main.title = a.word + ' (' + (a.key || 'Enter on the stage') + ')';
   }
   const locked = list.some(isLocked);
   bar.querySelector('[data-act=del]').hidden = locked;
@@ -19057,6 +19212,285 @@ TEMPLATES.splice(TEMPLATES.findIndex((t) => t.id === 'sample'), 0,
   { id: 'morph', name: 'A butterfly’s life (morphing)', blurb: 'One shape morphs through the life cycle of a butterfly: an egg on a leaf becomes a caterpillar, a chrysalis, then a butterfly that flaps away. Each keyframe has an outline of its own (pick two shapes and choose Morph, or Morph into a shape...).',
     make: () => butterflyLifeProject() });
 /* =====================================================================
+   18za. PICTURES: CROP, SHAPE AND BORDER; DROP SHADOWS (0.23.0)
+   Dave's picks:
+     - Crop by dragging on the stage, as in PowerPoint: press C (or the
+       Crop button on the quick bar, in the Inspector or the right-click
+       menu) and the picture's handles become crop bars. Drag a bar in and
+       that side is cut off; the box shrinks with it and the picture stays
+       exactly where it was. Drag inside the box to slide the picture
+       under it (the arrow keys do that too). The cut-off parts show
+       faintly while you crop. The Inspector has the same as numbers.
+     - A picture can be a rectangle, a rounded rectangle or an oval (a
+       circle when its box is square), and have a border round that shape.
+     - A drop shadow on anything (pictures, shapes, text, groups): Soft,
+       Close or Lifted to start, then its colour, strength, softness,
+       distance and direction if you like.
+
+   How it is kept (03-runtime.js): a picture's crop is [left, top, right,
+   bottom], each a share of the whole picture that is cut off; cropShape
+   is 'rect', 'round' or 'oval' (round uses radius, as a rectangle's
+   corners do); the border is the outline (stroke and strokeW) every
+   shape has. shadow is { dist, dir, blur, color, alpha } or null. None of
+   them animate: like a shape's outline, they stay the same all the way
+   through (the box they are in does animate, of course).
+   ===================================================================== */
+let cropMode = false;                                // C: the picked picture's crop bars can be dragged
+
+/** The picked thing, when it is one picture that can be cropped (not locked). */
+function cropTarget() {
+  const o = pickedObj();
+  return o && selObjs().length === 1 && o.type === 'image' && !isLocked(o) ? o : null;
+}
+/** A picture's crop (pictures from before 0.23.0 have none: nothing cut off). */
+const cropOf = (o) => (o && Array.isArray(o.crop) ? o.crop : [0, 0, 0, 0]);
+/** The crop in words: "20% off the left and 10% off the top", or "not cropped". */
+function cropWords(o) {
+  const c = cropOf(o), names = ['the left', 'the top', 'the right', 'the bottom'];
+  const parts = c.map((n, i) => (n > 0.0005 ? Math.round(n * 1000) / 10 + '% off ' + names[i] : '')).filter(Boolean);
+  if (!parts.length) return 'not cropped';
+  return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+}
+
+/**
+ * Every set of numbers that places the picture (its base, each keyframe, the change not
+ * kept yet, where it was before a move), remembered as they are now with its crop, so a
+ * drag can always start again from these (as the pivot does: 11w-pivot.js).
+ */
+function cropSnapshot(o) {
+  const sets = [o.base, ...o.keys.map((k) => k.v)];
+  if (pending.has(o.id)) sets.push(pending.get(o.id).v);
+  if (beforeMove.has(o.id)) sets.push(beforeMove.get(o.id));
+  return { crop: cropOf(o).slice(), sets: sets.map((v) => ({ v, x: v.x, y: v.y, w: v.w, h: v.h })) };
+}
+
+/**
+ * Crop the picture to `next` (left, top, right, bottom) keeping the picture where it is
+ * on the stage: at every keyframe the box shrinks or grows by just as much as was cut off
+ * or given back, and moves so the part that shows stays in its place. (So a picture that
+ * moves and grows keeps doing so, cropped the same way all through.)
+ */
+function cropFrom(o, from, next, group) {
+  const c0 = from.crop, c = tidyCrop(next);
+  commit(group);
+  const keep0x = 1 - c0[0] - c0[2], keep0y = 1 - c0[1] - c0[3], keepx = 1 - c[0] - c[2], keepy = 1 - c[1] - c[3];
+  from.sets.forEach((s) => {
+    const was = Object.assign({}, s.v, { x: s.x, y: s.y, w: s.w, h: s.h });
+    const W = s.w / keep0x, H = s.h / keep0y;                            // the whole picture's size at this keyframe
+    // How far the middle of the part that shows moves, in the picture's own directions...
+    const ax = ((c[0] - c0[0]) - (c[2] - c0[2])) / 2 * W, ay = ((c[1] - c0[1]) - (c[3] - c0[3])) / 2 * H;
+    // ...and on the stage (turned with it).
+    const a = was.rot * Math.PI / 180, mid = R.middleOf(o, was);
+    const mx = mid.x + Math.cos(a) * ax - Math.sin(a) * ay, my = mid.y + Math.sin(a) * ax + Math.cos(a) * ay;
+    const now = Object.assign({}, was, { w: Math.max(1, W * keepx), h: Math.max(1, H * keepy) });
+    const at = R.placeBy(o, now, mx, my);
+    s.v.w = round1(now.w); s.v.h = round1(now.h);
+    s.v.x = Math.round(at.x * 100) / 100; s.v.y = Math.round(at.y * 100) / 100;
+  });
+  o.crop = c;
+  requestRender();
+}
+/** The same, from the numbers as they are now (the Inspector's fields, Reset). */
+function setCrop(o, next, group) { cropFrom(o, cropSnapshot(o), next, group); }
+
+/**
+ * Slide the picture under its box (the box stays put): what is cut off one side is given
+ * back on the other. by is [across, down] as shares of the whole picture.
+ */
+function panCropFrom(o, from, by, group) {
+  const c = from.crop.slice();
+  const dx = clamp(by[0], -c[0], c[2]), dy = clamp(by[1], -c[1], c[3]);   // (never past the picture's own edge)
+  commit(group);
+  o.crop = tidyCrop([c[0] + dx, c[1] + dy, c[2] - dx, c[3] - dy]);
+  requestRender();
+}
+/** A crop kept tidy: each side 0 to 95%, at least 5% showing each way, numbers rounded. */
+function tidyCrop(c) {
+  const r = (n) => Math.round(clamp(n, 0, 0.95) * 10000) / 10000;
+  let [l, t, rr, b] = c.map(r);
+  if (l + rr > 0.95) rr = Math.max(0, Math.round((0.95 - l) * 10000) / 10000);
+  if (t + b > 0.95) b = Math.max(0, Math.round((0.95 - t) * 10000) / 10000);
+  return [l, t, rr, b];
+}
+
+/** C, the Crop button: drag the crop bars (and slide the picture with the arrows), or stop. */
+function toggleCropMode(on) {
+  const o = cropTarget();
+  cropMode = on === undefined ? !cropMode : on;
+  if (cropMode && !o) { cropMode = false; announce('Crop is for pictures: pick one picture first.'); return; }
+  if (cropMode) {
+    if (pivotMode) togglePivotMode(false);              // (one mode at a time on the stage)
+    announce('Crop ' + o.name + ': drag a bar on its edge or corner in to cut that side off, or drag inside it to slide the picture under it. The arrow keys slide it too (Shift: bigger steps). It is ' + cropWords(o) + '. Escape, Enter or C when done.');
+  } else announce(o ? 'Crop done: ' + o.name + ' is ' + cropWords(o) + '.' : 'Crop done.');
+  inspectorDirty = true;
+  requestRender();
+}
+/** Crop mode ends by itself when what is picked is no longer one picture. */
+function tidyCropMode() { if (cropMode && !cropTarget()) { cropMode = false; inspectorDirty = true; } }
+
+/* ---- On the stage: the crop bars ---- */
+/** The eight bars (four sides, four corners) in the picture's own directions, and on the screen. */
+function cropSpots(o) {
+  const v = displayValues(o), m = objMatrix(o), sc = svg.getScreenCTM();
+  const out = [];
+  [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]].forEach(([sx, sy]) => {
+    const q = new DOMPoint(sx * v.w / 2, sy * v.h / 2).matrixTransform(m).matrixTransform(sc);
+    out.push({ kind: 'crop', sx, sy, cx: q.x, cy: q.y });
+  });
+  return out;
+}
+/** In Crop mode, what the pointer is on: a crop bar, or inside the picture (to slide it). */
+function cropHandleAt(e) {
+  const o = cropTarget();
+  if (!cropMode || !o) return null;
+  let best = null, bestD = handleSizes().reachPx + handleSizes().handlePx / 2;
+  cropSpots(o).forEach((s) => { const d = Math.hypot(s.cx - e.clientX, s.cy - e.clientY); if (d <= bestD) { best = s; bestD = d; } });
+  if (best) return best;
+  const v = displayValues(o), p = toLocal(toStage(e), objMatrix(o));
+  if (Math.abs(p.x) <= v.w / 2 && Math.abs(p.y) <= v.h / 2) return { kind: 'cropPan', sx: 0, sy: 0 };
+  return null;
+}
+/**
+ * Dragging a crop bar: that side (or the two sides of a corner) follows the pointer. The
+ * whole picture stays where it was, so the pointer is measured against it: where it was
+ * when the drag began. A side never goes past the picture's own edge, nor the other side.
+ */
+function cropDragMove(o, pt, e) {
+  const from = drag.from, c0 = from.crop, v = drag.v;
+  const local = toLocal(pt, drag.om);                   // (in the picture's own directions, from its middle at the start)
+  const W = v.w / (1 - c0[0] - c0[2]), H = v.h / (1 - c0[1] - c0[3]);
+  const left = -v.w / 2 - c0[0] * W, top = -v.h / 2 - c0[1] * H;        // the whole picture's top-left corner
+  const c = c0.slice();
+  if (drag.sx < 0) c[0] = clamp((local.x - left) / W, 0, 0.95 - c[2]);
+  if (drag.sx > 0) c[2] = clamp((left + W - local.x) / W, 0, 0.95 - c[0]);
+  if (drag.sy < 0) c[1] = clamp((local.y - top) / H, 0, 0.95 - c[3]);
+  if (drag.sy > 0) c[3] = clamp((top + H - local.y) / H, 0, 0.95 - c[1]);
+  // Near the picture's own edge, it snaps back to it (nothing cut off that side), unless Alt.
+  if (!e.altKey) { const reach = 8 / (screenScale() * scaleOf(drag.om)); c.forEach((n, i) => { if (n * (i % 2 ? H : W) < reach) c[i] = 0; }); }
+  cropFrom(o, from, c, drag.group);
+}
+/** Dragging inside the picture in Crop mode: the picture slides under its box. */
+function cropPanMove(o, pt) {
+  const from = drag.from, c0 = from.crop, v = drag.v;
+  const local = toLocal(pt, drag.om), W = v.w / (1 - c0[0] - c0[2]), H = v.h / (1 - c0[1] - c0[3]);
+  // The picture moves with the pointer, so what shows moves the other way.
+  panCropFrom(o, from, [-(local.x - drag.cropStart.x) / W, -(local.y - drag.cropStart.y) / H], drag.group);
+}
+/** The keyboard in Crop mode (from the stage's keydown): the arrows slide the picture 1% (Shift: 10%); Escape, Enter or C stop. */
+function cropKey(e) {
+  if (!cropMode) return false;
+  if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); toggleCropMode(false); return true; }
+  const moves = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  const o = cropTarget();
+  if (!moves[e.key] || !o || e.altKey || e.ctrlKey || e.metaKey) return false;
+  e.preventDefault();
+  const step = e.shiftKey ? 0.1 : 0.01, m = moves[e.key];
+  // The arrow moves the picture that way, so what shows moves the other way.
+  panCropFrom(o, cropSnapshot(o), [-m[0] * step, -m[1] * step], 'crop-keys');
+  clearTimeout(nudgeSay);
+  nudgeSay = setTimeout(() => announce(o.name + ' is ' + cropWords(o) + '.'), 350);
+  return true;
+}
+/** Draw Crop mode: the cut-off parts faintly, the whole picture's edge, and the eight bars. */
+function drawCropOverlay(g, o, v, u) {
+  const c = cropOf(o), W = v.w / (1 - c[0] - c[2]), H = v.h / (1 - c[1] - c[3]);
+  const left = -v.w / 2 - c[0] * W, top = -v.h / 2 - c[1] * H, a = project.assets[o.asset];
+  if (a) g.append(svgEl('image', { href: a.data, x: left, y: top, width: W, height: H, preserveAspectRatio: 'none', class: 'crop-ghost' }));
+  g.append(svgEl('rect', { class: 'crop-whole', x: left, y: top, width: W, height: H }));
+  g.append(svgEl('rect', { class: 'crop-box', x: -v.w / 2, y: -v.h / 2, width: v.w, height: v.h }));
+  const len = Math.min(handleSizes().handlePx * 2.2 * u, v.w / 3, v.h / 3), t = Math.max(3, handleSizes().handlePx * 0.45) * u;
+  // Each bar twice: light and a little wider underneath, dark on top, so it shows on any picture.
+  const L = (x1, y1, x2, y2) => g.append(svgEl('line', { class: 'crop-bar-edge', x1, y1, x2, y2, 'stroke-width': t + 3 * u }), svgEl('line', { class: 'crop-bar', x1, y1, x2, y2, 'stroke-width': t }));
+  const hw = v.w / 2, hh = v.h / 2;
+  [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([sx, sy]) => {      // the corners: an L each
+    L(sx * hw, sy * hh, sx * hw - sx * len, sy * hh); L(sx * hw, sy * hh, sx * hw, sy * hh - sy * len);
+  });
+  L(-len / 2, -hh, len / 2, -hh); L(-len / 2, hh, len / 2, hh);      // the sides: a bar in the middle of each
+  L(-hw, -len / 2, -hw, len / 2); L(hw, -len / 2, hw, len / 2);
+}
+
+/* ---- The Inspector: a picture's Crop and shape, and everyone's Shadow ---- */
+/** Make the box the shape of the part of the picture that shows (keeping its width). */
+function fitBoxToCrop(o) {
+  const a = project.assets[o.asset]; if (!a) return;
+  const c = cropOf(o), v = displayValues(o);
+  const ratio = (a.h * (1 - c[1] - c[3])) / (a.w * (1 - c[0] - c[2]));
+  editProps(o, { h: round1(v.w * ratio) });
+  announce('The box now has the picture’s shape' + (cropOf(o).some((n) => n > 0) ? ' (as cropped).' : '.'));
+}
+/** The Crop part of a picture's Look: the Crop button, the four sides as numbers, Reset, its shape and its border. */
+function pictureLookBlock(o) {
+  const out = [];
+  const btn = el('button', { type: 'button', class: 'btn small', 'data-fid': 'crop-mode', 'aria-pressed': String(cropMode), title: 'Crop (C)' }, iconSvg('crop'), el('span', { text: cropMode ? 'Done cropping' : 'Crop on the stage' }));
+  btn.addEventListener('click', () => { toggleCropMode(); stageWrap.focus(); });
+  const reset = actionBtn('undo', 'Reset crop', () => { setCrop(o, [0, 0, 0, 0]); announce(o.name + ' is not cropped now.'); }, 'Show the whole picture again', 'crop-reset');
+  out.push(el('div', { class: 'row-btns' }, btn, reset));
+  const side = (label, i, fid) => numField(label, () => Math.round(cropOf(o)[i] * 1000) / 10,
+    (n, gr) => { const c = cropOf(o).slice(); c[i] = clamp(n, 0, 95) / 100; setCrop(o, c, gr); }, { id: fid, min: 0, max: 95, step: 'any', unit: '%', popRange: '0 50' });
+  out.push(el('fieldset', { class: 'crop-nums' }, el('legend', { text: 'Cut off (% of the picture)' }),
+    side('Left', 0, 'cropL'), side('Right', 2, 'cropR'), side('Top', 1, 'cropT'), side('Bottom', 3, 'cropB')));
+  out.push(selectField('Shape', [['rect', 'Rectangle'], ['round', 'Rounded rectangle'], ['oval', 'Oval or circle']], () => o.cropShape || 'rect',
+    (v) => { commit(); o.cropShape = v; if (v === 'round' && !(o.radius > 0)) o.radius = 24; inspectorDirty = true; requestRender(); }, { id: 'picShape' }));
+  if (o.cropShape === 'round') out.push(numField('Corners', () => o.radius, (n, gr) => { commit(gr); o.radius = n; requestRender(); }, { id: 'picCorners', min: 0, max: 2000, popRange: '0 200' }));
+  out.push(checkField('Border', () => !!o.stroke && o.strokeW > 0, (v) => { commit(); if (v) { o.stroke = o.stroke || '#ffffff'; o.strokeW = o.strokeW || 6; } else o.strokeW = 0; inspectorDirty = true; requestRender(); }, { id: 'picBorder' }));
+  if (o.stroke && o.strokeW > 0) out.push(
+    colourField('Border colour', () => o.stroke, (v, gr) => { commit(gr); o.stroke = v; requestRender(); }),
+    numField('Border width', () => o.strokeW, (n, gr) => { commit(gr); o.strokeW = n; requestRender(); }, { id: 'picBorderW', min: 0, max: 100, popRange: '0 40' }));
+  out.push(el('p', { class: 'hint', text: 'Cropping never changes the picture itself: Reset crop brings all of it back. The box shrinks as you crop, and the picture stays where it is.' }));
+  return out;
+}
+/** A picture's Look, as a block that redraws when its crop, shape or border changes (so the right fields show). */
+function pictureLookKey(o) { return [o.cropShape, o.stroke && o.strokeW > 0, cropMode].join('|'); }
+
+/* Drop shadows: three to start from. The light is up and to the left, as people expect. */
+const SHADOW_PRESETS = {
+  soft:   { label: 'Soft',   dist: 10, dir: 45, blur: 18, color: '#000000', alpha: 0.35 },
+  close:  { label: 'Close',  dist: 4,  dir: 45, blur: 4,  color: '#000000', alpha: 0.5 },
+  lifted: { label: 'Lifted', dist: 22, dir: 90, blur: 30, color: '#000000', alpha: 0.3 }
+};
+/** Which way it falls, in words (0 degrees is to the right, 90 straight down). */
+const SHADOW_DIRS = [[0, 'Right'], [45, 'Down and right'], [90, 'Down'], [135, 'Down and left'], [180, 'Left'], [225, 'Up and left'], [270, 'Up'], [315, 'Up and right']];
+/** Which preset these numbers are (or 'custom'; 'none' for no shadow). */
+function shadowPreset(sh) {
+  if (!sh) return 'none';
+  const hit = Object.keys(SHADOW_PRESETS).find((k) => { const p = SHADOW_PRESETS[k]; return p.dist === sh.dist && p.dir === sh.dir && p.blur === sh.blur && p.color === sh.color && p.alpha === sh.alpha; });
+  return hit || 'custom';
+}
+/** Give these objects a preset's shadow (or none). One undo step. */
+function setShadow(list, key) {
+  commit();
+  list.forEach((o) => {
+    if (key === 'none') o.shadow = null;
+    else if (SHADOW_PRESETS[key]) { const p = SHADOW_PRESETS[key]; o.shadow = { dist: p.dist, dir: p.dir, blur: p.blur, color: p.color, alpha: p.alpha }; }
+  });
+  inspectorDirty = true;
+  announce(key === 'none' ? 'No shadow.' : SHADOW_PRESETS[key].label + ' shadow' + (list.length > 1 ? ' on ' + plural(list.length, 'object') : '') + '.');
+  requestRender();
+}
+/** The Shadow part of the Inspector: a preset to start from, then each number. */
+function shadowBlock(o) {
+  const out = [];
+  // ("Your own" is always in the list, so changing a number never has to rebuild this while you type.)
+  const opts = [['none', 'None'], ...Object.entries(SHADOW_PRESETS).map(([k, p]) => [k, p.label]), ['custom', 'Your own']];
+  out.push(selectField('Shadow', opts, () => shadowPreset(o.shadow), (v) => { if (v !== 'custom') setShadow([o], v); else if (!o.shadow) setShadow([o], 'soft'); }, { id: 'shPreset' }));   // (Your own, from nothing: Soft, to change)
+  const sh = o.shadow;
+  if (sh) {
+    const edit = (patch, gr) => { commit(gr); Object.assign(o.shadow, patch); requestRender(); };
+    const dirs = SHADOW_DIRS.map(([d, w]) => [String(d), w]);
+    if (!SHADOW_DIRS.some(([d]) => d === sh.dir)) dirs.push([String(sh.dir), sh.dir + ' degrees']);
+    out.push(
+      colourField('Shadow colour', () => o.shadow.color, (v, gr) => edit({ color: v }, gr)),
+      numField('Strength (%)', () => Math.round(o.shadow.alpha * 100), (n, gr) => edit({ alpha: clamp(n, 0, 100) / 100 }, gr), { id: 'shAlpha', min: 0, max: 100, slider: true, sliderName: 'Strength', unit: '%' }),
+      numField('Softness', () => o.shadow.blur, (n, gr) => edit({ blur: clamp(n, 0, 200) }, gr), { id: 'shBlur', min: 0, max: 200, popRange: '0 60' }),
+      numField('Distance', () => o.shadow.dist, (n, gr) => edit({ dist: clamp(n, 0, 500) }, gr), { id: 'shDist', min: 0, max: 500, popRange: '0 60' }),
+      selectField('Falls', dirs, () => String(o.shadow.dir), (v) => { commit(); o.shadow.dir = Number(v); inspectorDirty = true; requestRender(); }, { id: 'shDir' }));
+  }
+  out.push(el('p', { class: 'hint', text: 'The shadow falls the same way however ' + o.name + ' is turned, as if the light stays put. It fades with it, and stays the same all the way through.' }));
+  return out;
+}
+/** The Shadow block redraws when the shadow comes or goes (so its fields show), or falls a way not in the list. */
+function shadowKey(o) { return !o.shadow ? 'none' : SHADOW_DIRS.some(([d]) => d === o.shadow.dir) ? 'on' : 'on|' + o.shadow.dir; }
+/* =====================================================================
    19. THE FEATURES TOUR AND THE CHANGELOG
    ===================================================================== */
 /* ---- Features: the animated tour (Help > Features, and the card on the splash) ----
@@ -19124,6 +19558,12 @@ const APP_FEATURES = [
    straight off a disk. The long form is CHANGELOG.md beside index.html.
    Newest first; the first entry is the version that is running. */
 const CHANGELOG = [
+  { version: '0.23.0', date: '2026-10-21', notes: [
+    'Crop a picture on the stage, like PowerPoint: press C (or Crop on the quick bar, in the Inspector or the right-click menu) and drag a bar on its edge or corner in. The box shrinks with it and the picture stays where it is; the parts cut off show faintly while you crop. Drag inside it, or use the arrow keys, to slide the picture under the box. C, Enter or Escape when done.',
+    'The Inspector has the same as numbers (Cut off: left, right, top, bottom) and Reset crop. A crop is the same at every keyframe: a picture that moves and grows keeps doing so, cropped the same way. Fit the box to the picture keeps the crop\u2019s shape.',
+    'A picture\u2019s Shape: Rectangle, Rounded rectangle (with Corners) or Oval or circle. Border puts an outline round that shape, in any colour and width.',
+    'Drop shadows on anything (pictures, shapes, text, groups): a new Shadow section with Soft, Close and Lifted to start from, then its colour, strength, softness, distance and the way it falls. It falls the same way however the thing is turned. With several things picked, Arrange gives them all one.'
+  ] },
   { version: '0.22.1', date: '2026-10-16', notes: [
     'Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.'
   ] },
