@@ -60,8 +60,11 @@
 >
 > **Then 0.4.3:** a big green check and a 3-2-1 countdown in Present mode
 > (section 8i), fireworks that keep their colors on a light page, and
-> "Mark up any PDF" in the Features tour. Waiting for Dave's review of
-> 0.4.3; next is milestone 5 (files and export).
+> "Mark up any PDF" in the Features tour.
+>
+> **Then 0.5.0:** saving and opening `.whtbrdr` boards, crash backups and
+> "Pick up where you left off" (section 8m), and the file handler in the
+> manifest. Waiting for Dave's review of 0.5.0; next is 0.5.1 (export).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**

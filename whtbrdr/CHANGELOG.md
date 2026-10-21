@@ -1,5 +1,15 @@
 # WHTBRDR - changelog
 
+## 0.5.0 - 2026-10-21 - Saving, opening boards, crash backups
+
+- **Save** (Ctrl+S, or the new disk button by Open): the whole board as a `.whtbrdr` file. Every page and mark, the PDFs byte for byte, and the pictures go inside. In Chrome and Edge the first save asks where (the computer's own Save dialog) and later saves write back to the same file; other browsers download it each time. **Ctrl+Shift+S** saves a copy as a new file. A never-saved board is named after its first PDF ("worksheet.whtbrdr"), or "whiteboard".
+- **The file:** a zip, the same shape as ANIMEDTR's `.animedtr`: `mimetype` first (not squeezed), `project.json` (the board), `docs/1.pdf`..., `pictures/1.png`.... Any zip tool can look inside.
+- **Open** (Ctrl+O, the Open button, the splash's Open card, a drop, or "Open with WHTBRDR" once installed: the manifest now has a file handler for `.whtbrdr` and PDF files) brings a board back exactly as it was saved, as a fresh start (undo begins again from there). If the board on screen has changes that aren't saved, it asks first: **Save it first**, **Go ahead**, or **Keep working**.
+- **Checked before use:** the zip is read with every position and size checked, each file's CRC compared, no locked entries, no "../" folder tricks, and limits on the number of files and how big they unpack (a zip bomb stops early). `project.json` goes through `cleanProject`, a whitelist that rebuilds every page and mark field by field (numbers range-checked, colors matched against #rrggbb, words capped; a text's size is measured again, not taken from the file). Unknown marks are left out, and the toast says how many. The PDFs open through pdf.js and the pictures are checked and redrawn, as when opened on their own.
+- **Crash backups** (the suite's `SuiteBackup`): a few seconds after each change, the board (with its PDFs and pictures) is kept in this browser's IndexedDB. Saving clears it. If the tab closes before a save, the next start shows **Pick up where you left off** on the splash and the backup icon in the top bar (Restore, Discard, Not now). Restored work counts as not saved yet.
+- **The tab's title** shows the board's name, with a dot while there are changes not saved, and the browser asks before closing the tab only then (it used to ask whenever anything was drawn).
+- **Fixed:** the help panel's Getting started still said "Nothing is saved yet", and its "What is coming" still named highlights and saving as next (it should have been updated in 0.4.2).
+
 ## 0.4.3 - 2026-10-21 - A big green check and a 3-2-1 countdown
 
 - **A big green check** (Shift+G, G as in grade; or the bar's Effects menu): a green disc (the check stamp's green, with a white edge so it shows on any page) pops up in the middle of the screen, a white check draws itself on it, a ring spreads and green sparks fly out, and after a second and a half it fades. For "That's right!"
