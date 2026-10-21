@@ -1345,7 +1345,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.16.1';
+const APP_VERSION = '0.16.2';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1400,6 +1400,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.16.2', date: '2026-10-21', notes: [
+    'Renaming a layer works again: double-click (or double-tap) its name in the Layers list. F2 still works from the keyboard.',
+    'A Name box at the top of Position and size renames the picked shape too.'
+  ] },
   { version: '0.16.1', date: '2026-10-16', notes: [
     'Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.'
   ] },
@@ -5306,6 +5310,8 @@ let lockRatio = false;             // the chain button beside W and H
    Alt+Up/Down moves the shape up or down the stack. Rows can also be
    dragged into a new order (see "Drag to reorder" below): by the dotted
    grip on any screen, or by the name with a mouse or pen.               */
+const DOUBLE_CLICK_MS = 450;                         // two clicks closer than this = a double-click
+const lastLayerClick = { uid: null, time: 0 };       // the last row clicked, and when
 function renderLayers() {
   const items = topItems().reverse();
   const focusedUid = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.uid : null;
@@ -5329,10 +5335,18 @@ function renderLayers() {
     name.append(el('span', { class: 'kind', text: isInstance(it) ? 'Symbol' : isGroup(it) ? 'Group (' + it.children.length + ')' : (KIND_LABELS[kind] || 'Shape') }));
     name.addEventListener('click', (e) => {
       if (layerDrag.skipClick) return;               // the end of a drag, not a click
+      // A second click (or tap) on the same row soon after the first renames it.
+      // (The browser's own "dblclick" never arrives: the first click picks the
+      // shape, and that rebuilds the list, so the second click lands on a new row.)
+      const now = Date.now(), again = lastLayerClick.uid === it.data.uid && now - lastLayerClick.time < DOUBLE_CLICK_MS;
+      lastLayerClick.uid = again ? null : it.data.uid; lastLayerClick.time = now;
+      if (again && !adding(e)) {
+        const row = layerList.querySelector('.layer-name[data-uid="' + CSS.escape(it.data.uid) + '"]');
+        if (row) { renameLayer(it, row.closest('li')); return; }
+      }
       if (adding(e)) toggleSelect(it); else select([it]);
       focusLayerRow(it.data.uid);
     });
-    name.addEventListener('dblclick', () => renameLayer(it, li));
     name.addEventListener('keydown', (e) => layerKey(e, it, li));
     const lock = el('button', { type: 'button', class: 'icon-btn', 'aria-pressed': String(!!it.locked),
       'aria-label': (it.locked ? 'Unlock ' : 'Lock ') + it.name, title: it.locked ? 'Unlock' : 'Lock' });
@@ -5907,6 +5921,18 @@ function positionSection() {
   const rows = [grid];
   if (state.sel.length === 1) {
     const it = state.sel[0];
+    // The name, as shown in the Layers list (also: double-click the row, or F2 there).
+    const nid = fid();
+    const nameBox = el('input', { type: 'text', id: nid, maxlength: '80', autocomplete: 'off', value: it.name });
+    nameBox.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); nameBox.blur(); } });
+    nameBox.addEventListener('change', () => {
+      const v = nameBox.value.trim().slice(0, 80);
+      if (!v || v === it.name) { nameBox.value = it.name; return; }
+      it.name = v;                                     // shown with textContent everywhere: never run as code
+      commit();
+      announce('Renamed to ' + v);
+    });
+    rows.unshift(el('div', { class: 'field' }, el('label', { for: nid, text: 'Name' }), nameBox));
     rows.push(numberField('Rotation (°)', () => it.data.angle || 0, (v) => {
       const target = ((v % 360) + 540) % 360 - 180;
       turnItem(it, target - (it.data.angle || 0), it.bounds.center);

@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.16.2 - 2026-10-21 - Renaming layers works again
+
+- **Double-click a layer's name to rename it** (double-tap on a touch screen). It had stopped working: the first click picks the shape, which rebuilds the Layers list, so the browser's double-click never reached a row. The list now spots two clicks on the same row within 450 ms itself (`lastLayerClick`, `DOUBLE_CLICK_MS`). F2 on a focused row still renames from the keyboard, Enter saves and Escape cancels.
+- **A Name box at the top of Position and size** renames the one picked shape (Enter or leaving the box saves; one undo step).
+
 ## 0.16.1 - 2026-10-16 - Ready for EDTR Studio
 
 - Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.
