@@ -3865,7 +3865,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.4.2';
+const APP_VERSION = '0.4.3';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -3974,7 +3974,7 @@ const ICONS = {
   clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   scissors: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/>',
   paste: '<path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M16 4h2a2 2 0 0 1 2 2v2M11 14h10"/><path d="M17 10l4 4-4 4"/>',
-  // Celebrate (section 8i): Lucide's party popper.
+  // Effects (section 8i): Lucide's party popper.
   party: '<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/>',
   // A step number (section 8k): a disc with a 1.
   step: '<circle cx="12" cy="12" r="9"/><path d="M10.5 9.5 12.5 8v8"/>',
@@ -8086,7 +8086,8 @@ function pageMenuEntries() {
    reading order.
 
    EFFECTS (0.4.2): SCRNCSTR's confetti, fireworks and hearts, from the
-   bar's Celebrate menu or Shift+C, Shift+F and Shift+H. The magnifier
+   bar's Effects menu or Shift+C, Shift+F and Shift+H; a big green check
+   (Shift+G) and a 3-2-1 countdown (Shift+L) since 0.4.3. The magnifier
    zooms from 2 to 8 times with the wheel, + and - (with or without Ctrl)
    or two fingers, and never further out than it starts.
 
@@ -8142,8 +8143,9 @@ function buildPresent() {
   const fadeBtn = btn('Disappearing ink: strokes fade after a few seconds', 'fade', () => setDisappearing(!present.disappearing));
   fadeBtn.setAttribute('aria-pressed', 'false');
   const fullBtn = btn('Full screen (F)', 'fit', () => toggleFullScreen());
-  // Celebrate (0.4.2): a small menu of SCRNCSTR's effects.
-  const fxBtn = btn('Celebrate: confetti, fireworks or hearts (Shift+C, F, H)', 'party', () => openEffectsMenu(fxBtn));
+  // Effects (0.4.2, 0.4.3): a small menu of SCRNCSTR's effects and two more.
+  // (0.4.3: "Celebrate" became Effects, since the menu now holds the countdown too.)
+  const fxBtn = btn('Effects: confetti, fireworks, hearts, a big check, a 3-2-1 countdown (Shift+C, F, H, G, L)', 'party', () => openEffectsMenu(fxBtn));
   fxBtn.setAttribute('aria-haspopup', 'menu');
   fullBtn.setAttribute('aria-pressed', 'false');
   const groups = [
@@ -8479,7 +8481,7 @@ function presentToolChanged() {
 
 /* ---- Effects while presenting (0.4.2): confetti, fireworks and hearts ----
    SCRNCSTR's three celebrations, the same shapes, colors and physics, drawn
-   over the page on one canvas: the Celebrate button on the floating bar (a
+   over the page on one canvas: the Effects button on the floating bar (a
    small menu), or Shift+C, Shift+F and Shift+H. (Plain F and H already mean
    full screen and the highlighter.) Nothing is drawn, and no time is spent,
    when no effect is running.
@@ -8490,7 +8492,19 @@ function presentToolChanged() {
      The effect is worked out ahead to a moment mid-way, shown still, and
      faded away over a second and a half.
    - Fireworks are small bright sparks, never a flash of the whole screen
-     (the shells are staggered, so there is no single burst of light). */
+     (the shells are staggered, so there is no single burst of light). On a
+     light page they are drawn in their own colors (0.4.3): adding light to
+     white, as on a dark screen, washed them out.
+   0.4.3 added two more, and the button became Effects:
+   - A BIG GREEN CHECK (Shift+G, G as in grade): a green disc pops up in the
+     middle, a white check draws itself on it, a ring and green sparks fly
+     out, and it fades after a second and a half. For "That's right!"
+   - A 3-2-1 COUNTDOWN (Shift+L, L as in SCRNCSTR's film leader): SCRNCSTR's
+     cinema countdown, over the whole screen: crosshairs, rings, a sweeping
+     hand, 3, 2, 1, then the page again. Escape stops it early.
+   Both run on the clock, not on particles. With reduced motion, the check
+   is shown still and fades, and the countdown keeps its numbers (a number
+   changing is not motion) without the sweep, the punch-in and the grain. */
 const FX_FRAME_MS = 1000 / 30;               // the length of one of SCRNCSTR's frames
 const FX_STILL_MS = 1500;                    // reduced motion: how long the still picture fades over
 const CONFETTI_COLORS = ['#0046AD', '#f45922', '#305305', '#ffc53d', '#e8467c', '#22b8cf'];
@@ -8498,13 +8512,37 @@ const FIREWORK_COLORS = ['#ffd23f', '#ff5a5f', '#4dabf7', '#69db7c', '#e599f7', 
 const HEART_COLORS = ['#ff4d6d', '#ff5f8f', '#e8467c', '#ff85a1', '#ffa8c0'];
 // Everything running: three lists of particles (positions are fractions of the screen, so they fit
 // any size), a clock that only moves while frames are drawn, and the canvas.
-const fx = { confetti: [], fireworks: [], hearts: [], clock: 0, last: 0, raf: 0, still: 0, canvas: null, ctx: null };
+const fx = { confetti: [], fireworks: [], hearts: [], clock: 0, last: 0, raf: 0, still: 0, canvas: null, ctx: null,
+  check: null,                               // the big green check while it shows: { at, still, sparks }
+  leader: null };                            // the countdown while it runs: { at, still }
+const CHECK_MS = 1700;                       // the check: pops in, holds, and fades by then
+const CHECK_GREEN = '#16a34a';               // the check stamp's green (section 8e)
+const CHECK_SPARK_COLORS = ['#16a34a', '#22c55e', '#4ade80', '#15803d', '#86efac'];
+const LEADER_LEAD_MS = 500;                  // the countdown: a moment of plain black first (SCRNCSTR's)
+const LEADER_COUNT_MS = 2400;                // then 3, 2, 1, 800 ms each
+const LEADER_MS = LEADER_LEAD_MS + LEADER_COUNT_MS;
 const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 const pickColor = (list) => list[(Math.random() * list.length) | 0];
 
-/** Start one of the effects: 'confetti', 'fireworks' or 'hearts'. */
+/** Start one of the effects: 'confetti', 'fireworks', 'hearts', 'check' or 'countdown'. */
 function startEffect(kind) {
   if (!presenting || !presentEls) return;
+  if (kind === 'check' || kind === 'countdown') {
+    // These two run on the clock (they ignore the particles' still picture). Pressing again starts them again.
+    const at = performance.now(), still = reduceMotion();
+    if (kind === 'check') {
+      // Sparks all round, each with its own angle, distance and color (worked out once, then drawn by time).
+      const sparks = [];
+      for (let i = 0; i < 26; i++) sparks.push({ a: (i / 26) * Math.PI * 2 + Math.random() * 0.2, far: 0.9 + Math.random() * 0.9, size: 0.035 + Math.random() * 0.04, color: pickColor(CHECK_SPARK_COLORS) });
+      fx.check = { at, still, sparks };
+      announce('A big green check.');
+    } else {
+      fx.leader = { at, still };
+      announce('Countdown: three, two, one.');
+    }
+    if (!fx.raf) { fx.last = at; fx.raf = requestAnimationFrame(effectsFrame); }
+    return;
+  }
   if (kind === 'confetti') addConfetti(); else if (kind === 'fireworks') addFireworks(); else addHearts();
   announce(kind === 'confetti' ? 'Confetti.' : kind === 'fireworks' ? 'Fireworks.' : 'Hearts.');
   if (reduceMotion()) {
@@ -8519,7 +8557,7 @@ function startEffect(kind) {
 function clearEffects() {
   if (fx.raf) cancelAnimationFrame(fx.raf);
   fx.raf = 0;
-  fx.confetti = []; fx.fireworks = []; fx.hearts = []; fx.still = 0;
+  fx.confetti = []; fx.fireworks = []; fx.hearts = []; fx.still = 0; fx.check = null; fx.leader = null;
   if (fx.ctx) fx.ctx.clearRect(0, 0, fx.canvas.width, fx.canvas.height);
 }
 
@@ -8596,17 +8634,19 @@ function effectsFrame(t) {
   let alpha = 1;
   if (fx.still) {
     alpha = 1 - (t - fx.still) / FX_STILL_MS;
-    if (alpha <= 0) { clearEffects(); return; }
+    if (alpha <= 0) { fx.confetti = []; fx.fireworks = []; fx.hearts = []; fx.still = 0; alpha = 0; }   // (the still picture has faded)
   } else {
     fx.clock += dt;
     updateEffects(dt / FX_FRAME_MS);
   }
-  drawEffects(alpha);
-  if (!fx.confetti.length && !fx.fireworks.length && !fx.hearts.length) { clearEffects(); return; }
+  if (fx.check && t - fx.check.at >= CHECK_MS) fx.check = null;
+  if (fx.leader && t - fx.leader.at >= LEADER_MS) { fx.leader = null; announce(presentPageWords()); }   // (the page again)
+  drawEffects(alpha, t);
+  if (!fx.confetti.length && !fx.fireworks.length && !fx.hearts.length && !fx.check && !fx.leader) { clearEffects(); return; }
   fx.raf = requestAnimationFrame(effectsFrame);
 }
-/** Draw every particle (alpha: how faded everything is, for the reduced-motion still). */
-function drawEffects(alpha) {
+/** Draw every effect (alpha: how faded the particles are, for the reduced-motion still; t: the time now). */
+function drawEffects(alpha, t) {
   if (!fx.canvas) {
     fx.canvas = el('canvas', { class: 'present-fx', 'aria-hidden': 'true' });
     fx.ctx = fx.canvas.getContext('2d');
@@ -8620,6 +8660,7 @@ function drawEffects(alpha) {
   const ctx = fx.ctx, now = fx.clock, unit = Math.max(1, W * 0.001);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
+  if (fx.leader) drawLeader(ctx, W, H, t);                      // (the countdown covers the page: drawn first, the rest on top)
   // Confetti: little squares of paper, squashed as they spin so they read as tumbling.
   for (const p of fx.confetti) {
     const w = p.w * W, h = w * p.ratio;
@@ -8635,14 +8676,19 @@ function drawEffects(alpha) {
   // Fireworks: glowing streaks (light adds to light where sparks cross).
   if (fx.fireworks.length) {
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
+    // Light added to light (as on a dark screen) glows; on a light page it washes out, so there the
+    // sparks are drawn in their own colors, with colored heads instead of white ones (0.4.3).
+    const glow = isDarkColor(page().color) || (present && present.blank === 'black');
+    const head = (p) => (glow ? '#fff' : col(p));
+    const col = (p) => (!glow && p.color === '#ffffff' ? '#64748b' : p.color);   // (a white spark can't show on white: slate instead)
+    ctx.globalCompositeOperation = glow ? 'lighter' : 'source-over';
     ctx.lineCap = 'round';
     for (const p of fx.fireworks) {
       if (p.kind === 'shell') {
         if (now < p.readyAt) continue;
-        ctx.globalAlpha = 0.55 * alpha; ctx.strokeStyle = p.color; ctx.lineWidth = unit * 2.6;
+        ctx.globalAlpha = 0.55 * alpha; ctx.strokeStyle = col(p); ctx.lineWidth = unit * 2.6;
         ctx.beginPath(); ctx.moveTo(p.x * W, (p.py != null ? p.py : p.y) * H + unit * 14); ctx.lineTo(p.x * W, p.y * H); ctx.stroke();
-        ctx.globalAlpha = alpha; ctx.fillStyle = '#fff';
+        ctx.globalAlpha = alpha; ctx.fillStyle = head(p);
         ctx.beginPath(); ctx.arc(p.x * W, p.y * H, unit * 1.8, 0, Math.PI * 2); ctx.fill();
         continue;
       }
@@ -8650,13 +8696,13 @@ function drawEffects(alpha) {
       const a = (t < 0.5 ? 1 : 1 - (t - 0.5) / 0.5) * alpha;    // full brightness for half its life, then away
       const flick = 0.78 + 0.22 * Math.sin(age / 42 + p.vx * 900);   // dying sparks twinkle
       const x = p.x * W, y = p.y * H, x0 = p.px * W, y0 = p.py * H;
-      ctx.strokeStyle = p.color;
+      ctx.strokeStyle = col(p);
       ctx.globalAlpha = a * 0.22 * flick; ctx.lineWidth = unit * 7;                 // the glow
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x, y); ctx.stroke();
       ctx.globalAlpha = a * flick; ctx.lineWidth = unit * 2.4 * (1 - t * 0.4);     // the streak
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x, y); ctx.stroke();
       if (t < 0.55) {                                                               // a white-hot head
-        ctx.globalAlpha = a * 0.9; ctx.fillStyle = '#fff';
+        ctx.globalAlpha = a * 0.9; ctx.fillStyle = head(p);
         ctx.beginPath(); ctx.arc(x, y, unit * 1.5 * (1 - t), 0, Math.PI * 2); ctx.fill();
       }
     }
@@ -8680,14 +8726,135 @@ function drawEffects(alpha) {
     ctx.fill();
     ctx.restore();
   }
+  if (fx.check) drawCheck(ctx, W, H, t);                       // (on top of everything)
 }
-/** The Celebrate button's menu (on the floating bar). */
+
+/**
+ * The big green check (0.4.3), drawn from the time since it began (no
+ * particles to keep): in the first fifth of a second a green disc pops up
+ * in the middle of the screen (a little past full size, then back), the
+ * white check draws itself from 0.15 to 0.45 seconds, a ring spreads out
+ * and green sparks fly from the disc's edge, and from 1.3 seconds it all
+ * fades. With reduced motion: the finished check, still, then the fade.
+ */
+function drawCheck(ctx, W, H, t) {
+  const c = fx.check, age = t - c.at;
+  const fade = age < 1300 ? 1 : Math.max(0, 1 - (age - 1300) / 400);
+  const R0 = Math.min(W, H) * 0.13;                              // the disc's radius
+  // "Back out": overshoots a little, then settles at 1.
+  const backOut = (x) => { const k = 1.7; return 1 + (k + 1) * Math.pow(x - 1, 3) + k * Math.pow(x - 1, 2); };
+  const pop = c.still ? 1 : age < 220 ? Math.max(0, backOut(age / 220)) : 1;
+  const R = R0 * pop, cx = W / 2, cy = H / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  if (!c.still) {
+    // The ring, spreading out and fading over 0.7 seconds.
+    if (age < 700) {
+      ctx.globalAlpha = (1 - age / 700) * fade;
+      ctx.strokeStyle = CHECK_GREEN; ctx.lineWidth = R0 * 0.06;
+      ctx.beginPath(); ctx.arc(0, 0, R0 * (1 + (age / 700) * 1.2), 0, Math.PI * 2); ctx.stroke();
+    }
+    // The sparks: out from the edge, easing to a stop, fading after half a second.
+    const go = 1 - Math.pow(1 - Math.min(1, age / 800), 3);
+    for (const sp of c.sparks) {
+      const d = R0 * (1.05 + sp.far * go), sz = R0 * sp.size;
+      ctx.globalAlpha = (age < 500 ? 1 : Math.max(0, 1 - (age - 500) / 500)) * fade;
+      ctx.fillStyle = sp.color;
+      ctx.save();
+      ctx.translate(Math.cos(sp.a) * d, Math.sin(sp.a) * d);
+      ctx.rotate(sp.a);
+      ctx.fillRect(-sz, -sz / 2, sz * 2, sz);                     // a little dash, pointing outward
+      ctx.restore();
+    }
+  }
+  // The disc, with a white edge so it stands out on any page.
+  ctx.globalAlpha = fade;
+  ctx.fillStyle = CHECK_GREEN;
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(3, R0 * 0.05);
+  ctx.stroke();
+  // The check, drawing itself along its two strokes.
+  const pts = [[-0.42, 0.02], [-0.12, 0.32], [0.45, -0.3]].map(([x, y]) => [x * R, y * R]);
+  const l1 = Math.hypot(pts[1][0] - pts[0][0], pts[1][1] - pts[0][1]), l2 = Math.hypot(pts[2][0] - pts[1][0], pts[2][1] - pts[1][1]);
+  const drawn = (c.still ? 1 : clamp((age - 150) / 300, 0, 1)) * (l1 + l2);
+  if (drawn > 0) {
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = R0 * 0.16; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+    if (drawn <= l1) ctx.lineTo(pts[0][0] + (pts[1][0] - pts[0][0]) * drawn / l1, pts[0][1] + (pts[1][1] - pts[0][1]) * drawn / l1);
+    else {
+      const k = (drawn - l1) / l2;
+      ctx.lineTo(pts[1][0], pts[1][1]);
+      ctx.lineTo(pts[1][0] + (pts[2][0] - pts[1][0]) * k, pts[1][1] + (pts[2][1] - pts[1][1]) * k);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * The 3-2-1 countdown (0.4.3): SCRNCSTR's cinema film leader, drawn from the
+ * time since it began. Half a second of plain black, then 3, 2 and 1, each
+ * with a hand sweeping one full turn, crosshairs, two rings, a small
+ * punch-in as each number arrives, and a little film grain. It covers the
+ * whole screen on purpose (a leader you can see through doesn't read as
+ * one). With reduced motion: the numbers and rings only.
+ */
+function drawLeader(ctx, W, H, t) {
+  const L = fx.leader, age = t - L.at;
+  ctx.save();
+  ctx.fillStyle = '#08090c';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  if (age < LEADER_LEAD_MS) return;
+  const ct = age - LEADER_LEAD_MS, per = LEADER_COUNT_MS / 3;
+  const idx = Math.min(2, Math.floor(ct / per)), n = 3 - idx;   // 3, 2, 1
+  const local = (ct - idx * per) / per;                           // 0 to 1 within this number
+  const R = Math.min(W, H) * 0.30;
+  ctx.save();
+  ctx.translate(W / 2, H / 2);
+  if (!L.still) {
+    // The hand: a wedge wiping round from twelve o'clock, one turn per number.
+    ctx.beginPath(); ctx.moveTo(0, 0);
+    ctx.arc(0, 0, R * 1.04, -Math.PI / 2, -Math.PI / 2 + local * Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,.14)';
+    ctx.fill();
+  }
+  // Crosshairs, across the whole screen, and two rings: a heavy outer and a light inner.
+  ctx.strokeStyle = 'rgba(255,255,255,.32)'; ctx.lineWidth = Math.max(1, W * 0.0016);
+  ctx.beginPath(); ctx.moveTo(-W, 0); ctx.lineTo(W, 0); ctx.moveTo(0, -H); ctx.lineTo(0, H); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.78)'; ctx.lineWidth = Math.max(2, W * 0.0028);
+  ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.26)'; ctx.lineWidth = Math.max(1, W * 0.0016);
+  ctx.beginPath(); ctx.arc(0, 0, R * 0.71, 0, Math.PI * 2); ctx.stroke();
+  // The number, with a small punch-in over the first eighth of its time.
+  const size = Math.round(R * 1.05);
+  const pop = L.still ? 1 : 1 + 0.11 * Math.pow(1 - Math.min(1, local * 8), 2);
+  ctx.scale(pop, pop);
+  ctx.font = '900 ' + size + 'px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(String(n), 0, size * 0.02);
+  ctx.restore();
+  if (L.still) return;
+  // A little grain, so it reads as film rather than as a drawing on top of the page.
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,.055)';
+  const gs = Math.max(1, W * 0.0013);
+  for (let i = 0; i < 46; i++) ctx.fillRect(Math.random() * W, Math.random() * H, gs, gs * (1 + Math.random() * 2));
+  ctx.restore();
+}
+
+/** The Effects button's menu (on the floating bar). */
 function openEffectsMenu(btn) {
   const r = btn.getBoundingClientRect();
-  openMenu(r.left, r.top - 150, [
+  openMenu(r.left, r.top - 230, [
     { label: 'Confetti', keys: 'Shift+C', run: () => startEffect('confetti') },
     { label: 'Fireworks', keys: 'Shift+F', run: () => startEffect('fireworks') },
-    { label: 'Hearts', keys: 'Shift+H', run: () => startEffect('hearts') }
+    { label: 'Hearts', keys: 'Shift+H', run: () => startEffect('hearts') },
+    { label: 'A big green check', keys: 'Shift+G', run: () => startEffect('check') },
+    '-',
+    { label: 'Countdown: 3, 2, 1', keys: 'Shift+L', run: () => startEffect('countdown') }
   ]);
 }
 
@@ -8726,7 +8893,7 @@ function presentKeys(e) {
   if (present.blank) { done(); setBlank(null); return; }
   // In the floating bar, the bar's own keys move along it (and Enter or Space press a button).
   if (presentBar.root.contains(e.target) && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', ' ', 'Tab'].includes(k)) return;
-  if ($('ctxMenu').contains(e.target)) return;      // (the Celebrate menu keeps its own keys)
+  if ($('ctxMenu').contains(e.target)) return;      // (the Effects menu keeps its own keys)
   if (mod) {
     // The magnifier: Ctrl and + or - zoom it (instead of the browser's zoom); Ctrl+0 goes back to the start.
     if (tool === 'magnifier' && ['+', '=', '-', '_', '0'].includes(k)) {
@@ -8745,12 +8912,13 @@ function presentKeys(e) {
     done();
     if (live) { cancelStroke(); announce('Stroke dropped'); return; }
     if (cancelObjectGesture()) return;
+    if (fx.leader) { fx.leader = null; announce('Countdown stopped'); return; }   // (the countdown first: the page comes back)
     presentEscape();                                  // (a drawing tool: back to the Pointer; the Pointer: stop)
     return;
   }
-  // Effects (0.4.2): Shift+C confetti, Shift+F fireworks, Shift+H hearts.
+  // Effects (0.4.2, 0.4.3): Shift+C confetti, Shift+F fireworks, Shift+H hearts, Shift+G the big check, Shift+L the countdown.
   if (e.shiftKey && !e.altKey) {
-    const fxKey = { c: 'confetti', f: 'fireworks', h: 'hearts' }[k.toLowerCase()];
+    const fxKey = { c: 'confetti', f: 'fireworks', h: 'hearts', g: 'check', l: 'countdown' }[k.toLowerCase()];
     if (fxKey) { done(); startEffect(fxKey); return; }
   }
   // F: full screen again (after leaving it), or out of it.
@@ -10892,7 +11060,8 @@ const HELP_KEYS = [
   ['Presenting: Right, Space, Page Down, Enter', 'Next page (Left, Page Up, Backspace: the page before; Home and End: the ends)'],
   ['Presenting: a number, then Enter', 'Go to that page'],
   ['Presenting: K, S, M', 'Laser pointer, spotlight, magnifying glass (+ and -, Ctrl and + or -, or the mouse wheel zoom it, from 2 to 8 times)'],
-  ['Presenting: Shift+C, Shift+F, Shift+H', 'Confetti, fireworks, hearts (also the Celebrate button on the bar)'],
+  ['Presenting: Shift+C, Shift+F, Shift+H, Shift+G', 'Confetti, fireworks, hearts, a big green check (also the Effects button on the bar)'],
+  ['Presenting: Shift+L', 'A 3-2-1 countdown over the whole screen (Escape stops it)'],
   ['Presenting: B or W', 'A black or white screen (any key brings the page back)'],
   ['Ctrl+Enter', 'Add a page after this one (the same size and color)'],
   ['Ctrl+Shift+D', 'Duplicate the picked pages, marks and all'],
@@ -11268,17 +11437,25 @@ const APP_FEATURES = [
       + '<path d="M214 128l10 12 22-28" pathLength="100" stroke-dasharray="100 104" stroke-dashoffset="102" class="fx-line-ok fx-thick"><animate attributeName="stroke-dashoffset" values="102;102;0;0;102" keyTimes="0;0.6;0.7;0.92;1" dur="6s" repeatCount="indefinite"/></path></svg>'
   },
   {
-    title: 'Any page, any shape',
-    text: 'Letter or A4, either way up, 16:9 like Google Slides and PowerPoint, 16:10, 4:3, square, or your own size. A new size never stretches what you drew.',
-    alt: 'A white page changes shape from a tall letter page to a wide 16:9 slide, then to a square, with its name underneath each time.',
-    still: 1,
+    // (0.4.3: this slide was "Any page, any shape"; PDFs are the bigger news now, as the spec's tour planned.)
+    title: 'Mark up any PDF',
+    text: 'Open a PDF and every page becomes a page to draw on, sharp at any zoom. A highlight quotes the words under it, so screen readers hear what you marked, and Shift snaps a highlight to a line of text.',
+    alt: 'A PDF page about the water cycle. A yellow highlight sweeps across the words "rises as vapor", and a label underneath reads "Highlight on: rises as vapor".',
+    still: 4.5,
     art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" class="fx-soft"/>'
-      + '<rect class="fx-paper fx-edge" rx="3"><animate attributeName="x" values="117;117;77;77;102;102;117" keyTimes="0;0.25;0.35;0.58;0.68;0.9;1" dur="7.5s" repeatCount="indefinite"/><animate attributeName="y" values="20;20;50;50;30;30;20" keyTimes="0;0.25;0.35;0.58;0.68;0.9;1" dur="7.5s" repeatCount="indefinite"/><animate attributeName="width" values="86;86;166;166;116;116;86" keyTimes="0;0.25;0.35;0.58;0.68;0.9;1" dur="7.5s" repeatCount="indefinite"/><animate attributeName="height" values="112;112;94;94;116;116;112" keyTimes="0;0.25;0.35;0.58;0.68;0.9;1" dur="7.5s" repeatCount="indefinite"/></rect>'
-      + '<g font-size="13" text-anchor="middle" class="fx-t">'
-      + '<text x="160" y="172" opacity="1">Letter, portrait<animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.28;0.3;0.95;1" dur="7.5s" repeatCount="indefinite"/></text>'
-      + '<text x="160" y="172" opacity="0">Widescreen 16:9<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.3;0.33;0.6;0.62;1" dur="7.5s" repeatCount="indefinite"/></text>'
-      + '<text x="160" y="172" opacity="0">Square<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.63;0.66;0.92;0.95" dur="7.5s" repeatCount="indefinite"/></text>'
-      + '</g></svg>'
+      + '<rect x="96" y="12" width="128" height="140" rx="3" class="fx-paper fx-edge"/>'
+      + '<rect x="190" y="18" width="28" height="13" rx="3" class="fx-accbtn"/><text x="204" y="28" font-size="8.5" font-weight="700" text-anchor="middle" class="fx-t-w">PDF</text>'
+      + '<text x="106" y="42" font-size="11" font-weight="700" class="fx-t">The water cycle</text>'
+      // The highlight, under the words (it snaps to the line: straight, as tall as the letters).
+      + '<rect x="104" y="72" width="0" height="11" rx="2" class="fx-hl"><animate attributeName="width" values="0;0;56;56;0;0" keyTimes="0;0.14;0.34;0.9;0.94;1" dur="7s" repeatCount="indefinite"/></rect>'
+      + '<g font-size="8" class="fx-t"><text x="106" y="58">The sun warms the sea.</text><text x="106" y="69">Some of the water</text>'
+      + '<text x="106" y="80">rises as vapor, then cools</text><text x="106" y="91">into clouds.</text></g>'
+      + '<rect x="106" y="102" width="104" height="4" rx="2" class="fx-mute"/><rect x="106" y="113" width="92" height="4" rx="2" class="fx-mute"/>'
+      + '<rect x="106" y="124" width="100" height="4" rx="2" class="fx-mute"/><rect x="106" y="135" width="60" height="4" rx="2" class="fx-mute"/>'
+      // What the highlight is called (and what a screen reader hears).
+      + '<g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.38;0.43;0.88;0.93;1" dur="7s" repeatCount="indefinite"/>'
+      + '<rect x="70" y="162" width="180" height="24" rx="12" class="fx-accbtn"/><text x="160" y="178" font-size="11" text-anchor="middle" class="fx-t-w">Highlight on: rises as vapor</text></g>'
+      + '</svg>'
   },
   {
     title: 'Zoom where you point',
@@ -11322,6 +11499,14 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.4.3', date: '2026-10-21', notes: [
+    'Present mode: a big green check (Shift+G): a green disc pops up in the middle, a white check draws itself on it, and green sparks fly out. For "That\'s right!"',
+    'Present mode: a 3-2-1 countdown (Shift+L), SCRNCSTR\'s cinema film leader, over the whole screen; then the page again. Escape stops it early.',
+    'The bar\'s Celebrate button is now Effects, since its menu holds the countdown too.',
+    'With reduced motion turned on, the check is shown still and fades, and the countdown keeps its numbers without the sweeping hand, the punch-in and the film grain.',
+    'Fireworks on a light page are drawn in their own colors; they used to wash out on white (on a dark page they still glow).',
+    'The help panel\'s tour: "Mark up any PDF" takes the place of "Any page, any shape".'
+  ] },
   { version: '0.4.2', date: '2026-10-20', notes: [
     'Highlights quote the PDF words under them: "Yellow highlight on: the water cycle", in the layers list and for screen readers. Move a highlight and its quote follows.',
     'Hold Shift with the highlighter over a PDF\'s text and the highlight snaps to that line, word to word, as tall as the letters (as in a PDF reader). Off the text, Shift still draws a straight line.',

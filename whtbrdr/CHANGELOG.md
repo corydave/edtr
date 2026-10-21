@@ -1,5 +1,14 @@
 # WHTBRDR - changelog
 
+## 0.4.3 - 2026-10-21 - A big green check and a 3-2-1 countdown
+
+- **A big green check** (Shift+G, G as in grade; or the bar's Effects menu): a green disc (the check stamp's green, with a white edge so it shows on any page) pops up in the middle of the screen, a white check draws itself on it, a ring spreads and green sparks fly out, and after a second and a half it fades. For "That's right!"
+- **A 3-2-1 countdown** (Shift+L, L for SCRNCSTR's film leader; or the Effects menu): SCRNCSTR's cinema countdown over the whole screen (half a second of black, then 3, 2 and 1, each with a sweeping hand, crosshairs, rings, a small punch-in and a little film grain), then the page again. Escape stops it early, before it stops presenting. Screen readers hear "Countdown: three, two, one", then the page's name again.
+- **Reduced motion:** the check is shown finished and still, then fades; the countdown keeps its changing numbers (a number changing is not motion) but drops the sweep, the punch-in and the grain.
+- **The bar's Celebrate button is now Effects** (same party-popper icon), since the menu holds the countdown as well: Confetti, Fireworks, Hearts, A big green check, then Countdown: 3, 2, 1.
+- **From the wings:** fireworks on a light page are now drawn in their own colors, with colored heads (white sparks become slate). Adding light to white, as SCRNCSTR does over a recording, washed them out on a white page. On a dark page they still glow.
+- **From the wings:** the help panel's Features tour has "Mark up any PDF" (a highlight sweeping over a PDF's words, and the quote it gets) in place of "Any page, any shape", as the spec's tour planned.
+
 ## 0.4.2 - 2026-10-20 - PDF words, celebrations, and copying pages
 
 - **Highlights quote the PDF words under them:** "Yellow highlight on: the mitochondria is the powerhouse", in the layers list, "Picked: ...", and what screen readers hear. A word counts when the highlight covers at least half its letters. The quote is worked out from where the highlight is (never stored), so moving a highlight to other words changes it.
