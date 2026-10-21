@@ -1,5 +1,16 @@
 # WHTBRDR - changelog
 
+## 0.5.1 - 2026-10-21 - Export: PDF and pictures
+
+- **Export** (a new solid Export button in the top bar, beside Present, or **Ctrl+Shift+E**) opens a small dialog: the format (PDF, or pictures), which pages (all, this page, or the picked pages), and for pictures their type (PNG, JPEG or WebP) and size (1x, 2x or 3x the page's size on screen at 100%; the dialog says how many pixels). The first choice is PDF, or pictures in the board's own picture type when the board came from pictures.
+- **PDF:** a page from a PDF goes out as itself, untouched (its own text, drawings and links, still sharp), turned as on the board; your marks are drawn on top as real PDF drawing (lines, shapes and ink stay sharp at any zoom) and your words stay words you can search and copy (WHTBRDR's two fonts go inside the PDF, only the letters used). Blank pages keep their color, lines, graph paper, grid and background picture. Highlights multiply onto the page, as on the board. The PDF's title is the board's name.
+- **Pictures:** one page is one file; several come in a zip, named `page-01.png` and so on. Very big pages are kept within what a browser can draw (the dialog says so).
+- **How:** the page is drawn the way the board draws it (the same SVG), then that SVG is walked piece by piece and painted again, onto a canvas for pictures or into PDF drawing commands for a PDF, so the two always agree. Checked by turning exported PDFs back into pictures (poppler) and comparing them with the picture export, including turned pages and PDFs whose pages don't start at 0, 0.
+- **Not the same as the board, yet:** a PDF locked with a password can't be copied, so its pages go out as pictures of the page (the toast says which); where two highlights cross, the export darkens a little; sticky notes have no shadow; letters WHTBRDR's fonts don't have (they hold Latin letters) are written in Helvetica where it has them, or else become "?" in a PDF (the toast counts them).
+- **pdf-lib 1.17.1 and @pdf-lib/fontkit 1.1.1** join pdf.js: loaded only the first time a PDF is exported, from jsDelivr with SRI fingerprints in the online edition and packed inside the offline one (which grows to about 2.4 MB). Their licenses (MIT) are in `vendor/`.
+- **`make-export-fonts.py`** (new): pdf-lib can't put a WOFF2 font into a PDF (the letters come out invisible), so this script makes TrueType copies of the page's two fonts and keeps them in `index-online.html` for export. Run it if the fonts change, then `build-offline.py`.
+- Exporting clears the crash backup, as saving does (the suite's rule); the board still shows its unsaved dot until it is saved as a `.whtbrdr`.
+
 ## 0.5.0 - 2026-10-21 - Saving, opening boards, crash backups
 
 - **Save** (Ctrl+S, or the new disk button by Open): the whole board as a `.whtbrdr` file. Every page and mark, the PDFs byte for byte, and the pictures go inside. In Chrome and Edge the first save asks where (the computer's own Save dialog) and later saves write back to the same file; other browsers download it each time. **Ctrl+Shift+S** saves a copy as a new file. A never-saved board is named after its first PDF ("worksheet.whtbrdr"), or "whiteboard".

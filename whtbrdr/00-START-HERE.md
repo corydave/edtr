@@ -64,7 +64,14 @@
 >
 > **Then 0.5.0:** saving and opening `.whtbrdr` boards, crash backups and
 > "Pick up where you left off" (section 8m), and the file handler in the
-> manifest. Waiting for Dave's review of 0.5.0; next is 0.5.1 (export).
+> manifest.
+>
+> **Then 0.5.1:** Export: a PDF (PDF pages untouched, marks drawn on top
+> as vector, words as words) or pictures (section 8n). pdf-lib and fontkit
+> are in `vendor/` too now, and `make-export-fonts.py` keeps TrueType
+> copies of the fonts in `index-online.html` (run it if the fonts change,
+> then `build-offline.py`). Waiting for Dave's review of 0.5.1; next is
+> 0.5.2 (editable PDF marks, descriptions in the PDF, samples).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**
@@ -80,7 +87,8 @@ the extension's annotation bar in, then carry on milestone by milestone.
 | `WHTBRDR-SPEC.md` | The full plan: pages, tools, step numbers, objects, filmstrip, Present mode, export, accessibility, security, milestones, open questions |
 | `index-online.html` | The app's SOURCE since 0.4.0: edit this one. It fetches pdf.js from jsDelivr (SRI-pinned) when a PDF is opened |
 | `index.html` | The offline edition, MADE by `build-offline.py` from `index-online.html`, with pdf.js inside. The site serves it. Don't edit it by hand |
-| `build-offline.py`, `vendor/` | The build (checks the vendor files against their fingerprints first), and pdf.js 5.7.284 with its license |
+| `build-offline.py`, `vendor/` | The build (checks the vendor files against their fingerprints first), and the libraries with their licenses: pdf.js 5.7.284, pdf-lib 1.17.1, @pdf-lib/fontkit 1.1.1 |
+| `make-export-fonts.py` | Makes TrueType copies of the page's two fonts, kept in `index-online.html` for PDF export (needs fontTools and brotli) |
 
 Put the folder at `productivity-suite/whtbrdr/` (the spec's source folder).
 

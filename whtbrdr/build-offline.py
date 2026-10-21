@@ -17,8 +17,9 @@ The two editions are the suite's way (PDFEDTR does the same):
                      next build overwrites it.
 
 What the script does, step by step:
-  1. Reads the pdf.js files' names and fingerprints from index-online.html
-     (the PDFJS_FILES block), so the fingerprints live in one place only.
+  1. Reads the libraries' names and fingerprints from index-online.html
+     (the PDFJS_FILES block: pdf.js, and since 0.5.1 pdf-lib and fontkit for
+     PDF export), so the fingerprints live in one place only.
   2. Checks that each file in vendor/ matches its fingerprint exactly. If
      one doesn't (a different version, a damaged download), it stops and
      writes nothing.
@@ -75,8 +76,10 @@ def main():
     if not block:
         fail('the PDFJS-LIBRARY block is missing from index-online.html')
     files = re.findall(r"(\w+):\s*\{\s*name:\s*'([^']+)',\s*sri:\s*'(sha384-[A-Za-z0-9+/=]+)'", block.group(0))
-    if sorted(k for k, _, _ in files) != ['lib', 'worker']:
-        fail('the PDFJS_FILES block should list exactly "lib" and "worker"')
+    keys = [k for k, _, _ in files]
+    # pdf.js (lib and worker) always; since 0.5.1 also pdf-lib and fontkit, for PDF export.
+    if not {'lib', 'worker'} <= set(keys) or len(set(keys)) != len(keys):
+        fail('the PDFJS_FILES block should list "lib" and "worker" (and each name once)')
 
     # 2 and 3. Check each vendor file, then pack it.
     packed = []
@@ -107,10 +110,14 @@ def main():
                        '<!DOCTYPE html>\n<!-- MADE BY build-offline.py FROM index-online.html: edit that file, then run\n'
                        '     "python3 build-offline.py". Changes made here are lost at the next build. -->\n',
                        'the doctype line')
-    # pdf.js, packed, just before </body> (the page reads it only when the first PDF is opened).
-    note = ('<!-- pdf.js %s (Mozilla, Apache License 2.0: vendor/pdfjs-LICENSE.txt), packed by build-offline.py:\n'
-            '     gzip, then base64. Browsers never run this type of script; the page unpacks it and checks\n'
-            '     its fingerprint before using it (section 8l). -->\n') % re.search(r"PDFJS_VERSION = '([^']+)'", html).group(1)
+    # The libraries, packed, just before </body> (the page reads each only when it is first needed).
+    note = ('<!-- pdf.js %s (Mozilla, Apache License 2.0: vendor/pdfjs-LICENSE.txt), pdf-lib %s (MIT:\n'
+            '     vendor/pdf-lib-LICENSE.md) and fontkit %s (MIT: vendor/fontkit-LICENSE.txt), packed by\n'
+            '     build-offline.py: gzip, then base64. Browsers never run this type of script; the page\n'
+            '     unpacks each and checks its fingerprint before using it (sections 8l and 8n). -->\n') % (
+        re.search(r"PDFJS_VERSION = '([^']+)'", html).group(1),
+        re.search(r"PDFLIB_VERSION = '([^']+)'", html).group(1),
+        re.search(r"FONTKIT_VERSION = '([^']+)'", html).group(1))
     out = replace_once(out, '</body>', note + '\n'.join(packed) + '\n</body>', 'the </body> tag')
 
     TARGET.write_text(out, encoding='utf-8')
