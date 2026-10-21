@@ -1,5 +1,57 @@
 # ANIMEDTR changelog
 
+## 0.24.0 - 2026-10-21
+
+**Rigging: posing figures** (Dave's picks, after seeing StykAnimate go open
+source: both stick figures and figures made of groups; the limb bends with
+pins; saved poses plus ready-made ones. StykAnimate is GPL-3.0, so only its
+ideas were used, none of its code).
+
+- **Pose mode:** pick a figure and press **J** (or **Pose** on the quick
+  bar, in the Inspector's new **Pose** section, or in the right-click
+  menu). Every joint shows a dot, each bone a thin line, and the ends of
+  the limbs (hands, feet, the head) an orange dot. **J** or **Escape**
+  when done.
+- **Drag a hand and the arm bends:** drag any part and the joints of its
+  limb turn so the point you hold follows the pointer: a hand bends the
+  elbow and the shoulder, a foot the knee and the hip. The body stays
+  put: a limb starts where a joint holds more than one (the body holds
+  the head and both arms). Out of reach, the limb points straight at the
+  pointer. **Shift** + drag turns just the joint you hold. Dragging a
+  joint's dot (an elbow, a knee) turns the joint above it. Dragging the
+  hips (the dot where the legs join), or a part of the figure itself (the
+  robot's body), moves the whole figure.
+- **Pins:** double-click a part, or tick **Pinned** beside its joint, and
+  its end stays where it is on the stage while you pose the rest (a
+  square on the stage shows it). Pin both feet and drag the hips down,
+  and the knees bend.
+- **Kept at once, as keyframes:** the first change at a frame gives the
+  figure and every joint a keyframe there (holding where they were), so a
+  pose is always whole. Move the play head and pose again to animate.
+  One drag, one key press or one pose is one undo step.
+- **The keyboard:** in Pose mode, **N** and **Shift+N** pick a joint (it
+  is read out, with how far it is turned and whether it is pinned),
+  **Left** and **Right** turn it (Shift: 10 degrees), and with the whole
+  figure picked the **arrows** move it (pins hold). The Pose section also
+  lists every joint with its turn as a number, and its Pinned box.
+- **The stick figure (Y,** a new button on the tool rail): ten joints
+  (Body, Head, Left and Right upper arm, forearm, thigh and shin), each a
+  group with its pivot on the joint, so it is an ordinary group you can
+  recolour, resize, give a shadow or open up. "Left" is the left of the
+  screen as it faces you.
+- **Poses:** **Put a pose here** puts a pose on the figure at the play
+  head; each joint turns the short way to it. A stick figure has Stand,
+  Wave, Walk (step 1 and 2), Run, Jump, Sit and Cheer. **Save this pose**
+  keeps the figure's pose by name in the lesson (joints by their names),
+  for any keyframe of any figure whose joints have the same names; saving
+  a name again updates it. **Delete a saved pose** removes one.
+- **Any figure of groups inside groups** poses the same way: the robot,
+  or a drawing from Inkscape or VCTREDTR (whose rotation centres already
+  come in as pivots).
+- **A new template, Posing a figure (rigging):** a stick figure walks in,
+  waves, crouches and jumps for joy, cheers and lands, with a marker and a
+  description for each part.
+
 ## 0.23.0 - 2026-10-21
 
 **Pictures: crop, shape and border; drop shadows on anything** (Dave's
