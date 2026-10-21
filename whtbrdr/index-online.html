@@ -332,6 +332,12 @@ body.presenting .toast { bottom: 84px; }                         /* (above the f
 .present-lens { position: fixed; z-index: 32; pointer-events: none; border-radius: 50%; overflow: hidden; background: #000000;
   box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px #9f1239, 0 10px 30px rgba(0, 0, 0, .45); }
 .present-lens-svg { display: block; width: 100%; height: 100%; }
+/* The magnifier's zoom, shown for a moment while it changes (0.4.2). */
+.present-lens-badge { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); padding: 2px 8px; border-radius: 999px;
+  background: rgba(17, 24, 39, .85); color: #ffffff; font: 700 12px/1.4 var(--ui-font); font-variant-numeric: tabular-nums; }
+.present-lens-badge[hidden] { display: none; }
+/* Confetti, fireworks and hearts (0.4.2): one canvas over the page, under the bar, never in the way of a click. */
+.present-fx { position: fixed; top: 0; left: 0; z-index: 33; pointer-events: none; }
 .present-blank { position: fixed; inset: 0; z-index: 40; background: #000000; cursor: none; }
 .present-blank.white { background: #ffffff; }
 /* Disappearing ink fades out (the timing is in section 8i). */
@@ -1167,9 +1173,11 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
        Focus it to slide it with the arrow keys.
        =================================================================== -->
   <main class="workspace" id="workspace">
-    <div id="board" tabindex="0" role="group" aria-roledescription="whiteboard" aria-label="Page" aria-describedby="boardHelp">
+    <div id="board" tabindex="0" role="group" aria-roledescription="whiteboard" aria-label="Page" aria-describedby="boardDocText boardHelp">
       <svg id="boardSvg" aria-hidden="true" focusable="false"></svg>
     </div>
+    <!-- A PDF page's words, for screen readers (filled by describeBoard: section 8l). -->
+    <p class="sr-only" id="boardDocText"></p>
     <p class="sr-only" id="boardHelp">Draw with a mouse, a stylus or a finger. The arrow keys slide the board; Ctrl plus and Ctrl minus zoom; Ctrl 0 fits the page. Hold Space and drag to slide it with the mouse.</p>
     <!-- The colors and sizes of the tool in use, always in reach (the shared
          bar's strip: two radio groups, so the arrow keys move between choices). -->
@@ -1198,7 +1206,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <button class="icon-btn" id="btnPageAdd" aria-label="Add a page after this one" title="Add a page after this one (Ctrl+Enter)"><span data-icon="plus"></span></button>
     </div>
     <ul class="page-list" id="pageList" role="listbox" aria-label="Pages" aria-orientation="horizontal" aria-multiselectable="true" aria-describedby="filmHelp"></ul>
-    <p class="sr-only" id="filmHelp">Left and Right go to the page before or after; with Shift they pick the pages on the way. Alt with Left or Right moves the picked pages. Delete removes them. Enter goes back to the board. Tab goes on to the page's buttons: move, present, open, duplicate, delete.</p>
+    <p class="sr-only" id="filmHelp">Left and Right go to the page before or after; with Shift they pick the pages on the way. Alt with Left or Right moves the picked pages. Delete removes them. Enter goes back to the board. Tab goes on to the page's buttons: move, present, open, duplicate, copy, cut, paste, delete. Control C, X and V copy, cut and paste the picked pages.</p>
     <!-- THE PAGE PILL (0.4.1, DSKEDTR's look and feel): it floats just above the
          filmstrip, over the page on show, when a page is clicked or tapped, or
          when the keyboard comes into the filmstrip (Tab from the pages reaches
@@ -1212,6 +1220,10 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <button type="button" class="pp-btn" id="btnPagePresent" tabindex="-1" aria-label="Present from this page" title="Present from this page (Shift+F5)"><span data-icon="present"></span></button>
       <button type="button" class="pp-btn" id="btnPageOpen" tabindex="-1" aria-label="Open a PDF or pictures after this page" title="Open a PDF or pictures after this page (Ctrl+O)"><span data-icon="open"></span></button>
       <button type="button" class="pp-btn" id="btnPageDup" tabindex="-1" aria-label="Duplicate this page" title="Duplicate this page (Ctrl+Shift+D)"><span data-icon="copy"></span></button>
+      <!-- Copy, Cut and Paste pages (0.4.2, as in DSKEDTR): within this tab. -->
+      <button type="button" class="pp-btn" id="btnPageCopy" tabindex="-1" aria-label="Copy this page" title="Copy this page (Ctrl+C)"><span data-icon="clipboard"></span></button>
+      <button type="button" class="pp-btn" id="btnPageCut" tabindex="-1" aria-label="Cut this page" title="Cut this page (Ctrl+X)"><span data-icon="scissors"></span></button>
+      <button type="button" class="pp-btn" id="btnPagePaste" tabindex="-1" aria-label="Paste copied pages after this one" title="Paste copied pages after this one (Ctrl+V)"><span data-icon="paste"></span></button>
       <span class="pp-sep" aria-hidden="true"></span>
       <button type="button" class="pp-btn danger" id="btnPageDel" tabindex="-1" aria-label="Delete this page" title="Delete this page (Delete)"><span data-icon="trash"></span></button>
     </div>
@@ -3851,7 +3863,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.4.1';
+const APP_VERSION = '0.4.2';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -3956,6 +3968,12 @@ const ICONS = {
   // Present mode (section 8i): a screen on a stand, and disappearing ink (a dashed squiggle).
   present: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
   fade: '<path d="M3 17c3-7 6-7 8-3s5 4 10-4" stroke-dasharray="2.5 3.5"/>',
+  // Copy, Cut and Paste pages (section 8h): DSKEDTR's drawings.
+  clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  scissors: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/>',
+  paste: '<path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M16 4h2a2 2 0 0 1 2 2v2M11 14h10"/><path d="M17 10l4 4-4 4"/>',
+  // Celebrate (section 8i): Lucide's party popper.
+  party: '<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/>',
   // A step number (section 8k): a disc with a 1.
   step: '<circle cx="12" cy="12" r="9"/><path d="M10.5 9.5 12.5 8v8"/>',
   // The filmstrip's buttons (section 8h).
@@ -4316,6 +4334,8 @@ function autoWords(item) {
   if (item.type === 'picture') return 'Picture: ' + item.name;
   if (item.type === 'stamp') { const d = stampDef(item.stamp); const w = item.color === d.color ? d.colorName + ' ' + d.words : d.name; return w + ' stamp'; }
   if (item.type === 'arrow') return colorName(item) + ' arrow pointing ' + arrowWay(item);
+  // A highlight over a PDF's words quotes them (section 8l): "Yellow highlight on: the water cycle".
+  if (item.type === 'highlight') { const q = highlightQuote(item); if (q) return colorName(item) + ' highlight on: ' + q; }
   return colorName(item) + ' ' + TYPE_WORDS[item.type];          // the shared bar's color names (section 8d)
 }
 /** Which way an arrow points, in eight steps: "right", "down and left"... (y grows downward on the page). */
@@ -4401,6 +4421,8 @@ function renderPage() {
 /** Tell screen readers what is on the page, in one line. */
 function describeBoard() {
   const p = page();
+  // A PDF page's own words, for screen readers (section 8l): the board's description, after its name.
+  $('boardDocText').textContent = docTextWords(p);
   if (presenting) {
     // Presenting: the page's number and title, then what is on it, in reading order (section 8i).
     const words = readingOrder().filter((i) => !i.hidden && !i.decorative).slice(0, 60).map(itemWords);
@@ -4737,6 +4759,12 @@ function wireBoardPointers() {
     e.preventDefault();                              // the page itself never scrolls or zooms here
     // Presenting: the wheel moves page by page (one page per turn, however long the turn).
     if (presenting) {
+      // The magnifier: the wheel (or a trackpad pinch) zooms the glass instead (0.4.2).
+      if (tool === 'magnifier') {
+        const unitW = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+        setLensZoom(lensZoom * Math.exp(-e.deltaY * unitW * (e.ctrlKey ? 0.01 : 0.0015)));   // (a mouse notch: about a sixth more)
+        return;
+      }
       const now = performance.now();
       if (e.ctrlKey || Math.abs(e.deltaY) < 4 || now - wheelAt < 400) { if (Math.abs(e.deltaY) >= 4) wheelAt = now; return; }
       wheelAt = now;
@@ -4773,6 +4801,12 @@ function wireBoardPointers() {
 function startPinch() {
   const [a, b] = [...pointers.values()];
   const r = $('board').getBoundingClientRect();
+  // Presenting with the magnifier: two fingers zoom the glass, not the page (0.4.2).
+  // Swiping up or spreading them zooms in; down or pinching zooms out.
+  if (presenting && tool === 'magnifier') {
+    gesture = { kind: 'pinch', lens: true, dist: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)), midY: (a.y + b.y) / 2, zoom: lensZoom };
+    return;
+  }
   gesture = {
     kind: 'pinch',
     dist: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)),
@@ -4786,6 +4820,11 @@ function movePinch() {
   const r = $('board').getBoundingClientRect();
   const g = gesture;
   const dist = Math.max(1, Math.hypot(b.x - a.x, b.y - a.y));
+  if (g.lens) {
+    pointerAt.x = (a.x + b.x) / 2; pointerAt.y = (a.y + b.y) / 2;   // (the glass sits between the fingers)
+    setLensZoom(g.zoom * (dist / g.dist) * Math.exp((g.midY - pointerAt.y) * 0.01));
+    return;
+  }
   const mid = { x: (a.x + b.x) / 2 - r.left, y: (a.y + b.y) / 2 - r.top };
   const zoom = clamp(g.zoom * dist / g.dist, ZOOM_MIN, ZOOM_MAX);
   const k = (zoom * PX_PER_PT) / (g.zoom * PX_PER_PT);
@@ -4824,7 +4863,7 @@ function startStroke(e) {
     pressure: usesPressure,
     pts: [[round2(pt.x), round2(pt.y), usesPressure ? round2(e.pressure || 0.5) : 0.5]]
   };
-  live = { item, el: null, pointerId: e.pointerId, started: performance.now(), start: item.pts[0] };
+  live = { item, el: null, pointerId: e.pointerId, started: performance.now(), start: item.pts[0], baseSize: item.size };
   gesture = { kind: 'draw' };
   scheduleLiveDraw();
 }
@@ -4843,8 +4882,11 @@ function addPoint(ev, straight) {
   const pressure = live.item.pressure ? clamp(ev.pressure || 0.5, 0, 1) : 0.5;
   const here = [round2(pt.x), round2(pt.y), round2(pressure)];
   if (straight) {
-    // Shift held: a straight line from where the stroke began.
-    live.item.pts = [live.start, here];
+    // Shift held: a straight line from where the stroke began. A highlight that began on
+    // a PDF page's line of text snaps to that line instead, word to word (section 8l).
+    const snap = live.item.type === 'highlight' && page().doc ? snapHighlightToLine(live.start, pt.x) : null;
+    live.item.pts = snap ? snap.pts : [live.start, here];
+    live.item.size = snap ? snap.size : live.baseSize;
     live.lastRaw = null;
     return;
   }
@@ -6321,6 +6363,12 @@ function wirePictures() {
   document.addEventListener('paste', (e) => {
     if (otherDialogOpen() || isTyping(e.target) || !e.clipboardData) return;
     const files = [...e.clipboardData.items].filter((i) => i.kind === 'file' && /^image\//.test(i.type)).map((i) => i.getAsFile()).filter(Boolean);
+    // In the filmstrip (section 8h): a picture becomes a page; otherwise copied pages come back.
+    if (inFilmstrip() && !splashOpen()) {
+      e.preventDefault();
+      if (files.length) openFiles(files); else pastePages();
+      return;
+    }
     if (files.length) { e.preventDefault(); takePictures(files); return; }
     if (splashOpen()) return;                         // (only pictures come in past the splash)
     // No picture: marks copied in WHTBRDR come back, but only while our own
@@ -6657,6 +6705,13 @@ function wireClipboard() {
   // Ctrl/Cmd+C and X: the browser asks the page for something to copy. We
   // keep the copies, and give the clipboard a short note with the one-off code.
   const onCopy = (e, cut) => {
+    // In the filmstrip, Copy and Cut mean the picked pages (section 8h), with a short note on the clipboard.
+    if (!dialogOpen() && !presenting && inFilmstrip() && e.clipboardData) {
+      e.preventDefault();
+      copyPages(cut);
+      e.clipboardData.setData('text/plain', 'WHTBRDR: ' + plural(pageClip ? pageClip.count : 0, 'page'));
+      return;
+    }
     if (dialogOpen() || isTyping(e.target) || editing || !sel.ids.size || !e.clipboardData) return;
     const note = copySelection(cut);
     if (!note) return;
@@ -7027,6 +7082,10 @@ function layersSection() {
 
 /** Draw the rows (only when something they show has changed). */
 function renderLayers() {
+  // The section's count ("4 marks") follows every change, open or closed. (Fixed in 0.4.2: it used to
+  // wait for the Inspector to be drawn again, so it said "0 marks" after drawing on a new page.)
+  const note = document.querySelector('#inspBody [data-sec="layers"] .sec-note');
+  if (note) note.textContent = plural(page().items.length, 'mark');
   if (!settings.open.layers || !layersTree.isConnected) return;
   const all = layerRows(), rows = all.slice(0, LAYER_ROWS_MAX);
   if (!rows.some((r) => r.id === layerFocus)) layerFocus = rows.length ? (rows.find(rowPicked) || rows[0]).id : null;
@@ -7529,6 +7588,54 @@ async function deletePages() {
   toast('Deleted ' + pagesWords(idx) + '. Undo (Ctrl+Z) brings ' + (idx.length === 1 ? 'it' : 'them') + ' back.');
   announce('Deleted ' + pagesWords(idx) + '. Now on page ' + (pageIndex + 1) + ' of ' + board.pages.length);
 }
+/* ---- Copying, cutting and pasting pages (0.4.2, as in DSKEDTR) ----
+   With the keyboard in the filmstrip (or the page pill), Ctrl/Cmd+C copies
+   the picked pages, Ctrl/Cmd+X cuts them (no question asked: they are on
+   the clipboard, and undo brings them back), and Ctrl/Cmd+V pastes them
+   after the page on show, marks, background and all. The pill and the
+   right-click menu have Copy, Cut and Paste too. The copies stay in this
+   tab: PDF pages and pictures point at files only this tab holds. (A
+   picture on the computer's clipboard, pasted in the filmstrip, becomes a
+   page of its own.) */
+let pageClip = null;                 // what was copied: { pages (as JSON text), count }
+/** Copy the picked pages (cut: and take them away). */
+function copyPages(cut) {
+  const idx = pickedPageIndexes();
+  if (cut && idx.length >= board.pages.length) { toast('A board keeps at least one page. Copy it instead (Ctrl+C), or clear it.'); return; }
+  pageClip = { pages: JSON.stringify(idx.map((i) => board.pages[i])), count: idx.length };
+  if (!cut) {
+    filmSig = '';                    // (the filmstrip's buttons are drawn again, so Paste wakes up)
+    renderFilmstrip();
+    toast('Copied ' + pagesWords(idx) + '. Paste (Ctrl+V) puts ' + (idx.length === 1 ? 'it' : 'them') + ' after the page on show.');
+    return;
+  }
+  const firstId = board.pages[idx[0]].id;
+  leavePage();
+  const gone = new Set(idx.map((i) => board.pages[i].id));
+  board.pages = board.pages.filter((pg) => !gone.has(pg.id));
+  pageIndex = clamp(idx[0], 0, board.pages.length - 1);
+  pagePicks = new Set([page().id]);
+  commit('cutting ' + pagesWords(idx), null, { undoPage: firstId, redoPage: page().id });
+  renderAll();
+  toast('Cut ' + pagesWords(idx) + '. Paste (Ctrl+V) puts ' + (idx.length === 1 ? 'it' : 'them') + ' after the page on show.');
+}
+/** Paste copied pages after the page on show (fresh copies each time, with new ids), and pick them. */
+function pastePages() {
+  if (!pageClip) { announce('No pages copied yet'); return; }
+  if (board.pages.length + pageClip.count > MAX_PAGES) { toast('A board holds up to ' + MAX_PAGES + ' pages.'); return; }
+  const copies = JSON.parse(pageClip.pages).map(clonePage);      // (our own text, made by copyPages: safe to read back)
+  const from = page().id, at = pageIndex + 1;
+  leavePage();
+  board.pages.splice(at, 0, ...copies);
+  pageIndex = at;
+  pagePicks = new Set(copies.map((pg) => pg.id));
+  commit('pasting ' + plural(copies.length, 'page'), null, { undoPage: from, redoPage: copies[0].id });
+  renderAll();
+  announce('Pasted ' + plural(copies.length, 'page') + ': ' + (copies.length === 1 ? 'page ' + (at + 1) : 'pages ' + (at + 1) + ' to ' + (at + copies.length)) + ' of ' + board.pages.length);
+}
+/** Is the keyboard in the filmstrip (its pages or the page pill)? Then Copy, Cut and Paste mean pages. */
+const inFilmstrip = () => $('filmstrip').contains(document.activeElement);
+
 /** Move the picked pages one place left (-1) or right (+1). Pages already at that end stay. */
 function movePages(dir) {
   const idx = pickedPageIndexes(), pages = board.pages, shown = page().id;
@@ -7631,6 +7738,9 @@ function renderFilmstrip() {
   };
   setBtn('btnPageAdd', 'Add a page after this one', 'Ctrl+Enter', n >= MAX_PAGES);
   setBtn('btnPageDup', 'Duplicate ' + what, 'Ctrl+Shift+D', n + idx.length > MAX_PAGES);
+  setBtn('btnPageCopy', 'Copy ' + what, 'Ctrl+C', false);
+  setBtn('btnPageCut', 'Cut ' + what, 'Ctrl+X', idx.length >= n);
+  setBtn('btnPagePaste', pageClip ? 'Paste ' + plural(pageClip.count, 'copied page') + ' after ' + (many ? 'page ' + (pageIndex + 1) : 'this one') : 'Paste: copy pages first', 'Ctrl+V', !pageClip || n + pageClip.count > MAX_PAGES);
   setBtn('btnPageOpen', 'Open a PDF or pictures after ' + (many ? 'page ' + (pageIndex + 1) : 'this page'), 'Ctrl+O', n >= MAX_PAGES);
   setBtn('btnPagePresent', 'Present from ' + (many ? 'page ' + (pageIndex + 1) : 'this page'), 'Shift+F5', false);
   setBtn('btnPageLeft', 'Move ' + (many ? 'pages' : 'page') + ' left', 'Alt+Left', atStart);
@@ -7733,6 +7843,9 @@ function wirePagePill() {
   }, true);
   $('btnPagePresent').addEventListener('click', () => { setPagePill(false); startPresent(false); });
   $('btnPageOpen').addEventListener('click', chooseOpen);
+  $('btnPageCopy').addEventListener('click', () => copyPages(false));
+  $('btnPageCut').addEventListener('click', () => { copyPages(true); if (pagePillOpen) $('btnPageCut').focus({ preventScroll: true }); });
+  $('btnPagePaste').addEventListener('click', pastePages);
   // Left and Right along the pill (one Tab stop: the button last used keeps it); Escape closes it.
   pill.addEventListener('keydown', (e) => {
     const btns = pagePillButtons(), i = btns.indexOf(document.activeElement);
@@ -7912,6 +8025,10 @@ function pageMenuEntries() {
     { label: 'Duplicate ' + what, keys: MOD_KEY + '+Shift+D', disabled: n + idx.length > MAX_PAGES, run: duplicatePages },
     { label: 'Open a PDF or pictures after this page', keys: MOD_KEY + '+O', disabled: n >= MAX_PAGES, run: chooseOpen },
     '-',
+    { label: 'Copy ' + what, keys: MOD_KEY + '+C', run: () => copyPages(false) },
+    { label: 'Cut ' + what, keys: MOD_KEY + '+X', disabled: idx.length >= n, run: () => copyPages(true) },
+    { label: pageClip ? 'Paste ' + plural(pageClip.count, 'copied page') : 'Paste pages', keys: MOD_KEY + '+V', disabled: !pageClip || n + pageClip.count > MAX_PAGES, run: pastePages },
+    '-',
     { label: 'Present from this page', keys: 'Shift+F5', run: () => startPresent(false) },
     '-',
     { label: 'Move left', keys: 'Alt+Left', disabled: idx.every((v, k) => v === k), run: () => movePages(-1) },
@@ -7966,6 +8083,11 @@ function pageMenuEntries() {
    words) on each page; the board's name lists what is on the page, in
    reading order.
 
+   EFFECTS (0.4.2): SCRNCSTR's confetti, fireworks and hearts, from the
+   bar's Celebrate menu or Shift+C, Shift+F and Shift+H. The magnifier
+   zooms from 2 to 8 times with the wheel, + and - (with or without Ctrl)
+   or two fingers, and never further out than it starts.
+
    The laser, spotlight and magnifier use the extension's numbers, so they
    feel the same in both. The magnifier draws the page again, larger,
    from its own marks (the extension has to take a screenshot instead).
@@ -7976,7 +8098,8 @@ const LASER_DOT_RADIUS = 7;                       // the laser dot's radius, in 
 const SPOTLIGHT_RADII = { S: 90, M: 140, L: 210 }; // the bright circle, in screen pixels, for each size
 const SPOTLIGHT_DARKNESS = 0.72;                  // how dark the rest gets (0: not at all, 1: black)
 const LENS_RADII = { S: 80, M: 120, L: 170 };     // the magnifying glass, in screen pixels, for each size
-const LENS_ZOOM = { min: 1.5, max: 5, step: 0.5 }; // how much it enlarges
+// How much the magnifier enlarges: it starts at min (2 times), never less (Dave, 0.4.2), up to 8 times.
+const LENS_ZOOM = { min: 2, max: 8, step: 0.5 };
 const FADE_AFTER_MS = 2500;                       // disappearing ink: how long a stroke stays before it fades
 const BAR_IDLE_MS = 2500;                         // the floating bar fades when the mouse is still this long
 
@@ -7986,7 +8109,7 @@ let presenting = false;
 let present = null;
 let presentBar = null;                            // the floating bar (the shared bar, built the first time)
 let presentEls = null;                            // the overlays: { wrap, page, laser, ctx, spot, lens, lensSvg, blank, fade }
-let lensZoom = 2;                                 // the magnifier's enlargement (kept between presentations)
+let lensZoom = LENS_ZOOM.min;                     // the magnifier's enlargement (kept between presentations)
 let lensDirty = true;                             // the magnifier's copy of the page needs drawing again
 const pointerAt = { x: null, y: null };           // where the mouse is (screen pixels), for the laser, spotlight and lens
 let barIdleTimer = 0, wheelAt = 0;
@@ -8008,7 +8131,8 @@ function buildPresent() {
   const laser = el('canvas', { class: 'present-laser', 'aria-hidden': 'true' });
   const spot = el('div', { class: 'present-spot', 'aria-hidden': 'true', hidden: true });
   const lensSvg = svgEl('svg', { class: 'present-lens-svg', preserveAspectRatio: 'xMidYMid slice', 'aria-hidden': 'true', focusable: 'false' });
-  const lens = el('div', { class: 'present-lens', 'aria-hidden': 'true', hidden: true }, lensSvg);
+  const lensBadge = el('span', { class: 'present-lens-badge', hidden: true });      // its zoom, for a moment, while it changes
+  const lens = el('div', { class: 'present-lens', 'aria-hidden': 'true', hidden: true }, lensSvg, lensBadge);
   const blank = el('div', { class: 'present-blank', 'aria-hidden': 'true', hidden: true });
   // The page's number in the bar ("3 / 12"; its buttons say it in words).
   const pageNum = el('span', { class: 'present-num', 'aria-hidden': 'true' });
@@ -8016,10 +8140,13 @@ function buildPresent() {
   const fadeBtn = btn('Disappearing ink: strokes fade after a few seconds', 'fade', () => setDisappearing(!present.disappearing));
   fadeBtn.setAttribute('aria-pressed', 'false');
   const fullBtn = btn('Full screen (F)', 'fit', () => toggleFullScreen());
+  // Celebrate (0.4.2): a small menu of SCRNCSTR's effects.
+  const fxBtn = btn('Celebrate: confetti, fireworks or hearts (Shift+C, F, H)', 'party', () => openEffectsMenu(fxBtn));
+  fxBtn.setAttribute('aria-haspopup', 'menu');
   fullBtn.setAttribute('aria-pressed', 'false');
   const groups = [
     el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Ink' }, fadeBtn,
-      btn('Undo (Ctrl+Z)', 'undo', () => stepHistory(-1))),
+      btn('Undo (Ctrl+Z)', 'undo', () => stepHistory(-1)), fxBtn),
     el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Pages' },
       btn('Page before (Left)', 'chevronLeft', () => presentStep(-1)), pageNum,
       btn('Next page (Right)', 'chevronRight', () => presentStep(1))),
@@ -8049,7 +8176,7 @@ function buildPresent() {
   viewG.append(fade);
   wrap.append(laser, spot, lens, presentBar.root, blank);
   document.body.append(wrap);
-  presentEls = { wrap, laser, ctx: laser.getContext('2d'), spot, lens, lensSvg, blank, fade };
+  presentEls = { wrap, laser, ctx: laser.getContext('2d'), spot, lens, lensSvg, lensBadge, blank, fade };
 
   // The bar stays while the mouse is over it or the keyboard is in it.
   presentBar.root.addEventListener('focusin', () => wakeBar());
@@ -8144,6 +8271,8 @@ async function stopPresent() {
   cancelObjectGesture();
   setBlank(null, true);
   clearFadeInk();
+  clearEffects();                                    // (confetti and the rest stop with it)
+  closeMenu(true);
   leaveFullScreen();
   document.body.classList.remove('presenting');
   presentEls.wrap.hidden = true;
@@ -8335,9 +8464,7 @@ function drawLens() {
   presentEls.lensSvg.setAttribute('viewBox', [pt.x - half, pt.y - half, half * 2, half * 2].map(round2).join(' '));
 }
 function changeLensZoom(dir) {
-  lensZoom = clamp(lensZoom + dir * LENS_ZOOM.step, LENS_ZOOM.min, LENS_ZOOM.max);
-  drawLens();
-  announce('Magnified ' + lensZoom + ' times');
+  setLensZoom(lensZoom + dir * LENS_ZOOM.step);      // (+ and -: half a step at a time; setLensZoom is below)
 }
 /** After a tool change while presenting: show or hide the spotlight and lens, and clear the laser's dot. */
 function presentToolChanged() {
@@ -8346,6 +8473,244 @@ function presentToolChanged() {
   drawLens();
   if (tool !== 'laser') { laserTrail.dot = null; if (!laserTrail.animating) drawLaser(); }
   document.body.classList.remove('present-idle');
+}
+
+/* ---- Effects while presenting (0.4.2): confetti, fireworks and hearts ----
+   SCRNCSTR's three celebrations, the same shapes, colors and physics, drawn
+   over the page on one canvas: the Celebrate button on the floating bar (a
+   small menu), or Shift+C, Shift+F and Shift+H. (Plain F and H already mean
+   full screen and the highlighter.) Nothing is drawn, and no time is spent,
+   when no effect is running.
+   - SCRNCSTR's numbers are per frame at 30 frames a second. Here each step
+     is scaled by the real time since the last frame, so a 60 or 120 Hz
+     screen shows the same speed, only smoother.
+   - Reduced motion (the device's "reduce motion" setting): no movement.
+     The effect is worked out ahead to a moment mid-way, shown still, and
+     faded away over a second and a half.
+   - Fireworks are small bright sparks, never a flash of the whole screen
+     (the shells are staggered, so there is no single burst of light). */
+const FX_FRAME_MS = 1000 / 30;               // the length of one of SCRNCSTR's frames
+const FX_STILL_MS = 1500;                    // reduced motion: how long the still picture fades over
+const CONFETTI_COLORS = ['#0046AD', '#f45922', '#305305', '#ffc53d', '#e8467c', '#22b8cf'];
+const FIREWORK_COLORS = ['#ffd23f', '#ff5a5f', '#4dabf7', '#69db7c', '#e599f7', '#ffa94d', '#ffffff'];
+const HEART_COLORS = ['#ff4d6d', '#ff5f8f', '#e8467c', '#ff85a1', '#ffa8c0'];
+// Everything running: three lists of particles (positions are fractions of the screen, so they fit
+// any size), a clock that only moves while frames are drawn, and the canvas.
+const fx = { confetti: [], fireworks: [], hearts: [], clock: 0, last: 0, raf: 0, still: 0, canvas: null, ctx: null };
+const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const pickColor = (list) => list[(Math.random() * list.length) | 0];
+
+/** Start one of the effects: 'confetti', 'fireworks' or 'hearts'. */
+function startEffect(kind) {
+  if (!presenting || !presentEls) return;
+  if (kind === 'confetti') addConfetti(); else if (kind === 'fireworks') addFireworks(); else addHearts();
+  announce(kind === 'confetti' ? 'Confetti.' : kind === 'fireworks' ? 'Fireworks.' : 'Hearts.');
+  if (reduceMotion()) {
+    // No movement: work the effect out to a moment mid-way (without drawing), then show it still.
+    const frames = kind === 'confetti' ? 40 : kind === 'fireworks' ? 42 : 70;
+    for (let i = 0; i < frames; i++) { fx.clock += FX_FRAME_MS; updateEffects(1); }
+    fx.still = performance.now();
+  } else fx.still = 0;
+  if (!fx.raf) { fx.last = performance.now(); fx.raf = requestAnimationFrame(effectsFrame); }
+}
+/** Stop and clear every effect (when presenting stops). */
+function clearEffects() {
+  if (fx.raf) cancelAnimationFrame(fx.raf);
+  fx.raf = 0;
+  fx.confetti = []; fx.fireworks = []; fx.hearts = []; fx.still = 0;
+  if (fx.ctx) fx.ctx.clearRect(0, 0, fx.canvas.width, fx.canvas.height);
+}
+
+/* The three, as SCRNCSTR makes them. */
+function addConfetti(count = 150) {
+  for (let i = 0; i < count; i++) {
+    fx.confetti.push({ x: 0.1 + Math.random() * 0.8, y: -0.05 - Math.random() * 0.25,
+      vx: (Math.random() - 0.5) * 0.0016, vy: 0.0016 + Math.random() * 0.0028,
+      spin: (Math.random() - 0.5) * 0.32, angle: Math.random() * Math.PI * 2,
+      w: 0.006 + Math.random() * 0.008, ratio: 0.4 + Math.random() * 0.9, color: pickColor(CONFETTI_COLORS), born: fx.clock });
+  }
+}
+function addFireworks(shells = 5) {
+  for (let i = 0; i < shells; i++) {
+    fx.fireworks.push({ kind: 'shell', x: 0.12 + Math.random() * 0.76, y: 1.04,
+      vy: -(0.0320 + Math.random() * 0.0080),          // about 0.8 seconds to the top
+      burstAt: 0.30 + Math.random() * 0.22,           // bursts in the middle band, not at the ceiling
+      color: pickColor(FIREWORK_COLORS),
+      readyAt: fx.clock + i * (70 + Math.random() * 110) });   // staggered: a display, not one flash
+  }
+}
+/** A shell bursts into a ring of sparks (a little uneven, so it reads as an explosion). */
+function burstShell(s, out) {
+  const n = 38 + ((Math.random() * 18) | 0), speed = 0.0048 + Math.random() * 0.0028;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.random() * 0.16, v = speed * (0.55 + Math.random() * 0.65);
+    out.push({ kind: 'spark', x: s.x, y: s.y, px: s.x, py: s.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.72,
+      color: s.color, born: fx.clock, life: 850 + Math.random() * 700 });
+  }
+}
+function addHearts(count = 28) {
+  for (let i = 0; i < count; i++) {
+    fx.hearts.push({ x: 0.05 + Math.random() * 0.90, y: 1.06 + Math.random() * 0.34,   // from below, spread out
+      vy: -(0.0105 + Math.random() * 0.0055), size: 0.030 + Math.random() * 0.036,
+      sway: 0.010 + Math.random() * 0.024, rate: 0.0012 + Math.random() * 0.0016,
+      phase: Math.random() * Math.PI * 2, tilt: (Math.random() - 0.5) * 0.5, color: pickColor(HEART_COLORS) });
+  }
+}
+
+/** Move everything on by f frames' worth (f is 1 for one of SCRNCSTR's frames), and let go of what has left. */
+function updateEffects(f) {
+  const now = fx.clock;
+  fx.confetti = fx.confetti.filter((p) => {
+    p.vy += 0.000045 * f;                                       // gravity
+    p.vx += Math.sin((now - p.born) / 320 + p.angle) * 0.000018 * f;   // flutter
+    p.x += p.vx * f; p.y += p.vy * f; p.angle += p.spin * f;
+    return p.y <= 1.15;                                         // fallen off the bottom
+  });
+  const fw = [];
+  for (const p of fx.fireworks) {
+    if (p.kind === 'shell') {
+      if (now < p.readyAt) { fw.push(p); continue; }
+      p.py = p.y;
+      p.y += p.vy * f; p.vy += 0.00042 * f;                     // gravity slows the climb
+      if (p.y <= p.burstAt || p.vy >= 0) burstShell(p, fw); else fw.push(p);
+      continue;
+    }
+    if (now - p.born > p.life) continue;
+    p.px = p.x; p.py = p.y;
+    p.vy += 0.000085 * f;                                       // gravity
+    const drag = Math.pow(0.972, f);                            // air: sparks hang, then drop
+    p.vx *= drag; p.vy *= drag;
+    p.x += p.vx * f; p.y += p.vy * f;
+    if (p.y <= 1.2) fw.push(p);
+  }
+  fx.fireworks = fw;
+  fx.hearts = fx.hearts.filter((p) => { p.y += p.vy * f; return p.y >= -0.12; });   // off the top
+}
+
+/** One frame: move on (unless showing still), then draw. Stops itself when nothing is left. */
+function effectsFrame(t) {
+  const dt = Math.min(100, t - fx.last);                        // (a long pause, like a hidden tab, isn't a jump)
+  fx.last = t;
+  let alpha = 1;
+  if (fx.still) {
+    alpha = 1 - (t - fx.still) / FX_STILL_MS;
+    if (alpha <= 0) { clearEffects(); return; }
+  } else {
+    fx.clock += dt;
+    updateEffects(dt / FX_FRAME_MS);
+  }
+  drawEffects(alpha);
+  if (!fx.confetti.length && !fx.fireworks.length && !fx.hearts.length) { clearEffects(); return; }
+  fx.raf = requestAnimationFrame(effectsFrame);
+}
+/** Draw every particle (alpha: how faded everything is, for the reduced-motion still). */
+function drawEffects(alpha) {
+  if (!fx.canvas) {
+    fx.canvas = el('canvas', { class: 'present-fx', 'aria-hidden': 'true' });
+    fx.ctx = fx.canvas.getContext('2d');
+    presentEls.wrap.append(fx.canvas);
+  }
+  const W = window.innerWidth, H = window.innerHeight, dpr = window.devicePixelRatio || 1;
+  if (fx.canvas.width !== Math.round(W * dpr) || fx.canvas.height !== Math.round(H * dpr)) {
+    fx.canvas.width = Math.round(W * dpr); fx.canvas.height = Math.round(H * dpr);
+    fx.canvas.style.width = W + 'px'; fx.canvas.style.height = H + 'px';
+  }
+  const ctx = fx.ctx, now = fx.clock, unit = Math.max(1, W * 0.001);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  // Confetti: little squares of paper, squashed as they spin so they read as tumbling.
+  for (const p of fx.confetti) {
+    const w = p.w * W, h = w * p.ratio;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(p.x * W, p.y * H);
+    ctx.rotate(p.angle);
+    ctx.scale(Math.max(0.15, Math.abs(Math.cos(p.angle * 0.7))), 1);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+  // Fireworks: glowing streaks (light adds to light where sparks cross).
+  if (fx.fireworks.length) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    for (const p of fx.fireworks) {
+      if (p.kind === 'shell') {
+        if (now < p.readyAt) continue;
+        ctx.globalAlpha = 0.55 * alpha; ctx.strokeStyle = p.color; ctx.lineWidth = unit * 2.6;
+        ctx.beginPath(); ctx.moveTo(p.x * W, (p.py != null ? p.py : p.y) * H + unit * 14); ctx.lineTo(p.x * W, p.y * H); ctx.stroke();
+        ctx.globalAlpha = alpha; ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(p.x * W, p.y * H, unit * 1.8, 0, Math.PI * 2); ctx.fill();
+        continue;
+      }
+      const age = now - p.born, t = age / p.life;
+      const a = (t < 0.5 ? 1 : 1 - (t - 0.5) / 0.5) * alpha;    // full brightness for half its life, then away
+      const flick = 0.78 + 0.22 * Math.sin(age / 42 + p.vx * 900);   // dying sparks twinkle
+      const x = p.x * W, y = p.y * H, x0 = p.px * W, y0 = p.py * H;
+      ctx.strokeStyle = p.color;
+      ctx.globalAlpha = a * 0.22 * flick; ctx.lineWidth = unit * 7;                 // the glow
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x, y); ctx.stroke();
+      ctx.globalAlpha = a * flick; ctx.lineWidth = unit * 2.4 * (1 - t * 0.4);     // the streak
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x, y); ctx.stroke();
+      if (t < 0.55) {                                                               // a white-hot head
+        ctx.globalAlpha = a * 0.9; ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(x, y, unit * 1.5 * (1 - t), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+  // Hearts: drifting up and swaying, fading over the top fifth of the screen.
+  for (const p of fx.hearts) {
+    const drift = Math.sin(now * p.rate + p.phase) * p.sway;
+    const a = p.y > 0.2 ? 1 : Math.max(0, p.y + 0.12) / 0.32;
+    ctx.save();
+    ctx.globalAlpha = a * alpha;
+    ctx.translate((p.x + drift) * W, p.y * H);
+    ctx.rotate(Math.sin(now * p.rate + p.phase) * 0.22 + p.tilt);
+    ctx.fillStyle = p.color;
+    const s = p.size * W, w = s / 2, h = s * 0.92;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.46);
+    ctx.bezierCurveTo(-w * 1.9, -h * 0.28, -w * 0.86, -h * 0.98, 0, -h * 0.34);
+    ctx.bezierCurveTo(w * 0.86, -h * 0.98, w * 1.9, -h * 0.28, 0, h * 0.46);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+/** The Celebrate button's menu (on the floating bar). */
+function openEffectsMenu(btn) {
+  const r = btn.getBoundingClientRect();
+  openMenu(r.left, r.top - 150, [
+    { label: 'Confetti', keys: 'Shift+C', run: () => startEffect('confetti') },
+    { label: 'Fireworks', keys: 'Shift+F', run: () => startEffect('fireworks') },
+    { label: 'Hearts', keys: 'Shift+H', run: () => startEffect('hearts') }
+  ]);
+}
+
+/* ---- The magnifier's zoom (0.4.2) ----
+   It starts at 2 times, and that is also as far out as it goes (Dave: a good
+   zoom level, never less). In: the mouse wheel up, + (or Ctrl and +), or two
+   fingers swiping up or spreading apart. Out again: wheel down, -, or the
+   fingers the other way. Ctrl+0 (or 0) goes back to the start. While it
+   changes, the lens shows its zoom ("3x") for a moment. */
+let lensBadgeTimer = 0, lensSayTimer = 0;
+/** Set the magnifier's zoom (kept between LENS_ZOOM.min and max), and show it. */
+function setLensZoom(z) {
+  const was = lensZoom;
+  lensZoom = clamp(Math.round(z * 10) / 10, LENS_ZOOM.min, LENS_ZOOM.max);
+  drawLens();
+  const badge = presentEls && presentEls.lensBadge;
+  if (badge) {
+    badge.textContent = fmtNum(lensZoom) + 'x';
+    badge.hidden = false;
+    clearTimeout(lensBadgeTimer);
+    lensBadgeTimer = setTimeout(() => { badge.hidden = true; }, 1000);
+  }
+  // Said once it settles, not at every step of a wheel turn.
+  clearTimeout(lensSayTimer);
+  lensSayTimer = setTimeout(() => announce(lensZoom === LENS_ZOOM.min && was <= lensZoom ? 'Magnified ' + fmtNum(lensZoom) + ' times, as far out as it goes' : 'Magnified ' + fmtNum(lensZoom) + ' times'), 250);
 }
 
 /* ---- Keys while presenting ----
@@ -8359,7 +8724,14 @@ function presentKeys(e) {
   if (present.blank) { done(); setBlank(null); return; }
   // In the floating bar, the bar's own keys move along it (and Enter or Space press a button).
   if (presentBar.root.contains(e.target) && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Enter', ' ', 'Tab'].includes(k)) return;
+  if ($('ctxMenu').contains(e.target)) return;      // (the Celebrate menu keeps its own keys)
   if (mod) {
+    // The magnifier: Ctrl and + or - zoom it (instead of the browser's zoom); Ctrl+0 goes back to the start.
+    if (tool === 'magnifier' && ['+', '=', '-', '_', '0'].includes(k)) {
+      done();
+      if (k === '0') setLensZoom(LENS_ZOOM.min); else changeLensZoom(k === '-' || k === '_' ? -1 : 1);
+      return;
+    }
     // Undo and redo still work; the app's other Ctrl keys (new page, copy...) don't, while presenting.
     const l = k.toLowerCase();
     if (l === 'z' && !e.shiftKey) { done(); stepHistory(-1); return; }
@@ -8373,6 +8745,11 @@ function presentKeys(e) {
     if (cancelObjectGesture()) return;
     presentEscape();                                  // (a drawing tool: back to the Pointer; the Pointer: stop)
     return;
+  }
+  // Effects (0.4.2): Shift+C confetti, Shift+F fireworks, Shift+H hearts.
+  if (e.shiftKey && !e.altKey) {
+    const fxKey = { c: 'confetti', f: 'fireworks', h: 'hearts' }[k.toLowerCase()];
+    if (fxKey) { done(); startEffect(fxKey); return; }
   }
   // F: full screen again (after leaving it), or out of it.
   if ((k === 'f' || k === 'F') && !e.shiftKey) { done(); toggleFullScreen(); return; }
@@ -9055,6 +9432,8 @@ function stepToolRows() {
    - A password-locked PDF asks for its password in a dialog. It goes
      straight to pdf.js and is never kept (the field is emptied at once).
    - Limits: 100 MB a file, and the board's 500 pages.
+   The PDF's words (highlights that quote them, screen readers, Shift to
+   snap a highlight to a line) are at the end of this section (0.4.2).
    ===================================================================== */
 
 /* PDFJS-LIBRARY-START (build-offline.py changes only the edition line below) */
@@ -9541,6 +9920,192 @@ function docPageSection() {
     el('p', { class: 'hint', text: 'The PDF is under everything you draw: it can\'t be picked, moved or erased. Lines or a grid from Background go over it.' })
   ];
   return section('page', 'Page', 'PDF page ' + (d.index + 1), ...rows);
+}
+
+/* ---- The PDF's words (0.4.2) ----
+   pdf.js can read the text a PDF holds (not a scan: a scanned page is only
+   a picture of words). WHTBRDR reads it for each PDF page on show, once,
+   and uses it three ways:
+   - A HIGHLIGHT OVER PDF TEXT QUOTES IT: "Yellow highlight on: the
+     mitochondria is the powerhouse". The quote is worked out from where the
+     highlight is, every time it is asked for, so moving a highlight to
+     other words changes its quote. (It is never stored in the board.)
+   - SCREEN READERS hear the page's words (the board's description), as
+     well as what is drawn on it.
+   - SHIFT SNAPS A HIGHLIGHT TO A LINE OF TEXT: with the highlighter, hold
+     Shift over PDF text and the stroke runs straight along that line, as
+     tall as its letters, from the first word to the last one it reaches.
+   pdf.js gives the text in "runs" (a few words in one font), with where each
+   run starts and how wide it is. The letters' places inside a run are worked
+   out by sharing its width out evenly: close enough to tell which words a
+   highlight covers. Everything read from a PDF is only ever shown as plain
+   text (textContent), and is capped in length. */
+const DOC_TEXT_MAX = 4000;                   // the most of a page's words given to screen readers
+const QUOTE_MAX = 160;                       // the longest quote in a highlight's description
+const docTexts = new Map();                  // "src|index|rot" -> { words, lines, text } (or { pending } while being read)
+const quoteCache = new Map();                // a highlight's place -> its quote (so lists don't work it out again and again)
+
+/**
+ * A PDF page's words, if they have been read: { words, lines, text }. The
+ * first time, they are asked for, and null comes back until they arrive.
+ *   words: [{ text, x0, x1, base, h, horiz, centers: [[x, y], ...] }]
+ *          in the PDF's own order (usually reading order); centers are the
+ *          middles of the word's letters, in page points
+ *   lines: [{ base, h, words: [...] }] the straight-across lines, top first
+ *   text:  the page's words as one string
+ */
+function docTextFor(pg) {
+  if (!pg || !pg.doc) return null;
+  const key = docKey(pg.doc);
+  const have = docTexts.get(key);
+  if (have) return have.pending || have.failed ? null : have;
+  const job = readDocText(pg.doc).then((t) => {
+    docTexts.set(key, t);
+    quoteCache.clear();
+    docTextArrived(key);
+  }).catch(() => docTexts.set(key, { failed: true }));
+  docTexts.set(key, { pending: job });
+  return null;
+}
+/** Read one PDF page's words with pdf.js, in WHTBRDR page points (turned as the page is). */
+async function readDocText(d) {
+  const stored = docStore.get(d.src);
+  if (!stored) throw new Error('gone');
+  const lib = await loadPdfjs();
+  const pp = await stored.pdf.getPage(d.index + 1);
+  const k = d.k || 1;
+  const vp = pp.getViewport({ scale: k, rotation: (pp.rotate + (d.rot || 0)) % 360 });
+  const content = await pp.getTextContent();
+  const words = [], parts = [];
+  for (const run of content.items) {
+    if (typeof run.str !== 'string') continue;            // (a marker, not text)
+    parts.push(run.str, run.hasEOL ? '\n' : ' ');
+    if (!run.str.trim()) continue;
+    // Where the run is on the page: its start on the baseline, which way it reads, and which way is up.
+    const t = lib.Util.transform(vp.transform, run.transform);
+    const h = Math.hypot(t[2], t[3]);                      // the letters' height (the font size), in points
+    const len = (run.width || 0) * k;                      // the run's length along the line, in points
+    if (h < 0.5 || len <= 0) continue;
+    const ux = t[0] / Math.hypot(t[0], t[1]), uy = t[1] / Math.hypot(t[0], t[1]);   // along the line
+    const vx = t[2] / h, vy = t[3] / h;                    // up the letters (on the page, up is toward smaller y)
+    const step = len / run.str.length;                     // one letter's share of the run
+    const at = (d0, up) => [t[4] + ux * d0 + vx * up, t[5] + uy * d0 + vy * up];
+    const horiz = Math.abs(uy) < 0.05 && ux > 0;           // straight across, left to right (Shift can snap to these)
+    const re = /\S+/g;
+    let m;
+    while ((m = re.exec(run.str))) {
+      const i = m.index, j = i + m[0].length;
+      const centers = [];
+      for (let c = i; c < j; c++) centers.push(at((c + 0.5) * step, h * 0.35));
+      words.push({ text: m[0], x0: t[4] + i * step, x1: t[4] + j * step, base: t[5], h, horiz, centers });
+    }
+  }
+  // The lines, for Shift: straight-across words whose baselines are within a third of a letter of each other.
+  const lines = [];
+  for (const w of words.filter((x) => x.horiz).sort((a, b) => a.base - b.base || a.x0 - b.x0)) {
+    const line = lines.find((l) => Math.abs(l.base - w.base) < l.h * 0.33 && Math.abs(l.h - w.h) < l.h * 0.5);
+    if (line) line.words.push(w); else lines.push({ base: w.base, h: w.h, words: [w] });
+  }
+  for (const l of lines) l.words.sort((a, b) => a.x0 - b.x0);
+  const text = parts.join('').replace(/[ \t ]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
+  return { words, lines, text };
+}
+/** Words arrived for a PDF page: tell screen readers, and the layers list and status bar, if it is on show. */
+function docTextArrived(key) {
+  const p = page();
+  if (!p.doc || docKey(p.doc) !== key) return;
+  describeBoard();
+  layersSig = '';
+  renderLayers();
+  renderStatus();
+}
+/** The page a mark is on (usually the page on show). */
+function pageOfItem(it) {
+  const p = page();
+  if (p.items.includes(it)) return p;
+  return board.pages.find((pg) => pg.items.includes(it)) || null;
+}
+/** How far a point is from a line through the points (in page points). */
+function distToPolyline(x, y, pts) {
+  if (pts.length === 1) return Math.hypot(x - pts[0][0], y - pts[0][1]);
+  let best = Infinity;
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+    const s = l2 ? clamp(((x - ax) * dx + (y - ay) * dy) / l2, 0, 1) : 0;
+    best = Math.min(best, Math.hypot(x - (ax + s * dx), y - (ay + s * dy)));
+  }
+  return best;
+}
+/**
+ * The PDF words under a highlight: "the mitochondria is the powerhouse", or
+ * '' when it covers none (or the page isn't a PDF page, or its words haven't
+ * arrived yet). A word counts when the highlight covers at least half its letters.
+ */
+function highlightQuote(it) {
+  if (it.type !== 'highlight' || !it.pts || !it.pts.length) return '';
+  const pg = pageOfItem(it), t = pg && docTextFor(pg);
+  if (!t || !t.words.length) return '';
+  const first = it.pts[0], last = it.pts[it.pts.length - 1];
+  const cacheKey = docKey(pg.doc) + '|' + it.id + '|' + it.pts.length + '|' + first[0] + ',' + first[1] + '|' + last[0] + ',' + last[1] + '|' + it.size;
+  if (quoteCache.has(cacheKey)) return quoteCache.get(cacheKey);
+  const reach = it.size / 2;
+  // A quick box round the highlight first, so only nearby words are measured.
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of it.pts) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); }
+  const out = [];
+  for (const w of t.words) {
+    const pad = reach + w.h * 0.15;
+    if (!w.centers.some(([x, y]) => x >= minX - pad && x <= maxX + pad && y >= minY - pad && y <= maxY + pad)) continue;
+    const covered = w.centers.filter(([x, y]) => distToPolyline(x, y, it.pts) <= pad).length;
+    if (covered * 2 >= w.centers.length) out.push(w.text);
+  }
+  let quote = out.join(' ').replace(/\s+/g, ' ').trim();
+  if (quote.length > QUOTE_MAX) quote = quote.slice(0, QUOTE_MAX - 3).replace(/\s+\S*$/, '') + '...';
+  if (quoteCache.size > 2000) quoteCache.clear();
+  quoteCache.set(cacheKey, quote);
+  return quote;
+}
+/**
+ * Shift with the highlighter, over a PDF page's text: a straight stroke along
+ * the line under where it started, from the first word to the word under the
+ * pointer (either way), as tall as the letters. Gives the stroke's two points
+ * and size, or null where there is no line of text (then Shift just draws a
+ * straight line, as everywhere else).
+ */
+function snapHighlightToLine(start, x) {
+  const t = docTextFor(page());
+  if (!t || !t.lines.length) return null;
+  // The line under the start: the stroke began on its letters (or within a little of them).
+  // Where two lines are that close, the one whose middle is nearest wins.
+  const mid = (l) => l.base - l.h * 0.35;
+  const line = t.lines.filter((l) => start[1] <= l.base + l.h * 0.3 && start[1] >= l.base - l.h * 1.05
+    && start[0] >= l.words[0].x0 - l.h && start[0] <= l.words[l.words.length - 1].x1 + l.h)
+    .sort((a, b) => Math.abs(start[1] - mid(a)) - Math.abs(start[1] - mid(b)))[0];
+  if (!line) return null;
+  // The word at (or nearest) a place along the line.
+  const wordAt = (px) => line.words.reduce((best, w) => {
+    const d = px < w.x0 ? w.x0 - px : px > w.x1 ? px - w.x1 : 0;
+    return d < best.d ? { w, d } : best;
+  }, { w: line.words[0], d: Infinity }).w;
+  const a = wordAt(start[0]), b = wordAt(x);
+  const left = Math.min(a.x0, b.x0), right = Math.max(a.x1, b.x1);
+  const lim = SIZE_LIMITS.highlighter;
+  const size = round2(clamp(line.h * 1.15, lim[0], lim[1]));
+  // The middle of the letters; the ends tucked in a little, since a highlight has round ends.
+  const y = round2(line.base - line.h * 0.3), tuck = Math.min(size * 0.35, (right - left) / 2);
+  const x0 = round2(left + tuck), x1 = round2(Math.max(left + tuck, right - tuck));
+  const fromRight = x < start[0];
+  return { pts: fromRight ? [[x1, y, 0.5], [x0, y, 0.5]] : [[x0, y, 0.5], [x1, y, 0.5]], size };
+}
+/** What screen readers hear of a PDF page's words (the board's description). */
+function docTextWords(pg) {
+  if (!pg.doc) return '';
+  const t = docTextFor(pg);
+  if (!t) return '';
+  if (!t.text) return 'This PDF page has no words a screen reader can read. It may be a scan: a picture of a page.';
+  const words = t.text.replace(/\s+/g, ' ');
+  return 'The PDF page reads: ' + (words.length > DOC_TEXT_MAX ? words.slice(0, DOC_TEXT_MAX).replace(/\s+\S*$/, '') + '... (the rest is longer than a description can hold)' : words);
 }
 
 /* ---- Wiring: the Open button, its file chooser, drops on the filmstrip, the Office dialog ---- */
@@ -10324,11 +10889,13 @@ const HELP_KEYS = [
   ['Presenting: F', 'Full screen on or off (presenting carries on)'],
   ['Presenting: Right, Space, Page Down, Enter', 'Next page (Left, Page Up, Backspace: the page before; Home and End: the ends)'],
   ['Presenting: a number, then Enter', 'Go to that page'],
-  ['Presenting: K, S, M', 'Laser pointer, spotlight, magnifying glass (+ and - zoom it)'],
+  ['Presenting: K, S, M', 'Laser pointer, spotlight, magnifying glass (+ and -, Ctrl and + or -, or the mouse wheel zoom it, from 2 to 8 times)'],
+  ['Presenting: Shift+C, Shift+F, Shift+H', 'Confetti, fireworks, hearts (also the Celebrate button on the bar)'],
   ['Presenting: B or W', 'A black or white screen (any key brings the page back)'],
   ['Ctrl+Enter', 'Add a page after this one (the same size and color)'],
   ['Ctrl+Shift+D', 'Duplicate the picked pages, marks and all'],
-  ['Filmstrip: Tab from the pages', 'The page pill: move, present, open, duplicate, delete (Left and Right along it, Escape closes it)'],
+  ['Filmstrip: Tab from the pages', 'The page pill: move, present, open, duplicate, copy, cut, paste, delete (Left and Right along it, Escape closes it)'],
+  ['Filmstrip: Ctrl+C / Ctrl+X / Ctrl+V', 'Copy, cut and paste the picked pages (pasted after the page on show)'],
   ['Filmstrip: Left / Right, Home / End', 'Go to the page before or after, or the first or last (Shift: pick the pages on the way)'],
   ['Filmstrip: Alt+Left / Alt+Right', 'Move the picked pages'],
   ['Filmstrip: Ctrl+click, Shift+click', 'Pick pages one at a time, or a run of them'],
@@ -10753,6 +11320,15 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.4.2', date: '2026-10-20', notes: [
+    'Highlights quote the PDF words under them: "Yellow highlight on: the water cycle", in the layers list and for screen readers. Move a highlight and its quote follows.',
+    'Hold Shift with the highlighter over a PDF\'s text and the highlight snaps to that line, word to word, as tall as the letters (as in a PDF reader). Off the text, Shift still draws a straight line.',
+    'Screen readers hear a PDF page\'s own words, not just "page 3 of worksheet.pdf". A scanned page (a picture of words) says so.',
+    'Present mode: confetti, fireworks and hearts, as in SCRNCSTR, from the new Celebrate button on the bar, or Shift+C, Shift+F and Shift+H. With reduced motion turned on, each shows as a still picture that fades.',
+    'The magnifying glass zooms further, from 2 times up to 8, with the mouse wheel, + and - (with or without Ctrl), or two fingers swiping up or spreading. It never goes further out than it starts; Ctrl+0 goes back.',
+    'Copy, cut and paste pages: Ctrl+C, X and V in the filmstrip, or the page pill\'s new buttons and the right-click menu. Pasted pages go after the page on show. A picture pasted in the filmstrip becomes a page.',
+    'Fixed: the Layers section\'s count ("4 marks") now keeps up with drawing; it said "0 marks" until the Inspector was drawn again.'
+  ] },
   { version: '0.4.1', date: '2026-10-20', notes: [
     'The page pill, as in DSKEDTR: click or tap a page in the filmstrip and a small pill of buttons opens above it: move left, move right, present from this page, open a PDF or pictures after it, duplicate, and delete. They act on every picked page and say how many.',
     'From the keyboard, Tab from the pages reaches the pill (it opens when you come into the filmstrip); Left and Right move along it, and Escape closes it. A button that can\'t act right now is grayed but stays in reach.',

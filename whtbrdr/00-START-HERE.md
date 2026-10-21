@@ -51,8 +51,14 @@
 > `_edtr-suite/paste_whtbrdr_bar.py`, rebuild too.
 >
 > **Then 0.4.1:** the page pill over the filmstrip, DSKEDTR's look and
-> feel (section 8h). Waiting for Dave's review of 0.4.1; next is 0.4.2
-> (highlights that quote the PDF's words).
+> feel (section 8h).
+>
+> **Then 0.4.2:** highlights that quote the PDF's words, the words for
+> screen readers, Shift to snap a highlight to a line (end of section
+> 8l); Present's Celebrate effects and a stronger magnifier (section 8i);
+> copy, cut and paste pages (section 8h). That finishes milestone 4.
+> Waiting for Dave's review of 0.4.2; next is milestone 5 (files and
+> export).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**
