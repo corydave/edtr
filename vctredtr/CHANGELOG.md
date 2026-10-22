@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.16.3 - 2026-10-22 - Two new apps in the family
+
+- Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen's row of apps and in Help > More apps. ANIMEDTR joins the list too, the apps are in A to Z order, and the splash row marks the app you are in with "You are here".
+- The shared SUITE block was pasted in again from `_edtr-suite`: TELEDTR and WHTBRDR in `SUITE_APPS` (TELEDTR with `ink`, the drawing colour for a light tile), their icons in `SUITE_MARKS`, and a 6 + 6 splash grid (4 + 4 + 4 on a phone).
+
 ## 0.16.2 - 2026-10-21 - Renaming layers works again
 
 - **Double-click a layer's name to rename it** (double-tap on a touch screen). It had stopped working: the first click picks the shape, which rebuilds the Layers list, so the browser's double-click never reached a row. The list now spots two clicks on the same row within 450 ms itself (`lastLayerClick`, `DOUBLE_CLICK_MS`). F2 on a focused row still renames from the keyboard, Enter saves and Escape cancels.
