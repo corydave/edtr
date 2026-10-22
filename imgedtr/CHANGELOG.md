@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.23.1 - 2026-10-22 - Two new apps in the family
+
+- Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen's row of apps and in Help > More apps.
+- The shared SUITE block was pasted in again from `_edtr-suite`: TELEDTR and WHTBRDR in `SUITE_APPS` (TELEDTR with `ink`, the drawing colour for a light tile), their icons in `SUITE_MARKS`, and a 6 + 6 splash grid (4 + 4 + 4 on a phone).
+
 ## 1.23.0 - 2026-10-18 - Make it a screenshot
 
 - **Make it a screenshot**, one click for a pasted picture: it rounds the corners (15 px), adds a soft drop shadow (the usual image shadow; a shadow you already set up is kept), pads the canvas so the whole shadow fits with a little room around it (Fit contents plus half the shadow's softness plus 8 px), makes the background see-through and **copies the result** to the clipboard, ready to paste.
