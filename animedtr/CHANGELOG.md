@@ -1,5 +1,10 @@
 # ANIMEDTR changelog
 
+## 0.24.1 - 2026-10-22
+
+- Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen's row of apps and in Help > More apps.
+- The shared SUITE block was pasted in again from `_edtr-suite`: TELEDTR and WHTBRDR in `SUITE_APPS` (TELEDTR with `ink`, the drawing colour for a light tile), their icons in `SUITE_MARKS`, and a 6 + 6 splash grid (4 + 4 + 4 on a phone).
+
 ## 0.24.0 - 2026-10-21
 
 **Rigging: posing figures** (Dave's picks, after seeing StykAnimate go open
