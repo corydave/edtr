@@ -18,6 +18,13 @@ never had.
 
 ---
 
+## 1.25
+
+**Added** - two new apps in the family.
+
+- Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the row of apps shown when no files are open, and in Help > More apps.
+- The shared SUITE block was pasted in again from `_edtr-suite`: TELEDTR and WHTBRDR in `SUITE_APPS` (TELEDTR with `ink`, the drawing colour for a light tile), their icons in `SUITE_MARKS`, and a 6 + 6 splash grid (4 + 4 + 4 on a phone).
+
 ## 1.24
 
 **Changed** - ready for EDTR Studio.
