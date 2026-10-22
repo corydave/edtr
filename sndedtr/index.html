@@ -934,12 +934,12 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash-family { margin-top: 20px; padding-top: 14px;
   border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
 .suite-splash-family h3 { margin: 0 0 10px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; opacity: .75; }
-/* An even grid of ten apps (the current one included): it wraps onto
-   two lines on a computer and into rows of four on a phone. */
+/* An even grid of twelve apps (the current one included): two rows of six
+   on a computer, three rows of four on a phone. */
 ul.suite-splash-list { list-style: none; margin: 0; padding: 0; display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 4px; }
+  grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
 ul.suite-splash-list > li { margin: 0; padding: 0; min-width: 0; }
-@media (max-width: 560px) { ul.suite-splash-list { grid-template-columns: repeat(4, 1fr); } }   /* phones: 4 + 4 */
+@media (max-width: 560px) { ul.suite-splash-list { grid-template-columns: repeat(4, 1fr); } }   /* phones: 4 + 4 + 4 */
 .suite-splash-app {
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 2px;
   border-radius: 10px; color: inherit; text-decoration: none; min-height: 44px;
@@ -1697,7 +1697,7 @@ table.shortcuts td:first-child { width: 132px; }
    only fetched if you explicitly choose MP3 in the export dialog.
    ========================================================================== */
 
-const APP_VERSION = '0.11.1';
+const APP_VERSION = '0.11.2';
 
 /* Short changelog for the Changelog tab (newest first). The long form lives
    in CHANGELOG.md beside this file - a new release gets added to both. It is
@@ -1754,6 +1754,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.11.2', date: '2026-10-22', notes: [
+    'Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen\'s row of apps and in Help > More apps.'
+  ] },
   { version: '0.11.1', date: '2026-10-16', notes: [
     'Ready for EDTR Studio (edtrapps.com/create/), one window with every app: inside the Studio, links to the other apps open them right there, Ctrl+Shift+1 to 9 switch apps (Ctrl+Shift+0 goes to the rail), and the splash leaves out its "More apps" row. On its own, nothing changes.'
   ] },
@@ -6361,7 +6364,7 @@ $('#btnDoExport').addEventListener('click', doExport);
    SUITE BLOCK v4 - START
    -------------------------------------------------------------------------
    This block is IDENTICAL in every app in the family (TXTEDTR, PDFEDTR,
-   IMGEDTR, SNDEDTR, VIDEDTR, SCRNCSTR, VCTREDTR, 3DEDTR, DSKEDTR and ANIMEDTR). To add or change an
+   IMGEDTR, SNDEDTR, VIDEDTR, SCRNCSTR, VCTREDTR, 3DEDTR, DSKEDTR, ANIMEDTR, TELEDTR and WHTBRDR). To add or change an
    app, edit SUITE_APPS below, then paste the whole block - START to END - into every
    app so they all stay in step. Nothing in here depends on the app around
    it; the app just calls renderSuiteApps() with an empty element to fill.
@@ -6396,6 +6399,9 @@ const SUITE_APPS = [
   // color: the app's own colour - its icon tile, like a family of app icons
   //        that each have their own colour. Every one carries white at 4.5:1
   //        or better, so the white drawing on the tile is always clear.
+  // ink:   (optional) the drawing colour on the tile, for a LIGHT colour
+  //        that white cannot sit on. TELEDTR's sunflower carries deep
+  //        brown (9.5:1). Leave it off and the drawing is white.
   // listed: false keeps an app that is still being built OUT of every list
   //        the other apps show (More apps, the splash's row, the links in
   //        help text). The app itself still finds its own entry, for its
@@ -6424,6 +6430,11 @@ const SUITE_APPS = [
   { id: 'sndedtr',  name: 'SNDEDTR',  color: '#4b5563', url: 'https://sndedtr.app/',
     blurb: 'Multitrack audio editor with effects, recording and export.',
     icon: '<path d="M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"/>' },
+  // TELEDTR (2026-10-22: listed, Dave). No domain yet, so it lives on
+  // edtrapps.com. Sunflower is light, so its drawing is deep brown (ink).
+  { id: 'teledtr',  name: 'TELEDTR',  color: '#facc15', ink: '#422006', url: 'https://edtrapps.com/teledtr/',
+    blurb: 'A teleprompter: write a script, time it, and read it full screen while you record.',
+    icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 11.5h6M9 15h3"/><path d="M3 20.5h18" stroke-dasharray="2 2"/>' },
   { id: 'txtedtr',  name: 'TXTEDTR',  color: '#d4400b', url: 'https://txtedtr.app/',
     blurb: 'Code and text editor with highlighting, split view and live preview.',
     icon: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 12.5-2 2.5 2 2.5"/><path d="m14 12.5 2 2.5-2 2.5"/>' },
@@ -6432,7 +6443,12 @@ const SUITE_APPS = [
     icon: '<rect width="12" height="12" x="3" y="9" rx="2"/><circle cx="15" cy="9" r="6"/>' },
   { id: 'videdtr',  name: 'VIDEDTR',  color: '#0046ad', url: 'https://videdtr.app/',
     blurb: 'Multitrack video editor with a timeline, effects and exact export.',
-    icon: '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>' }
+    icon: '<path d="M20.2 6 3 11l-.9-2.4c-.3-1.1.3-2.2 1.3-2.5l13.5-4c1.1-.3 2.2.3 2.5 1.3Z"/><path d="m6.2 5.3 3.1 3.9"/><path d="m12.4 3.4 3.1 4"/><path d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>' },
+  // WHTBRDR (2026-10-22: listed, Dave). No domain yet, so it lives on
+  // edtrapps.com. Its colour may still change (deep rose; indigo was the other pick).
+  { id: 'whtbrdr', name: 'WHTBRDR', color: '#9f1239', url: 'https://edtrapps.com/whtbrdr/',
+    blurb: 'A whiteboard: mark up PDFs and pictures, or draw on pages that work as slides.',
+    icon: '<rect x="3" y="3" width="18" height="13" rx="2"/><path d="M8 21l1.5-5M16 21l-1.5-5"/><path d="M7 11.5c1.5-3 3-3 4-1s2.5 2 4-2"/>' }
 ];
 
 /* The apps to SHOW, from where `currentId` is looking: every listed app,
@@ -6455,6 +6471,8 @@ const SUITE_MARKS = {
   dskedtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%2337c6d0"/%3E%3Crect x="5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="16.5" y="7" width="10.5" height="18" rx="1.2" fill="%23ffffff"/%3E%3Crect x="7" y="9" width="6.5" height="6" rx="0.8" fill="%23f45922"/%3E%3Crect x="7" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="7" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="9" width="6.5" height="2.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="14" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="17.2" width="6.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3Crect x="18.5" y="20.4" width="4.5" height="1.6" rx="0.8" fill="%23195d61"/%3E%3C/svg%3E',
   '3dedtr' : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%237a4100"/%3E%3Cpath d="M16 5.5 26 11 16 16.5 6 11Z" fill="%23ffffff"/%3E%3Cpath d="M6 11 16 16.5V27.5L6 22Z" fill="%23ffffff" opacity="0.82"/%3E%3Cpath d="M26 11 16 16.5V27.5L26 22Z" fill="%23f45922"/%3E%3C/svg%3E',
   animedtr : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23655800"/%3E%3Ccircle cx="7.5" cy="21" r="3" fill="%23fff" opacity=".35"/%3E%3Ccircle cx="12" cy="14" r="3.6" fill="%23fff" opacity=".6"/%3E%3Ccircle cx="19.5" cy="9.5" r="4.6" fill="%23fff"/%3E%3Cpath d="M19.5 22l3.2 3.2-3.2 3.2-3.2-3.2z" fill="%23f45922"/%3E%3C/svg%3E',
+  teledtr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%23facc15"/%3E%3Crect x="9.5" y="6" width="13" height="18.5" rx="1.8" fill="none" stroke="%23422006" stroke-width="1.8"/%3E%3Cpath d="M12.3 11h7.4M12.3 14.2h7.4M12.3 17.4h4.6" stroke="%23422006" stroke-width="1.6" stroke-linecap="round"/%3E%3Cpath d="M6.5 21.5h19" stroke="%23422006" stroke-width="1.5" stroke-dasharray="1.8 1.4" stroke-linecap="round"/%3E%3C/svg%3E',
+  whtbrdr  : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Crect width="32" height="32" rx="7" fill="%239f1239"/%3E%3Cpath d="M11 22.5 9 27M21 22.5 23 27" stroke="%23fff" stroke-width="2" stroke-linecap="round"/%3E%3Crect x="4.5" y="6.5" width="23" height="16" rx="1.6" fill="%23fff"/%3E%3Cpath d="M8.5 17.5c2-4.2 3.8-4.2 5.3-1.6s3.6 2.4 5.6-2.6" fill="none" stroke="%239f1239" stroke-width="2" stroke-linecap="round"/%3E%3Ccircle cx="23.5" cy="10" r="3.6" fill="%23f45922"/%3E%3Cpath d="M23.6 8.4v3.3" stroke="%23fff" stroke-width="1.4" stroke-linecap="round"/%3E%3C/svg%3E'
 };
 
 /* Fill `container` with one card per app. `currentId` is this app's id, so
@@ -6700,6 +6718,7 @@ function suiteTile(app) {
   svg.innerHTML = app.icon;             // fixed path data from SUITE_APPS (safe)
   const tile = suiteEl('span', 'suite-tile');
   tile.style.background = app.color;    // each app has its own colour
+  tile.style.color = app.ink || '#fff'; // the drawing: white, or dark ink on a light colour
   tile.append(svg);
   return tile;
 }
