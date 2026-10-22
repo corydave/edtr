@@ -1,5 +1,10 @@
 # WHTBRDR - changelog
 
+## 0.7.1 - 2026-10-22 - Two new apps in the family
+
+- TELEDTR and WHTBRDR are now listed in every app's splash screen and Help > More apps, and the splash row marks the app you are in with "You are here".
+- The shared SUITE block was pasted in again from `_edtr-suite`: TELEDTR and WHTBRDR in `SUITE_APPS` (TELEDTR with `ink`, the drawing colour for a light tile), their icons in `SUITE_MARKS`, and a 6 + 6 splash grid (4 + 4 + 4 on a phone).
+
 ## 0.7.0 - 2026-10-21 - The Accessibility tab
 
 - **The Accessibility tab** (beside the Inspector; the panel now has two tabs) and a **top-bar button** with the number of problems (DSKEDTR's and ANIMEDTR's pattern; the tab shows the count too). The checker looks at the whole board a moment after every change and lists what it finds, worst first, each with **Go to it** (it goes to the page, picks the marks, and puts the cursor where the fix is: the Description field, or the background picture's):
