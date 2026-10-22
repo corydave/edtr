@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.3.1 - 2026-10-22 - Two new apps in the family
+
+- TELEDTR and WHTBRDR are now listed in every app's splash screen and Help > More apps, and the splash row marks the app you are in with "You are here".
+- The shared SUITE block was pasted in again from `_edtr-suite`: TELEDTR and WHTBRDR in `SUITE_APPS` (TELEDTR with `ink`, the drawing colour for a light tile), their icons in `SUITE_MARKS`, and a 6 + 6 splash grid (4 + 4 + 4 on a phone).
+
 ## 0.3.0 - 2026-10-21 - The family's editor layout, and a sections timeline
 
 Dave's layout idea, tried first as a clickable prototype (side-by-side screenshots at desktop, tablet and phone sizes), then built.
