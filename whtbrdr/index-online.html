@@ -498,6 +498,38 @@ body.presenting .toast { bottom: 84px; }                         /* (above the f
 .panel-head h2 { margin: 0; font-size: 15px; }
 .panel-head p { margin: 2px 0 0; color: var(--text-muted); font-size: 12.5px; }
 #inspBody { flex: 1 1 auto; overflow-y: auto; padding: 10px 10px 24px; min-height: 0; }
+/* The side panel's two tabs (0.7.0): the Inspector and Accessibility, each scrolling on its own. */
+.side-tabs { flex: none; padding: 0 8px; }
+.side-pane { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.a11y-pane { overflow-y: auto; padding: 4px 14px 24px; overflow-wrap: anywhere; display: block; }
+.a11y-head { font-size: 15px; margin: 16px 0 4px; }
+.count-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; line-height: 1; }
+.icon-btn .count-badge { position: absolute; top: 1px; right: 0; margin: 0; min-width: 16px; height: 16px; font-size: 10px; padding: 0 4px; }
+.a11y-btn { position: relative; }
+.a11y-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.a11y-item { border: 1px solid var(--border); border-left-width: 4px; border-radius: 8px; padding: 8px 10px; display: grid; gap: 6px; font-size: 13px; }
+.a11y-item.is-fix { border-left-color: var(--danger); }
+.a11y-item.is-check { border-left-color: #d97706; }   /* amber: between Fix's red and Tip's rose */
+.a11y-item.is-tip { border-left-color: var(--brand); }
+.a11y-tag { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.a11y-item .btn { justify-self: start; }
+.order-list { list-style: none; margin: 6px 0 8px; padding: 0; border: 1px solid var(--border); border-radius: 8px; max-height: 320px; overflow-y: auto; }
+.order-list li { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border); cursor: grab; font-size: 13px; }
+.order-list li:last-child { border-bottom: 0; }
+.order-list li[aria-selected="true"] { background: var(--brand-tint); }
+.order-list li.drop-before { box-shadow: inset 0 3px 0 var(--brand); }
+.order-list li:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.order-list .order-empty { cursor: default; color: var(--text-muted); }
+.order-badge { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: var(--brand-contrast); font-size: 12px; font-weight: 700; }
+/* The reading order's numbers on the board (screen pixels, like the selection frame). */
+.order-path { fill: none; stroke: #9f1239; stroke-width: 2; stroke-dasharray: 5 4; }
+.order-dot { fill: #9f1239; stroke: #ffffff; stroke-width: 2; }
+.order-num { fill: #ffffff; font: 700 12px system-ui, sans-serif; }
+/* "Preview: ..." over the board while a color-vision preview is on. */
+.preview-banner { position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; gap: 8px; align-items: center;
+  background: var(--text); color: var(--surface); padding: 6px 8px 6px 14px; border-radius: 999px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.25); max-width: calc(100% - 32px); }
+.preview-banner .btn { flex: none; }
 .hint { color: var(--text-muted); font-size: 12.5px; margin: 0 0 8px; }
 .sec { border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); margin-bottom: 8px; }
 .sec > summary { list-style: none; cursor: pointer; padding: 0 12px; min-height: 44px; font-weight: 700; display: flex;
@@ -1170,6 +1202,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <button class="btn primary present-btn" id="btnPresent" title="Present from this page (Shift+F5); F5 starts from the first page"><span data-icon="present"></span><span class="present-word">Present</span></button>
       <!-- Install: hidden until the browser says the app can be installed, and again once it is (SuiteInstall). -->
       <button class="icon-btn" id="btnInstall" hidden aria-label="Install WHTBRDR as an app" title="Install WHTBRDR as an app: its own window, and it works offline"><span data-icon="install"></span></button>
+      <!-- Accessibility (section 8p): the checker's count, and the tab beside the Inspector. -->
+      <button class="icon-btn a11y-btn" id="btnA11y" title="Accessibility" aria-label="Accessibility" aria-controls="sidePanel"><span data-icon="a11y"></span><span class="count-badge" id="a11yCount" aria-hidden="true" hidden></span></button>
       <!-- Standard family order: (Backup, when there is one), Inspector, Theme, Help. -->
       <button class="icon-btn" id="btnInspector" title="Inspector: the pen and the page" aria-label="Inspector" aria-pressed="true" aria-controls="sidePanel"><span data-icon="inspector"></span></button>
       <button class="icon-btn" id="btnTheme" title="Switch to dark mode" aria-label="Switch to dark mode"><span data-icon="moon"></span></button>
@@ -1196,6 +1230,10 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <div id="board" tabindex="0" role="group" aria-roledescription="whiteboard" aria-label="Page" aria-describedby="boardDocText boardHelp">
       <svg id="boardSvg" aria-hidden="true" focusable="false"></svg>
     </div>
+    <!-- A color-vision preview is on (section 8p): say so, with a way out. -->
+    <div class="preview-banner" id="previewBanner" role="status" hidden><span id="previewWords"></span><button class="btn small" type="button" id="previewStop">Stop preview</button></div>
+    <!-- The preview's color filters (made by wireA11y). -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs id="cbFilters"></defs></svg>
     <!-- A PDF page's words, for screen readers (filled by describeBoard: section 8l). -->
     <p class="sr-only" id="boardDocText"></p>
     <p class="sr-only" id="boardHelp">Draw with a mouse, a stylus or a finger. The arrow keys slide the board; Ctrl plus and Ctrl minus zoom; Ctrl 0 fits the page. Hold Space and drag to slide it with the mouse.</p>
@@ -1254,12 +1292,39 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   <!-- ===================================================================
        INSPECTOR (right; a sheet along the bottom on a phone).
        =================================================================== -->
-  <aside class="panel" id="sidePanel" tabindex="-1" aria-label="Inspector">
+  <aside class="panel" id="sidePanel" tabindex="-1" aria-label="Inspector and accessibility">
     <div class="sheet-handle" id="sheetHandle" role="separator" tabindex="0" aria-orientation="horizontal"
          aria-label="Inspector height" aria-controls="sidePanel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33"
          title="Drag to make the Inspector taller or shorter; tap to open or close it"><span class="grip"></span></div>
-    <div class="panel-head"><h2 id="inspTitle">Inspector</h2><p id="inspSub"></p></div>
-    <div id="inspBody"></div>
+    <!-- Two tabs (0.7.0): the Inspector, and Accessibility (section 8p). -->
+    <div class="help-tabs side-tabs" role="tablist" aria-label="Side panel" id="sideTabs">
+      <button class="help-tab" role="tab" id="tabInspector" aria-controls="inspectorPane" aria-selected="true">Inspector</button>
+      <button class="help-tab" role="tab" id="tabA11y" aria-controls="a11yPane" aria-selected="false" tabindex="-1">Accessibility<span class="count-badge" id="a11yTabCount" aria-hidden="true" hidden></span></button>
+    </div>
+    <div class="side-pane" id="inspectorPane" role="tabpanel" aria-labelledby="tabInspector">
+      <div class="panel-head"><h2 id="inspTitle">Inspector</h2><p id="inspSub"></p></div>
+      <div id="inspBody"></div>
+    </div>
+    <section class="side-pane a11y-pane" id="a11yPane" role="tabpanel" aria-labelledby="tabA11y" hidden>
+      <h2 class="a11y-head">Checker</h2>
+      <p id="a11ySummary" role="status">Checking...</p>
+      <ul class="a11y-list" id="a11yList" aria-label="Problems and tips"></ul>
+      <p class="hint">It checks the whole board a moment after every change: descriptions, contrast (read from the page itself), small words, and marks off the page.</p>
+      <h2 class="a11y-head" id="orderHead">Reading order</h2>
+      <p class="hint" id="orderMode"></p>
+      <ul class="order-list" id="orderList" role="listbox" aria-labelledby="orderHead" aria-describedby="orderHelp"></ul>
+      <div class="btn-row">
+        <button class="btn small" type="button" id="orderUp">Move up</button>
+        <button class="btn small" type="button" id="orderDown">Move down</button>
+        <button class="btn small" type="button" id="orderAuto">Make it automatic</button>
+      </div>
+      <p class="hint" id="orderHelp">Screen readers, Tab on the page, and exported PDFs follow this order. Pick one, then Alt+Up or Alt+Down moves it (or drag it).</p>
+      <label class="check" for="orderShow"><input type="checkbox" id="orderShow"><span>Number them on the page</span></label>
+      <p class="hint">Not read: <span id="orderNotRead">nothing</span>.</p>
+      <h2 class="a11y-head">See it as others do</h2>
+      <div class="field stack"><label for="previewSelect">See the page as someone with</label><select id="previewSelect"></select></div>
+      <p class="hint">On screen only: it never changes the board or what it exports. Color should never be the only way something is shown.</p>
+    </section>
   </aside>
 </div>
 
@@ -3945,7 +4010,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.5.2';
+const APP_VERSION = '0.7.0';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -4060,6 +4125,8 @@ const ICONS = {
   paste: '<path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1z"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2M16 4h2a2 2 0 0 1 2 2v2M11 14h10"/><path d="M17 10l4 4-4 4"/>',
   // Effects (section 8i): Lucide's party popper.
   party: '<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/>',
+  // Accessibility (section 8p): DSKEDTR's drawing (Lucide's accessibility: a person in a wheelchair).
+  a11y: '<circle cx="16" cy="4" r="1"/><path d="m18 19 1-7-6 1"/><path d="m5 8 3-3 5.5 3-2.36 3.5"/><path d="M4.24 14.5a5 5 0 0 0 6.88 6"/><path d="M13.76 17.5a5 5 0 0 0-6.88-6"/>',
   // A step number (section 8k): a disc with a 1.
   step: '<circle cx="12" cy="12" r="9"/><path d="M10.5 9.5 12.5 8v8"/>',
   // The filmstrip's buttons (section 8h).
@@ -4334,7 +4401,8 @@ function commit(label, mergeKey, pages) {
   lensDirty = true;
   if (backup) backup.touch();            // (a crash backup a few seconds later: section 8m)
   updateTitle();                         // (the tab's title shows a dot while there are changes not saved)
-  stepCache = null;                      // (and the step numbers: section 8k)                      // (and the magnifier's copy of the page, while presenting)
+  stepCache = null;                      // (and the step numbers: section 8k)
+  scheduleA11y();                        // (and the accessibility checker looks again: section 8p)                      // (and the magnifier's copy of the page, while presenting)
 }
 /** Undo (dir = -1) or redo (dir = 1) one change. */
 function stepHistory(dir) {
@@ -4534,6 +4602,8 @@ function renderAll() {
   renderFilmstrip();                   // (section 8h)
   if (presenting) updatePresentUI();   // (section 8i: an undo may have changed the page on show)
   if (view.fit) fitView(view.fit, false); else applyView();
+  renderOrderList();                   // (the Accessibility tab's reading order, if it is showing: section 8p)
+  scheduleA11y();
 }
 
 /* =====================================================================
@@ -5269,7 +5339,13 @@ function readingOrderOf(pg) {
   }));
   const top = (it) => at.get(it).top, left = (it) => at.get(it).left;
   // Things whose tops are within a third of an inch count as one row.
-  return pg.items.slice().sort((a, b) => (Math.abs(top(a) - top(b)) > 24 ? top(a) - top(b) : left(a) - left(b)));
+  const auto = pg.items.slice().sort((a, b) => (Math.abs(top(a) - top(b)) > 24 ? top(a) - top(b) : left(a) - left(b)));
+  if (!pg.readOrder) return auto;
+  // An order set by hand (the Accessibility tab, section 8p): its units first, as set; anything it
+  // doesn't name yet (marks added since) after them, in the automatic order.
+  const rank = new Map(pg.readOrder.map((k, i) => [k, i]));
+  const at2 = (it) => (rank.has(readKey(it, pg)) ? rank.get(readKey(it, pg)) : Infinity);
+  return auto.map((it, i) => ({ it, r: at2(it), i })).sort((a, b) => a.r - b.r || a.i - b.i).map((x) => x.it);
 }
 
 /* ---- The frame ----
@@ -5394,6 +5470,7 @@ function renderSelection() {
   parts.push(...snapGuideEls());                   // pink lines where a drag snapped (section 8g)
   selG.replaceChildren(...parts);
   updateInspectorDot();
+  renderOrderBadges();                             // (the reading order's numbers, when they are shown: section 8p)
 }
 
 /** The dot on the Inspector button: something is picked, but its settings are out of sight (the suite rule). */
@@ -7615,11 +7692,18 @@ const pageMarksWords = (pg) => (pg.items.length ? plural(pg.items.length, 'mark'
 function clonePage(pg) {
   const c = JSON.parse(JSON.stringify(pg));
   c.id = uid('p');
-  const groupIds = new Map();
+  const groupIds = new Map(), itemIds = new Map();
   const newGroup = (g) => { if (!groupIds.has(g)) groupIds.set(g, uid('g')); return groupIds.get(g); };
   for (const it of c.items) {
+    const was = it.id;
     it.id = uid('i');
+    itemIds.set(was, it.id);
     if (it.groups) it.groups = it.groups.map(newGroup);
+  }
+  // A reading order set by hand follows the new ids (section 8p).
+  if (c.readOrder) {
+    c.readOrder = c.readOrder.map((k) => { const m = (k[0] === 'g' ? groupIds : itemIds).get(k.slice(2)); return m ? k[0] + ':' + m : null; }).filter(Boolean);
+    if (!c.readOrder.length) delete c.readOrder;
   }
   if (c.groupAlt) {
     const alt = {};
@@ -8311,6 +8395,7 @@ function startPresent(fromFirst) {
   finishEdit();
   closeMenu(true);
   setPagePill(false);                  // (the filmstrip's page pill closes: section 8h)
+  setPreview('none', true);            // (a color-vision preview is for checking, not for the class: section 8p)
   leavePage();
   present = { prevTool: tool, startState: savedState, startPage: page().id, blank: null, disappearing: false, number: null, press: null, wentFull: false };
   presenting = true;
@@ -9253,7 +9338,7 @@ function gridNode(pg) {
 function backdropWords(pg) {
   const parts = [];
   if (pg.doc) parts.push(docWords(pg.doc));                // "page 3 of worksheet.pdf" (section 8l)
-  if (pg.bgPic) parts.push('a background picture');
+  if (pg.bgPic) parts.push(pg.bgPic.alt ? 'a background picture: ' + pg.bgPic.alt : 'a background picture');
   if (pg.bg && pg.bg.kind !== 'none') parts.push(bgKind(pg.bg.kind).name.toLowerCase());
   if (pg.grid) parts.push('a coordinate grid');
   return parts.join(', ');
@@ -9319,6 +9404,8 @@ async function takeBgPicture(file) {
 function pictureToBackground(it) {
   const p = page();
   p.bgPic = { pic: it.pic, name: it.name, nw: it.nw, nh: it.nh, fit: 'fit', fade: 0 };
+  if (it.alt) p.bgPic.alt = it.alt;            // (its description goes with it: 0.7.0)
+  if (it.decorative) p.bgPic.decorative = true;
   p.items = p.items.filter((i) => i.id !== it.id);
   sel.ids = new Set(); sel.angle = 0;
   commit('making ' + itemWords(it) + ' the background');
@@ -9380,6 +9467,7 @@ function bgPicSection() {
       el('p', { class: 'hint', text: 'Under everything, and never picked by accident. A picture already on the page can become the background too: pick it, then "Make it the background".' }));
   } else {
     rows.push(el('p', { class: 'hint', text: b.name + ': ' + b.nw + ' x ' + b.nh + ' pixels.' }));
+    rows.push(...bgPicDescribeFields(b));
     rows.push(selectField('Fit', b.fit, BGPIC_FITS, (v) => { b.fit = v; commit('background picture fit'); renderPage(); renderInspector(); }));
     rows.push(sliderField('Fade', Math.round((b.fade || 0) * 100), 0, 90, 5, 'percent',
       (v) => { b.fade = v / 100; renderPage(); },
@@ -9389,6 +9477,35 @@ function bgPicSection() {
     if (board.pages.length > 1) rows.push(allPagesButton('bgPic', 'this background picture'));
   }
   return section('bgpic', 'Background picture', b ? 'On' : 'None', ...rows);
+}
+/**
+ * The background picture's description (0.7.0): what screen readers and
+ * exported PDFs say for it, and its own Decorative switch (a texture or a
+ * pattern means nothing). Kept as bgPic.alt and bgPic.decorative.
+ */
+function bgPicDescribeFields(b) {
+  const id = fid();
+  const input = el('input', { type: 'text', id, maxlength: String(ALT_MAX), value: b.alt || '', placeholder: 'What the picture shows', autocomplete: 'off', spellcheck: 'true', disabled: b.decorative ? true : null });
+  const keep = () => {
+    const v = cleanAlt(input.value);
+    if (v === (b.alt || '')) return;
+    if (v) b.alt = v; else delete b.alt;
+    commit(v ? 'describing the background picture: ' + v : 'no description for the background picture');
+    renderInspector();
+    describeBoard();
+    announce(v ? 'Background picture: ' + v : 'The background picture has no description');
+  };
+  input.addEventListener('change', keep);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); keep(); } });
+  const box = el('input', { type: 'checkbox', id: fid(), checked: b.decorative ? true : null });
+  box.addEventListener('change', () => {
+    if (box.checked) b.decorative = true; else delete b.decorative;
+    commit(box.checked ? 'background picture decorative' : 'background picture meaningful');
+    renderInspector();
+    announce(box.checked ? 'Decorative: screen readers will skip it' : 'Not decorative: describe what it shows');
+  });
+  return [el('div', { class: 'field stack' }, el('label', { for: id, text: 'Description' }), el('div', { class: 'desc-row' }, input)),
+    el('label', { class: 'check', for: box.id }, box, el('span', { text: 'Decorative (it carries no meaning: screen readers skip it)' }))];
 }
 /** "Put it on every page" for one of the three. */
 function allPagesButton(what, words) {
@@ -10304,6 +10421,7 @@ async function readDocText(d) {
 }
 /** Words arrived for a PDF page: tell screen readers, and the layers list and status bar, if it is on show. */
 function docTextArrived(key) {
+  scheduleA11y();                                  // (the checker notices pages with no words: section 8p)
   const p = page();
   if (!p.doc || docKey(p.doc) !== key) return;
   describeBoard();
@@ -10690,6 +10808,8 @@ function cleanProject(raw, zipHas) {
       const bp = rp.bgPic;
       pg.bgPic = { pic: bp.pic, name: cleanText(bp.name, 80) || 'picture', nw: cleanInt(bp.nw, 1, PIC_MAX_SIDE, 1), nh: cleanInt(bp.nh, 1, PIC_MAX_SIDE, 1),
         fit: ['fit', 'fill', 'center'].includes(bp.fit) ? bp.fit : 'fit', fade: cleanNum(bp.fade, 0, 0.9, 0) };
+      if (typeof bp.alt === 'string' && bp.alt.trim()) pg.bgPic.alt = cleanText(bp.alt, ALT_TEXT_MAX);   // (0.7.0)
+      if (bp.decorative === true) pg.bgPic.decorative = true;
     }
     // The marks.
     for (const ri of (Array.isArray(rp.items) ? rp.items : []).slice(0, MAX_ITEMS_PER_PAGE)) {
@@ -10705,6 +10825,11 @@ function cleanProject(raw, zipHas) {
       const alt = {};
       for (const [gid, words] of Object.entries(rp.groupAlt)) if (groups.has(gid) && typeof words === 'string') alt[gid] = cleanText(words, ALT_TEXT_MAX);
       if (Object.keys(alt).length) pg.groupAlt = alt;
+    }
+    // A reading order set by hand (0.7.0): keys of the form "i:<mark id>" or "g:<group id>", nothing else.
+    if (Array.isArray(rp.readOrder)) {
+      const keys = [...new Set(rp.readOrder.filter((k) => typeof k === 'string' && /^[ig]:[A-Za-z0-9_-]{1,40}$/.test(k)))].slice(0, MAX_ITEMS_PER_PAGE);
+      if (keys.length) pg.readOrder = keys;
     }
     pages.push(pg);
   }
@@ -11492,15 +11617,17 @@ function pdfTags(out, L) {
   };
 }
 /**
- * A page's marks as screen readers meet them, in reading order: [{ alt, plain, items }].
+ * A page's marks as screen readers meet them, in reading order: [{ key, alt, plain, items }]
+ * (key: the unit's place in a reading order set by hand, section 8p).
  * A mark is one unit with its own description; a group with a description
  * of its own (section 8g) is one unit with that description. Hidden and
- * decorative marks are left out (decorative ones are drawn as Artifacts).
+ * decorative marks are left out (decorative ones are drawn as Artifacts), and so
+ * are marks out in the staging area, off the page.
  */
 function exportUnits(pg) {
   const units = [], byKey = new Map();
   for (const it of readingOrderOf(pg)) {
-    if (it.hidden || it.decorative) continue;
+    if (it.hidden || it.decorative || placeOnPage(it, pg) === 'out') continue;   // (out in the staging area: not exported, so not read)
     // The outermost group round it that has a description of its own, if any.
     const gid = (it.groups || []).find((g) => pg.groupAlt && pg.groupAlt[g]);
     const key = gid ? 'g:' + gid : 'i:' + it.id;
@@ -11508,7 +11635,7 @@ function exportUnits(pg) {
       // plain: a text or a note described only by its own words. A PDF can carry those words as words
       // (a paragraph, P) rather than as a description ("Text: ..."), so they read like the page's own.
       const plain = !gid && hasWords(it) && !it.alt;
-      const u = { alt: gid ? pg.groupAlt[gid] : plain ? it.text.replace(/\s+/g, ' ').trim() : itemWords(it), plain, items: [] };
+      const u = { key, alt: gid ? pg.groupAlt[gid] : plain ? it.text.replace(/\s+/g, ' ').trim() : itemWords(it), plain, items: [] };
       byKey.set(key, u);
       units.push(u);
     }
@@ -11760,7 +11887,7 @@ async function buildPdf(pages, title, editable) {
       else docEl = tags.elem('Figure', where.charAt(0).toUpperCase() + where.slice(1) + (words.trim() ? ': ' + words.replace(/\s+/g, ' ').trim() : ' (a picture of a page, with no words a screen reader can read)'));
     }
     const backEl = new Map();
-    if (pg.bgPic) backEl.set('picture', tags.elem('Figure', 'Background picture: ' + pg.bgPic.name));
+    if (pg.bgPic && !pg.bgPic.decorative) backEl.set('picture', tags.elem('Figure', pg.bgPic.alt || 'Background picture: ' + pg.bgPic.name));   // (its description: 0.7.0)
     if (pg.grid) backEl.set('grid', tags.elem('Figure', gridAlt(pg)));
     const markEl = new Map();
     for (const u of exportUnits(pg)) {
@@ -11954,7 +12081,7 @@ function undescribed(pages) {
   const out = [];
   for (const pg of pages) {
     const items = pg.items.filter((it) => (it.type === 'ink' || it.type === 'picture') && !it.alt && !it.hidden && !it.decorative
-      && !(it.groups || []).some((g) => pg.groupAlt && pg.groupAlt[g]));
+      && !(it.groups || []).some((g) => pg.groupAlt && pg.groupAlt[g]) && placeOnPage(it, pg) !== 'out');
     if (items.length) out.push({ index: board.pages.indexOf(pg), items });
   }
   return out;
@@ -12109,6 +12236,14 @@ async function openSample(id) {
     const raw = { app: APP_ID, format: PROJECT_FORMAT, board: { staging: null, pages: made.pages }, docs: made.docs || [], pictures: [] };
     const loaded = await loadBoardFrom(raw, (f) => Object.hasOwn(files, f), async (f) => new Blob([files[f]]));
     if (made.finish) await made.finish(loaded.board);              // (the worksheet's marks that sit on its words)
+    // A busy page's reading order is set, as a teacher would after checking it (section 8p): as it reads,
+    // with sticky notes (comments on the page) last. So each sample is clean in the checker, tips included.
+    for (const pg of loaded.board.pages) {
+      const units = exportUnits(pg);
+      if (units.length < BUSY_PAGE) continue;
+      const isNote = (u) => u.items.every((i) => i.type === 'note');
+      pg.readOrder = [...units.filter((u) => !isNote(u)), ...units.filter(isNote)].map((u) => u.key);
+    }
     useLoadedBoard(loaded, true);
     projectName = '';
     projectHandle = null;
@@ -12330,6 +12465,468 @@ function sampleLesson() {
       ])
     ]
   };
+}
+
+/* =====================================================================
+   8p. THE ACCESSIBILITY TAB (0.7.0)
+   ---------------------------------------------------------------------
+   A tab beside the Inspector (and a top-bar button with a count, as in
+   DSKEDTR and ANIMEDTR) with three tools:
+
+   THE CHECKER. It checks the whole board a moment after every change, and
+   lists what it finds, worst first, each with a Go to it button:
+     Fix    pen strokes and pictures with no description, and a background
+            picture with none (a computer can't tell what they show)
+     Check  words with too little contrast against what is under them
+            (4.5:1, or 3:1 for letters of 14 points or more: WHTBRDR's
+            letters are bold), words smaller than 12 points (sticky notes:
+            smaller than their usual 11), marks hard to see against the page
+            (under 3:1), and marks that run off the page
+     Tip    marks out in the staging area (never exported or read), a busy
+            page still in the automatic reading order, and PDF pages with
+            no words a screen reader can read (a scan, perhaps)
+   Contrast is measured from the page itself: on a PDF page or over a
+   background picture, the page is drawn small (without the marks) and the
+   colors under each mark are read. Those drawings are kept for a while
+   (backdropCache), so checking again is quick.
+
+   READING ORDER. The order screen readers meet the page's marks, Tab
+   steps through them, and exported PDFs read them. Automatic (top to
+   bottom, then left to right) until it is changed here: pick one in the
+   list, then Move up / Move down, Alt+Up / Alt+Down, or drag it. It is
+   kept per page (page.readOrder, a list of "i:<mark id>" and, for a group
+   with a description of its own, "g:<group id>"); marks added later go at
+   the end. "Show the order on the page" numbers them on the board.
+
+   SEE IT AS OTHERS DO. A filter over the board, on screen only (never in
+   exports): red-blind, green-blind, blue-blind, no color, or blurred (DSKEDTR's
+   numbers: the Machado, Oliveira and Fernandes 2009 model, at full strength).
+   ===================================================================== */
+const A11Y_DELAY = 700;                      // how long after a change the checker runs (milliseconds)
+const BUSY_PAGE = 8;                         // things to read on a page before the order is worth a look
+const SMALL_TEXT_PT = 12;                    // words smaller than this get a "Check"
+const BACKDROP_K = 0.5;                      // pixels per point, for the small drawings contrast is read from
+const BACKDROP_KEEP = 30;                    // how many of those drawings are kept
+const FAINT_TYPES = ['ink', 'line', 'arrow', 'rect', 'ellipse', 'stamp'];   // marks that should stand out from the page (3:1)
+const LEVEL_WORDS = { fix: 'Fix', check: 'Check', tip: 'Tip' };
+
+/* ---- Contrast (WCAG's way) ---- */
+/** How bright a color looks, from 0 (black) to 1 (white): WCAG's relative luminance. */
+function relLum(hex) {
+  const n = parseInt((isHex(hex) ? hex : '#ffffff').slice(1), 16);
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+}
+/** The contrast between two brightnesses: 1:1 (none) to 21:1 (black on white). */
+const lumRatio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+const contrastOf = (c1, c2) => lumRatio(relLum(c1), relLum(c2));
+/** "4.5:1" (one decimal, never rounded up past the line it is measured against). */
+const ratioWords = (r) => (Math.floor(r * 10) / 10).toFixed(1) + ':1';
+
+/* ---- Where a mark is, and what is under it ---- */
+/** A mark's box on the page: { x0, y0, x1, y1 }, line widths included. */
+function itemBoxOf(it) {
+  const pts = itemPoints(it), pad = halfWidth(it);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of pts) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }
+  return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
+}
+/** Is a mark on its page: 'in', 'partly' (it runs off an edge) or 'out' (all of it is in the staging area)? */
+function placeOnPage(it, pg) {
+  const b = itemBoxOf(it), slack = 1;          // (a point over the edge doesn't count)
+  if (b.x1 < 0 || b.y1 < 0 || b.x0 > pg.w || b.y0 > pg.h) return 'out';
+  if (b.x0 < -slack || b.y0 < -slack || b.x1 > pg.w + slack || b.y1 > pg.h + slack) return 'partly';
+  return 'in';
+}
+const backdropCache = new Map();             // a page's look without its marks -> its brightness, pixel by pixel
+/** What a page looks like under its marks, as brightness (only for PDF pages and background pictures; null otherwise). */
+async function backdropLum(pg) {
+  if (!pg.doc && !pg.bgPic) return null;       // (a plain page: its color says it all)
+  const key = JSON.stringify([pg.w, pg.h, pg.color, pg.doc ? docKey(pg.doc) : null, pg.bgPic, pg.bg || null, pg.grid || null]);
+  if (backdropCache.has(key)) {
+    const kept = backdropCache.get(key);
+    backdropCache.delete(key); backdropCache.set(key, kept);   // (the most recently used goes last; the oldest is let go first)
+    return kept;
+  }
+  const c = await pageCanvas({ ...pg, items: [] }, BACKDROP_K);
+  const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+  const table = new Float32Array(256);
+  for (let v = 0; v < 256; v++) { const s = v / 255; table[v] = s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); }
+  const lum = new Float32Array(c.width * c.height);
+  for (let i = 0; i < lum.length; i++) lum[i] = 0.2126 * table[d[i * 4]] + 0.7152 * table[d[i * 4 + 1]] + 0.0722 * table[d[i * 4 + 2]];
+  const kept = { lum, w: c.width, h: c.height };
+  c.width = c.height = 0;                      // (the canvas itself can go)
+  backdropCache.set(key, kept);
+  if (backdropCache.size > BACKDROP_KEEP) backdropCache.delete(backdropCache.keys().next().value);
+  return kept;
+}
+/** How bright the page is under a box: its color, or (over a PDF page or a picture) the middle value of what is there. */
+function lumUnder(pg, B, box) {
+  if (!B) return relLum(pg.doc ? '#ffffff' : pg.color);
+  const x0 = clamp(box.x0, 0, pg.w), x1 = clamp(box.x1, 0, pg.w), y0 = clamp(box.y0, 0, pg.h), y1 = clamp(box.y1, 0, pg.h);
+  const seen = [];
+  const n = 15;                                // up to 15 x 15 places, spread over the box
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const px = Math.min(B.w - 1, Math.floor((x0 + (x1 - x0) * (i + 0.5) / n) * BACKDROP_K));
+    const py = Math.min(B.h - 1, Math.floor((y0 + (y1 - y0) * (j + 0.5) / n) * BACKDROP_K));
+    seen.push(B.lum[py * B.w + px]);
+  }
+  seen.sort((a, b) => a - b);
+  return seen[seen.length >> 1];
+}
+/** A step's number: its letters' size (section 8k draws it this size). */
+function stepLabelSize(it) {
+  const r = Math.min(it.w, it.h) / 2, label = stepInfo(it).label;
+  return r * (label.length > 2 ? 0.72 : label.length > 1 ? 0.9 : 1.08);
+}
+/** The contrast words need: 4.5:1, or 3:1 when they are 14 points or more (WHTBRDR's letters are bold, so that counts as large). */
+const needFor = (size) => (size >= 14 ? 3 : 4.5);
+/** "Text "Hello there"", for the checker's sentences. */
+const markName = (it) => (it.type === 'text' ? 'Text "' + shortWords(it.text) + '"' : it.type === 'note' ? 'Sticky note "' + shortWords(it.text) + '"' : capFirst(itemWords(it)));
+const isAre = (n) => (n === 1 ? 'is' : 'are');
+const itThem = (n) => (n === 1 ? 'it' : 'them');
+
+/* ---- The rules ---- */
+/**
+ * Everything worth a look, worst first: [{ level, text, page, ids, go }].
+ *   level  'fix', 'check' or 'tip'
+ *   page   the page it is on (an index)
+ *   ids    the marks to pick (none for the page itself)
+ *   go     where Go to it leads: 'describe' (the Description field),
+ *          'bgpic' (the background picture's), 'order' (Reading order),
+ *          or null (the marks are picked, the Inspector shows them)
+ */
+async function a11yIssues() {
+  const issues = [];
+  const add = (level, text, page, ids = [], go = null) => issues.push({ level, text, page, ids, go });
+  const scans = new Map();                     // a PDF's name -> its pages with no words a screen reader can read
+  for (let pi = 0; pi < board.pages.length; pi++) {
+    const pg = board.pages[pi];
+    const live = pg.items.filter((it) => !it.hidden);
+    const where = new Map(live.map((it) => [it, placeOnPage(it, pg)]));
+    const onPage = live.filter((it) => where.get(it) !== 'out');
+    // FIX: what a computer can't describe.
+    const und = undescribed([pg])[0];
+    if (und) {
+      const n = und.items.length;
+      add('fix', countWords(und.items) + (n === 1 ? ' has' : ' have') + ' no description: screen readers hear only "' + autoWords(und.items[0]) + '"'
+        + (n > 1 ? ' and the like' : '') + '. Describe ' + itThem(n) + ', or mark ' + itThem(n) + ' decorative.', pi, und.items.map((i) => i.id), 'describe');
+    }
+    if (pg.bgPic && !pg.doc && !pg.bgPic.alt && !pg.bgPic.decorative) {
+      add('fix', 'The background picture (' + pg.bgPic.name + ') has no description. Say what it shows (Background picture, in the Inspector), or mark it decorative.', pi, [], 'bgpic');
+    }
+    // CHECK: words and marks that are hard to read or see. (Over a PDF page or a picture, the page is drawn to find out what is under them.)
+    const looked = onPage.filter((it) => !it.decorative);
+    let B = null;
+    if ((pg.doc || pg.bgPic) && looked.some((it) => it.type === 'text' || FAINT_TYPES.includes(it.type))) {
+      try { B = await backdropLum(pg); } catch (_) { B = null; }   // (it couldn't be drawn: the page's color stands in)
+    }
+    for (const it of looked) {
+      if (it.type === 'text') {
+        const r = lumRatio(relLum(it.color), lumUnder(pg, B, itemBoxOf(it))), need = needFor(it.size);
+        if (r < need) add('check', markName(it) + ' is ' + ratioWords(r) + ' against the page under it. Words need ' + need + ':1' + (need === 4.5 ? ' (3:1 from 14 pt up)' : '') + ': a darker or lighter color fixes it.', pi, [it.id]);
+        if (it.size < SMALL_TEXT_PT) add('check', markName(it) + ' is ' + fmtNum(it.size) + ' pt. Small words are hard to read, more so on a projector: ' + SMALL_TEXT_PT + ' pt or more is kinder.', pi, [it.id]);
+      } else if (it.type === 'note') {
+        const r = contrastOf(NOTE_TEXT_COLOR, it.color), need = needFor(it.size);
+        if (r < need) add('check', markName(it) + ': its words are ' + ratioWords(r) + ' against its paper, under the ' + need + ':1 they need. A lighter paper color fixes it.', pi, [it.id]);
+        if (it.size < NOTE_FONT_PT) add('check', markName(it) + ' is ' + fmtNum(it.size) + ' pt, smaller than a sticky note\'s usual ' + NOTE_FONT_PT + ' pt.', pi, [it.id]);
+      } else if (it.type === 'step') {
+        const r = contrastOf(it.textColor || '#ffffff', it.color), need = needFor(stepLabelSize(it));
+        if (r < need) add('check', capFirst(itemWords(it)) + ': its number is ' + ratioWords(r) + ' against its disc, under the ' + need + ':1 it needs.', pi, [it.id]);
+      }
+    }
+    const faintness = (it) => lumRatio(relLum(it.color), lumUnder(pg, B, itemBoxOf(it)));
+    const faint = looked.filter((it) => FAINT_TYPES.includes(it.type) && faintness(it) < 3);
+    if (faint.length) {
+      add('check', countWords(faint) + ' ' + isAre(faint.length) + ' hard to see against the page: ' + (faint.length > 1 ? 'the first, "' + itemWords(faint[0]) + '", is ' : '"' + itemWords(faint[0]) + '" is ')
+        + ratioWords(faintness(faint[0])) + ', and marks need 3:1. A darker color, or a lighter page, fixes ' + itThem(faint.length) + '.', pi, faint.map((i) => i.id));
+    }
+    for (const it of live) if (where.get(it) === 'partly') add('check', markName(it) + ' runs off the page: the part outside isn\'t exported.', pi, [it.id]);
+    // TIPS.
+    const out = live.filter((it) => where.get(it) === 'out');
+    if (out.length) add('tip', countWords(out) + ' ' + isAre(out.length) + ' out in the staging area, off the page: never exported, and not read.', pi, out.map((i) => i.id));
+    const units = exportUnits(pg);
+    if (units.length >= BUSY_PAGE && !pg.readOrder) add('tip', units.length + ' things to read on this page, in the automatic order (top to bottom, then left to right). Check it makes sense, in Reading order below.', pi, [], 'order');
+    if (pg.doc) {
+      const t = docTextFor(pg);
+      if (t && !t.text.trim()) { const name = pg.doc.name; if (!scans.has(name)) scans.set(name, []); scans.get(name).push(pi); }
+    }
+  }
+  for (const [name, pis] of scans) {
+    add('tip', name + (pis.length === 1 ? ': page ' + (pis[0] + 1) + ' has' : ': ' + pis.length + ' pages have') + ' no words a screen reader can read. It may be a scan; a version of it with real words, or a sticky note saying what matters, helps.', pis[0]);
+  }
+  const rank = { fix: 0, check: 1, tip: 2 };
+  issues.sort((a, b) => rank[a.level] - rank[b.level] || a.page - b.page);
+  return issues;
+}
+
+/* ---- The tab, and the top-bar button ---- */
+let a11yTimer = 0, a11yRunning = false, a11yAgain = false, lastIssues = [];
+/** Check again a moment after things stop changing. */
+function scheduleA11y() {
+  clearTimeout(a11yTimer);
+  a11yTimer = setTimeout(runA11y, A11Y_DELAY);
+}
+async function runA11y() {
+  if (a11yRunning) { a11yAgain = true; return; }    // (one check at a time; another follows if things changed meanwhile)
+  a11yRunning = true;
+  try { lastIssues = await a11yIssues(); renderA11y(); }
+  catch (err) { /* a check that fails leaves the last list as it was */ }
+  finally {
+    a11yRunning = false;
+    if (a11yAgain) { a11yAgain = false; scheduleA11y(); }
+  }
+}
+/** Show the issues: the count on the button and the tab, the summary, and the list. */
+function renderA11y() {
+  const n = { fix: 0, check: 0, tip: 0 };
+  for (const i of lastIssues) n[i.level]++;
+  const problems = n.fix + n.check;
+  for (const id of ['a11yCount', 'a11yTabCount']) { $(id).textContent = problems ? String(problems) : ''; $(id).hidden = !problems; }
+  const words = problems ? plural(problems, 'problem') : 'no problems';
+  $('btnA11y').setAttribute('aria-label', 'Accessibility: ' + words);
+  $('btnA11y').title = 'Accessibility: ' + words;
+  $('a11ySummary').textContent = !lastIssues.length ? 'No problems found. Nice work.'
+    : [n.fix && n.fix + ' to fix', n.check && n.check + ' to check', n.tip && plural(n.tip, 'tip')].filter(Boolean).join(', ') + '.';
+  const list = $('a11yList');
+  // (Keep the keyboard's place in the list when it is drawn again under it.)
+  const at = list.contains(document.activeElement) ? [...list.querySelectorAll('button')].indexOf(document.activeElement) : -1;
+  list.replaceChildren(...lastIssues.map((issue) => {
+    const where = board.pages.length > 1 ? ' (page ' + (issue.page + 1) + ')' : '';
+    const go = issue.ids.length === 1 || !issue.ids.length ? 'Go to it' : 'Go to them';
+    return el('li', { class: 'a11y-item is-' + issue.level },
+      el('span', { class: 'a11y-tag', text: LEVEL_WORDS[issue.level] }),
+      el('span', { class: 'a11y-text', text: issue.text + where }),
+      el('button', { class: 'btn small', type: 'button', text: go, 'aria-label': go + ': ' + issue.text + where, onclick: () => goToIssue(issue) }));
+  }));
+  if (at >= 0) { const bs = list.querySelectorAll('button'); if (bs.length) bs[Math.min(at, bs.length - 1)].focus(); }
+}
+/** Go to an issue: its page, its marks picked, and the field that fixes it. */
+function goToIssue(issue) {
+  finishEdit();
+  if (issue.page !== pageIndex) goToPage(issue.page, false, true);
+  if (issue.go === 'order') {
+    renderOrderList(true);
+    const first = $('orderList').querySelector('[role="option"]');
+    if (first) first.focus();
+    announce('Reading order, page ' + (pageIndex + 1) + '. Alt with Up or Down moves the one picked.');
+    return;
+  }
+  if (issue.ids.length) { if (tool !== 'select') setTool('select', false); setSelection(issue.ids, false); }
+  else setSelection([], false);
+  selectSideTab('tabInspector');
+  announce(issue.text);
+  focusInspectorField(issue.go === 'describe' && issue.ids.length === 1 ? 'sel' : issue.go === 'bgpic' ? 'bgpic' : null);
+}
+/**
+ * Put the cursor in a Description field of the Inspector (sectionKey: 'sel'
+ * for what is picked, 'bgpic' for the background picture), opening its
+ * section if it was folded; with no section, the board gets the focus.
+ * A moment later: a closing dialog, or a tab switching, moves the focus first.
+ */
+function focusInspectorField(sectionKey) {
+  setTimeout(() => {
+    const field = sectionKey && document.querySelector('#inspBody [data-sec="' + sectionKey + '"] .desc-row input');
+    if (!field) { $('board').focus({ preventScroll: true }); return; }
+    const sec = field.closest('details');
+    if (sec && !sec.open) sec.open = true;
+    field.focus();
+    field.select();
+  }, 0);
+}
+let selectSideTab = null;                    // set by suiteWireTabs: selectSideTab(tabId, focus)
+/** The top-bar button: open the Accessibility tab (and the panel, if it was closed). */
+function openA11yTab() {
+  if (presenting) return;
+  if (!inspectorOpen()) setInspector(true);
+  selectSideTab('tabA11y', true);
+}
+
+/* ---- Reading order ---- */
+/** A mark's place in a page's reading order: "i:<its id>", or "g:<group id>" for a group with a description of its own. */
+function readKey(it, pg) {
+  const gid = (it.groups || []).find((g) => pg.groupAlt && pg.groupAlt[g]);
+  return gid ? 'g:' + gid : 'i:' + it.id;
+}
+let orderPick = null;                        // the key picked in the list
+let showOrder = false;                       // the numbers on the board (not kept: a view, not part of the board)
+/** Change the page's order (one undo step). keys: every unit's key, in the new order. */
+function setReadOrder(keys, message) {
+  page().readOrder = keys;
+  commit('reading order');
+  renderOrderList(true);
+  renderSelection();
+  if (message) announce(message);
+}
+/** Move the picked one up (delta -1) or down (1). */
+function moveInOrder(delta) {
+  const keys = exportUnits(page()).map((u) => u.key);
+  const i = keys.indexOf(orderPick), j = i + delta;
+  if (i < 0 || j < 0 || j >= keys.length) { announce(i < 0 ? 'Pick one in the list first' : delta < 0 ? 'Already first' : 'Already last'); return; }
+  keys.splice(i, 1);
+  keys.splice(j, 0, orderPick);
+  const u = exportUnits(page()).find((x) => x.key === orderPick);
+  setReadOrder(keys, (u ? u.alt : 'It') + ' is now ' + (j + 1) + ' of ' + keys.length);
+  const li = $('order-' + cssId(orderPick));
+  if (li) li.focus();
+}
+const cssId = (key) => key.replace(':', '-');
+let orderSig = '';
+/** Draw the Reading order list (when the tab is showing). */
+function renderOrderList(force) {
+  if ($('a11yPane').hidden) return;
+  const pg = page(), units = exportUnits(pg), list = $('orderList');
+  if (!units.some((u) => u.key === orderPick)) orderPick = units.length ? units[0].key : null;
+  const notRead = pg.items.filter((it) => it.hidden || it.decorative || placeOnPage(it, pg) === 'out');
+  const sig = JSON.stringify([pageIndex, units.map((u) => [u.key, u.alt]), orderPick, !!pg.readOrder, notRead.map((it) => it.id), board.pages.length]);
+  if (sig === orderSig && !force) return;
+  orderSig = sig;
+  const hadFocus = list.contains(document.activeElement);
+  $('orderHead').textContent = 'Reading order' + (board.pages.length > 1 ? ', page ' + (pageIndex + 1) : '');
+  list.replaceChildren(...units.map((u, i) => {
+    const li = el('li', { role: 'option', id: 'order-' + cssId(u.key), 'aria-selected': String(u.key === orderPick), tabindex: u.key === orderPick ? '0' : '-1', draggable: 'true' },
+      el('span', { class: 'order-badge', 'aria-hidden': 'true', text: String(i + 1) }),
+      el('span', { class: 'sr-only', text: (i + 1) + ' of ' + units.length + ': ' }),
+      el('span', { text: u.alt }));
+    li.dataset.key = u.key;
+    return li;
+  }));
+  if (!units.length) list.append(el('li', { class: 'order-empty', text: 'Nothing on this page is read yet.' }));
+  $('orderMode').textContent = !units.length ? '' : pg.readOrder ? 'Set by hand. Marks added later go at the end.' : 'Automatic: top to bottom, then left to right.';
+  $('orderAuto').disabled = !pg.readOrder;
+  $('orderUp').disabled = $('orderDown').disabled = units.length < 2;
+  $('orderNotRead').textContent = notRead.length ? notRead.slice(0, 12).map((it) => itemWords(it) + (it.hidden ? ' (hidden)' : placeOnPage(it, pg) === 'out' ? ' (off the page)' : '')).join('; ') + (notRead.length > 12 ? '; and ' + (notRead.length - 12) + ' more' : '') : 'nothing';
+  if (hadFocus && orderPick) { const li = $('order-' + cssId(orderPick)); if (li) li.focus(); }
+}
+/** Pick a unit in the list: it is picked on the board too, so you can see which it is. */
+function pickInOrder(key, focus) {
+  orderPick = key;
+  renderOrderList(true);
+  const u = exportUnits(page()).find((x) => x.key === key);
+  if (u) setSelection(u.items.map((i) => i.id), false);
+  if (focus) { const li = $('order-' + cssId(key)); if (li) li.focus(); }
+}
+function wireOrderList() {
+  const list = $('orderList');
+  list.addEventListener('keydown', (e) => {
+    const keys = exportUnits(page()).map((u) => u.key);
+    const i = keys.indexOf(orderPick);
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && e.altKey) { e.preventDefault(); moveInOrder(e.key === 'ArrowUp' ? -1 : 1); return; }
+    let j = null;
+    if (e.key === 'ArrowUp') j = i - 1;
+    else if (e.key === 'ArrowDown') j = i + 1;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = keys.length - 1;
+    if (j == null || !keys.length) return;
+    e.preventDefault();
+    pickInOrder(keys[clamp(j, 0, keys.length - 1)], true);
+  });
+  list.addEventListener('click', (e) => { const li = e.target.closest('li[data-key]'); if (li) pickInOrder(li.dataset.key, true); });
+  // Dragging with a mouse (the keyboard's way is Alt with Up or Down, or the buttons).
+  let dragKey = null;
+  const unmark = () => { for (const x of list.children) x.classList.remove('drop-before'); };
+  list.addEventListener('dragstart', (e) => {
+    const li = e.target.closest('li[data-key]'); if (!li) return;
+    dragKey = li.dataset.key;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');      // (Firefox needs something to start a drag)
+  });
+  list.addEventListener('dragover', (e) => {
+    if (!dragKey) return;
+    e.preventDefault();
+    unmark();
+    const li = e.target.closest('li[data-key]');
+    if (li) li.classList.add('drop-before');
+  });
+  list.addEventListener('drop', (e) => {
+    e.preventDefault();
+    unmark();
+    const li = e.target.closest('li[data-key]');
+    if (!dragKey || !li || li.dataset.key === dragKey) { dragKey = null; return; }
+    const keys = exportUnits(page()).map((u) => u.key).filter((k) => k !== dragKey);
+    keys.splice(keys.indexOf(li.dataset.key), 0, dragKey);
+    orderPick = dragKey;
+    setReadOrder(keys, 'Moved to ' + (keys.indexOf(dragKey) + 1) + ' of ' + keys.length);
+    dragKey = null;
+  });
+  list.addEventListener('dragend', () => { dragKey = null; unmark(); });
+  $('orderUp').addEventListener('click', () => moveInOrder(-1));
+  $('orderDown').addEventListener('click', () => moveInOrder(1));
+  $('orderAuto').addEventListener('click', () => {
+    delete page().readOrder;
+    commit('automatic reading order');
+    renderOrderList(true);
+    renderSelection();
+    announce('Reading order is automatic again: top to bottom, then left to right');
+  });
+  $('orderShow').addEventListener('change', () => {
+    showOrder = $('orderShow').checked;
+    renderSelection();
+    announce(showOrder ? 'The reading order is numbered on the page' : 'Numbers taken off the page');
+  });
+}
+let orderG = null;                           // the numbers on the board (drawn in screen pixels, like the selection frame)
+/** Number the page's marks in reading order, with a dashed line from one to the next. On screen only. */
+function renderOrderBadges() {
+  if (!orderG) return;
+  orderG.replaceChildren();
+  if (!showOrder || presenting) return;
+  const spots = exportUnits(page()).map((u) => {
+    let x0 = Infinity, y0 = Infinity;
+    for (const it of u.items) { const b = itemBoxOf(it); x0 = Math.min(x0, b.x0); y0 = Math.min(y0, b.y0); }
+    const [sx, sy] = toScreen(x0, y0);
+    return [sx - 4, sy - 4];                   // (just above and left of its top-left corner)
+  });
+  if (spots.length > 1) orderG.append(svgEl('polyline', { class: 'order-path', points: spots.map((s) => round2(s[0]) + ',' + round2(s[1])).join(' ') }));
+  spots.forEach(([x, y], i) => {
+    orderG.append(svgEl('circle', { class: 'order-dot', cx: round2(x), cy: round2(y), r: 11 }));
+    const t = svgEl('text', { class: 'order-num', x: round2(x), y: round2(y + 4.5), 'text-anchor': 'middle' });
+    t.textContent = String(i + 1);
+    orderG.append(t);
+  });
+}
+
+/* ---- Seeing it as others do ---- */
+const PREVIEWS = {
+  none: ['Normal vision', null],
+  protan: ['Red-blind (protanopia)', '0.152286 1.052583 -0.204868 0 0  0.114503 0.786281 0.099216 0 0  -0.003882 -0.048116 1.051998 0 0  0 0 0 1 0'],
+  deutan: ['Green-blind (deuteranopia)', '0.367322 0.860646 -0.227968 0 0  0.280085 0.672501 0.047413 0 0  -0.011820 0.042940 0.968881 0 0  0 0 0 1 0'],
+  tritan: ['Blue-blind (tritanopia)', '1.255528 -0.076749 -0.178779 0 0  -0.078411 0.930809 0.147602 0 0  0.004733 0.691367 0.303900 0 0  0 0 0 1 0'],
+  mono: ['No color (achromatopsia)', '0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0'],
+  blur: ['Blurred (low vision)', null]
+};
+let previewMode = 'none';
+function setPreview(mode, quiet) {
+  if (!Object.hasOwn(PREVIEWS, mode)) mode = 'none';
+  const changed = mode !== previewMode;
+  previewMode = mode;
+  $('previewSelect').value = mode;
+  $('boardSvg').style.filter = mode === 'none' ? '' : mode === 'blur' ? 'blur(2.5px)' : 'url(#cb-' + mode + ')';
+  $('previewBanner').hidden = mode === 'none';
+  $('previewWords').textContent = 'Preview: ' + PREVIEWS[mode][0] + '. On screen only, never in exports.';
+  if (changed && !quiet) announce(mode === 'none' ? 'Preview off' : 'Previewing the page as seen with ' + PREVIEWS[mode][0]);
+}
+
+function wireA11y() {
+  // The color filters, made once (in a hidden SVG of their own; the board's SVG points to them).
+  const defs = $('cbFilters');
+  for (const [key, [, matrix]] of Object.entries(PREVIEWS)) {
+    if (!matrix) continue;
+    const f = svgEl('filter', { id: 'cb-' + key, 'color-interpolation-filters': 'linearRGB' });
+    f.append(svgEl('feColorMatrix', { type: 'matrix', values: matrix }));
+    defs.append(f);
+  }
+  const pick = $('previewSelect');
+  for (const [key, [label]] of Object.entries(PREVIEWS)) pick.append(el('option', { value: key, text: label }));
+  pick.addEventListener('change', () => setPreview(pick.value));
+  $('previewStop').addEventListener('click', () => setPreview('none'));
+  selectSideTab = suiteWireTabs($('sideTabs'), (id) => { if (id === 'tabA11y') { runA11y(); renderOrderList(true); } });
+  $('btnA11y').addEventListener('click', openA11yTab);
+  wireOrderList();
+  // The numbers on the board: a layer of their own, under the selection frame.
+  orderG = svgEl('g', { class: 'order-layer' });
+  $('boardSvg').insertBefore(orderG, selG);
+  scheduleA11y();
 }
 
 /* =====================================================================
@@ -12603,6 +13200,7 @@ function toolSection() {
     colors.root,
     el('p', { class: 'hint', text: 'Changes apply to new strokes. Press ' + first + ' to ' + lastKey + ' to switch.' }),
     colorField('Color', preset.color, (v) => { preset.color = v; refreshBar(); }, (v) => { preset.color = v; changed(); renderInspector(); }),
+    presetContrastHint(kind, preset.color),
     el('div', { class: 'btn-row' },
       el('button', { class: 'btn small', type: 'button', disabled: preset.color === defaults.color ? true : null,
         onclick: () => { preset.color = defaults.color; changed(); renderInspector(); announce(preset.name + ' ' + kind + ' color set back to how it started'); } },
@@ -12619,6 +13217,20 @@ function toolSection() {
   return section('tool', TOOL_NAMES[kind], preset.name, ...rows);
 }
 
+/**
+ * How well a pen's color shows up (0.7.0, section 8p): its contrast on a
+ * white page and on the dark staging area (3:1 or more is easy to see).
+ * For a highlighter: how dark black words stay under it.
+ */
+function presetContrastHint(kind, color) {
+  if (kind === 'highlighter') {
+    const r = contrastOf('#000000', color);
+    return el('p', { class: 'hint', text: 'Black words under it: ' + ratioWords(r) + (r < 4.5 ? '. Too dark to read words through; a lighter color helps.' : '.') });
+  }
+  const white = contrastOf(color, '#ffffff'), dark = contrastOf(color, '#0f1115');
+  const weak = white < 3 ? ' Hard to see on white pages.' : dark < 3 ? ' Hard to see on dark pages.' : '';
+  return el('p', { class: 'hint', text: 'Contrast: ' + ratioWords(white) + ' on a white page, ' + ratioWords(dark) + ' on a dark one (3:1 or more is easy to see).' + weak });
+}
 /** What a finger does on the page (palm rejection). Shared by the drawing tools and the eraser. */
 function fingerField() {
   return selectField('A finger on the page', settings.fingerPans, [
@@ -13144,10 +13756,12 @@ function buildHelp() {
     el('h3', { text: 'Samples' }),
     el('p', { text: 'Three ready-made boards to try things on: a graph on a coordinate grid, a marked-up PDF worksheet, and four lesson slides with step numbers.' }),
     el('p', {}, el('button', { class: 'btn', type: 'button', text: 'Open a sample', onclick: () => { $('helpDlg').close(); openSamples(); } })),
+    el('h3', { text: 'Accessibility' }),
+    el('p', { text: 'Every mark has a description, written for it as you make it; say it better in the Inspector\'s Description field. The Accessibility tab (beside the Inspector, or the button with the count in the top bar) checks the whole board as you work: pen strokes and pictures with no description, words with too little contrast or too small, marks hard to see or off the page. Each has a Go to it button. Below the list, set the order screen readers read a page in, and see the page as someone with color blindness would.' }),
     el('h3', { text: 'Using a stylus' }),
     el('p', { text: 'Once a stylus touches the board, a finger slides the page instead of drawing, so your hand can rest on the screen. The Inspector\'s "A finger" setting changes this.' }),
     el('h3', { text: 'What is coming' }),
-    el('p', { text: 'Next: PowerPoint export, and an Accessibility tab with the full checker, reading order you can change, and a color-vision preview.' }),
+    el('p', { text: 'Next: PowerPoint export (0.7.1), with every mark as a PowerPoint object you can still change, each with its description.' }),
     el('h3', { text: 'Saving' }),
     el('p', { text: 'Save (Ctrl+S, or the disk button in the top bar) keeps the whole board as a .whtbrdr file: every page, every mark, and the PDFs and pictures inside it. Open (Ctrl+O) brings it back. While you work, WHTBRDR also keeps a crash backup in this browser; if the tab closes before you save, the next start offers to pick up where you left off.' }),
     el('h3', { text: 'Sharing' }),
@@ -13465,21 +14079,12 @@ function wireKeys() {
    (shown when the device asks for less motion), and the drawing (art):
    a small SVG whose colors come only from the block's fx-* classes, so
    it follows light and dark mode. The drawings are fixed text written
-   here, never anything from a file or a person. (Three for now; the full
-   tour of five comes with the later milestones.)
+   here, never anything from a file or a person. The five are the spec's
+   tour (0.7.0): a PDF, step numbers, the grid, Present, and descriptions.
    ===================================================================== */
 const APP_FEATURES = [
-  {
-    title: 'Pens and highlighters',
-    text: 'Five pens and four highlighters, on keys 1 to 9, in three sizes. The same tools and keys as the WHTBRDR Chrome extension. Highlights slide under the ink, so writing on top stays clear. With a stylus, pressing harder makes a wider line.',
-    alt: 'On a page, a yellow highlighter sweeps across two gray lines of text, then a blue pen draws a wavy underline and a check mark on top.',
-    still: 4,
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" class="fx-soft"/><rect x="40" y="18" width="240" height="164" rx="4" class="fx-paper fx-edge"/>'
-      + '<rect x="64" y="56" width="0" height="16" rx="3" class="fx-hl"><animate attributeName="width" values="0;0;150;150;0" keyTimes="0;0.08;0.3;0.92;1" dur="6s" repeatCount="indefinite"/></rect>'
-      + '<rect x="66" y="60" width="150" height="8" rx="4" class="fx-mute"/><rect x="66" y="86" width="186" height="8" rx="4" class="fx-mute"/><rect x="66" y="112" width="120" height="8" rx="4" class="fx-mute"/>'
-      + '<path d="M66 134c12-8 22 8 34 0s22 8 34 0 22 8 34 0" pathLength="100" stroke-dasharray="100 104" stroke-dashoffset="102" class="fx-line-acc fx-thick"><animate attributeName="stroke-dashoffset" values="102;102;0;0;102" keyTimes="0;0.34;0.55;0.92;1" dur="6s" repeatCount="indefinite"/></path>'
-      + '<path d="M214 128l10 12 22-28" pathLength="100" stroke-dasharray="100 104" stroke-dashoffset="102" class="fx-line-ok fx-thick"><animate attributeName="stroke-dashoffset" values="102;102;0;0;102" keyTimes="0;0.6;0.7;0.92;1" dur="6s" repeatCount="indefinite"/></path></svg>'
-  },
+  // (0.7.0: the tour the spec planned: a PDF, step numbers, the grid, Present, and descriptions.
+  //  "Pens and highlighters" and "Zoom where you point" made way for step numbers and descriptions.)
   {
     // (0.4.3: this slide was "Any page, any shape"; PDFs are the bigger news now, as the spec's tour planned.)
     title: 'Mark up any PDF',
@@ -13502,15 +14107,19 @@ const APP_FEATURES = [
       + '</svg>'
   },
   {
-    title: 'Zoom where you point',
-    text: 'Ctrl and the wheel, a trackpad pinch or two fingers zoom right where you are pointing, and the page slides with you. Ctrl+0 fits the whole page again.',
-    alt: 'A page with a small drawing grows larger around the mouse pointer, as if zooming in on it, then shrinks back to fit.',
-    still: 3,
+    title: 'Step numbers across pages',
+    text: 'N puts down numbered steps that carry on from page to page: 1 and 2 here, 3 on the next page. Move or delete one and the rest renumber themselves. Screen readers hear "Step 3", and any words you add.',
+    alt: 'Two pages side by side. Numbered discs appear one at a time: 1 and 2 on the first page, then 3 and 4 on the second, each beside a line of text.',
+    still: 4.5,
     art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" class="fx-soft"/>'
-      + '<g><animateTransform attributeName="transform" type="matrix" values="1 0 0 1 0 0;1 0 0 1 0 0;2.2 0 0 2.2 -228 -132;2.2 0 0 2.2 -228 -132;1 0 0 1 0 0" keyTimes="0;0.2;0.45;0.8;1" dur="6s" repeatCount="indefinite"/>'
-      + '<rect x="100" y="24" width="120" height="152" rx="3" class="fx-paper fx-edge"/><rect x="116" y="44" width="70" height="6" rx="3" class="fx-mute"/><rect x="116" y="60" width="88" height="6" rx="3" class="fx-mute"/>'
-      + '<path d="M176 104c6-12 16-12 22 0s16 12 22 0" class="fx-line-acc"/><circle cx="190" cy="110" r="14" class="fx-line-pop fx-thin"/></g>'
-      + '<path d="M190 110l0 17 4.5-4.5 3.5 7 3-1.5-3.5-7 6 0z" class="fx-ink"/></svg>'
+      + '<rect x="22" y="34" width="128" height="132" rx="3" class="fx-paper fx-edge"/><rect x="170" y="34" width="128" height="132" rx="3" class="fx-paper fx-edge"/>'
+      + '<rect x="62" y="66" width="72" height="7" rx="3" class="fx-mute"/><rect x="62" y="112" width="60" height="7" rx="3" class="fx-mute"/>'
+      + '<rect x="210" y="66" width="70" height="7" rx="3" class="fx-mute"/><rect x="210" y="112" width="56" height="7" rx="3" class="fx-mute"/>'
+      // Each step: a disc and its number, appearing in turn (the same animation, a little later each time).
+      + [[44, 70, '1', 0.1], [44, 116, '2', 0.25], [192, 70, '3', 0.45], [192, 116, '4', 0.6]].map(([x, y, n, at]) =>
+        '<g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;' + at + ';' + (at + 0.05) + ';0.92;1" dur="6s" repeatCount="indefinite"/>'
+        + '<circle cx="' + x + '" cy="' + y + '" r="12" class="fx-accbtn"/><text x="' + x + '" y="' + (y + 5) + '" font-size="14" font-weight="700" text-anchor="middle" class="fx-t-w">' + n + '</text></g>').join('')
+      + '<path d="M154 100h12m-5-5 5 5-5 5" class="fx-line-mute fx-thin"/></svg>'
   },
   {
     title: 'A graph in one tap',
@@ -13539,10 +14148,40 @@ const APP_FEATURES = [
       + '<rect x="100" y="172" width="120" height="20" rx="10" class="fx-paper fx-edge"/><circle cx="116" cy="182" r="4.5" class="fx-ink"/>'
       + '<circle cx="132" cy="182" r="4.5" class="fx-acc"/><circle cx="148" cy="182" r="4.5" class="fx-pop"/><rect x="160" y="179" width="12" height="6" rx="2" class="fx-hl"/>'
       + '<circle cx="186" cy="182" r="3" class="fx-pop"/><path d="M200 178l8 8M208 178l-8 8" class="fx-line-mute fx-thin"/></svg>'
+  },
+  {
+    title: 'Described for everyone',
+    text: 'Every mark gets a description as you make it ("Red arrow pointing right", "Highlight on: the water cycle"), and you can say it better. The Accessibility tab checks contrast and small words, lets you set the reading order, and shows the page as people with color blindness see it. Exported PDFs carry it all.',
+    alt: 'A hand-drawn circle loops round a word on a page. A label appears under it: Description, Circle around the answer. In the corner, a red badge with a 1 turns into a green check.',
+    still: 4.6,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200"><rect width="320" height="200" class="fx-soft"/><rect x="92" y="14" width="136" height="120" rx="3" class="fx-paper fx-edge"/>'
+      + '<rect x="108" y="36" width="104" height="7" rx="3" class="fx-mute"/><rect x="108" y="58" width="40" height="7" rx="3" class="fx-ink"/><rect x="154" y="58" width="50" height="7" rx="3" class="fx-mute"/>'
+      + '<rect x="108" y="80" width="96" height="7" rx="3" class="fx-mute"/><rect x="108" y="102" width="70" height="7" rx="3" class="fx-mute"/>'
+      // The ring drawn round the answer.
+      + '<path d="M102 62c0-10 24-13 42-9s12 18-8 19-36-2-34-12" pathLength="100" stroke-dasharray="100 104" stroke-dashoffset="102" class="fx-line-pop fx-thick">'
+      + '<animate attributeName="stroke-dashoffset" values="102;102;0;0;102" keyTimes="0;0.1;0.3;0.92;1" dur="7s" repeatCount="indefinite"/></path>'
+      // Its description.
+      + '<g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.38;0.44;0.92;1" dur="7s" repeatCount="indefinite"/>'
+      + '<rect x="58" y="148" width="204" height="34" rx="8" class="fx-paper fx-edge"/><text x="70" y="161" font-size="9" class="fx-t">Description</text>'
+      + '<text x="70" y="175" font-size="11" font-weight="700" class="fx-t">Circle around the answer</text></g>'
+      // The checker's badge: 1, then a check.
+      + '<g><animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.6;0.64;0.96;1" dur="7s" repeatCount="indefinite"/>'
+      + '<circle cx="244" cy="22" r="11" class="fx-pop"/><text x="244" y="27" font-size="13" font-weight="700" text-anchor="middle" class="fx-t-w">1</text></g>'
+      + '<g opacity="0"><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.62;0.66;0.92;1" dur="7s" repeatCount="indefinite"/>'
+      + '<circle cx="244" cy="22" r="11" class="fx-ok"/><path d="M238 22l4 4 8-9" class="fx-line-white fx-thin"/></g></svg>'
   }
 ];
 
 const CHANGELOG = [
+  { version: '0.7.0', date: '2026-10-21', notes: [
+    'The Accessibility tab, beside the Inspector, and a top-bar button with a count of problems. It checks the whole board a moment after every change and lists what it finds, each with Go to it: pen strokes, pictures and background pictures with no description (Fix); words with too little contrast against the page or picture under them, words under 12 pt, step numbers hard to read on their disc, marks hard to see against the page, and marks that run off the page (Check); marks out in the staging area, a busy page, and PDF pages with no words a screen reader can read (Tip).',
+    'Reading order, in the Accessibility tab: the order screen readers, Tab on the page and exported PDFs follow. Automatic (top to bottom, then left to right) until you change it: pick one, then Move up, Move down, Alt+Up, Alt+Down, or drag. "Number them on the page" shows it on the board. It is saved with the board.',
+    'See it as others do: a preview of the page as seen with red, green or blue color blindness, with no color, or blurred. On screen only, never in exports.',
+    'A background picture can have a description (or be marked decorative), in the Inspector. Screen readers and exported PDFs use it.',
+    'The pen and highlighter settings show how well a color shows up: its contrast on a white page and a dark one, or how dark words stay under a highlighter.',
+    'The Features tour is the planned five: Mark up any PDF, Step numbers across pages, A graph in one tap, Present and keep drawing, and Described for everyone.',
+    'Marks out in the staging area, off the page, are no longer in an exported PDF\'s reading order (they were never drawn there).'
+  ] },
   { version: '0.5.2', date: '2026-10-21', notes: [
     'PDF export can keep your marks editable: each one becomes a PDF annotation (ink, highlight, line, square, circle, free text or stamp) that Acrobat, Preview and other PDF apps can still move, change or delete. It looks the same as on the board. This is the first choice for a board that came from a PDF; "Drawn in" is the first choice otherwise.',
     'Exported PDFs are tagged: screen readers hear a PDF page\'s own words, then each mark\'s description, in reading order (a group with a description of its own is heard once, as the group). Texts and sticky notes drawn in are read as words. Decorative marks and ruled lines are skipped; the background picture and the coordinate grid are described.',
@@ -13712,6 +14351,7 @@ function start() {
   wireFiles();                       // (saving, the file handler, asking before the tab closes: section 8m)
   wireExport();                      // (PDF and pictures: section 8n)
   wireSamples();                     // (the samples dialog: section 8o)
+  wireA11y();                        // (the Accessibility tab: section 8p)
   $('btnPicture').addEventListener('click', choosePictures);
   // When the fonts have loaded, measure words again (they may have been measured in a stand-in font).
   if (document.fonts && document.fonts.load) {

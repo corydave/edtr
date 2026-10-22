@@ -76,9 +76,13 @@
 > in, both tagged for screen readers (section 8n: `pdfTags`,
 > `exportUnits`, `annotKind`); the Export dialog's descriptions check with
 > Go to it buttons; and three samples made in code (section 8o), the
-> worksheet's PDF included. That finishes milestone 5. Waiting for Dave's
-> review of 0.5.2; next is 0.7.0 (PowerPoint export and the Accessibility
-> tab).
+> worksheet's PDF included. That finishes milestone 5.
+>
+> **Then 0.7.0:** the Accessibility tab beside the Inspector, with a
+> top-bar count (section 8p): the checker, reading order you can change
+> (`page.readOrder`), the color-vision preview; background pictures can be
+> described; the Features tour is the planned five. Waiting for Dave's
+> review of 0.7.0; next is 0.7.1 (PowerPoint export).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**
