@@ -2,6 +2,14 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.4.0 - 2026-10-24 - Smooth scrolling, and pace and size in the prompter
+
+- **Smooth scrolling, now the default.** The text glides up steadily at the pace. Before, the prompter placed the text word by word, but every word on a line sits at the same height, so the text held still for most of each line and then hopped up during the line's last word. Now it works out how far through the line the reader is and moves that share of the way to the next line, so it is always moving. The line being read rises through the reading band.
+- **Movement** (Inspector > Pace) is a choice of three big buttons: **Smooth**, **A line at a time** (the old hold-then-move) and **A page at a time**. It replaces the "Move a page at a time" switch; a script or remembered setting with that switch on opens as A page at a time (`motion` in the settings; the old `pageMode` is read and carried over).
+- **Pace and text size in the prompter's controls:** `- 145 a minute +` and `A 64 px text A`, each button 52 px. A tap steps once (5 words a minute, 4 px); holding keeps going. The values update as they change (and are announced politely). The keys still work: Up/Down for the pace while the text moves, + and - for the size. The "Text size" pop-up message is gone, since the size shows in the controls now. "End of the script" is a short message instead of replacing the pace.
+- **Touch:** while the controls have faded, a tap on the text brings them back instead of pausing, so they can be reached mid-sentence; the next tap pauses. Pressing a control keeps the controls up while you use it.
+- **The controls fade on a tablet too.** Keyboard focus in the controls still keeps them on screen, but a tap on Start no longer does (it now checks for visible keyboard focus, `:focus-visible`, not any focus).
+
 ## 0.3.1 - 2026-10-22 - Two new apps in the family
 
 - TELEDTR and WHTBRDR are now listed in every app's splash screen and Help > More apps, and the splash row marks the app you are in with "You are here".

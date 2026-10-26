@@ -605,7 +605,9 @@ kbd {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px 12px;
   background: var(--pr-bg); transition: opacity .3s;
 }
-.prompter.idle .pr-controls:not(:focus-within) { opacity: 0; pointer-events: none; }
+/* Keyboard focus in the controls keeps them on screen; a tap or a click on
+   a button does not (that focus is not "visible"), so they still fade on a tablet. */
+.prompter.idle .pr-controls:not(:has(:focus-visible)) { opacity: 0; pointer-events: none; }
 .pr-controls button {
   min-width: 52px; min-height: 52px; border-radius: 12px; border: 2px solid rgba(127,127,127,.5);
   background: transparent; color: var(--pr-fg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -614,7 +616,16 @@ kbd {
 .pr-controls button svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .pr-controls button.big { min-width: 84px; background: var(--pr-btn); color: #422006; border-color: var(--pr-btn); }
 .pr-controls button:focus-visible { outline: 3px solid var(--pr-accent); outline-offset: 3px; }
-.pr-speed { min-width: 110px; text-align: center; font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 700; color: var(--pr-fg); }
+/* The pace and text size steppers: - value +, each button a 52px target. */
+.pr-step { display: inline-flex; align-items: center; gap: 4px; padding: 0 2px; }
+.pr-step button { min-width: 52px; padding: 0; }
+.pr-val { min-width: 64px; display: grid; justify-items: center; line-height: 1.1; color: var(--pr-fg); font-variant-numeric: tabular-nums; }
+.pr-val b { font-size: 20px; font-weight: 800; }
+.pr-val small { font-size: 12px; color: var(--pr-muted); font-weight: 700; }
+.pr-sign { font-size: 28px; font-weight: 800; line-height: 1; }
+.pr-a { font-weight: 800; line-height: 1; }
+.pr-a.small { font-size: 16px; }
+.pr-a.big { font-size: 26px; }
 .pr-hint { width: 100%; text-align: center; font-size: 14px; color: var(--pr-muted); margin: 0; }
 
 /* The prompter's own Inspector: the same sections as the one beside the
@@ -1312,11 +1323,21 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <button type="button" id="prPrev" aria-label="Back one paragraph (Left arrow)" title="Back one paragraph (Left arrow or Page Up)"><span data-icon="prev"></span></button>
     <button type="button" id="prPlay" class="big" aria-label="Start" title="Start or pause (Space)"><span data-icon="play" id="prPlayIcon"></span><span id="prPlayText">Start</span></button>
     <button type="button" id="prNext" aria-label="Forward one paragraph (Right arrow)" title="Forward one paragraph (Right arrow or Page Down)"><span data-icon="next"></span></button>
-    <span class="pr-speed" id="prSpeed" aria-live="polite">145 a minute</span>
+    <!-- Change the pace and the text size in the moment. Hold a button to keep going. -->
+    <div class="pr-step" role="group" aria-label="Pace">
+      <button type="button" id="prSlower" aria-label="Slower (Down arrow)" title="Slower (Down arrow)"><span class="pr-sign" aria-hidden="true">&minus;</span></button>
+      <span class="pr-val" id="prSpeed" aria-live="polite"><b id="prSpeedNum">145</b><small>a minute</small></span>
+      <button type="button" id="prFaster" aria-label="Faster (Up arrow)" title="Faster (Up arrow)"><span class="pr-sign" aria-hidden="true">+</span></button>
+    </div>
+    <div class="pr-step" role="group" aria-label="Text size">
+      <button type="button" id="prSmaller" aria-label="Smaller text (minus key)" title="Smaller text (-)"><span class="pr-a small" aria-hidden="true">A</span></button>
+      <span class="pr-val" id="prSize" aria-live="polite"><b id="prSizeNum">64</b><small>px text</small></span>
+      <button type="button" id="prBigger" aria-label="Bigger text (plus key)" title="Bigger text (+)"><span class="pr-a big" aria-hidden="true">A</span></button>
+    </div>
     <button type="button" id="prFull" aria-label="Full screen on or off (F)" title="Full screen on or off (F)"><span data-icon="maximize"></span></button>
     <button type="button" id="prSettings" aria-expanded="false" aria-controls="prPanel" aria-label="Inspector: look and pace" title="Inspector: look and pace"><span data-icon="inspector"></span></button>
     <button type="button" id="prClose" aria-label="Stop and go back to editing (Escape)" title="Stop and go back to editing (Escape)"><span data-icon="x"></span></button>
-    <p class="pr-hint">Space starts and pauses. Up and Down change the pace. Left and Right move a paragraph. + and - change the text size. Right-click or long-press for more. Escape goes back to editing.</p>
+    <p class="pr-hint">Space starts and pauses. Up and Down change the pace. Left and Right move a paragraph. + and - change the text size. Right-click or long-press for more. On a touch screen, when the controls are hidden, a tap brings them back. Escape goes back to editing.</p>
   </div>
 </section>
 
@@ -1386,7 +1407,9 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <h3>Prompt</h3>
       <p>Press <kbd>Ctrl+P</kbd> or the Prompt button. The prompter starts a countdown, then the text moves up to the reading line. Lines you have read are dimmed, and the bar at the bottom shows the section you are in. The prompter remembers where you stopped, and keeps the screen awake while it is open.</p>
       <h3>Change things while prompting</h3>
-      <p>The sliders button opens the Inspector beside the text, with the same sections. <kbd>+</kbd> and <kbd>-</kbd> change the text size, <kbd>F</kbd> switches full screen, and a right-click or long-press on the text opens a menu.</p>
+      <p>The pace and the text size have their own <strong>- and +</strong> buttons in the prompter's controls (hold one to keep going), as do the keys: <kbd>Up</kbd> and <kbd>Down</kbd> for the pace while the text moves, <kbd>+</kbd> and <kbd>-</kbd> for the size. The sliders button opens the Inspector beside the text, with every setting. <kbd>F</kbd> switches full screen, and a right-click or long-press on the text opens a menu. On a touch screen, when the controls have faded, the first tap brings them back without pausing.</p>
+      <h3>Movement</h3>
+      <p>In the Inspector's Pace section: <strong>Smooth</strong> (the text glides up steadily, the default), <strong>A line at a time</strong> (each line holds still, then moves up) or <strong>A page at a time</strong> (the text stays still while you read down the screen, then turns).</p>
     </div>
     <div role="tabpanel" id="paneAbout" aria-labelledby="tabAbout" hidden>
       <p><strong>TELEDTR</strong> <span id="aboutVersion"></span> is a teleprompter for the EDTR suite. Write a script, time it, and read it full screen while you record.</p>
@@ -1421,7 +1444,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ========================================================================= */
 
 // The version. Keep this line in exactly this form: the update check reads it.
-const APP_VERSION = '0.3.1';
+const APP_VERSION = '0.4.0';
 
 // The storage key for this app's own UI preferences (theme, Inspector height,
 // which Inspector sections are open). Every key starts with the app's name,
@@ -1455,7 +1478,8 @@ const DEFAULTS = {
   mirrorX: false,         // flip left to right (for prompter glass)
   mirrorY: false,         // flip upside down
   fadeRead: true,         // dim the lines above the reading line (already read)
-  pageMode: false,        // move a page at a time instead of gliding (some readers prefer it)
+  motion: 'smooth',       // how the text moves: 'smooth' (glides steadily, the default),
+                          // 'line' (holds still, then moves up a line) or 'page' (a page at a time)
   timerElapsed: true,     // the four on-screen timers, each on or off
   timerEstimate: true,
   timerRemaining: true,
@@ -1566,6 +1590,12 @@ const ICONS = {
 
 // The changelog, newest first. Each release is added at the top.
 const CHANGELOG = [
+  { version: '0.4.0', date: '2026-10-24', notes: [
+    'Smooth scrolling, and it is the default: the text now glides up steadily at the pace. Before, every word on a line sat at the same height, so the text held still for most of each line and then hopped up while you read the line\'s last word.',
+    'Movement (in Pace) is a choice of three: Smooth, A line at a time (the old hop) and A page at a time. Scripts saved with "Move a page at a time" switched on open with A page at a time.',
+    'The prompter\'s controls now have the pace and the text size, each with - and + (hold to keep going), so both can be changed in the moment without opening the Inspector.',
+    'On a touch screen, while the controls are hidden, a tap on the text brings them back instead of pausing, so you can reach them mid-sentence. A second tap pauses, as before.'
+  ] },
   { version: '0.3.1', date: '2026-10-22', notes: [
     'TELEDTR and WHTBRDR are now listed in every app\'s splash screen and Help > More apps, and the splash row marks the app you are in with "You are here".'
   ] },
@@ -3739,7 +3769,9 @@ function cleanSettings(input) {
   out.mirrorX = bool(src.mirrorX, DEFAULTS.mirrorX);
   out.mirrorY = bool(src.mirrorY, DEFAULTS.mirrorY);
   out.fadeRead = bool(src.fadeRead, DEFAULTS.fadeRead);
-  out.pageMode = bool(src.pageMode, DEFAULTS.pageMode);
+  // How the text moves. Files from 0.2.0 - 0.3.1 had a "pageMode" switch instead: it carries over.
+  out.motion = ['smooth', 'line', 'page'].includes(src.motion) ? src.motion
+    : (src.pageMode === true ? 'page' : DEFAULTS.motion);
   out.timerElapsed = bool(src.timerElapsed, DEFAULTS.timerElapsed);
   out.timerEstimate = bool(src.timerEstimate, DEFAULTS.timerEstimate);
   out.timerRemaining = bool(src.timerRemaining, DEFAULTS.timerRemaining);
@@ -3909,8 +3941,13 @@ const SETTING_GROUPS = [
         set: (v) => { settings.pace = v; }, format: (v) => v + ' words a minute' }),
       makeSlider({ label: 'Countdown', min: 0, max: 10, step: 1, get: () => settings.countdown,
         set: (v) => { settings.countdown = v; }, format: (v) => (v === 0 ? 'Off' : v + ' seconds') }),
-      makeSwitch({ label: 'Move a page at a time', get: () => settings.pageMode, set: (v) => { settings.pageMode = v; } }),
-      el('p', 'hint', 'A page at a time keeps the text still while you read down the screen, then turns to the next page. Some readers find it easier than text that glides.')
+      makeChoice({ label: 'Movement', get: () => settings.motion, set: (v) => { settings.motion = v; },
+        options: [
+          { value: 'smooth', label: 'Smooth' },
+          { value: 'line', label: 'A line at a time' },
+          { value: 'page', label: 'A page at a time' }
+        ] }),
+      el('p', 'hint', 'Smooth glides steadily, like a professional prompter. A line at a time holds each line still, then moves up. A page at a time keeps the text still while you read down the screen, then turns the page; some readers find that easiest.')
     ] },
   { id: 'text', title: 'Text',
     note: () => settings.textSize + ' px',
@@ -5295,7 +5332,6 @@ const prControls = document.getElementById('prControls');
 const prPanel = document.getElementById('prPanel');
 const prPanelBody = document.getElementById('prPanelBody');
 const prPlay = document.getElementById('prPlay');
-const prSpeed = document.getElementById('prSpeed');
 const prFade = document.getElementById('prFade');
 const prProgressBar = document.getElementById('prProgressBar');
 
@@ -5352,7 +5388,7 @@ function applyPrompterStyle() {
   prFade.hidden = !settings.fadeRead;
   document.getElementById('prProgress').hidden = !settings.showProgress;
   document.getElementById('prWhereWrap').hidden = !settings.showProgress;
-  if (!settings.pageMode) P.pageTop = null;
+  if (settings.motion !== 'page') P.pageTop = null;
   prFlip.classList.toggle('mirror-x', settings.mirrorX);
   prFlip.classList.toggle('mirror-y', settings.mirrorY);
   // Each on-screen timer shows or hides with its switch.
@@ -5360,7 +5396,9 @@ function applyPrompterStyle() {
   document.getElementById('tEstWrap').hidden = !settings.timerEstimate;
   document.getElementById('tRemWrap').hidden = !settings.timerRemaining;
   document.getElementById('tTargetWrap').hidden = settings.target === 0;
-  prSpeed.textContent = settings.pace + ' words a minute';
+  // The pace and the text size, beside their - and + buttons.
+  document.getElementById('prSpeedNum').textContent = String(settings.pace);
+  document.getElementById('prSizeNum').textContent = String(settings.textSize);
   if (P.open) layoutPrompter();
 }
 
@@ -5433,7 +5471,7 @@ function layoutPrompter() {
   const yb = b.offsetTop + b.offsetHeight / 2;
   let bandY;                                      // where the band sits, from the top of the screen
 
-  if (settings.pageMode) {
+  if (settings.motion === 'page') {
     /* A page at a time: the text stays still while you read down the
        screen. When the line you are on gets near the bottom (or you move
        back above the top), the page turns: that line jumps up to the
@@ -5445,8 +5483,28 @@ function layoutPrompter() {
     }
     prTrack.style.transform = 'translateY(' + (-P.pageTop).toFixed(1) + 'px)';
     bandY = ya - P.pageTop;
-  } else {
+  } else if (settings.motion === 'line') {
+    /* A line at a time: every word on a line sits at the same height, so
+       moving from word to word holds the line still, and the text moves up
+       to the next line while you read the line's last word. */
     const y = ya + (yb - ya) * f;
+    prTrack.style.transform = 'translateY(' + (readY - y).toFixed(1) + 'px)';
+    bandY = readY;
+  } else {
+    /* Smooth (the default): the text glides up steadily. Find the line the
+       reader is on (the words that share its height) and how far through it
+       they are, and move the text that share of the way to the next line.
+       So the text is always moving, at the pace, never in hops. */
+    const lineTop = a.offsetTop;
+    let start = i;
+    while (start > 0 && words[start - 1].offsetTop === lineTop) start -= 1;
+    let end = i;
+    while (end + 1 < words.length && words[end + 1].offsetTop === lineTop) end += 1;
+    const through = (pos - start) / (end + 1 - start);           // 0 at the line's first word, nearly 1 at its end
+    const next = words[end + 1];
+    const yNext = next ? next.offsetTop + next.offsetHeight / 2 : ya + a.offsetHeight * settings.lineSpacing;
+    // Half a line lower, so the line you are reading rises THROUGH the band, centered on average.
+    const y = ya + (yNext - ya) * through - a.offsetHeight / 2;
     prTrack.style.transform = 'translateY(' + (readY - y).toFixed(1) + 'px)';
     bandY = readY;
   }
@@ -5555,11 +5613,10 @@ function changePace(delta) {
   settingsChanged();
 }
 
-// Change the text size (the + and - keys). The text keeps its place.
+// Change the text size (the + and - keys and buttons). The text keeps its place.
 function changeTextSize(delta) {
   settings.textSize = clamp(settings.textSize + delta, 24, 160);
   settingsChanged();
-  toast('Text size ' + settings.textSize + ' px', 1200);
 }
 
 /* ---- Full screen, on or off (the F key and the button) ----
@@ -5635,7 +5692,7 @@ function tick(now) {
   refreshTimers(false);
   layoutPrompter();
   // Hide the controls after a while of reading, so the text is clear.
-  if (P.playing && performance.now() - P.lastMoveAt > 2500 && prPanel.hidden && !prControls.matches(':focus-within')) {
+  if (P.playing && performance.now() - P.lastMoveAt > 2500 && prPanel.hidden && !prControls.querySelector(':focus-visible')) {
     prompter.classList.add('idle');
   }
   P.rafId = requestAnimationFrame(tick);
@@ -5676,7 +5733,7 @@ function step(now, dt) {
   if (P.wi >= model.words.length) {
     P.wi = model.words.length;
     pause();
-    prSpeed.textContent = 'End of the script';
+    toast('End of the script.');
   }
 }
 
@@ -5907,11 +5964,14 @@ prStage.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 // Taps and swipes on the text. A tap starts or pauses; a swipe up or down changes the pace.
-// (Only the main button: a right-click opens the menu instead.)
+// (Only the main button: a right-click opens the menu instead.) On a touch
+// screen, while the controls are hidden, a tap only brings them back, so you
+// can reach the pace and size buttons without stopping mid-sentence.
 let press = null;
 prStage.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
-  press = { id: e.pointerId, y: e.clientY, moved: false, menu: false };
+  const hidden = prompter.classList.contains('idle');
+  press = { id: e.pointerId, y: e.clientY, moved: false, menu: false, justWake: hidden && e.pointerType !== 'mouse' };
   wake();
 });
 prStage.addEventListener('pointermove', (e) => {
@@ -5925,7 +5985,7 @@ prStage.addEventListener('pointermove', (e) => {
   }
 });
 prStage.addEventListener('pointerup', (e) => {
-  if (press && press.id === e.pointerId && !press.moved && !press.menu) togglePlay();
+  if (press && press.id === e.pointerId && !press.moved && !press.menu && !press.justWake) togglePlay();
   press = null;
 });
 prStage.addEventListener('pointercancel', () => { press = null; });
@@ -5957,8 +6017,10 @@ function openPrompterMenu(x, y) {
   ], x, y);
 }
 
-// Moving the mouse or touching the screen brings the controls back.
+// Moving the mouse or touching the screen brings the controls back, and
+// pressing a control keeps them there while you use it.
 prompter.addEventListener('pointermove', wake);
+prControls.addEventListener('pointerdown', wake, true);
 
 // Leaving full screen with Escape also closes the prompter (the browser keeps
 // that Escape for itself, so this is the only way to hear it). Leaving with F
@@ -5980,6 +6042,11 @@ prPlay.addEventListener('click', togglePlay);
 document.getElementById('prNext').addEventListener('click', () => paragraphStep(1));
 document.getElementById('prSettings').addEventListener('click', () => togglePrSettings());
 document.getElementById('prFull').addEventListener('click', toggleFullscreen);
+// The pace and text size buttons: a tap steps once, holding keeps going.
+holdToRepeat(document.getElementById('prSlower'), () => { changePace(-5); wake(); });
+holdToRepeat(document.getElementById('prFaster'), () => { changePace(5); wake(); });
+holdToRepeat(document.getElementById('prSmaller'), () => { changeTextSize(-4); wake(); });
+holdToRepeat(document.getElementById('prBigger'), () => { changeTextSize(4); wake(); });
 document.getElementById('prPanelClose').addEventListener('click', () => togglePrSettings(false));
 document.getElementById('prClose').addEventListener('click', closePrompter);
 
