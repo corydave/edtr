@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.23.2 - 2026-10-24 - Clearer icons
+
+- **Make it a screenshot** has a new icon: a picture (hills and a sun) with rounded corners and a sparkle in its corner. The old one, two overlapping boxes, looked too much like **Copy image** right beside it.
+- **Make a headshot** has a button in the top bar (the person-in-a-circle icon, after Paste). It picks a photo and opens the headshot screen, as the splash and start screen already did; with a picture already open, that picture is replaced (Undo brings it back).
+
 ## 1.23.1 - 2026-10-22 - Two new apps in the family
 
 - Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen's row of apps and in Help > More apps.
