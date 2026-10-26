@@ -4028,7 +4028,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.7.1';
+const APP_VERSION = '0.7.2';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -4310,7 +4310,21 @@ function unitsField(label) {
    ===================================================================== */
 const PT_PER_IN = 72;
 const PT_PER_MM = 72 / 25.4;
+/**
+ * The display's own shape (Dave, 2026-10-23): a fresh board's page is the
+ * screen's size, 1 CSS pixel to 0.75 points (a 1440 x 900 laptop gives a
+ * 1080 x 675 pt page), so it fills the board and Present fills the screen
+ * edge to edge. Worked out once, as WHTBRDR opens; after that the page is a
+ * size like any other, so a window that changes never reshapes a drawing.
+ * (A phone held upright gets an upright page. Kept from 1 to 100 inches.)
+ */
+function screenPageSize() {
+  const sw = (window.screen && window.screen.width) || 1280, sh = (window.screen && window.screen.height) || 800;
+  return { pxW: sw, pxH: sh, w: round2(clamp(sw * PT_PER_PX, 72, 7200)), h: round2(clamp(sh * PT_PER_PX, 72, 7200)) };
+}
+const SCREEN = screenPageSize();
 const PAGE_SIZES = [
+  { id: 'screen',   name: 'Fit the screen',    short: 'Screen',   w: SCREEN.w, h: SCREEN.h, words: SCREEN.pxW + ' x ' + SCREEN.pxH + ' pixels, the shape of this screen' },
   { id: 'letter',   name: 'Letter, portrait',  short: 'Letter',   w: 612,    h: 792,    words: '8.5 x 11 in' },
   { id: 'letter-l', name: 'Letter, landscape', short: 'Letter',   w: 792,    h: 612,    words: '11 x 8.5 in' },
   { id: 'a4',       name: 'A4, portrait',      short: 'A4',       w: 595.28, h: 841.89, words: '210 x 297 mm' },
@@ -4387,7 +4401,7 @@ function newBoard(sizeId) {
   return { app: APP_ID, version: 1, staging: null, pages: [newPage(size.w, size.h)] };
 }
 
-let board = newBoard(isMetric() ? 'a4' : 'letter');   // (the first page: A4 where people measure in centimeters)
+let board = newBoard('screen');          // (the first page fills the screen, until a size is picked or a document opened: section 3)
 let pageIndex = 0;                       // the page on show (the filmstrip changes it: section 8h)
 const page = () => board.pages[pageIndex];
 
@@ -13647,14 +13661,14 @@ function buildNewDialog() {
   });
   $('btnNewGo').addEventListener('click', () => {
     const picked = grid.querySelector('input:checked');
-    startNewBoard(picked ? picked.value : 'letter');
+    startNewBoard(picked ? picked.value : 'screen');
     $('newDlg').close();
   });
 }
 function openNewDialog() {
   // Start on the size of the page you have now, if it is one of the list.
   const found = findSize(page().w, page().h);
-  const want = found && !found.turned ? found.size.id : 'letter';
+  const want = found && !found.turned ? found.size.id : 'screen';
   const input = $('newSizes').querySelector('input[value="' + want + '"]');
   if (input) input.checked = true;
   $('newDlg').showModal();
@@ -13769,7 +13783,7 @@ function buildHelp() {
       el('li', { text: 'The eraser (E) takes away whole strokes, or press E again to rub out just part of one. S, M and L size it.' }),
       el('li', { text: 'Arrows, lines, rectangles and ellipses (A, L, R, O): drag to draw, in the pen color and size. Text (T): click and type. Sticky notes: J drops one in the middle, or pick the tool and click where it goes. Double-click a text or note to type in it again.' }),
       el('li', { text: 'Pictures: press I or the Picture button, paste one (Ctrl+V), or drop a file on the board. Stamps (G): pick a check, an X, a star or a question mark in the pill, then click to put them down.' }),
-      el('li', { text: 'Pick the page size in the Inspector (Page), or start a new board with the first button in the top bar. Undo brings back anything, even a cleared page or the board before a new one.' }),
+      el('li', { text: 'A new board fills the screen. Pick another page size in the Inspector (Page), or start a new board with the first button in the top bar. Undo brings back anything, even a cleared page or the board before a new one.' }),
       el('li', { text: 'Open a PDF or pictures (Ctrl+O, or the folder button in the top bar), or drop a PDF on the board: every page becomes a page to draw on, after the one on show. A Word, PowerPoint or Excel file needs saving as a PDF first; WHTBRDR says how.' })),
     el('h3', { text: 'Samples' }),
     el('p', { text: 'Three ready-made boards to try things on: a graph on a coordinate grid, a marked-up PDF worksheet, and four lesson slides with step numbers.' }),
@@ -13779,7 +13793,7 @@ function buildHelp() {
     el('h3', { text: 'Using a stylus' }),
     el('p', { text: 'Once a stylus touches the board, a finger slides the page instead of drawing, so your hand can rest on the screen. The Inspector\'s "A finger" setting changes this.' }),
     el('h3', { text: 'What is coming' }),
-    el('p', { text: 'Next: PowerPoint export (0.7.1), with every mark as a PowerPoint object you can still change, each with its description.' }),
+    el('p', { text: 'Next: PowerPoint export (0.7.3), with every mark as a PowerPoint object you can still change, each with its description.' }),
     el('h3', { text: 'Saving' }),
     el('p', { text: 'Save (Ctrl+S, or the disk button in the top bar) keeps the whole board as a .whtbrdr file: every page, every mark, and the PDFs and pictures inside it. Open (Ctrl+O) brings it back. While you work, WHTBRDR also keeps a crash backup in this browser; if the tab closes before you save, the next start offers to pick up where you left off.' }),
     el('h3', { text: 'Sharing' }),
@@ -14191,6 +14205,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.7.2', date: '2026-10-23', notes: [
+    'A fresh board fills the screen: its first page is the shape and size of your display ("Fit the screen"), instead of a portrait Letter or A4 page. Present fills the screen edge to edge.',
+    'The size is set once, as WHTBRDR opens, so resizing the window or opening the Inspector never reshapes what you drew. "Fit the screen" is the first choice in the New dialog and the Inspector\'s page sizes.'
+  ] },
   { version: '0.7.1', date: '2026-10-22', notes: [
     'TELEDTR and WHTBRDR are now listed in every app\'s splash screen and Help > More apps, and the splash row marks the app you are in with "You are here".'
   ] },

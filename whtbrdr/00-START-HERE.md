@@ -81,8 +81,14 @@
 > **Then 0.7.0:** the Accessibility tab beside the Inspector, with a
 > top-bar count (section 8p): the checker, reading order you can change
 > (`page.readOrder`), the color-vision preview; background pictures can be
-> described; the Features tour is the planned five. Waiting for Dave's
-> review of 0.7.0; next is 0.7.1 (PowerPoint export).
+> described; the Features tour is the planned five.
+>
+> **Then 0.7.1** (another session): the SUITE block pasted in again, with
+> TELEDTR and WHTBRDR listed.
+>
+> **Then 0.7.2:** a fresh board's first page is the screen's shape and
+> size ("Fit the screen", `screenPageSize` in section 3). Waiting for
+> Dave's review of 0.7.2; next is 0.7.3 (PowerPoint export).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**

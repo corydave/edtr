@@ -1,5 +1,12 @@
 # WHTBRDR - changelog
 
+## 0.7.2 - 2026-10-23 - A first page the size of the screen
+
+- **A fresh board fills the screen:** its first page is the display's own shape and size ("Fit the screen": a 1440 x 900 laptop gives a 1080 x 675 pt page, 15 x 9.375 in), instead of a portrait Letter or A4 page. It fills the board with a slim margin, and Present (F5) fills the screen edge to edge.
+- **It stays put:** the size is worked out once, as WHTBRDR opens, and is then a size like any other. Resizing the window or opening the Inspector never reshapes what is drawn, and a saved board keeps its size wherever it is opened (on another computer it shows as a custom size).
+- **Fit the screen** is the first choice in the New dialog and in the Inspector's page sizes, so it can be picked again later. Picking another size, or opening a PDF or a picture, works as before (a PDF still takes the place of a board that is one blank page).
+- A phone held upright gets an upright page (phone testing is still on hold).
+
 ## 0.7.1 - 2026-10-22 - Two new apps in the family
 
 - TELEDTR and WHTBRDR are now listed in every app's splash screen and Help > More apps, and the splash row marks the app you are in with "You are here".
