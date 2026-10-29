@@ -49,10 +49,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
    fold itself takes (0 on the Pixel Fold, whose screen bends smoothly). */
 .lab { position: fixed; inset: 0; display: grid; --a: 55%; --b: 45%; --hinge: 0px; }
 .lab[data-layout="stacked"] { grid-template-rows: var(--a) var(--hinge) var(--b); grid-template-columns: 100%; grid-template-areas: "stage" "hinge" "deck"; }
-.lab[data-layout="side"] { grid-template-columns: var(--a) var(--hinge) var(--b); grid-template-rows: 100%; grid-template-areas: "deck hinge stage"; }
+/* Side by side, the script is on the LEFT and the controls on the right (Dave,
+   2026-10-28: the Fold's inner camera is at the top left, so the script sits
+   under it and your eyes stay near the lens). */
+.lab[data-layout="side"] { grid-template-columns: var(--a) var(--hinge) var(--b); grid-template-rows: 100%; grid-template-areas: "stage hinge deck"; }
 /* "Swap": the other way round (the stage on the other half). */
 .lab[data-layout="stacked"].swap { grid-template-areas: "deck" "hinge" "stage"; }
-.lab[data-layout="side"].swap { grid-template-areas: "stage hinge deck"; }
+.lab[data-layout="side"].swap { grid-template-areas: "deck hinge stage"; }
 .stage { grid-area: stage; position: relative; overflow: hidden; background: #000; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
 .hinge { grid-area: hinge; background: #000; }
 .deck { grid-area: deck; overflow-y: auto; overscroll-behavior: contain; background: var(--bg); padding: 10px 12px 18px; min-height: 0; min-width: 0; }
@@ -82,6 +85,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-radius: 12px; overflow: hidden; background: #111; border: 2px solid rgba(255,255,255,.25); z-index: 3; }
 .stage[data-preview="half"] .preview { position: relative; right: auto; bottom: auto; width: 100%; max-width: none; flex: 0 0 46%; aspect-ratio: auto; border-radius: 0; border: 0; border-top: 2px solid #333; }
 .stage[data-preview="off"] .preview { display: none; }
+/* "corner" is now the FLOATING preview: it sits over the whole screen (both
+   halves), wherever you drag it. --px, --py and --pw (its left, top and width)
+   are set by placePreview() in the script. touch-action: none lets a finger
+   drag it without scrolling or zooming the page. */
+.stage[data-preview="corner"] .preview { position: fixed; left: var(--px, auto); top: var(--py, auto); right: auto; bottom: auto;
+  width: var(--pw, 34%); max-width: none; z-index: 20; touch-action: none; cursor: grab; box-shadow: 0 6px 24px rgba(0,0,0,.55); }
+.preview.dragging { cursor: grabbing; border-color: var(--brand); }
+/* The resize corner (bottom right): a 44 px target, drawn as a small sunflower notch. */
+.preview-grip { display: none; position: absolute; right: 0; bottom: 0; width: 44px; height: 44px; cursor: nwse-resize; }
+.preview-grip::after { content: ''; position: absolute; right: 6px; bottom: 6px; width: 16px; height: 16px;
+  border-right: 4px solid var(--brand); border-bottom: 4px solid var(--brand); border-radius: 0 0 6px 0; }
+.stage[data-preview="corner"] .preview-grip { display: block; }
 .preview canvas { width: 100%; height: 100%; object-fit: contain; display: block; }
 .preview.mirror canvas { transform: scaleX(-1); }     /* the preview only: the recording is the right way round */
 .cam-msg { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; text-align: center; padding: 8px; color: var(--muted); font-size: 13px; }
@@ -177,11 +192,13 @@ dialog::backdrop { background: rgba(0,0,0,.7); }
       <div class="pr-fade" id="prFade" aria-hidden="true"></div>
       <div class="pr-count" id="prCount" aria-hidden="true" hidden></div>
     </div>
-    <figure class="preview" id="preview">
+    <figure class="preview" id="preview" aria-label="Camera preview" aria-describedby="previewHelp">
       <!-- What the camera sees, with the effects: this very picture is what gets recorded. -->
       <canvas id="out" width="1280" height="720" aria-label="Camera preview"></canvas>
       <p class="cam-msg" id="camMsg">The camera is off. Turn it on in the controls.</p>
       <span class="rec-badge" id="recBadge" hidden>REC <b id="recTime">0:00</b></span>
+      <span class="preview-grip" aria-hidden="true"></span>
+      <span class="sr-only" id="previewHelp">Drag to move it anywhere on the screen; drag its corner, or pinch, to resize it. With the keyboard: arrow keys move it, Shift and the arrow keys resize it.</span>
     </figure>
   </section>
 
@@ -238,11 +255,18 @@ dialog::backdrop { background: rgba(0,0,0,.7); }
       <div class="seg" role="group" aria-labelledby="qualityLabel" data-setting="quality">
         <button type="button" data-value="720">720p</button><button type="button" data-value="1080">1080p</button>
       </div>
+      <div class="label" id="shapeLabel">Shape of the video</div>
+      <div class="seg" role="group" aria-labelledby="shapeLabel" data-setting="shape">
+        <button type="button" data-value="landscape">Landscape 16:9</button><button type="button" data-value="portrait">Portrait 9:16</button><button type="button" data-value="square">Square</button><button type="button" data-value="camera">As the camera sees it</button>
+      </div>
+      <p class="hint">Landscape, Portrait and Square stay the same whichever way you hold the phone (the picture is trimmed to fit). "As the camera sees it" turns with the phone.</p>
       <div class="label" id="previewLabel">Preview</div>
       <div class="seg" role="group" aria-labelledby="previewLabel" data-setting="preview">
-        <button type="button" data-value="corner">In a corner</button><button type="button" data-value="half">Under the script</button><button type="button" data-value="off">Off</button>
+        <button type="button" data-value="corner">Floating</button><button type="button" data-value="half">Under the script</button><button type="button" data-value="off">Off</button>
       </div>
       <div class="switch-row"><span id="mirrorLabel">Mirror the preview (like a mirror; the video is not flipped)</span><button class="switch" type="button" role="switch" aria-labelledby="mirrorLabel" data-switch="mirror"></button></div>
+      <div class="row"><button class="btn" id="btnPreviewReset" type="button">Put the preview back in the corner</button></div>
+      <p class="hint">Floating: drag the preview anywhere on the screen, and drag its corner (or pinch it) to make it bigger or smaller. It only moves on your screen, never in the video.</p>
       <div class="label" id="layoutLabel">Layout</div>
       <div class="seg" role="group" aria-labelledby="layoutLabel" data-setting="layout">
         <button type="button" data-value="auto">Auto</button><button type="button" data-value="tabletop">Tabletop</button><button type="button" data-value="book">Book</button><button type="button" data-value="single">One screen</button>
@@ -349,7 +373,10 @@ const DEFAULTS = {
   size: 44,           // the script's text size in px (20 - 120)
   readLine: 25,       // where the reading line sits, % down the script (10 - 60): near the camera
   quality: '720',     // '720' or '1080' (the camera picture's height)
-  preview: 'corner',  // 'corner', 'half' or 'off'
+  preview: 'corner',  // 'corner' (floating), 'half' or 'off'
+  shape: 'landscape', // the video's shape: 'landscape' (16:9), 'portrait' (9:16), 'square', or 'camera' (as the camera gives it)
+  floatX: -1, floatY: -1, // where the floating preview sits: its left and top as shares of the screen (-1: not moved yet, so the corner)
+  floatW: 0.34,       // the floating preview's width, as a share of the screen's width
   mirror: true,       // mirror the preview (the recording is never mirrored)
   layout: 'auto',     // 'auto' (follow the fold), 'tabletop', 'book' or 'single'
   swap: false,        // put the two parts the other way round
@@ -360,8 +387,8 @@ const DEFAULTS = {
   color: '#1f2937',   // the plain background color
   edge: 3             // how soft the edge around you is, px (0 - 10)
 };
-const CHOICES = { quality: ['720', '1080'], preview: ['corner', 'half', 'off'], layout: ['auto', 'tabletop', 'book', 'single'], facing: ['user', 'environment'], bg: ['none', 'blur', 'color', 'picture'] };
-const RANGES = { pace: [80, 220], size: [20, 120], readLine: [10, 60], bright: [50, 150], contrast: [50, 150], saturate: [0, 200], warmth: [-50, 50], blur: [4, 40], edge: [0, 10] };
+const CHOICES = { quality: ['720', '1080'], shape: ['landscape', 'portrait', 'square', 'camera'], preview: ['corner', 'half', 'off'], layout: ['auto', 'tabletop', 'book', 'single'], facing: ['user', 'environment'], bg: ['none', 'blur', 'color', 'picture'] };
+const RANGES = { floatX: [-1, 1], floatY: [-1, 1], floatW: [0.12, 1], pace: [80, 220], size: [20, 120], readLine: [10, 60], bright: [50, 150], contrast: [50, 150], saturate: [0, 200], warmth: [-50, 50], blur: [4, 40], edge: [0, 10] };
 let S = { ...DEFAULTS };
 
 // Read the saved settings, keeping only values of the right kind and range.
@@ -415,7 +442,7 @@ function layout() {
   } else {
     // No fold to follow: shares of the screen. The first share is the first part on screen.
     const stageShare = stacked ? 56 : 58;
-    const stageFirst = stacked ? !S.swap : S.swap;   // stacked: the stage is on top; side: the deck is on the left
+    const stageFirst = !S.swap;   // the script comes first (on top, or on the left) unless swapped
     a = (stageFirst ? stageShare : 100 - stageShare) + '%';
     b = (stageFirst ? 100 - stageShare : stageShare) + '%';
     chip = S.layout === 'auto' || S.layout === 'single' ? 'One screen' : (stacked ? 'Tabletop' : 'Book') + ' (chosen)';
@@ -425,6 +452,7 @@ function layout() {
   lab.style.setProperty('--hinge', hinge + 'px');
   $('layoutChip').textContent = chip;
   requestAnimationFrame(layoutPrompter);
+  requestAnimationFrame(placePreview);   // keep the floating preview on the screen after a turn or a fold
 }
 window.addEventListener('resize', layout);
 // Folding or unfolding changes the screen's parts: lay out again.
@@ -638,11 +666,47 @@ function drawCover(ctx, img, w, h) {
   ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
 }
 
+/* ---- The video's shape ----
+   The camera turns its picture with the phone: held upright, it gives a tall
+   picture. The Shape setting fixes the video's shape instead, and each frame
+   is trimmed to fit (the middle is kept, like "cover" for a picture). */
+// How big a picture is, whatever kind it is (a video, a canvas, a bitmap).
+function sizeOf(img) { return [img.videoWidth || img.naturalWidth || img.width, img.videoHeight || img.naturalHeight || img.height]; }
+// Draw `img` into the box (x, y, w, h), trimming its edges so it fills the box without stretching.
+function drawTrimmed(ctx, img, x, y, w, h) {
+  const [iw, ih] = sizeOf(img);
+  if (!iw || !ih) return;
+  const scale = Math.max(w / iw, h / ih);        // the bigger scale fills the box
+  const sw = w / scale, sh = h / scale;          // the part of the picture that fits
+  ctx.drawImage(img, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x, y, w, h);
+}
+// The video's size in pixels, from Quality and Shape.
+function outputSize() {
+  const long = S.quality === '1080' ? 1920 : 1280, short = S.quality === '1080' ? 1080 : 720;
+  if (S.shape === 'portrait') return [short, long];
+  if (S.shape === 'square') return [short, short];
+  if (S.shape === 'camera' && cam.videoWidth) return [cam.videoWidth, cam.videoHeight];
+  return [long, short];                          // landscape (and 'camera' before the camera is on)
+}
+// Size the video to match the settings. Never during a recording: a video
+// cannot change size partway through (it changes after the take instead).
+function fitOutput() {
+  if (rec || pendingRecord) return;
+  const [w, h] = outputSize();
+  if (out.width === w && out.height === h) return;
+  out.width = w;
+  out.height = h;
+  $('preview').style.setProperty('--cam-ratio', w + ' / ' + h);
+  placePreview();
+}
+// The background model has one version for wide pictures and one for upright ones: follow the camera.
+function segModel() { return cam.videoWidth >= cam.videoHeight ? 1 : 0; }
+
 // A frame with no background effect: the camera, with the lighting.
 function drawPlain() {
   const w = out.width, h = out.height;
   octx.filter = lookFilter();
-  octx.drawImage(cam, 0, 0, w, h);
+  drawTrimmed(octx, cam, 0, 0, w, h);
   octx.filter = 'none';
   applyWarmth(octx, w, h);
 }
@@ -668,7 +732,7 @@ async function loadSegmenter() {
     }
     const engine = new window.SelfieSegmentation({ locateFile: (file) => 'vendor/mediapipe/' + file });
     // Model 1 is made for wide pictures (and is faster); model 0 for square or upright ones.
-    engine.setOptions({ modelSelection: out.width >= out.height ? 1 : 0, selfieMode: false });
+    engine.setOptions({ modelSelection: segModel(), selfieMode: false });
     engine.onResults(composite);
     await engine.initialize();
     SEG.engine = engine;
@@ -691,10 +755,10 @@ function composite(results) {
   if (person.width !== w || person.height !== h) { person.width = w; person.height = h; }
   pctx.globalCompositeOperation = 'copy';
   pctx.filter = S.edge ? 'blur(' + S.edge + 'px)' : 'none';
-  pctx.drawImage(mask, 0, 0, w, h);
+  drawTrimmed(pctx, mask, 0, 0, w, h);
   pctx.globalCompositeOperation = 'source-in';
   pctx.filter = lookFilter();
-  pctx.drawImage(frame, 0, 0, w, h);
+  drawTrimmed(pctx, frame, 0, 0, w, h);
   pctx.filter = 'none';
   pctx.globalCompositeOperation = 'source-over';
   // 2. The background.
@@ -703,7 +767,7 @@ function composite(results) {
     // Drawn a little larger than the frame, so the blur does not fade at the edges.
     const pad = S.blur * 2;
     octx.filter = lookFilter() + ' blur(' + S.blur + 'px)';
-    octx.drawImage(frame, -pad, -pad, w + pad * 2, h + pad * 2);
+    drawTrimmed(octx, frame, -pad, -pad, w + pad * 2, h + pad * 2);
   } else if (S.bg === 'picture' && picture) {
     octx.filter = 'none';
     drawCover(octx, picture, w, h);
@@ -765,17 +829,15 @@ async function startCamera() {
   cam.srcObject = stream;
   await cam.play().catch(() => {});
   if (!cam.videoWidth) await new Promise((r) => cam.addEventListener('loadedmetadata', r, { once: true }));
-  out.width = cam.videoWidth;
-  out.height = cam.videoHeight;
-  $('preview').style.setProperty('--cam-ratio', out.width + ' / ' + out.height);
+  fitOutput();
   $('camMsg').hidden = true;
   $('btnCamera').textContent = 'Turn off the camera';
   $('btnFlip').disabled = false;
-  if (SEG.engine) SEG.engine.setOptions({ modelSelection: out.width >= out.height ? 1 : 0 });
+  if (SEG.engine) SEG.engine.setOptions({ modelSelection: segModel() });
   startMeter();
   keepAwake(true);
   watchFrames();
-  status('Camera on: ' + out.width + ' x ' + out.height + '.');
+  status('Camera on. The video is ' + out.width + ' x ' + out.height + '.');
   return true;
 }
 function stopCamera() {
@@ -905,6 +967,7 @@ function finishTake() {
   const type = (rec && rec.mimeType) || recordingType() || 'video/webm';
   const seconds = (performance.now() - recStart) / 1000;
   rec = null;
+  setTimeout(fitOutput, 0);   // a turn during the take: the video's new size, now that it is over
   resetRecordButton();
   const blob = new Blob(chunks, { type });
   chunks = [];
@@ -1034,10 +1097,12 @@ function syncControls() {
   $('pictureBox').hidden = S.bg !== 'picture';
   $('edgeBox').hidden = S.bg === 'none';
   const recording = !!(rec || pendingRecord);
-  document.querySelectorAll('.seg[data-setting="quality"] button').forEach((b) => { b.disabled = recording; });
+  document.querySelectorAll('.seg[data-setting="quality"] button, .seg[data-setting="shape"] button').forEach((b) => { b.disabled = recording; });
   $('btnFlip').disabled = !stream || recording;
   $('btnCamera').disabled = recording;
   markPreset();
+  fitOutput();      // (does nothing when the size is already right, or while recording)
+  placePreview();
 }
 
 // A slider with - and + at its ends (tablets first: no number boxes).
@@ -1091,6 +1156,7 @@ function wireControls() {
       syncControls();
       if (key === 'layout') layout();
       if (key === 'preview') layoutPrompter();
+      if (key === 'shape' && stream) status('The video is now ' + out.width + ' x ' + out.height + '.');
       if (key === 'quality' && stream) await startCamera();
       if (key === 'bg' && S.bg !== 'none') {
         await loadSegmenter();
@@ -1186,10 +1252,128 @@ function wireControls() {
   window.addEventListener('beforeunload', (e) => { if ((take && !take.saved) || rec) { e.preventDefault(); e.returnValue = ''; } });
 }
 
+/* =========================================================================
+   THE FLOATING PREVIEW - drag it anywhere on the screen, resize it
+   Its place is kept as shares of the screen (so it stays put when the
+   phone turns or folds, just scaled), and it is always kept fully on screen.
+   ========================================================================= */
+// Put the floating preview where the settings say (or tidy it away if it isn't floating).
+function placePreview() {
+  const pv = $('preview');
+  const floating = S.preview === 'corner';
+  pv.tabIndex = floating ? 0 : -1;               // reachable with Tab only when it can be moved
+  if (!floating) return;
+  const vw = innerWidth, vh = innerHeight;
+  const ratio = out.width / out.height;
+  let w = clamp(S.floatW * vw, Math.min(120, vw), vw), h = w / ratio;
+  if (h > vh) { h = vh; w = h * ratio; }         // a tall video on a short screen: fit the height
+  let x, y;
+  if (S.floatX < 0 || S.floatY < 0) {            // never moved: the bottom-right corner of the script's half
+    const r = $('stage').getBoundingClientRect();
+    x = r.right - w - 10; y = r.bottom - h - 10;
+  } else { x = S.floatX * vw; y = S.floatY * vh; }
+  x = clamp(x, 0, Math.max(0, vw - w));
+  y = clamp(y, 0, Math.max(0, vh - h));
+  pv.style.setProperty('--px', x + 'px');
+  pv.style.setProperty('--py', y + 'px');
+  pv.style.setProperty('--pw', w + 'px');
+}
+// Move and size the preview by hand (in screen pixels), then remember it.
+function setPreviewBox(x, y, w) {
+  const vw = innerWidth, vh = innerHeight;
+  const ratio = out.width / out.height;
+  w = clamp(w, Math.min(120, vw), vw);
+  if (w / ratio > vh) w = vh * ratio;
+  const h = w / ratio;
+  S.floatX = clamp(x, 0, Math.max(0, vw - w)) / vw;
+  S.floatY = clamp(y, 0, Math.max(0, vh - h)) / vh;
+  S.floatW = w / vw;
+  placePreview();
+  saveSettings();
+}
+function wirePreview() {
+  const pv = $('preview');
+  const pointers = new Map();                    // the fingers (or the mouse) on the preview, by id
+  let gesture = null;                            // what they are doing: 'move', 'resize' or 'pinch'
+  // Start (or restart) a gesture from where the preview is now.
+  const begin = (target) => {
+    const rect = pv.getBoundingClientRect();
+    const pts = [...pointers.values()];
+    if (pts.length >= 2) {
+      const [a, b] = pts;
+      gesture = { kind: 'pinch', rect, dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+    } else if (pts.length === 1) {
+      const resize = target && target.closest && target.closest('.preview-grip');
+      gesture = { kind: resize ? 'resize' : 'move', rect, x: pts[0].x, y: pts[0].y };
+    } else gesture = null;
+  };
+  pv.addEventListener('pointerdown', (e) => {
+    if (S.preview !== 'corner') return;
+    e.preventDefault();
+    try { pv.setPointerCapture(e.pointerId); } catch (err) { /* not a real pointer: fine */ }
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    begin(e.target);
+    pv.classList.add('dragging');
+  });
+  pv.addEventListener('pointermove', (e) => {
+    if (!gesture || !pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const r = gesture.rect;
+    if (gesture.kind === 'move') {
+      setPreviewBox(r.left + e.clientX - gesture.x, r.top + e.clientY - gesture.y, r.width);
+    } else if (gesture.kind === 'resize') {
+      // The corner follows the finger: whichever way it moved more (across, or down) sets the new size.
+      const ratio = r.width / r.height;
+      const dx = e.clientX - gesture.x, dy = (e.clientY - gesture.y) * ratio;
+      setPreviewBox(r.left, r.top, r.width + (Math.abs(dx) > Math.abs(dy) ? dx : dy));
+    } else if (pointers.size >= 2) {
+      // Pinch: the size follows the spread of the two fingers; the middle follows their midpoint.
+      const [a, b] = [...pointers.values()];
+      const w = r.width * Math.hypot(a.x - b.x, a.y - b.y) / gesture.dist;
+      const h = w * r.height / r.width;
+      const cx = r.left + r.width / 2 + (a.x + b.x) / 2 - gesture.mx;
+      const cy = r.top + r.height / 2 + (a.y + b.y) / 2 - gesture.my;
+      setPreviewBox(cx - w / 2, cy - h / 2, w);
+    }
+  });
+  const end = (e) => {
+    if (!pointers.delete(e.pointerId)) return;
+    begin(null);                                 // a finger left a pinch: carry on moving with the other
+    if (!pointers.size) pv.classList.remove('dragging');
+  };
+  pv.addEventListener('pointerup', end);
+  pv.addEventListener('pointercancel', end);
+  // Keys, when the preview has focus: arrows move it, Shift and arrows resize it.
+  // (stopPropagation keeps the page's own Up and Down, which change the pace, out of it.)
+  pv.addEventListener('keydown', (e) => {
+    if (S.preview !== 'corner' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const r = pv.getBoundingClientRect();
+    if (e.shiftKey) setPreviewBox(r.left, r.top, r.width + (d[0] || -d[1]) * 24);   // Right or Up: bigger
+    else setPreviewBox(r.left + d[0] * 16, r.top + d[1] * 16, r.width);
+    status('Preview moved.');
+  });
+  // Back to the corner, at the usual size.
+  $('btnPreviewReset').addEventListener('click', () => {
+    S.floatX = -1; S.floatY = -1; S.floatW = DEFAULTS.floatW;
+    if (S.preview !== 'corner') S.preview = 'corner';
+    saveSettings(); syncControls(); layoutPrompter();
+  });
+  // The camera turned its picture (the phone was turned): resize the video to match, if the shape follows the camera.
+  cam.addEventListener('resize', () => {
+    if (SEG.engine) SEG.engine.setOptions({ modelSelection: segModel() });
+    fitOutput();
+  });
+}
+
 /* ---- Start ---- */
 function init() {
   loadSettings();
   wireControls();
+  wirePreview();
   applySize();
   buildPrompter(scriptText);
   syncControls();
