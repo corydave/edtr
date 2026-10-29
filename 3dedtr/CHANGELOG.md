@@ -1,5 +1,23 @@
 # 3DEDTR changelog
 
+## 0.24.0 - 2026-10-28 - Tutorials
+
+- **Tutorials** (section 15c, `TUTORIALS`): step-by-step guides with a screenshot for every step, opened from a new wide card on the start screen (*Step-by-step tutorials*, added under *See what 3DEDTR can do* by `addTutorialsCard`) and a *Tutorials...* button in Tips. Three to start:
+  - **The donut** (13 steps): torus, duplicate for the icing, X-ray, Edit mode, Bottom half and delete, drips with Proportional editing and Page Down, Shrink onto with an offset, Wall and Smooth, a capsule sprinkle, Pattern On a surface.
+  - **3D text and a camera flyby** (9 steps): Text with a typeface, depth and bevel; Glossy gold; Dramatic lighting; three camera keyframes; Play; Export, Video.
+  - **A name keychain to 3D print** (11 steps): a rounded box with exact sizes, text turned flat, Put on a face (P), Hole through a face (D), Measure (M), Select all and Union, Export STL. (Tested: the result is one closed solid, 70 x 24 x 6 mm.)
+- **The panel** sits in the 3D view, left of the view buttons (across the top on a phone), so you work and read at once: the step's picture (a button: opens it big), the steps with **bold** button names and keys drawn as keys, Back / Next / Finish, Hide (a pill that brings it back), Side (left or right) and Close. Focus moves to each step's heading and a screen reader hears "step N of M". Some first steps have a *Start a new scene* button.
+- **Resume:** the tutorial and step are kept in this browser's localStorage (`3dedtr-tutorial`, nothing else); the Tutorials box offers *Carry on from step N* and *Start over*. Finish clears it.
+- **Pictures:** `tutorials/*.webp`, 33 files, 960 x 600, about 30 KB each (1 MB in all), loaded only when their step shows; the service worker keeps each one after it is first seen, so they work offline. Without the folder, a step describes its picture in words instead. Step text is fixed text built as page elements (no innerHTML).
+- **Checked:** every step of all three tutorials was done for real in the app while the pictures were taken; the panel's buttons, Hide, Side, resume, the big picture and Escape; phone width; axe on the Tutorials box and the panel.
+
+## 0.23.0 - 2026-10-28 - A donut sample; Assemble and one-after-another exploded views
+
+- **Donut sample** (`loadDonutSample`, a card on the start screen with a donut icon, and a button in Tips): one group, *Donut on a plate* - a plate (rounded cylinder), the donut (torus), the icing and a *Sprinkles* group. The icing is built the way the Edit mode steps would: a torus a hair bigger, cut just below its middle, with 12 drips (seeded, so the same every time) pulled down near the rim; then Shrink onto the donut (offset 0.15 mm), a 1.2 mm Wall outward and Smooth 1 - all live, changeable mods. 90 sprinkles (capsules, six colours) are scattered over the icing's upward faces with `scatterMatrices`, the placement half of Pattern, On a surface, now its own function. An 8-second turntable; one undo step.
+- **Start screen:** New scene, Phone sample, Donut sample, Open a file - one row of four. *Try the example* (box and cylinder) stays in Tips.
+- **Exploded view:** *Then* gains **Assemble** (parts start apart and come together), and **Next layer starts after (s)** staggers the parts by step: layers (in layers mode) or distances within 2% of the size (out from the middle) move together; spreading out, the outside goes first and, with Comes back together, returns last; assembling, the middle arrives first. Keep in frame covers every start and stop.
+- **Checked:** the phone, Z layers, Assemble, 0.5 s apart: at 0 s every layer is out (screen +60 mm, tiles +90, lens rings -90), at 1.2 s the screen is halfway home and the tiles haven't started, by 3 s all are home. The donut opens with no errors and goes in one Undo; axe finds nothing on the start screen; the scatter, keyframe, preset and Edit mode regressions pass.
+
 ## 0.22.2 - 2026-10-22 - Two new apps in the family
 
 - Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen's row of apps and in Help > More apps.

@@ -15,6 +15,7 @@ A 3D modeling app that runs entirely in the browser. Build models from basic sha
 | `make-icons.py` | Redraws every PNG icon: `python3 make-icons.py` (needs Pillow) |
 | `make-mediabunny.sh` | Rebuilds `engine/addons/mediabunny/mediabunny-3dedtr.min.js` (the video library) from npm: `sh make-mediabunny.sh` (needs Node.js). Only needed to update it; not for the server. |
 | `make-fonts.py` | Makes `engine/fonts/*.json` (the Text shape's typefaces) from the fontsource .woff files: `python3 make-fonts.py <folder>` (needs fonttools and skia-pathops). Only needed to change the fonts or their characters. |
+| `tutorials/` | The tutorials' pictures (33 WebP screenshots, about 1 MB in all). Upload the folder with the app; the steps' words are in `index.html` (`TUTORIALS`). |
 | `CHANGELOG.md` | Long-form release notes |
 
 ## The 3D engine
@@ -102,11 +103,15 @@ Tab in the 3D view (with single-key shortcuts on), or **Edit points** in the Ins
 
 ## Keyframes and groups
 
-`addKeyframes` keys `keyTargets(selection)`: with `settings.keyParts` (Parts too, on the timeline, default on) that is every picked object plus every part of every picked group, at every level. Parts keep their own keyframes in their group's space, so the group's motion (a turntable) and the parts' motion (an explode) add up. A part keyed for the first time while an ancestor has keyframes at other moments is back-filled there with `oldestPose(id, parentId)`, its oldest pose in the undo history within the same group. The Exploded view preset's Which way field spreads parts out from the middle, or in layers along X, Y or Z (layers by middle depth, ranked outwards from the middle layer).
+`addKeyframes` keys `keyTargets(selection)`: with `settings.keyParts` (Parts too, on the timeline, default on) that is every picked object plus every part of every picked group, at every level. Parts keep their own keyframes in their group's space, so the group's motion (a turntable) and the parts' motion (an explode) add up. A part keyed for the first time while an ancestor has keyframes at other moments is back-filled there with `oldestPose(id, parentId)`, its oldest pose in the undo history within the same group. The Exploded view preset's Which way field spreads parts out from the middle, or in layers along X, Y or Z (layers by middle depth, ranked outwards from the middle layer); Then can be Stays apart, Comes back together or Assemble, and Next layer starts after staggers the steps (outside first when spreading, middle first when assembling).
 
 ## Samples
 
-The splash offers **Try the example** (`loadExample`: a box and a cylinder, picked, ready to Subtract) and, since 0.21.0, **Phone sample** (`loadPhoneSample`): a generic smartphone built from descriptors with `createItem` - 37 shapes in a group, with an 8-second turntable on the group. Both are also buttons in Tips.
+The splash offers **Phone sample** (`loadPhoneSample`: a generic smartphone built from descriptors with `createItem` - 37 shapes in a group) and **Donut sample** (`loadDonutSample`: a plate, a torus, an icing mesh with drips and live Shrink onto / Wall / Smooth mods, and 90 sprinkles placed with `scatterMatrices`), each with an 8-second turntable. Tips has both plus **Try the example** (`loadExample`: a box and a cylinder, picked, ready to Subtract).
+
+## Tutorials
+
+`TUTORIALS` (section 15c) holds three step-by-step tutorials: the donut, 3D text with a camera flyby, and a name keychain to print. Each step is `{ title, text, img, alt, action? }`: `img` names a picture in `tutorials/` (960 x 600 WebP), `alt` describes it, and `text` uses `**bold**` for button and field names and `[Key]` for keys. They open from the start screen's *Step-by-step tutorials* card and from Tips, and run in a panel beside the 3D view. To add a tutorial: take the screenshots at 960 x 600, save them as WebP in `tutorials/`, and add an entry to `TUTORIALS`.
 
 ## Symmetry
 

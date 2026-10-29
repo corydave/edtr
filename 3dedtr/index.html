@@ -641,6 +641,65 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 /* Colours the shared splash and backup dialog use (see SUITE BLOCK styles). */
 :root { --suite-bg: var(--surface); --suite-fg: var(--text); --suite-accent: #7a4100; }
 
+/* =====================================================================
+   TUTORIALS (section 15c of the script)
+   The Tutorials dialog lists them as cards; a running tutorial is a panel
+   in the corner of the 3D view (left of the view buttons), so you can
+   follow along and work at the same time. Hide shrinks it to a pill.
+   ===================================================================== */
+.tut-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.tut-card { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 14px; align-items: start;
+  padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+.tut-card img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.tut-card h3 { margin: 0 0 4px; font-size: 16px; }
+.tut-card p { margin: 0 0 6px; }
+.tut-learn { margin: 0 0 8px; padding-left: 18px; font-size: 13px; }
+.tut-card .btn-row { margin-bottom: 0; }
+#dlgTutorials { width: min(680px, 96vw); }
+
+.tut-panel { position: absolute; right: 86px; bottom: 12px; z-index: 4; width: min(360px, calc(100% - 110px));
+  max-height: calc(100% - 24px); display: flex; flex-direction: column;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); }
+.tut-panel.on-left { right: auto; left: 12px; bottom: 40px; }   /* (40px: clear of the X / Y / Z key) */
+.tut-panel[hidden] { display: none; }
+.tut-head { display: flex; align-items: center; gap: 2px; padding: 6px 6px 6px 12px; border-bottom: 1px solid var(--border); }
+.tut-head-words { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tut-head-words h2 { margin: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tut-head-words span { font-size: 12px; color: var(--text-muted); }
+.tut-head .icon-btn { min-width: 32px; height: 32px; padding: 0 6px; font-size: 12px; }
+.tut-body { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; font-size: 14px; line-height: 1.45; }
+.tut-step-title { margin: 0 0 8px; font-size: 15px; }
+.tut-step-title:focus { outline: none; }
+.tut-step-title:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.tut-shot { margin: 0 0 8px; }
+.tut-zoom { display: block; width: 100%; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: none; cursor: zoom-in; }
+.tut-zoom img { display: block; width: 100%; height: auto; border-radius: 5px; }
+.tut-zoom:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.tut-body p { margin: 0 0 8px; }
+.tut-body kbd { font-size: 11.5px; }
+.tut-foot { display: flex; justify-content: space-between; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--border); }
+.tut-foot .btn { height: 34px; }
+.tut-back svg { transform: scaleX(-1); }                         /* (the chevron, pointing left) */
+/* Hidden to a pill: only the pill shows. */
+.tut-pill { display: none; }
+.tut-panel.is-small { width: auto; border: 0; background: none; box-shadow: none; }
+.tut-panel.is-small > :not(.tut-pill) { display: none; }
+.tut-panel.is-small .tut-pill { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 18px;
+  border: 1px solid var(--brand); background: var(--brand); color: var(--brand-contrast); font: inherit; font-size: 13px;
+  font-weight: 600; cursor: pointer; box-shadow: var(--shadow); }
+.tut-pill:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* The picture, big. */
+#dlgTutPic { width: min(1000px, 96vw); }
+#dlgTutPic img { display: block; width: 100%; height: auto; }
+/* Phones and narrow windows: across the top of the 3D view (the mode banners use the bottom there). */
+@media (max-width: 820px) {
+  .tut-panel, .tut-panel.on-left { left: 8px; right: 8px; top: 8px; bottom: auto; width: auto; max-height: 48%; }
+  .tut-panel.is-small { right: auto; }
+  .tut-card { grid-template-columns: 1fr; }
+  .tut-card img { max-width: 320px; }
+  #tutSide { display: none; }                                     /* (it fills the width: no side to swap) */
+}
+
 /* =========================================================================
    SUITE BLOCK v4 (styles) - START
    Identical in every app. Styles the "More apps" tab. Colours are worked
@@ -1181,6 +1240,21 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
         <button class="btn primary" id="btnReload" type="button">Reload</button>
       </div>
     </div>
+    <!-- A running tutorial (section 15c of the script): a panel in the corner of the view. -->
+    <aside class="tut-panel" id="tutPanel" hidden aria-labelledby="tutName">
+      <div class="tut-head">
+        <div class="tut-head-words"><h2 id="tutName"></h2><span id="tutCount"></span></div>
+        <button type="button" class="icon-btn" id="tutSide" aria-label="Move the tutorial to the left" title="Move the tutorial to the left">Side</button>
+        <button type="button" class="icon-btn" id="tutHide" aria-label="Hide the tutorial (it stays on this step)" title="Hide the tutorial (it stays on this step)">Hide</button>
+        <button type="button" class="icon-btn" id="tutClose" aria-label="Close the tutorial" title="Close the tutorial"><span data-icon="x"></span></button>
+      </div>
+      <div class="tut-body" id="tutBody" aria-live="off"></div>
+      <div class="tut-foot">
+        <button type="button" class="btn tut-back" id="tutBack"><span data-icon="chevron"></span> Back</button>
+        <button type="button" class="btn primary" id="tutNext"><span data-icon="chevron"></span> Next</button>
+      </div>
+      <button type="button" class="tut-pill" id="tutPill"></button>
+    </aside>
     <div class="busy" id="busy" hidden><div role="status" id="busyText">Working...</div></div>
     <div class="drop-overlay" id="dropOverlay">Drop an STL, OBJ, glTF, GLB or SVG to add it, or a .3dedtr project to open it</div>
   </main>
@@ -1510,6 +1584,23 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   </form>
 </dialog>
 
+<!-- =====================================================================
+     DIALOG: Tutorials - step-by-step, with pictures (section 15c).
+     ===================================================================== -->
+<dialog id="dlgTutorials" aria-labelledby="tutListTitle">
+  <div class="dlg-head"><h2 id="tutListTitle">Tutorials</h2>
+    <button type="button" class="icon-btn" data-close aria-label="Close"><span data-icon="x"></span></button></div>
+  <div class="dlg-body">
+    <p class="hint" style="margin-top:0">Each one is a few short steps with a picture. A small panel shows the steps beside the 3D view, so you can follow along. It remembers your step.</p>
+    <ul class="tut-list" id="tutList"></ul>
+  </div>
+</dialog>
+<dialog id="dlgTutPic" aria-label="The step's picture">
+  <div class="dlg-head"><h2>Picture</h2>
+    <button type="button" class="icon-btn" data-close aria-label="Close"><span data-icon="x"></span></button></div>
+  <img id="tutBigImg" alt="">
+</dialog>
+
 <dialog id="dlgInfo" aria-labelledby="dlgInfoTitle">
   <div class="dlg-head"><h2 id="dlgInfoTitle">3DEDTR</h2>
     <button class="icon-btn" id="infoClose" aria-label="Close"><span data-icon="x"></span></button></div>
@@ -1584,7 +1675,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.22.2';
+const APP_VERSION = '0.24.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1639,6 +1730,14 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.24.0', date: '2026-10-28', notes: [
+    'Tutorials: step-by-step, with a picture for every step. Find them on the start screen (Step-by-step tutorials, under the features card) and in Tips. Three to start: the donut (Edit mode, Proportional editing, Shrink onto, Wall, Smooth and scattering), 3D text with a camera flyby made into a video, and a name keychain to 3D print (Put on a face, Hole through a face, Measure, Union and STL).',
+    'A running tutorial is a small panel beside the 3D view, so you can follow along: Back and Next, Hide (it shrinks to a pill), Side (move it left if it is in the way), and click a picture to see it big. It remembers your step in this browser, so Carry on picks up where you left off.'
+  ] },
+  { version: '0.23.0', date: '2026-10-28', notes: [
+    'A donut sample, on the start screen and in Tips: Blender\'s beginner donut made the 3DEDTR way, on a plate - pink icing with drips, Shrunk onto the donut with a Wall and Smooth (change them in its Inspector), and 90 sprinkles scattered over the top in their own group. Press Play to spin it. (The box-and-cylinder example moved to Tips, so the start screen keeps one row of four.)',
+    'Exploded view can assemble: Then has a new choice, Assemble, where the parts start apart and come together. And Next layer starts after sends them one after another: spreading out, the outside parts go first; assembling, the middle parts arrive first. Parts in the same layer (or at the same distance) move together.'
+  ] },
   { version: '0.22.2', date: '2026-10-22', notes: [
     'Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen\'s row of apps and in Help > More apps.'
   ] },
@@ -9246,6 +9345,108 @@ function loadPhoneSample() {
   announce('Opened the phone sample: a group of ' + parts.length + ' parts.');
 }
 
+/**
+ * The donut sample on the splash: Blender's beginner donut, made the
+ * 3DEDTR way, on a plate - one group of ordinary parts to explore:
+ *  - the Donut: a torus;
+ *  - the Icing: the top of a torus with drips pulled down its edges
+ *    (Edit mode's kind of work), Shrunk onto the donut, with a Wall and
+ *    Smooth - change any of them in "Symmetry, shrink, wall and smooth";
+ *  - Sprinkles: little capsules scattered over the icing (Pattern, On a
+ *    surface), in their own group;
+ *  - and it spins when you press Play.
+ */
+function loadDonutSample() {
+  suiteSplashClose();
+  const D = Math.PI / 180;
+  const R = 15, TUBE = 7.5;                              // the donut's ring radius and thickness (mm)
+  const look = (finish) => ({ roughness: FINISHES[finish].roughness, metalness: FINISHES[finish].metalness });
+  const part = (type, name, params, pos, color, finish, more = {}) => ({
+    id: 'o' + nextId++, name, type, params: params ? { ...defaultParams(type), ...params } : null, geometry: null,
+    position: pos, rotation: [0, 0, 0], scale: [1, 1, 1], color, ...look(finish),
+    opacity: 1, flat: false, visible: true, pivot: 'centre', ...more
+  });
+  const plateH = 2.4, y0 = plateH + TUBE;               // the donut sits on the plate
+  const plate = part('cylinder', 'Plate', { radius: 32, height: plateH, segments: 96, round: 1, roundSteps: 4 }, [0, plateH / 2, 0], '#f4f1ea', 'glossy');
+  const donut = part('torus', 'Donut', { radius: R, tube: TUBE, segments: 96 }, [0, y0, 0], '#c98a4b', 'satin');
+
+  // The icing: a torus a hair bigger, cut just below its middle, with drips. (In the app you would do this
+  // in Edit mode: Bottom half, Delete points, then pull rim points down with Proportional editing.)
+  const ring = buildShape('torus', { radius: R, tube: TUBE + 0.4, segments: 96 }, 'centre');
+  let w = weldGeometry(ring);
+  ring.dispose();
+  const cut = -1.2;                                      // keep everything above this height
+  const keep = [];
+  for (let k = 0; k < w.tris.length; k += 3) {
+    const t = [w.tris[k], w.tris[k + 1], w.tris[k + 2]];
+    if (t.every((v) => w.pos[v * 3 + 1] > cut - 1e-6)) keep.push(...t);
+  }
+  w = { pos: w.pos, col: null, tris: new Uint32Array(keep) };
+  // Drips: points near the rim are pulled down, more at a few random spots round the ring (the same every time).
+  const rnd = seededRandom(2026);
+  const drips = Array.from({ length: 12 }, () => ({ a: rnd() * Math.PI * 2, len: 4.5 + rnd() * 6, width: 0.07 + rnd() * 0.09 }));
+  const pos = Float32Array.from(w.pos);
+  for (let i = 0; i < pos.length / 3; i++) {
+    const y = pos[i * 3 + 1];
+    if (y > 2) continue;                                 // (the top stays as it is)
+    const nearRim = Math.min(1, (2 - y) / (2 - cut));     // 0 high up, 1 at the rim
+    const a = Math.atan2(pos[i * 3 + 2], pos[i * 3]);
+    let pull = 0;
+    for (const d of drips) {
+      const da = Math.atan2(Math.sin(a - d.a), Math.cos(a - d.a));   // the angle between, -180..180
+      pull += d.len * Math.exp(-((da / d.width) ** 2));
+    }
+    pos[i * 3 + 1] = y - pull * nearRim * nearRim;
+  }
+  w = { pos, col: null, tris: w.tris };
+  const icingBase = weldedToGeometry(w);
+  icingBase.computeBoundingBox();
+  // Shrunk onto the donut (so the drips run down its surface), with a 1.2 mm wall outwards and one Smooth step.
+  const icing = part('mesh', 'Icing', null, [0, y0, 0], '#f39cc3', 'glossy',
+    { geometry: icingBase, mods: { wrap: { target: donut.id, offset: 0.15, reach: 0 }, thick: 1.2, dir: 'out', smooth: 1 } });
+
+  const group = { id: 'o' + nextId++, name: 'Donut on a plate', type: 'group', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1],
+    visible: true, keys: null, children: [plate, donut, icing] };
+  const whole = createItem(group);
+  addMesh(whole);
+  whole.updateMatrixWorld(true);
+  refreshWraps();                                        // (the icing hugs the donut now)
+  const icingMesh = whole.children.find((o) => o.userData.id === icing.id);
+
+  // Sprinkles: little capsules, lying down, scattered over the icing's top in six colours.
+  const sprinkle = createItem(part('capsule', 'Sprinkle', { radius: 0.55, length: 2.6, segments: 12 }, [0, 0, 0], '#ffffff', 'glossy'));
+  sprinkle.rotation.set(0, 0, 90 * D);
+  sprinkle.updateMatrixWorld(true);
+  const got = scatterMatrices(sprinkle, icingMesh, { count: 90, up: true, twist: true, vary: 15, lift: -0.15, apart: true, seed: 7 });
+  const colours = ['#ffffff', '#f2c14e', '#4f8fe6', '#43a36b', '#e25d4f', '#9b6cd8'];
+  const sprinkles = createItem({ id: 'o' + nextId++, name: 'Sprinkles', type: 'group', position: [0, 0, 0], rotation: [0, 0, 0],
+    scale: [1, 1, 1], visible: true, keys: null, children: [] });
+  insertItem(sprinkles, whole, whole.children.length);
+  (got.mats || []).forEach((W, k) => {
+    const d = freshIds(describe(sprinkle));
+    d.name = 'Sprinkle ' + (k + 1);
+    d.color = colours[k % colours.length];
+    const copy = createItem(d);
+    insertItem(copy, sprinkles, sprinkles.children.length);
+    setWorldMatrix(copy, W);
+  });
+  removeMesh(sprinkle);                                  // (the pattern piece itself was never in the scene)
+  dropToFloor([whole]);
+  // A slow spin when you press Play (an 8-second turntable: ordinary keyframes).
+  anim = { ...anim, length: 8, loop: true };
+  layerKeys(whole, [{ t: 0, u: 0, e: 'linear' }, { t: 8, u: 1, e: 'linear' }], (pose, u) => { pose.r[1] += Math.PI * 2 * u; return pose; }, ['r']);
+  setSelection([whole], false);
+  commit();
+  setTimelineOpen(true);
+  setView('corner');
+  frameSelection(false);
+  setTimeout(focusStageIfLost, 0);
+  const n = sprinkles.children.length;
+  toast('Blender\'s donut, the 3DEDTR way: icing shrunk onto the donut with drips, a wall and Smooth, and ' + n +
+    ' sprinkles scattered on top. Click it again to pick a part; press Play to spin it.', 8000);
+  announce('Opened the donut sample: a donut, its icing, ' + n + ' sprinkles and a plate.');
+}
+
 /* -----------------------------------------------------------------------
    11. MERGE SHAPES (Union, Subtract, Intersect)
    The work is done by three-bvh-csg ("constructive solid geometry"):
@@ -10752,9 +10953,12 @@ function seededRandom(seed) {
  * Pattern "On a surface": `pattern.count` copies of m at random spots on
  * the target's surface (bigger faces get more), each standing up from it.
  */
-function scatterOnSurface(m) {
-  const target = meshesOf(objects).find((o) => o.userData.id === pattern.target && o !== m);
-  if (!target) { toast('Pick the object to scatter onto first (Onto).'); return; }
+/**
+ * Where scattered copies of m go on target's surface: a list of world
+ * matrices (or { error }). opts: { count, up, twist, vary, lift, apart,
+ * seed } - the Pattern section's settings (see scatterOnSurface).
+ */
+function scatterMatrices(m, target, opts) {
   target.updateMatrixWorld(true);
   m.updateMatrixWorld(true);
   // 1. The target's triangles in the world, with how big each one is (and which way it faces).
@@ -10769,18 +10973,18 @@ function scatterOnSurface(m) {
     const area = n.length() / 2;
     if (area <= 0) continue;
     n.normalize();
-    if (pattern.up && n.y < 0.25) continue;               // "only where it faces up": skip sides and undersides
+    if (opts.up && n.y < 0.25) continue;               // "only where it faces up": skip sides and undersides
     tris.push({ a, b, c, n });
     total += area;
     areas.push(total);                                    // running total, to pick a face by its size
   }
-  if (!tris.length) { toast(target.name + ' has no faces that look up. Untick "Only where it faces up", or scatter onto something else.', 6000); return; }
+  if (!tris.length) return { error: target.name + ' has no faces that look up. Untick "Only where it faces up", or scatter onto something else.' };
   // 2. Random spots: a face (bigger ones more often), then a point inside it.
-  const rnd = seededRandom(pattern.seed * 7919 + 13);
+  const rnd = seededRandom(opts.seed * 7919 + 13);
   const size = worldBox([m]).getSize(new THREE.Vector3());
-  const gap = pattern.apart ? Math.max(size.x, size.z, 0.1) * 0.6 : 0;   // how close two copies may stand
+  const gap = opts.apart ? Math.max(size.x, size.z, 0.1) * 0.6 : 0;   // how close two copies may stand
   const spots = [];
-  for (let tries = 0; spots.length < pattern.count && tries < pattern.count * 40; tries++) {
+  for (let tries = 0; spots.length < opts.count && tries < opts.count * 40; tries++) {
     const r = rnd() * total;
     let lo = 0, hi = areas.length - 1;
     while (lo < hi) { const mid = (lo + hi) >> 1; if (areas[mid] < r) lo = mid + 1; else hi = mid; }
@@ -10789,28 +10993,38 @@ function scatterOnSurface(m) {
     if (u + v > 1) { u = 1 - u; v = 1 - v; }               // (folds the point back inside the triangle)
     const p = f.a.clone().addScaledVector(new THREE.Vector3().subVectors(f.b, f.a), u).addScaledVector(new THREE.Vector3().subVectors(f.c, f.a), v);
     if (gap && spots.some((s) => s.p.distanceTo(p) < gap)) continue;   // too close to one already placed
-    spots.push({ p, n: f.n, twist: pattern.twist ? rnd() * Math.PI * 2 : 0, s: 1 + (rnd() * 2 - 1) * (pattern.vary / 100) });
+    spots.push({ p, n: f.n, twist: opts.twist ? rnd() * Math.PI * 2 : 0, s: 1 + (rnd() * 2 - 1) * (opts.vary / 100) });
   }
-  if (!spots.length) { toast('No room found on ' + target.name + '. Untick "Keep them apart", or ask for fewer.'); return; }
+  if (!spots.length) return { error: 'No room found on ' + target.name + '. Untick "Keep them apart", or ask for fewer.' };
   // 3. The copies. Each keeps m's own turn and size, then: its size varies, it twists round its own up,
   //    its up is turned to the surface's direction there, and its origin goes to the spot (plus the lift).
   const own = new THREE.Matrix4().extractRotation(m.matrixWorld);
   const ownScale = new THREE.Vector3().setFromMatrixScale(m.matrixWorld);
   const base = own.clone().multiply(new THREE.Matrix4().makeScale(ownScale.x, ownScale.y, ownScale.z));
-  const up = new THREE.Vector3(0, 1, 0), made = [];
+  const up = new THREE.Vector3(0, 1, 0), mats = [];
   // How far its bottom is below its origin (once turned and sized): lifted by that, its bottom sits on the surface.
   const below = -localBox(m).clone().applyMatrix4(base).min.y;
-  let at = siblingsOf(m).indexOf(m);
   for (const s of spots) {
+    const align = new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(up, s.n));
+    const lift = opts.lift + below * s.s;
+    mats.push(new THREE.Matrix4().makeTranslation(s.p.x + s.n.x * lift, s.p.y + s.n.y * lift, s.p.z + s.n.z * lift)
+      .multiply(align).multiply(new THREE.Matrix4().makeRotationY(s.twist))
+      .multiply(new THREE.Matrix4().makeScale(s.s, s.s, s.s)).multiply(base));
+  }
+  return { mats };
+}
+function scatterOnSurface(m) {
+  const target = meshesOf(objects).find((o) => o.userData.id === pattern.target && o !== m);
+  if (!target) { toast('Pick the object to scatter onto first (Onto).'); return; }
+  const got = scatterMatrices(m, target, pattern);
+  if (got.error) { toast(got.error, 6000); return; }
+  const made = [];
+  let at = siblingsOf(m).indexOf(m);
+  for (const W of got.mats) {
     const d = freshIds(describe(m));
     d.name = copyName(m.name);
     const copy = createItem(d);
     insertItem(copy, m.parent, ++at);
-    const align = new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(up, s.n));
-    const lift = pattern.lift + below * s.s;
-    const W = new THREE.Matrix4().makeTranslation(s.p.x + s.n.x * lift, s.p.y + s.n.y * lift, s.p.z + s.n.z * lift)
-      .multiply(align).multiply(new THREE.Matrix4().makeRotationY(s.twist))
-      .multiply(new THREE.Matrix4().makeScale(s.s, s.s, s.s)).multiply(base);
     setWorldMatrix(copy, W);
     made.push(copy);
   }
@@ -11272,7 +11486,9 @@ function renderSceneProps(body) {
   tips.body.append(ul);
   const r = el('div', 'btn-row');
   r.append(button('Try the example', loadExample, 'A box and a cylinder, ready to subtract'),
-    button('Phone sample', loadPhoneSample, 'A phone made of ordinary shapes in a group: pick its parts, or press Play to spin it'));
+    button('Phone sample', loadPhoneSample, 'A phone made of ordinary shapes in a group: pick its parts, or press Play to spin it'),
+    button('Donut sample', loadDonutSample, 'Blender\'s beginner donut: icing with drips, shrunk onto the donut, with sprinkles scattered on top'),
+    button('Tutorials...', openTutorials, 'Step-by-step tutorials with pictures: a donut, a 3D title with a camera flyby, and a keychain to print'));
   tips.body.append(r);
   body.append(tips.box);
 }
@@ -14277,7 +14493,7 @@ const PRESETS = {
     needs: 'objects', ease: 'linear', len: 'rest' },
   reveal: { label: 'Reveal', what: 'Fades, grows, rises, drops or spins the picked objects into view (or out of it), one after another.',
     needs: 'objects', ease: 'out', len: 1 },
-  explode: { label: 'Exploded view', what: 'Moves a group\'s parts (or the picked objects) apart from their middle - and back again, if you like.',
+  explode: { label: 'Exploded view', what: 'Moves a group\'s parts (or the picked objects) apart - out from the middle or in layers - and back again; or the other way round, assembling them. One after another, if you like.',
     needs: 'objects', ease: 'smooth', len: 1.5 },
   crossfade: { label: 'Cross-fade', what: 'Fades the first picked object out while the second one fades in (a before-and-after).',
     needs: 'two', ease: 'smooth', len: 1 },
@@ -14527,7 +14743,10 @@ function renderPresetOptions() {
       ['x', 'In layers, left and right (X)'], ['y', 'In layers, upwards (Y)']], 'out'),
       'In layers: parts at the same depth move together, each layer further than the one before - the parts in the middle layer stay put.');
     presetField('dist', 'How far apart (%)', presetNumber(60, 5, 500, 5), 'Of the whole thing\'s size: 100% moves each part out by one whole width (in layers: the furthest layer).');
-    presetField('back', 'Then', presetSelect([['stay', 'Stays apart'], ['back', 'Comes back together']], 'back'));
+    presetField('back', 'Then', presetSelect([['stay', 'Stays apart'], ['back', 'Comes back together'],
+      ['assemble', 'Assemble: starts apart and comes together']], 'back'));
+    presetField('stagger', 'Next layer starts after (s)', presetNumber(0, 0, 60, 0.05),
+      'One after another: apart, the outside parts go first; assembling, the middle parts arrive first. Parts at the same distance (or in the same layer) move together. 0: all at once.');
     presetField('hold', 'Stays apart for (s)', presetNumber(1, 0, 60, 0.1), 'Only when it comes back together.');
   }
   if (presetKind === 'pushin') presetField('close', 'How far in (%)', presetNumber(35, 5, 90, 5), 'Of the way to the point the camera looks at.');
@@ -14622,11 +14841,9 @@ function applyPreset() {
     const c = whole.getCenter(new THREE.Vector3()).toArray();
     const size = whole.getSize(new THREE.Vector3());
     const dist = (presetNum('dist') / 100) * Math.max(size.x, size.y, size.z);
-    const back = presetFields.back.value === 'back', hold = presetNum('hold');
-    const times = back
-      ? [{ t: start, u: 0, e: easing }, { t: start + len, u: 1, e: easing }, { t: start + len + hold, u: 1, e: easing }, { t: start + 2 * len + hold, u: 0, e: 'smooth' }]
-      : [{ t: start, u: 0, e: easing }, { t: start + len, u: 1, e: 'smooth' }];
-    end = times[times.length - 1].t;
+    // Then: 'stay' (spread out and stay), 'back' (spread, wait, come back) or 'assemble' (start spread out, come together).
+    const mode = presetFields.back.value, hold = presetNum('hold'), stagger = presetNum('stagger');
+    const depth = new Map();                      // how far out each part is: a layer number, or a distance (see below)
     const dirs = new Map();
     const way = presetFields.way ? presetFields.way.value : 'out';
     if (way !== 'out') {
@@ -14654,6 +14871,7 @@ function applyPreset() {
       }
       const most = Math.max(1, ...[...rankOf.values()].map(Math.abs));
       for (const m of parts) {
+        depth.set(m, Math.abs(rankOf.get(m)));                     // (its layer, counted out from the middle)
         const d = new THREE.Vector3();
         d.setComponent(ax, (rankOf.get(m) / most) * dist);          // the furthest layer goes the whole distance
         dirs.set(m, d);
@@ -14662,6 +14880,7 @@ function applyPreset() {
       // Out along the line from the middle to this part's middle (straight up for a part right in the middle).
       const mc = boxInParent([m]).getCenter(new THREE.Vector3());
       const d = new THREE.Vector3(mc.x - c[0], mc.y - c[1], mc.z - c[2]);
+      depth.set(m, d.length());                                    // (how far its middle is from the middle of them all)
       // Never down: the part at the bottom stays on the floor (it would sink through it, out of the picture).
       const below = d.y < -1e-6;
       if (below) d.y = 0;
@@ -14679,9 +14898,35 @@ function applyPreset() {
       }
       dirs.set(h, dirs.get(best));
     }
+    // One after another (Next layer starts after): parts at (nearly) the same depth make one step.
+    // (Layers are whole numbers: each is its own step. Distances count as the same within 2% of the size.)
+    const tolD = way !== 'out' ? 0.5 : Math.max(0.25, Math.max(size.x, size.y, size.z) * 0.02);
+    const steps = [];
+    for (const v of [...new Set(depth.values())].sort((a, b) => a - b)) if (!steps.length || v - steps[steps.length - 1] > tolD) steps.push(v);
+    const stepOf = (m) => { const v = depth.get(m); let i = 0; while (i + 1 < steps.length && v - steps[i] > tolD) i++; return i; };
+    const last = steps.length - 1;
+    // Spreading out, the outside goes first; assembling, the middle arrives first.
+    const order = (m) => (mode === 'assemble' ? stepOf(m) : last - stepOf(m));
+    for (const h of holes) depth.set(h, depth.get(parts.find((m) => dirs.get(m) === dirs.get(h))) ?? 0);
+    const backAt = start + last * stagger + len + hold;           // (for 'back': when the first part turns round)
+    const timesFor = (k) => {
+      const s0 = start + k * stagger;
+      if (mode === 'assemble') return [{ t: s0, u: 1, e: easing }, { t: s0 + len, u: 0, e: 'smooth' }];
+      if (mode === 'back') {
+        const b0 = backAt + (last - k) * stagger;                  // it comes back in the opposite order
+        return [{ t: s0, u: 0, e: easing }, { t: s0 + len, u: 1, e: easing }, { t: b0, u: 1, e: easing }, { t: b0 + len, u: 0, e: 'smooth' }];
+      }
+      return [{ t: s0, u: 0, e: easing }, { t: s0 + len, u: 1, e: 'smooth' }];
+    };
+    const moments = new Set();
     for (const [m, d] of dirs) {
-      layerKeys(m, times, (pose, u) => { pose.p = [pose.p[0] + d.x * u, pose.p[1] + d.y * u, pose.p[2] + d.z * u]; return pose; }, ['p']);
+      const t = timesFor(order(m));
+      t.forEach((k) => moments.add(k.t));
+      layerKeys(m, t, (pose, u) => { pose.p = [pose.p[0] + d.x * u, pose.p[1] + d.y * u, pose.p[2] + d.z * u]; return pose; }, ['p']);
     }
+    // Every moment something starts or stops (for Keep in frame, and the message's end time).
+    const times = [...moments].sort((a, b) => a - b).map((t) => ({ t, u: 1, e: easing }));
+    end = times[times.length - 1].t;
     list = parts;
     // Keep in frame: the camera steps back as the parts spread (only if they would leave the picture).
     if (presetFields.frame.checked) {
@@ -14887,6 +15132,293 @@ function wireTimeline() {
   new ResizeObserver(() => { ticksFor = ''; updateTimeline(); }).observe(track);
   // Messages (toasts) float above the timeline, not over its buttons.
   new ResizeObserver(() => document.documentElement.style.setProperty('--tl-h', ($('timeline').hidden ? 0 : $('timeline').offsetHeight) + 'px')).observe($('timeline'));
+}
+
+/* -----------------------------------------------------------------------
+   15c. TUTORIALS: step-by-step, with a screenshot for each step
+   Pick one in the Tutorials dialog (from the start screen's "Step-by-step
+   tutorials" card, or Tips). A small panel then sits in the corner of the
+   3D view - so you can follow along in the app - with the step's picture,
+   what to do, and Back / Next. Hide shrinks it to a pill; Close ends it.
+   The pictures are files in the tutorials/ folder beside this page (about
+   30 KB each), loaded only when their step is shown. Opened straight off a
+   disk without that folder, a step shows its description instead.
+   Writing a step: { title, text: [paragraphs], img, alt, action? }.
+   Text is fixed text written here (never from a file); **bold** marks the
+   names of buttons and fields, and [Key] a key to press (see tutLine).
+   action: { label, run } - a button in the step that does it for you.
+   ----------------------------------------------------------------------- */
+const TUTORIALS = [
+  {
+    id: 'donut', title: 'The donut', time: 'About 15 minutes',
+    blurb: 'Blender\'s famous beginner project, the 3DEDTR way: a donut with drippy icing and sprinkles.',
+    learn: ['X-ray and Edit mode', 'Proportional editing for drips', 'Shrink onto, Wall and Smooth', 'Scattering copies on a surface'],
+    steps: [
+      { title: 'Add a torus', img: 'donut-01', alt: 'The empty 3D view, with the Torus button on the tool rail outlined.',
+        text: ['Start from an empty scene (the button below clears it for you).', 'On the tool rail, under **Add**, click the **Torus** - the ring.'],
+        action: { label: 'Start a new scene', run: () => tutNewScene() } },
+      { title: 'Shape it into a donut', img: 'donut-02', alt: 'A torus, with its Shape settings outlined in the Inspector: Ring radius 15 and Thickness 7.5, and the Name Donut.',
+        text: ['In the Inspector on the right, open **Shape: Torus**. Type **Ring radius** 15 and **Thickness** 7.5, pressing [Enter] after each.', 'Type Donut in **Name** at the top.'] },
+      { title: 'Make it look baked', img: 'donut-03', alt: 'The donut in golden brown, with the Look section outlined.',
+        text: ['Open **Look**. Click the **Colour** box and pick a golden brown, and set **Finish** to **Satin**.'] },
+      { title: 'Make the icing', img: 'donut-04', alt: 'A pink donut shape covering the brown one; the Scene list shows Donut and Icing.',
+        text: ['Press [Ctrl+D] ([Cmd+D] on a Mac) to duplicate the donut. The copy lands 10 mm to the right, so in **Position and size** set **X** back to 0.',
+          'Name the copy Icing, set its **Thickness** to 7.9 (a hair thicker than the donut), and make it pink and **Glossy**.'] },
+      { title: 'Look inside with X-ray', img: 'donut-05', alt: 'Both shapes see-through, with the X-ray button in the top bar outlined.',
+        text: ['Press [Alt+Z] (or the X-ray button in the top bar). Everything turns see-through: the donut sits inside its icing.'] },
+      { title: 'Edit the icing\'s points', img: 'donut-06', alt: 'Edit mode from the front: the icing\'s points and edges show, with Bottom half outlined in the Inspector.',
+        text: ['With the icing picked, press [1] for the front view, then [Tab]. This is **Edit mode**: every point of the icing shows.',
+          'In the Inspector, under **Pick points**, click **Bottom half**.'] },
+      { title: 'Delete the bottom', img: 'donut-07', alt: 'Only the top half of the icing is left, over the brown donut.',
+        text: ['Press [X] (or [Delete]). The bottom half of the icing is gone - icing only covers the top of a donut.'] },
+      { title: 'Pull down some drips', img: 'donut-08', alt: 'One point on the icing\'s lower edge pulled down, with its neighbours following it.',
+        text: ['Press [Alt+Z] to turn X-ray off, so you only pick points you can see. Click a point on the icing\'s lower edge.',
+          'Press [O] for **Proportional editing** - nearby points follow, less the further away they are. Then press [Page Down] a few times (or press [G], drag down and click).',
+          'Make a few drips round the edge, then press [Tab] to finish.'] },
+      { title: 'Hug the donut', img: 'donut-09', alt: 'The icing lying on the donut, with Shrink onto set to Donut and Offset 0.5 outlined.',
+        text: ['Open **Symmetry, shrink, wall and smooth**. Set **Shrink onto** to Donut and **Offset** to 0.5.',
+          'Every point of the icing moves onto the donut\'s surface, half a millimetre out - so the drips run down its sides.'] },
+      { title: 'Thickness and smoothness', img: 'donut-10', alt: 'Smooth icing with rounded drips; Wall thickness 1.2, Grows Outward and Smooth 1 outlined.',
+        text: ['In the same section set **Wall thickness** to 1.2, **Grows** to **Outward**, and **Smooth** to 1.',
+          'The icing gets real thickness (you could print it) and every edge rounds off. All three stay changeable: try Smooth 2.'] },
+      { title: 'Make one sprinkle', img: 'donut-11', alt: 'A small capsule lying on its side, with Turn Z 90 outlined.',
+        text: ['Add a **Capsule** (the pill on the rail) and name it Sprinkle. In **Shape**: **Radius** 0.6 and **Middle length** 2.6.',
+          'In **Position and size**, set **Turn Z** to 90 so it lies down.'] },
+      { title: 'Scatter the sprinkles', img: 'donut-12', alt: 'The Pattern section outlined: On a surface, Onto Icing, How many 80.',
+        text: ['Open **Pattern (repeat)** and choose **On a surface**. Set **Onto** to Icing and **How many** to 80, keep **Only where it faces up** ticked, and click **Make the copies**.'] },
+      { title: 'Finish it off', img: 'donut-13', alt: 'The finished donut: pink icing with drips, covered in sprinkles.',
+        text: ['Hide the first sprinkle with its eye in the Scene list. For coloured sprinkles, open the scatter group, pick a few and click a swatch.',
+          'Press [T] for the timeline, then **Ready-made...** and **Turntable** to make it spin - or **Export**, **STL**, to print it. The **Donut sample** on the start screen is a finished one to compare with.'] }
+    ]
+  },
+  {
+    id: 'flyby', title: '3D text and a camera flyby', time: 'About 10 minutes',
+    blurb: 'Golden 3D letters, dramatic lighting, and a camera that sweeps past them - made into a video.',
+    learn: ['3D text: typefaces, depth and bevel', 'Lighting moods', 'Camera keyframes', 'Exporting a video'],
+    steps: [
+      { title: 'Add text', img: 'flyby-01', alt: 'The empty 3D view, with the Text button on the tool rail outlined.',
+        text: ['Start from an empty scene, then click **Text** (the T) on the tool rail. The first time, it takes a moment to load the typeface.'],
+        action: { label: 'Start a new scene', run: () => tutNewScene() } },
+      { title: 'Type your words', img: 'flyby-02', alt: 'HELLO in rounded 3D letters, with the Shape: Text settings outlined.',
+        text: ['Open **Shape: Text**. Type HELLO in **Text**, choose a **Typeface** (Rounded here), and set **Letter height** 24, **Depth** 8 and **Bevel** 1 - a bevel softens the edges so they catch the light.'] },
+      { title: 'Make it gold', img: 'flyby-03', alt: 'Shiny yellow letters, with the Look section outlined.',
+        text: ['Open **Look**, click the yellow swatch and set **Finish** to **Glossy**.'] },
+      { title: 'Set the mood', img: 'flyby-04', alt: 'The letters under dramatic lighting, with the Lighting setting outlined.',
+        text: ['Click an empty spot in the 3D view so nothing is picked: the Inspector shows **Scene settings**. Open **View** and set **Lighting** to **Dramatic**.'] },
+      { title: 'The first camera keyframe', img: 'flyby-05', alt: 'The timeline open, the letters small and far away, with Add camera keyframe outlined.',
+        text: ['Open the timeline with the film button in the top bar (or [T]). With nothing picked, its button reads **Add camera keyframe**: it remembers the VIEW.',
+          'Press [1] for the front view, zoom out with [-] and turn a little with [Alt+Arrows]. Click **Add camera keyframe** at 0 s.'] },
+      { title: 'Fly in close', img: 'flyby-06', alt: 'At 2 seconds, the letters close up from the left, with the timeline and Add camera keyframe outlined.',
+        text: ['Click the timeline at 2 s. Turn the view (drag in the 3D view, or [Alt+Arrows]) and zoom in close (scroll, or [+]).',
+          'Click **Add camera keyframe** again. A round dot on the track marks each camera keyframe.'] },
+      { title: 'Swing round', img: 'flyby-07', alt: 'At 4 seconds, the letters from the corner, with three dots on the timeline.',
+        text: ['Click at 4 s, press [4] for the corner view and zoom in a little. Add a third camera keyframe.'] },
+      { title: 'Watch the flyby', img: 'flyby-08', alt: 'Partway through, at about 1 second, with the Play button outlined.',
+        text: ['Press **Play** (or [Shift+Space]). The camera glides from one keyframe to the next: a flyby. Keep **Follow the camera** ticked.',
+          'Want it faster? Try **Ready-made...** - it has a Camera push-in and a Camera orbit.'] },
+      { title: 'Make the video', img: 'flyby-09', alt: 'The Export box with Video outlined: MP4, 1920 x 1080.',
+        text: ['Click **Export** and choose **Video**: pick **MP4** and a size, then **Make the video**. It is drawn frame by frame, so no frame is dropped, however slow the computer.'] }
+    ]
+  },
+  {
+    id: 'keychain', title: 'A name keychain to 3D print', time: 'About 10 minutes',
+    blurb: 'A tag with your name and a hole for the key ring, joined into one solid and exported for a 3D printer.',
+    learn: ['Rounded edges and exact sizes', 'Put on a face (P) and Hole through a face (D)', 'Measuring', 'Union, and exporting an STL'],
+    steps: [
+      { title: 'Add a box', img: 'keychain-01', alt: 'The empty 3D view, with the Box button on the tool rail outlined.',
+        text: ['Start from an empty scene, then click **Box** on the tool rail.'],
+        action: { label: 'Start a new scene', run: () => tutNewScene() } },
+      { title: 'Make it a tag', img: 'keychain-02', alt: 'A long, flat, blue box with rounded edges, with its Shape settings outlined.',
+        text: ['Name it Tag. In **Shape: Box**, set **Width** 70, **Height** 4 and **Depth** 24 (in mm), and **Round edges** 2 so it is comfortable in a pocket. Pick a colour.'] },
+      { title: 'Add your name, lying down', img: 'keychain-03', alt: 'White 3D letters DAVE beside the tag, with Turn X set to -90 outlined.',
+        text: ['Add **Text**, type your name, and in **Shape** choose **Easy to read (Atkinson)**, **Letter height** 10 and **Depth** 2. Pick white.',
+          'Text stands up, so in **Position and size** set **Turn X** to -90: now the letters lie flat.'] },
+      { title: 'Put it on the tag', img: 'keychain-04', alt: 'The tag seen from the top, with the Put on a face banner and the spot to click outlined.',
+        text: ['Press [3] to look from the top. With the text picked, press [P] (**Put on a face**) and click the tag a little right of its middle.',
+          'The text lands on that face, exactly touching it - no fiddling with heights.'] },
+      { title: 'There it is', img: 'keychain-05', alt: 'From the corner, the name standing up from the tag\'s top.',
+        text: ['Press [4] for the corner view: the name sits on the tag.'] },
+      { title: 'A hole for the key ring', img: 'keychain-06', alt: 'From the top, with the Hole through a face banner and a spot near the tag\'s left end outlined.',
+        text: ['Pick the Tag, press [D] (**Hole through a face**) and click its top near the left end.',
+          'A see-through grey cylinder appears. It is a **hole**: it is cut out when the parts are joined.'] },
+      { title: 'Size the hole', img: 'keychain-07', alt: 'The grey hole cylinder close up, with Radius 2.5 outlined.',
+        text: ['With the hole picked, set **Radius** to 2.5 in **Shape: Cylinder** - a 5 mm hole takes most key rings.'] },
+      { title: 'Measure', img: 'keychain-08', alt: 'From the top, a measurement of 7 mm between the hole\'s middle and the tag\'s end.',
+        text: ['Press [M] for the **Measure** tool. Click the middle of the hole, then the tag\'s end. Leave 3 mm or more round the hole, or it may snap.',
+          '[Escape] clears the measurement, and [W] goes back to the Move tool.'] },
+      { title: 'Join it all', img: 'keychain-09', alt: 'All three parts picked, with Union outlined in the Merge Shapes section.',
+        text: ['Press [Ctrl+A] to pick everything. In the Inspector, open **Merge Shapes** and click **Union**.',
+          'The tag and the name join into one solid - and the hole is cut out on the way.'] },
+      { title: 'One solid', img: 'keychain-10', alt: 'The finished keychain: one blue piece with raised letters and a hole; the Scene list holds one mesh.',
+        text: ['The Scene list now holds one mesh, Tag, with the hole cut through it. It is watertight: ready to print.'] },
+      { title: 'Export for 3D printing', img: 'keychain-11', alt: 'The Export box with STL outlined, saying the object is closed.',
+        text: ['Click **Export**, choose **STL** and **Download**. The box says whether every solid is closed.',
+          'Open the STL in your slicer (Cura, PrusaSlicer, Bambu Studio...) and print it lying flat, name up.'] }
+    ]
+  }
+];
+const TUT_KEY = '3dedtr-tutorial';        // localStorage: which tutorial and step you were on (this browser only)
+let tut = null;                           // the tutorial running: { t (from TUTORIALS), i (step), small (hidden to a pill) }
+
+/** Clear the scene for a tutorial (asks first when there is something to lose, as New does). */
+function tutNewScene() { if (objects.length) newScene(); else { $('stage').focus({ preventScroll: true }); announce('The scene is empty: ready.'); } }
+
+/**
+ * One paragraph of a step, built as page elements (never innerHTML):
+ * **words** become bold, [Key] becomes a key (kbd).
+ */
+function tutLine(text) {
+  const p = el('p');
+  for (const part of text.split(/(\*\*[^*]+\*\*|\[[^\]]+\])/)) {
+    if (!part) continue;
+    if (part.startsWith('**')) p.append(el('strong', '', part.slice(2, -2)));
+    else if (part.startsWith('[') && part.endsWith(']')) p.append(el('kbd', '', part.slice(1, -1)));
+    else p.append(part);
+  }
+  return p;
+}
+/** The Tutorials dialog: a card for each tutorial. */
+function openTutorials() {
+  suiteSplashClose();
+  const list = $('tutList');
+  list.replaceChildren();
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(TUT_KEY) || 'null'); } catch (_) { saved = null; }
+  for (const t of TUTORIALS) {
+    const card = el('li', 'tut-card');
+    const img = document.createElement('img');
+    img.src = 'tutorials/' + t.steps[t.steps.length - 1].img + '.webp';
+    img.alt = '';                                         // (decorative here: the title says what it is)
+    img.loading = 'lazy';
+    img.addEventListener('error', () => img.remove());
+    const words = el('div', 'tut-card-words');
+    words.append(el('h3', '', t.title), el('p', '', t.blurb), el('p', 'hint', t.time + ' · ' + t.steps.length + ' steps'));
+    const ul = el('ul', 'tut-learn');
+    ul.setAttribute('aria-label', 'You will learn');
+    for (const l of t.learn) ul.append(el('li', '', l));
+    words.append(ul);
+    const row = el('div', 'btn-row');
+    const resume = saved && saved.id === t.id && saved.i > 0 && saved.i < t.steps.length ? saved.i : 0;
+    const go = button(resume ? 'Carry on from step ' + (resume + 1) : 'Start', () => { $('dlgTutorials').close(); startTutorial(t.id, resume); });
+    go.classList.add('primary');
+    go.setAttribute('aria-label', (resume ? 'Carry on: ' : 'Start: ') + t.title);
+    row.append(go);
+    if (resume) row.append(button('Start over', () => { $('dlgTutorials').close(); startTutorial(t.id, 0); }, 'Start ' + t.title + ' from step 1'));
+    words.append(row);
+    card.append(img, words);
+    list.append(card);
+  }
+  $('dlgTutorials').showModal();
+}
+function startTutorial(id, i = 0) {
+  const t = TUTORIALS.find((x) => x.id === id);
+  if (!t) return;
+  tut = { t, i: clamp(i, 0, t.steps.length - 1), small: false };
+  showTutStep(true);
+}
+/** Draw the panel for the step showing (focus: move keyboard focus to the step's heading). */
+function showTutStep(focus = false) {
+  const panel = $('tutPanel');
+  if (!tut) { panel.hidden = true; return; }
+  const { t, i } = tut, s = t.steps[i];
+  try { localStorage.setItem(TUT_KEY, JSON.stringify({ id: t.id, i })); } catch (_) { /* private window: fine */ }
+  panel.hidden = false;
+  panel.classList.toggle('is-small', tut.small);
+  $('tutName').textContent = t.title;
+  $('tutCount').textContent = 'Step ' + (i + 1) + ' of ' + t.steps.length;
+  $('tutPill').textContent = t.title + ': step ' + (i + 1) + ' of ' + t.steps.length + ' - show';
+  const body = $('tutBody');
+  body.replaceChildren();
+  const h = el('h3', 'tut-step-title', s.title);
+  h.id = 'tutStepTitle';
+  h.tabIndex = -1;                                         // (so focus can go to it, for screen readers)
+  const fig = el('figure', 'tut-shot');
+  const img = document.createElement('img');
+  img.src = 'tutorials/' + s.img + '.webp';
+  img.alt = s.alt;
+  img.width = 960; img.height = 600;
+  // Without the tutorials folder (the page opened straight off a disk), say what the picture shows.
+  img.addEventListener('error', () => { fig.replaceChildren(el('figcaption', 'hint', 'Picture: ' + s.alt)); });
+  // A click (or Enter) opens the picture big.
+  const zoom = el('button', 'tut-zoom');
+  zoom.type = 'button';
+  zoom.setAttribute('aria-label', 'Show the picture bigger');
+  zoom.append(img);
+  zoom.addEventListener('click', () => { $('tutBigImg').src = img.src; $('tutBigImg').alt = s.alt; $('dlgTutPic').showModal(); });
+  fig.append(zoom);
+  body.append(h, fig);
+  for (const line of s.text) body.append(tutLine(line));
+  if (s.action) {
+    const row = el('div', 'btn-row');
+    row.append(button(s.action.label, s.action.run));
+    body.append(row);
+  }
+  $('tutBack').disabled = i === 0;
+  $('tutNext').lastChild.textContent = i === t.steps.length - 1 ? ' Finish' : ' Next';
+  body.scrollTop = 0;
+  if (focus && !tut.small) h.focus({ preventScroll: true });
+  announce(t.title + ', step ' + (i + 1) + ' of ' + t.steps.length + ': ' + s.title);
+}
+function tutStep(d) {
+  if (!tut) return;
+  const n = tut.i + d;
+  if (n >= tut.t.steps.length) {                           // Finish
+    const name = tut.t.title;
+    try { localStorage.removeItem(TUT_KEY); } catch (_) { /* fine */ }
+    closeTutorial(false);
+    toast('Well done - that is the whole of "' + name + '". Tutorials are on the start screen and in Tips any time.', 6000);
+    return;
+  }
+  tut.i = clamp(n, 0, tut.t.steps.length - 1);
+  showTutStep(true);
+}
+function closeTutorial(say = true) {
+  tut = null;
+  $('tutPanel').hidden = true;
+  $('stage').focus({ preventScroll: true });
+  if (say) announce('Tutorial closed. Tutorials are on the start screen and in Tips: it remembers your step.');
+}
+function setTutSmall(on) {
+  if (!tut) return;
+  tut.small = on;
+  showTutStep(false);
+  (on ? $('tutPill') : $('tutStepTitle')).focus({ preventScroll: true });
+}
+function wireTutorials() {
+  $('tutBack').addEventListener('click', () => tutStep(-1));
+  $('tutNext').addEventListener('click', () => tutStep(1));
+  $('tutClose').addEventListener('click', () => closeTutorial());
+  $('tutHide').addEventListener('click', () => setTutSmall(true));
+  $('tutPill').addEventListener('click', () => setTutSmall(false));
+  // The panel can sit on either side of the 3D view (left, if it covers what you're working on).
+  $('tutSide').addEventListener('click', () => {
+    const left = $('tutPanel').classList.toggle('on-left');
+    $('tutSide').setAttribute('aria-label', left ? 'Move the tutorial to the right' : 'Move the tutorial to the left');
+    $('tutSide').title = $('tutSide').getAttribute('aria-label');
+  });
+}
+/** The start screen's wide "Step-by-step tutorials" card, under "See what 3DEDTR can do". */
+function addTutorialsCard() {
+  const splash = document.querySelector('dialog.suite-splash');
+  if (!splash) return;
+  const feats = splash.querySelector('.suite-feats-card');
+  const b = el('button', 'suite-feats-card tut-splash-card');
+  b.type = 'button';
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('aria-hidden', 'true');
+  icon.classList.add('suite-feats-card-icon');
+  // A graduation cap (Lucide "graduation-cap", ISC licence): learning, one step at a time.
+  for (const d of ['M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z', 'M22 10v6', 'M6 12.5V16a6 3 0 0 0 12 0v-3.5']) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    icon.append(path);
+  }
+  const words = el('span', 'suite-feats-card-words');
+  words.append(el('span', 'suite-splash-choice-label', 'Step-by-step tutorials'),
+    el('span', 'suite-splash-choice-detail', 'Make a donut, a 3D title with a camera flyby, or a keychain to print'));
+  b.append(icon, words);
+  b.addEventListener('click', openTutorials);
+  if (feats) feats.after(b); else (splash.querySelector('.suite-splash-actions') || splash).after(b);
 }
 
 /* -----------------------------------------------------------------------
@@ -15614,16 +16146,21 @@ async function startUp() {
     heroAlt: APP_HERO_ALT,
     actions: [
       { icon: 'cube', label: 'New scene', detail: 'An empty grid, ready for shapes', run: () => $('stage').focus(), primary: true },
-      { icon: 'shapes3d', label: 'Try the example', detail: 'A box and a cylinder, ready to subtract', run: loadExample },
+      // (The box-and-cylinder example lives in Tips now, so the start screen keeps four cards in one row.)
       // A phone icon (Lucide "smartphone", ISC licence): a sample model to explore.
       { icon: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>', label: 'Phone sample',
         detail: 'A phone built from 37 shapes - press Play to spin it', run: loadPhoneSample },
+      // A donut (a circle in a circle, drawn as a torus seen from above).
+      { icon: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M8 6.5l1 1M15.5 7l-.5 1.2M17.5 12.5l-1.2.3M7 14l1-.6M13 16.5l.2 1.1"/>', label: 'Donut sample',
+        detail: 'Blender\'s donut: drippy icing and sprinkles, on a plate', run: loadDonutSample },
       { icon: 'open', label: 'Open a file', detail: 'STL, OBJ, glTF, GLB, SVG or a .3dedtr project', run: openPicker }
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
     hint: 'You can also drop a 3D file anywhere in this window.',
     version: APP_VERSION
   });
+  // The start screen's "Step-by-step tutorials" card, under the features card (section 15c).
+  addTutorialsCard();
   // However the splash closes (a button, Escape, the X), don't leave
   // keyboard focus on the page itself: put it on the 3D view.
   const splash = document.querySelector('dialog.suite-splash');
@@ -15816,6 +16353,7 @@ async function init() {
   wireSheetHandle();
   wireTimeline();
   wirePresets();
+  wireTutorials();
   wireTopBarMore();
   describeStage();
   // The Install button: shown only while the browser allows installing.
