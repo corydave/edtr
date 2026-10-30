@@ -159,6 +159,9 @@ svg.icon {
 .bar-group { display: inline-flex; align-items: center; gap: 2px; flex: none; }
 .bar-sep { width: 1px; height: 24px; background: var(--border); flex: none; margin: 0 4px; }
 .bar-spacer { flex: 1 1 auto; min-width: 8px; }
+/* Below 900 px, Record shows its icon only (its name is in its tooltip and
+   aria-label), so the bar still fits beside Prompt. */
+@media (max-width: 899px) { #btnRecord .btn-label { display: none; } #btnRecord { padding: 0 10px; } }
 .zoom-label { font-size: 13px; font-weight: 600; }
 .word-count-chip { font-size: 13px; color: var(--text-muted); white-space: nowrap; padding: 0 6px; }
 
@@ -447,6 +450,12 @@ input[type="range"].slider:focus-visible { outline: 3px solid var(--focus); outl
   .tl-block { padding: 2px 8px 5px 16px; }
   .tl-title { font-size: 13px; }
   .status-bar { display: none; }
+  /* The top bar is tight on a phone: the wordmark keeps its icon only (the
+     name stays in the h1 for screen readers; font-size 0 just hides it from
+     view), and the version badge is left out (Help > About has it). */
+  .wordmark { font-size: 0; gap: 0; margin-right: 2px; }
+  .version-badge { display: none; }
+  .topbar .btn.primary { padding: 0 12px; }
 }
 @media (min-width: 900px) and (max-width: 1099px) {
   .app { grid-template-columns: 56px minmax(0, 1fr) 290px; }
@@ -1160,6 +1169,12 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   <button class="btn primary" id="btnPrompt" type="button" title="Prompt: read this script full screen (Ctrl+P)">
     <span data-icon="prompt"></span> Prompt
   </button>
+  <!-- Record: opens the camera lab (camera-lab.html) in a new tab, carrying
+       this script and its pace along. The lab records the camera with the
+       script beside it; nothing is uploaded. -->
+  <button class="btn" id="btnRecord" type="button" aria-label="Record" title="Record: film yourself reading this script (opens the camera lab in a new tab)">
+    <span data-icon="camera"></span><span class="btn-label">Record</span>
+  </button>
 
   <div class="bar-sep" aria-hidden="true"></div>
   <div class="bar-group">
@@ -1445,7 +1460,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ========================================================================= */
 
 // The version. Keep this line in exactly this form: the update check reads it.
-const APP_VERSION = '0.4.0';
+const APP_VERSION = '0.5.0';
 
 // The storage key for this app's own UI preferences (theme, Inspector height,
 // which Inspector sections are open). Every key starts with the app's name,
@@ -1563,6 +1578,7 @@ const ICONS = {
   redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
   tag: '<path d="M12.6 2.6a2 2 0 0 0-1.4-.6H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l9.8 9.8a2 2 0 0 0 2.8 0l7.2-7.2a2 2 0 0 0 0-2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+  camera: '<path d="m16 13 5.2 3.5a.5.5 0 0 0 .8-.4V7.9a.5.5 0 0 0-.8-.4L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
   prompt: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m10 8 5 2.8L10 13.6z"/>',
   inspector: '<path d="M5 20v-8M5 8V4M12 20v-5M12 11V4M19 20v-3M19 13V4M3 12h4M10 15h4M17 17h4"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
@@ -1591,6 +1607,10 @@ const ICONS = {
 
 // The changelog, newest first. Each release is added at the top.
 const CHANGELOG = [
+  { version: '0.5.0', date: '2026-10-29', notes: [
+    'Record, beside Prompt: opens the camera lab in a new tab with your script and pace, to film yourself reading it. The lab now has a ring light too (Light tab): a frame of light around the screen, in the color and brightness you choose.',
+    'On phones the top bar fits again: Help and the Inspector button no longer run off the edge.'
+  ] },
   { version: '0.4.0', date: '2026-10-24', notes: [
     'Smooth scrolling, and it is the default: the text now glides up steadily at the pace. Before, every word on a line sat at the same height, so the text held still for most of each line and then hopped up while you read the line\'s last word.',
     'Movement (in Pace) is a choice of three: Smooth, A line at a time (the old hop) and A page at a time. Scripts saved with "Move a page at a time" switched on open with A page at a time.',
@@ -6526,6 +6546,33 @@ document.getElementById('btnCue').addEventListener('click', () => {
   if (document.getElementById('cuePop').hidden) openCueMenu(); else closeCueMenu();
 });
 document.getElementById('btnPrompt').addEventListener('click', openPrompter);
+
+/* ---- Record: hand the script to the camera lab ----
+   The lab (camera-lab.html, beside this file) is a separate page for now, so
+   the script travels through this browser's own storage: we leave it under
+   LAB_HANDOFF_KEY, open the lab in a new tab, and the lab reads it once and
+   deletes it. It never leaves this device. A new tab keeps this editor (and
+   any unsaved changes) open behind it. */
+const LAB_HANDOFF_KEY = 'teledtr.toLab';
+function openCameraLab() {
+  if (!editor.value.trim()) {
+    toast('Write some script first, then Record.', 4000);
+    return;
+  }
+  try {
+    localStorage.setItem(LAB_HANDOFF_KEY, JSON.stringify({
+      text: editor.value,              // the script, exactly as written (# headings, **bold**, [CUES])
+      pace: settings.pace,             // words a minute
+      at: Date.now()                   // when: the lab ignores a hand-off more than 10 minutes old
+    }));
+  } catch (e) {
+    toast('The script could not be passed to the camera lab (this browser blocks storage). Paste it into the lab\'s Script tab instead.', 6000);
+  }
+  const tab = window.open('camera-lab.html', '_blank');
+  if (!tab) toast('The camera lab could not open a new tab. Allow pop-ups for this site, then try again.', 6000);
+  else tab.opener = null;              // the lab cannot reach back into this page
+}
+document.getElementById('btnRecord').addEventListener('click', openCameraLab);
 document.getElementById('btnTheme').addEventListener('click', () => {
   const next = isDarkNow() ? 'light' : 'dark';
   applyTheme(next);

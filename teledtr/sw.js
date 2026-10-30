@@ -14,7 +14,7 @@ const CACHE = 'teledtr-' + VERSION;
 
 // The app's own files, saved at install time.
 const APP_FILES = [
-  './', './index.html', './manifest.webmanifest',
+  './', './index.html', './camera-lab.html', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'
 ];
 
@@ -39,7 +39,8 @@ self.addEventListener('fetch', (event) => {
 
   // Pages: try the network first (to pick up fixes), fall back to the cache offline.
   if (req.mode === 'navigate') {
-    event.respondWith(fetch(req).catch(() => caches.match('./index.html')));
+    // Offline: the page itself if we have it (the camera lab is a page too), else the editor.
+    event.respondWith(fetch(req).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || caches.match('./index.html'))));
     return;
   }
   // Other files: cache first, then network (and remember what we fetched).

@@ -2,6 +2,13 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.5.0 - 2026-10-29 - Record, and a ring light
+
+- **Record**, beside Prompt (icon only below 900 px wide): opens the camera lab (`camera-lab.html`) in a new tab with your script and pace. The script travels through this browser's own storage (`teledtr.toLab`), which the lab reads once and deletes; a hand-off older than 10 minutes is ignored. The editor stays open behind it.
+- **The camera lab's ring light** (its new Light tab, the ring button, or L): a frame of light around the screen in a color you pick (seven, or your own) with brightness and width sliders. The lab moves in from the edges so the ring never covers the script or the controls, and on a folding phone the split still lands on the fold.
+- **Phones:** the top bar fits again. The wordmark keeps its icon (the name stays for screen readers) and the version badge is left out (Help > About has it). Before, Help and the Inspector button ran off the right edge on a 390 px phone.
+- **Offline:** the service worker keeps the camera lab too, and an offline visit to it opens the lab (it used to open the editor).
+
 ## 0.4.0 - 2026-10-24 - Smooth scrolling, and pace and size in the prompter
 
 - **Smooth scrolling, now the default.** The text glides up steadily at the pace. Before, the prompter placed the text word by word, but every word on a line sits at the same height, so the text held still for most of each line and then hopped up during the line's last word. Now it works out how far through the line the reader is and moves that share of the way to the next line, so it is always moving. The line being read rises through the reading band.

@@ -2562,7 +2562,7 @@ if (suiteInStudio()) {
      7. Night mode, About, install, offline
      8. Start
    ====================================================================== */
-const STUDIO_VERSION = '0.1.1';
+const STUDIO_VERSION = '0.2.0';
 
 /* Short, plain words under each icon - "Image", "Video" - so the rail
    reads at a glance. The app's full name is in its tooltip and label. */
@@ -2582,7 +2582,14 @@ const APPS = SUITE_APPS.filter((a) => a.listed !== false);
 const RAIL_LAST = ['txtedtr', 'teledtr', 'scrncstr'];
 /* The first "producing" app: the rail draws its divider just above it. */
 const RAIL_DIVIDER_BEFORE = 'teledtr';
-APPS.sort((a, b) => RAIL_LAST.indexOf(a.id) - RAIL_LAST.indexOf(b.id));
+/* IMGEDTR is the suite's default app (Dave, 2026-10-30): it is first in the
+   rail (so Ctrl+Shift+1 opens it) and it is the app the Studio opens with. */
+const DEFAULT_APP = 'imgedtr';
+const RAIL_FIRST = [DEFAULT_APP];
+// Where an app goes in the rail: the first ones at the top, the last ones at
+// the bottom (in their lists' order), everything else A to Z in between.
+const railRank = (id) => RAIL_FIRST.includes(id) ? RAIL_FIRST.indexOf(id) - 100 : RAIL_LAST.indexOf(id);
+APPS.sort((a, b) => railRank(a.id) - railRank(b.id));
 const appById = (id) => APPS.find((a) => a.id === id) || null;
 
 const $ = (id) => document.getElementById(id);
@@ -3024,10 +3031,13 @@ paintRail();
 renderSuiteCredits($('studioCredits'));
 SuiteInstall.button($('installBtn'), (outcome) => { if (outcome === 'accepted') toast('Installing EDTR Studio.'); });
 registerServiceWorker();
-// Come back to where you were: the app in the address (#imgedtr), else the last one on show.
+// The app to start with: the one the address names (#videdtr, which links
+// from the other apps use), otherwise the suite's default app, IMGEDTR.
+// The Studio home (the grid of every app) is one click away on the rail's
+// top button, or Ctrl+Shift+0.
 {
   const fromHash = location.hash.slice(1);
-  const start = appById(fromHash) ? fromHash : appById(settings.last) ? settings.last : '';
+  const start = appById(fromHash) ? fromHash : appById(DEFAULT_APP) ? DEFAULT_APP : '';
   if (start) openApp(start, { focus: false }); else show('');
 }
 </script>

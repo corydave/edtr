@@ -5,6 +5,11 @@ app you pick beside it. Apps keep running while you switch, so nothing
 closes behind you. On a phone the rail tucks behind a small **Apps** tab on
 the left edge.
 
+**IMGEDTR is the default app** (since 0.2.0): it is first in the rail
+(Ctrl+Shift+1) and the Studio opens with it, unless the address names
+another app (`/create/#videdtr`). The Studio home, with every app, is the
+rail's top button. To change the default, edit `DEFAULT_APP` in `index.html`.
+
 - `index.html` - the Studio (one file, with the shared SUITE block inside)
 - `sw.js` - keeps a copy of the Studio for offline use (only the Studio's
   own files; each app keeps its own copy, as always)

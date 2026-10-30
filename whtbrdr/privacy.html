@@ -1,0 +1,82 @@
+<!doctype html>
+<!--
+  WHTBRDR - privacy policy (the app at edtrapps.com/whtbrdr/ and the WHTBRDR
+  Chrome extension). Published at edtrapps.com/whtbrdr/privacy.html; the
+  Chrome Web Store listing links here. Plain HTML and CSS, no scripts, nothing
+  loaded from anywhere else. Keep it in step with the extension's README
+  ("Security & privacy") and with store/LISTING.md.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WHTBRDR - privacy</title>
+  <meta name="description" content="What the WHTBRDR app and the WHTBRDR Chrome extension do with your data: nothing leaves your computer.">
+  <style>
+    /* Light colours first, dark when the computer asks for it. Body text clears 7:1 in both. */
+    :root { --bg: #f6f7f9; --card: #ffffff; --text: #1f2937; --muted: #4b5563; --line: #d1d5db; --brand: #9f1239; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0f1115; --card: #171a21; --text: #e8eaed; --muted: #b4bac4; --line: #333a46; --brand: #fda4af; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; padding: 40px 16px 64px; }
+    .brand { color: var(--brand); font-weight: 800; letter-spacing: .06em; }
+    h1 { font-size: 30px; line-height: 1.2; margin: 10px 0 6px; }
+    h2 { font-size: 20px; margin: 30px 0 8px; }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); font-size: 15px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px 20px; margin: 18px 0; }
+    a { color: var(--brand); }
+    a:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; border-radius: 3px; }
+    code { font-size: 15px; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="brand">WHTBRDR</p>
+    <h1>Privacy</h1>
+    <p class="muted">For the WHTBRDR app (edtrapps.com/whtbrdr) and the WHTBRDR Chrome extension. Last updated 22 October 2026.</p>
+
+    <div class="card">
+      <p><strong>In short: nothing you draw, record or type leaves your computer.</strong> WHTBRDR has no accounts, no
+        servers of its own, no analytics and no ads. It never sells, shares or sends your data anywhere.</p>
+    </div>
+
+    <h2>The Chrome extension</h2>
+    <ul>
+      <li><strong>It only works where you ask it to.</strong> It uses Chrome's <code>activeTab</code> permission: it can't
+        see or change any page until you click its button on that tab. It does not ask to read your data on all websites.</li>
+      <li><strong>Your drawings</strong> live in the page's memory and are gone when you reload or close the page.</li>
+      <li><strong>Exports</strong> (PNG and PDF) are made on your computer and saved through Chrome's own Save dialog.</li>
+      <li><strong>Recordings</strong> of a tab are made on your computer, in the extension's own hidden page, and saved
+        straight to your Downloads folder. The camera and microphone are only on while you record (or while the Record
+        panel shows your camera bubble), and only once you have allowed them on the extension's setup page. The web
+        page you are recording can't see your camera or hear your microphone.</li>
+      <li><strong>What is stored:</strong> only the toolbar's own settings (where it sits, whether clicks show, and
+        whether the camera and microphone are on for recording), in Chrome's storage for the extension on this
+        computer. While a recording is running, which tab it is (forgotten when Chrome closes). Never your drawings,
+        recordings or anything about the pages you visit.</li>
+      <li><strong>Nothing is sent over the internet.</strong> The extension makes no network requests. Its fonts are
+        built in.</li>
+    </ul>
+
+    <h2>The WHTBRDR app</h2>
+    <ul>
+      <li>It runs in your browser. Your boards, PDFs and pictures stay on your computer; nothing is uploaded.</li>
+      <li>Your settings, and a backup of the board you are working on (so a crash doesn't lose it), are kept in your
+        browser's storage on this computer. Clearing your browser's site data removes them.</li>
+      <li>When you open a PDF, the online edition of the app may fetch its PDF reader (pdf.js) from jsDelivr. That
+        request carries no information about you or your files. The offline edition has it built in.</li>
+    </ul>
+
+    <h2>Children and schools</h2>
+    <p>Because WHTBRDR collects no personal information, it collects none from children either. It is made for
+      classrooms, and nothing in it needs a sign-in.</p>
+
+    <h2>Questions</h2>
+    <p>WHTBRDR is made by Dave Ghidiu (<a href="https://daveghidiu.com/">daveghidiu.com</a>) and is free and open
+      source. If this policy ever changes, this page will say what changed and when.</p>
+  </main>
+</body>
+</html>

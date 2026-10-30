@@ -242,6 +242,7 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 .brand-btn:hover { filter: brightness(1.15); }
 
 .app {
+  position: relative;                    /* (a folded rail sits in its top-left corner: section 8q) */
   height: calc(100% - 52px - 28px);
   display: grid; grid-template-columns: 56px minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr) auto;
 }
@@ -261,6 +262,23 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
 .rail .wb-sep { width: 28px; border: 0; border-top: 1px solid var(--border); margin: 4px 0; flex: none; }
 /* (The rail's buttons, their pressed look and the color dots on Pen and
    Highlighter are the shared bar's: section 8a.) */
+/* The rail's handle (0.8.0, section 8q): grip, fold, float, tuck away. */
+.rail .wb-handle { padding-bottom: 4px; margin-bottom: 2px; border-bottom: 1px solid var(--border); --wb-muted: var(--text-muted); }
+.rail[data-wb-folded] .wb-handle { padding: 0; margin: 0; border: 0; }
+@media (min-width: 761px) {
+  /* Folded or floating, the rail gives its column to the board. */
+  .app:has(> .rail[data-wb-folded]), .app:has(> .rail[data-wb-place="float"]) { grid-template-columns: 0 minmax(0, 1fr) 300px; }
+  .app.panel-hidden:has(> .rail[data-wb-folded]), .app.panel-hidden:has(> .rail[data-wb-place="float"]) { grid-template-columns: 0 minmax(0, 1fr) 0; }
+  /* Floating: a card over the app, wherever it was put (the handle sets left and top). */
+  .app > .rail[data-wb-place="float"] { position: fixed; z-index: 25; height: auto; max-height: calc(100vh - 100px);
+    padding: 6px; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+  /* Folded in its place: a small tab at the top-left of the board. */
+  .app > .rail[data-wb-folded][data-wb-place="home"] { position: absolute; left: 8px; top: 8px; z-index: 25; height: auto;
+    padding: 4px; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  .app > .rail[data-wb-folded][data-wb-place="float"] { padding: 4px; }
+}
+/* Show clicks (section 8q): the ripples, over everything, never in the way of the mouse. */
+.ripple-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 2000; pointer-events: none; }
 
 /* The filmstrip (below the board, section 8h): the page buttons, then the pages in a row. */
 .filmstrip { position: relative; display: flex; gap: 8px; align-items: stretch; min-width: 0;
@@ -351,6 +369,10 @@ body.presenting .toast { bottom: 84px; }                         /* (above the f
   --wb-accent: #fda4af; --wb-focus: #fda4af; --wb-line: rgba(255, 255, 255, .22);
   transition: opacity .35s ease; }
 .present-bar.idle { opacity: 0; pointer-events: none; }
+/* Its handle (0.8.0): floating, it sits where it was put; folded, just the grip and Open. */
+.present-bar .wb-handle { padding-right: 3px; margin-right: 2px; border-right: 1px solid var(--wb-line); --wb-muted: #cbd5e1; }
+.present-bar[data-wb-folded] .wb-handle { padding: 0; margin: 0; border: 0; }
+.present-bar.wb-bar[data-wb-place="float"] { right: auto; bottom: auto; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .present-bar.wb-bar { transition: none; } }
 .present-bar .wb-btn svg.icon { width: 20px; height: 20px; }
 .present-num { min-width: 52px; text-align: center; color: #f9fafb; font: 600 13px/1 var(--ui-font); font-variant-numeric: tabular-nums; }
@@ -654,6 +676,11 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
   .app > .rail { grid-row: 4; grid-column: 1; flex-direction: row; justify-content: safe center; padding: 4px 8px;
     border-right: 0; border-top: 1px solid var(--border); overflow-x: auto; }
   .rail .wb-sep { display: none; }                 /* (no room for lines between the bunches) */
+  /* No handle on a phone (no room on the row): the rail stays as it is, along
+     the bottom, even if it was folded or floating on a bigger screen. */
+  .app > .rail .wb-handle { display: none; }
+  .app > .rail[data-wb-folded] > .wb-bar { display: contents !important; }
+  .app > .rail[data-wb-place="float"] { position: static; }
   .app > .rail { gap: 2px; padding: 4px; }
   /* The four shapes fold into one Shapes button; the four sit in the pill while one is in use. */
   .rail .wb-btn.wb-shape-tool { display: none; }
@@ -1085,9 +1112,10 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ===================================================================== */
 /* =========================================================================
    WHTBRDR BAR v1 (styles) - START
-   The look of the annotation bar shared by the WHTBRDR app and the WHTBRDR
-   Chrome extension. Master copy: _edtr-suite/whtbrdr-bar.css. Copy START to
-   END into both with paste_whtbrdr_bar.py; never edit a copy on its own.
+   The look of the annotation bar shared by the WHTBRDR app, the WHTBRDR
+   Chrome extension and SCRNCSTR. Master copy: _edtr-suite/whtbrdr-bar.css.
+   Copy START to END into all three with paste_whtbrdr_bar.py; never edit a
+   copy on its own.
 
    Each home sets these colors (light and dark), so the bar matches it.
    Every one has a fallback, so the bar still looks right without them:
@@ -1097,6 +1125,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
      --wb-accent   a pressed button's ring         (#0046ad)
      --wb-focus    the keyboard focus ring         (#0046ad)
      --wb-line     the lines between groups        (#e5e7eb)
+     --wb-muted    the grip's dots                 (#6b7280)
    (No back-ticks, and no dollar sign followed by a curly bracket, in here:
    the extension keeps these styles inside a JavaScript text, where those
    would break it. The paste script checks.)
@@ -1153,6 +1182,27 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 /* The strip (the app): the tool's colors, sizes and font, in a row. */
 .wb-radios { display: flex; align-items: center; gap: 2px; }
 .wb-strip-sep { flex: none; width: 1px; height: 24px; margin: 0 4px; background: var(--wb-line, #e5e7eb); }
+/* ---- The handle (section F of the script): grip, fold, place, tuck away ----
+   It leads the bar. Its home sets where each place is (data-wb-place) and
+   makes a floating bar position: fixed; these rules only lay the handle out
+   and fold the bar down to it. */
+.wb-handle { display: flex; align-items: center; gap: 2px; flex: none; }
+.wb-handle-keys { display: flex; align-items: center; gap: 2px; }
+[data-wb-orient="column"] .wb-handle, [data-wb-orient="column"] .wb-handle-keys { flex-direction: column; }
+.wb-btn.wb-grip { width: 20px; cursor: grab; touch-action: none; color: var(--wb-muted, #6b7280); }
+.wb-btn.wb-grip:active { cursor: grabbing; }
+[data-wb-orient="column"] .wb-btn.wb-grip { width: 32px; height: 20px; }
+[data-wb-orient="column"] .wb-btn.wb-grip svg { transform: rotate(90deg); }
+@media (pointer: coarse) {
+  .wb-btn.wb-grip { width: 28px; }
+  [data-wb-orient="column"] .wb-btn.wb-grip { width: 44px; height: 28px; }
+}
+/* Folded (by you, or tucked away): only the grip and the open button show. */
+[data-wb-folded] > :not(.wb-handle) { display: none !important; }
+[data-wb-folded] .wb-place-btn, [data-wb-folded] .wb-autohide-btn { display: none !important; }
+/* Tucked away: a little see-through until the pointer comes back. */
+[data-wb-peek] { opacity: 0.8; }
+
 /* WHTBRDR BAR v1 (styles) - END ================================================ */
 
 </style>
@@ -1338,6 +1388,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   <span class="st-info" id="stTool"></span>
   <span class="st-info" id="stSel"></span>
   <span class="spacer"></span>
+  <!-- Show clicks (section 8q): a ripple where each click lands, for screen recordings. -->
+  <button class="icon-btn" id="btnRipples" aria-pressed="false" title="Show clicks: a ripple where each click lands (for screen recordings and shares)" aria-label="Show clicks"><span data-icon="ripple"></span></button>
   <div class="zoom-ctl" role="group" aria-label="Zoom">
     <button class="icon-btn" id="btnZoomOut" title="Zoom out (Ctrl+minus)" aria-label="Zoom out"><span data-icon="zoomOut"></span></button>
     <select id="zoomSel" aria-label="Zoom level" title="Zoom level"></select>
@@ -3277,20 +3329,27 @@ if (suiteInStudio()) {
 /* =========================================================================
    WHTBRDR BAR v1 - START
    -------------------------------------------------------------------------
-   The annotation bar shared by the WHTBRDR app (edtrapps.com/whtbrdr/) and
-   the WHTBRDR Chrome extension, so a teacher who learns one knows the
-   other: the same tools, colors, sizes, names, icons, order and keys.
+   The annotation bar shared by the WHTBRDR app (edtrapps.com/whtbrdr/),
+   the WHTBRDR Chrome extension and SCRNCSTR (its drawing bar), so a
+   teacher who learns one knows the others: the same tools, colors, sizes,
+   names, icons, order and keys, the same handle (move, dock, float, fold,
+   tuck away) and the same click ripples.
 
    THE MASTER COPY is _edtr-suite/whtbrdr-bar.js (and whtbrdr-bar.css).
    Each home carries an exact copy between the START and END markers:
-     - the app:       whtbrdr/index.html (in its script and in its styles)
+     - the app:       whtbrdr/index-online.html (its source; build-offline.py
+                      makes index.html from it)
      - the extension: content.js (the script inside its big function, the
                       styles inside its CSS text)
+     - SCRNCSTR:      scrncstr/index.html (in its script and in its styles)
    Change the master, then run  python3 _edtr-suite/paste_whtbrdr_bar.py
-   (from the productivity-suite folder) to copy it into both. Never edit a
-   copy on its own. (A Chrome extension can't load code from anywhere else,
-   so copying is the only way to share it - and it keeps the extension easy
-   to review.)
+   (from the productivity-suite folder) to copy it into all three. Never
+   edit a copy on its own. (A Chrome extension can't load code from anywhere
+   else, so copying is the only way to share it - and it keeps the
+   extension easy to review.)
+
+   Version 2 (2026-10-22): sections F (the handle), G (click ripples) and
+   H (marks on a canvas) are new. Version 1 was sections A to E.
 
    RULES THIS CODE KEEPS, SO IT WORKS IN BOTH HOMES
    - No innerHTML anywhere. Every element is made with createElement or
@@ -3312,7 +3371,17 @@ if (suiteInStudio()) {
      E. Building the bar: "flat" (the extension's floating bar, every
         color its own button) or "rail" (the app's tool rail, one button
         per tool, with the colors and sizes in a strip on the board)
+     F. The handle: move the bar anywhere, dock it, float it, fold it down
+        to its handle, and tuck it away by itself when it isn't in use
+     G. Click ripples: a ring that grows and fades where you click, so
+        people watching a recording or a screen share see each click
+     H. Marks on a canvas: drawing pens, highlighters, shapes, text and
+        sticky notes onto a <canvas>, and which marks the eraser touches
+        (the extension and SCRNCSTR draw on canvases; the app uses SVG)
    ========================================================================= */
+
+// Which version of the bar this is (see the note above).
+const WB_BAR_VERSION = 2;
 
 /* ---- A. THE TOOLS, COLORS, SIZES, FONTS AND KEYS ---------------------- */
 
@@ -3450,7 +3519,24 @@ const WB_ICONS = {
   spotlight: [['rect', { x: 3, y: 3, width: 18, height: 18, rx: 3, fill: 'currentColor', 'fill-opacity': 0.3, stroke: 'none' }],
               ['circle', { cx: 12, cy: 12, r: 5, fill: '#ffffff' }]],
   magnifier: [['circle', { cx: 10.5, cy: 10.5, r: 6.5 }], ['path', { d: 'M15.5 15.5L21 21' }],
-              ['path', { d: 'M10.5 7.5v6M7.5 10.5h6' }]]
+              ['path', { d: 'M10.5 7.5v6M7.5 10.5h6' }]],
+  // Version 2: the handle (section F), ripples (G) and recording (the extension).
+  // fold: two chevrons pointing back toward the grip; unfold: pointing away.
+  fold:      [['path', { d: 'M11 17l-5-5 5-5' }], ['path', { d: 'M18 17l-5-5 5-5' }]],
+  unfold:    [['path', { d: 'M13 17l5-5-5-5' }], ['path', { d: 'M6 17l5-5-5-5' }]],
+  // tuck away: a bar with a dashed edge, sliding off toward the grip
+  autohide:  [['rect', { x: 3, y: 6, width: 12, height: 12, rx: 2 }],
+              ['path', { d: 'M18 6v2M18 11v2M18 16v2M21 6v2M21 11v2M21 16v2' }]],
+  // float: a small window lifted off a bigger one
+  float:     [['rect', { x: 3, y: 9, width: 13, height: 12, rx: 2 }], ['rect', { x: 9, y: 3, width: 12, height: 10, rx: 2, fill: 'currentColor', 'fill-opacity': 0.25 }]],
+  // ripple: a dot with two rings around it
+  ripple:    [['circle', { cx: 12, cy: 12, r: 2, fill: 'currentColor' }], ['circle', { cx: 12, cy: 12, r: 5.5 }],
+              ['circle', { cx: 12, cy: 12, r: 9.5, 'stroke-dasharray': '3 3' }]],
+  record:    [['circle', { cx: 12, cy: 12, r: 9 }], ['circle', { cx: 12, cy: 12, r: 4.5, fill: 'currentColor', stroke: 'none' }]],
+  stop:      [['rect', { x: 6, y: 6, width: 12, height: 12, rx: 2, fill: 'currentColor' }]],
+  pause:     [['path', { d: 'M9 5v14M15 5v14' }]],
+  camera:    [['rect', { x: 2, y: 6, width: 14, height: 12, rx: 2 }], ['path', { d: 'M16 10.5l6-3.5v10l-6-3.5' }]],
+  mic:       [['rect', { x: 9, y: 2, width: 6, height: 12, rx: 3 }], ['path', { d: 'M5 11a7 7 0 0014 0' }], ['path', { d: 'M12 18v4' }]]
 };
 
 const WB_SVG_NS = 'http://www.w3.org/2000/svg';
@@ -3764,7 +3850,8 @@ function wbFontButton(onClick) {
  *   refresh(state) shows what is picked. state = { tool, pen, highlighter,
  *   size, font, penColors, highlighterColors, dark } - pen and highlighter
  *   are indexes, size is 'S' / 'M' / 'L' (or null for an exact size), the
- *   color lists are optional (the app lets people change them), and dark
+ *   color lists are optional (the app and SCRNCSTR let people change them;
+ *   a flat bar's color buttons then show the new colors too), and dark
  *   says the bar is on a dark background (then icons aren't tinted with the
  *   pen color, which could vanish on it).
  */
@@ -3807,6 +3894,10 @@ function wbBuildBar(opts) {
         WB_PENS.forEach(function (p, i) {
           const b = wbButton(p.name + ' pen (' + p.key + ')', wbColorDot(p.color, false), function () { pick('pen', i); });
           b.setAttribute('aria-pressed', 'false');
+          // Which pen it is, for a home that lets people change the colors (SCRNCSTR's right-click).
+          b.dataset.kind = 'pen';
+          b.dataset.index = String(i);
+          b.dataset.color = p.color;
           parts.push({ button: b, kind: 'pen', value: i });
           buttons.push(b);
         });
@@ -3814,6 +3905,9 @@ function wbBuildBar(opts) {
         WB_HIGHLIGHTERS.forEach(function (h, i) {
           const b = wbButton(h.name + ' highlighter (' + h.key + ')', wbColorDot(h.color, true), function () { pick('highlighter', i); });
           b.setAttribute('aria-pressed', 'false');
+          b.dataset.kind = 'highlighter';
+          b.dataset.index = String(i);
+          b.dataset.color = h.color;
           parts.push({ button: b, kind: 'highlighter', value: i });
           buttons.push(b);
         });
@@ -3938,8 +4032,15 @@ function wbBuildBar(opts) {
         }
       }
       else if (part.kind === 'tool') on = state.tool === part.value;
-      else if (part.kind === 'pen') on = state.tool === 'pen' && state.pen === part.value;
-      else if (part.kind === 'highlighter') on = state.tool === 'highlighter' && state.highlighter === part.value;
+      else if (part.kind === 'pen' || part.kind === 'highlighter') {
+        on = state.tool === part.kind && state[part.kind] === part.value;
+        // A flat bar's color button shows the color it draws in now (a home can change them).
+        const color = (part.kind === 'pen' ? penColors : hlColors)[part.value];
+        if (color && part.button.dataset.color !== color) {
+          part.button.dataset.color = color;
+          part.button.replaceChildren(wbColorDot(color, part.kind === 'highlighter'));
+        }
+      }
       else if (part.kind === 'size') on = state.size === part.value;
       part.button.setAttribute('aria-pressed', String(on));
       // Tools that draw in the pen color show it on their icon (not on a dark bar, where it could vanish).
@@ -4002,6 +4103,619 @@ function wbBuildBar(opts) {
 
   return { root: root, refresh: refresh, activeButton: activeButton };
 }
+/* ---- F. THE HANDLE: MOVE, DOCK, FLOAT, FOLD, TUCK AWAY -----------------
+   Every home lets you put the bar where it suits you, in the same way:
+     - THE GRIP (six dots): drag it - or focus it and use the arrow keys,
+       Shift for bigger steps - and the bar floats wherever you leave it.
+     - FOLD (two chevrons): folds the bar down to its handle, and opens it
+       again. Clicking the grip of a folded bar opens it too.
+     - PLACE: docks the bar. The extension has two docks (along the top and
+       down the left); the app (its tool rail) and SCRNCSTR (its Draw row)
+       have one each, and there PLACE also floats the bar.
+     - TUCK AWAY (auto-hide): when it is on, the bar folds itself a moment
+       after the pointer leaves it (or as soon as you start drawing), and
+       opens again when the pointer or the keyboard comes back to it.
+   wbDock(opts) builds the handle and does all of that. The home puts the
+   handle where it goes (the start of its bar) and styles each place with
+   the frame's attributes:
+     data-wb-place   the dock's name ('top', 'left', 'home'...) or 'float'
+     data-wb-orient  'row' or 'column' (a floating bar keeps the way it ran)
+     data-wb-folded  present while folded (by you, or tucked away)
+     data-wb-peek    present while tucked away by auto-hide
+   A floating bar is placed with style.left and style.top (viewport
+   pixels), so the home's CSS makes [data-wb-place="float"] position: fixed.
+     opts.frame       the element that moves and folds
+     opts.places      the docks, in order, e.g. ['top', 'left'] or ['home']
+     opts.placeNames  words for each dock: { left: 'on the left' }
+     opts.orient      each dock's direction: { top: 'row', left: 'column' }
+     opts.floatButton true: PLACE takes turns between the dock(s) and floating
+     opts.area()      the box a floating bar stays inside, as
+                      { left, top, right, bottom } (default: the window)
+     opts.prefs       what was remembered: { place, orient, x, y, folded, autoHide }
+     opts.save(prefs) called after every change, for the home to remember
+     opts.announce(words)  the home's way of telling screen readers
+   Returns { handle, prefs(), set(prefs), apply(), refit(), wake(), tuck(), isFolded() }.
+     set(prefs)  puts the bar where these say (remembered settings that
+              arrive later, as the extension's do from Chrome's storage)
+     refit()  keeps a floating bar inside its area (after a resize)
+     wake()   opens a tucked-away bar (a key that picks a tool, say)
+     tuck()   tucks it away now, if auto-hide is on (a stroke starting)
+   ----------------------------------------------------------------------- */
+function wbDock(opts) {
+  const frame = opts.frame;
+  const places = opts.places && opts.places.length ? opts.places : ['home'];
+  const placeNames = opts.placeNames || {};
+  const orientOf = opts.orient || {};
+  const say = opts.announce || function () {};
+  const save = opts.save || function () {};
+
+  // What was remembered, checked: anything odd falls back to the first dock.
+  function checked(saved) {
+    saved = saved || {};
+    const p = {
+      place: (saved.place === 'float' || places.indexOf(saved.place) >= 0) ? saved.place : places[0],
+      orient: (saved.orient === 'row' || saved.orient === 'column') ? saved.orient : (orientOf[places[0]] || 'row'),
+      x: Number.isFinite(saved.x) ? saved.x : null,
+      y: Number.isFinite(saved.y) ? saved.y : null,
+      folded: saved.folded === true,
+      autoHide: saved.autoHide === true
+    };
+    if (p.place === 'float' && (p.x === null || p.y === null)) p.place = places[0];
+    return p;
+  }
+  const prefs = checked(opts.prefs);
+
+  let peeking = false;       // folded for now by auto-hide (never remembered)
+  let hovering = false;      // is the pointer over the bar?
+  let tuckTimer = null;
+  let lastPointer = 'mouse';
+
+  // ---- The handle: the grip, then fold, place and tuck away ----
+  // "wb-solo" keeps them out of the bar's own arrow-key order: the grip's
+  // arrow keys move the bar, and the other three take turns among themselves.
+  const grip = wbButton('Move the toolbar (drag it, or use the arrow keys; Shift moves further)', wbIcon('grip'), null, 'wb-grip wb-solo');
+  grip.setAttribute('aria-label', 'Move the toolbar');
+  const foldBtn = wbButton('Fold the toolbar', wbIcon('fold'), function () { setFolded(!(prefs.folded || peeking)); }, 'wb-solo wb-fold-btn');
+  const placeBtn = wbButton('Dock the toolbar', wbIcon('dockLeft'), function () { cyclePlace(); }, 'wb-solo wb-place-btn');
+  const hideBtn = wbButton('Tuck the toolbar away when it is not in use', wbIcon('autohide'), function () { setAutoHide(!prefs.autoHide); }, 'wb-solo wb-autohide-btn');
+  hideBtn.setAttribute('aria-label', 'Tuck away when not in use');
+  const trio = [foldBtn, placeBtn, hideBtn];
+  const keys = wbEl('div', { class: 'wb-handle-keys' }, trio);
+  const handle = wbEl('div', { class: 'wb-handle', role: 'group', 'aria-label': 'Toolbar position' }, [grip, keys]);
+
+  // The three take ONE place in the Tab order; the arrow keys move between them.
+  function setStop(button) { trio.forEach(function (b) { b.tabIndex = b === button ? 0 : -1; }); }
+  function shown() { return trio.filter(function (b) { return b.getClientRects().length > 0; }); }
+  setStop(foldBtn);
+  keys.addEventListener('keydown', function (event) {
+    const forward = event.key === 'ArrowRight' || event.key === 'ArrowDown';
+    const backward = event.key === 'ArrowLeft' || event.key === 'ArrowUp';
+    if (!forward && !backward && event.key !== 'Home' && event.key !== 'End') return;
+    const list = shown();
+    const at = list.indexOf(event.target);
+    if (at < 0) return;
+    event.preventDefault();
+    event.stopPropagation();                  // (the bar around it must not move focus too)
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? list.length - 1
+      : (at + (forward ? 1 : -1) + list.length) % list.length;
+    setStop(list[next]);
+    list[next].focus();
+  });
+
+  /** The way the bar runs now: a dock's own way, or (floating) the way it ran before. */
+  function orientNow() {
+    return prefs.place === 'float' ? prefs.orient : (orientOf[prefs.place] || prefs.orient);
+  }
+  /** Where a click on PLACE puts the bar. */
+  function nextPlace() {
+    if (opts.floatButton) {
+      const list = places.concat(['float']);
+      return list[(list.indexOf(prefs.place) + 1) % list.length];
+    }
+    if (prefs.place === 'float') {
+      // Floating: dock it where it runs the same way (a column goes back to the left).
+      return places.find(function (p) { return orientOf[p] === prefs.orient; }) || places[0];
+    }
+    return places[(places.indexOf(prefs.place) + 1) % places.length];
+  }
+
+  /** Show the remembered state: the attributes, the place, and each button's words. */
+  function apply() {
+    const folded = prefs.folded || peeking;
+    frame.setAttribute('data-wb-place', prefs.place);
+    frame.setAttribute('data-wb-orient', orientNow());
+    frame.toggleAttribute('data-wb-folded', folded);
+    frame.toggleAttribute('data-wb-peek', peeking);
+    if (prefs.place === 'float') {
+      frame.style.left = prefs.x + 'px';
+      frame.style.top = prefs.y + 'px';
+    } else {
+      frame.style.left = '';
+      frame.style.top = '';
+    }
+    // Fold: says what a click does now.
+    foldBtn.replaceChildren(wbIcon(folded ? 'unfold' : 'fold'));
+    foldBtn.setAttribute('aria-label', folded ? 'Open the toolbar' : 'Fold the toolbar');
+    foldBtn.title = folded ? 'Open the toolbar' : 'Fold the toolbar down to its handle';
+    foldBtn.setAttribute('aria-expanded', String(!folded));
+    // Tuck away: a switch.
+    hideBtn.setAttribute('aria-pressed', String(prefs.autoHide));
+    hideBtn.title = prefs.autoHide ? 'Tucks itself away when not in use - click to keep it open'
+      : 'Tuck the toolbar away when it is not in use';
+    // Place: says where a click puts the bar.
+    const next = nextPlace();
+    placeBtn.replaceChildren(wbIcon(next === 'float' ? 'float' : (orientOf[next] === 'column' ? 'dockLeft' : 'dockTop')));
+    const words = next === 'float' ? 'Float the toolbar' : 'Dock the toolbar' + (placeNames[next] ? ' ' + placeNames[next] : '');
+    placeBtn.setAttribute('aria-label', words);
+    placeBtn.title = next === 'float' ? words + ' (then drag it by its grip)' : words;
+    // Folding hides two of the three: keep the Tab stop on one that shows.
+    if (!trio.some(function (b) { return b.tabIndex === 0 && b.getClientRects().length > 0; })) setStop(foldBtn);
+  }
+
+  /** The box a floating bar stays inside. */
+  function area() {
+    return (opts.area && opts.area()) || { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+  }
+  /** Keep a floating bar inside its area (never off screen, never under nothing). */
+  function refit() {
+    if (prefs.place !== 'float') return;
+    const a = area();
+    const box = frame.getBoundingClientRect();
+    const maxX = Math.max(a.left, a.right - box.width);
+    const maxY = Math.max(a.top, a.bottom - box.height);
+    prefs.x = Math.round(Math.min(Math.max(a.left, prefs.x), maxX));
+    prefs.y = Math.round(Math.min(Math.max(a.top, prefs.y), maxY));
+    frame.style.left = prefs.x + 'px';
+    frame.style.top = prefs.y + 'px';
+  }
+  /** Float the bar with its top-left corner here. */
+  function floatAt(x, y) {
+    if (prefs.place !== 'float') prefs.orient = orientNow();
+    prefs.place = 'float';
+    prefs.x = x;
+    prefs.y = y;
+    apply();
+    refit();
+  }
+  function changed() { save(Object.assign({}, prefs)); }
+
+  function cyclePlace() {
+    const next = nextPlace();
+    if (next === 'float') {
+      const box = frame.getBoundingClientRect();
+      floatAt(box.left + 12, box.top + 12);        // just off where it was, so it is easy to find
+      say('The toolbar floats. Drag it by its grip, or use the arrow keys on the grip.');
+    } else {
+      prefs.place = next;
+      if (orientOf[next]) prefs.orient = orientOf[next];
+      apply();
+      say('Toolbar docked' + (placeNames[next] ? ' ' + placeNames[next] : ''));
+    }
+    changed();
+  }
+  function setFolded(fold) {
+    prefs.folded = fold;
+    peeking = false;
+    apply();
+    refit();
+    changed();
+    say(fold ? 'Toolbar folded. Its handle opens it again.' : 'Toolbar open');
+  }
+  function setAutoHide(on) {
+    prefs.autoHide = on;
+    if (!on) peeking = false;
+    apply();
+    refit();
+    changed();
+    say(on ? 'The toolbar tucks itself away when it is not in use. Point at its handle, or Tab to it, to bring it back.'
+      : 'The toolbar stays open');
+  }
+
+  // ---- Dragging by the grip ----
+  let drag = null;
+  let skipClick = false;     // a drag ends with a click on the grip: ignore that one
+  grip.addEventListener('pointerdown', function (event) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.preventDefault();
+    grip.setPointerCapture(event.pointerId);
+    const box = frame.getBoundingClientRect();
+    drag = { dx: event.clientX - box.left, dy: event.clientY - box.top, x: event.clientX, y: event.clientY, moved: false };
+  });
+  grip.addEventListener('pointermove', function (event) {
+    if (!drag) return;
+    // A wobble of a few pixels is still a click, not a drag.
+    if (!drag.moved && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) return;
+    drag.moved = true;
+    floatAt(event.clientX - drag.dx, event.clientY - drag.dy);
+  });
+  function endDrag() {
+    if (drag && drag.moved) { changed(); skipClick = true; }
+    drag = null;
+  }
+  grip.addEventListener('pointerup', endDrag);
+  grip.addEventListener('pointercancel', endDrag);
+  // A click (or Enter) on the grip of a folded bar opens it.
+  grip.addEventListener('click', function () {
+    if (skipClick) { skipClick = false; return; }
+    if (prefs.folded || peeking) setFolded(false);
+  });
+  // Arrow keys on the grip move the bar (and float it).
+  grip.addEventListener('keydown', function (event) {
+    const steps = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    const step = steps[event.key];
+    if (!step) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const box = frame.getBoundingClientRect();
+    const distance = event.shiftKey ? 80 : 20;
+    floatAt(box.left + step[0] * distance, box.top + step[1] * distance);
+    changed();
+  });
+
+  // ---- Tucking away (auto-hide) ----
+  // Is the KEYBOARD in the bar? (A mouse click leaves focus on the button it
+  // clicked too, but that mustn't keep the bar open: only keyboard focus,
+  // the kind with a visible ring, does.)
+  function focusInside() {
+    const active = frame.getRootNode().activeElement;   // (the page, or the extension's shadow root)
+    if (!active || !frame.contains(active)) return false;
+    try { return active.matches(':focus-visible'); } catch (error) { return true; }
+  }
+  function wake() {
+    clearTimeout(tuckTimer);
+    if (!peeking) return;
+    peeking = false;
+    apply();
+    refit();
+  }
+  function tuckSoon() {
+    clearTimeout(tuckTimer);
+    if (!prefs.autoHide || prefs.folded) return;
+    // A finger has no "hover", so a tapped bar stays a little longer.
+    tuckTimer = setTimeout(function () { tuck(false); }, lastPointer === 'touch' ? 3000 : 1200);
+  }
+  // Tuck away now, if auto-hide is on and the pointer isn't over the bar.
+  // drawing = true: a mark is starting, so the bar goes even if the keyboard
+  // was last in it (the pointer is busy on the page now).
+  function tuck(drawing) {
+    clearTimeout(tuckTimer);
+    if (!prefs.autoHide || prefs.folded || peeking || hovering) return;
+    if (!drawing && focusInside()) return;
+    peeking = true;
+    apply();
+    refit();
+  }
+  frame.addEventListener('pointerenter', function (event) { hovering = true; lastPointer = event.pointerType; wake(); });
+  frame.addEventListener('pointerleave', function (event) { hovering = false; lastPointer = event.pointerType; tuckSoon(); });
+  frame.addEventListener('focusin', function () { if (focusInside()) wake(); });
+  frame.addEventListener('focusout', function () { setTimeout(function () { if (!focusInside()) tuckSoon(); }, 0); });
+
+  apply();
+  if (prefs.autoHide) tuckSoon();
+  return {
+    handle: handle,
+    prefs: function () { return Object.assign({}, prefs); },
+    set: function (saved) {
+      Object.assign(prefs, checked(saved));
+      peeking = false;
+      apply();
+      refit();
+      if (prefs.autoHide) tuckSoon();
+    },
+    apply: apply,
+    refit: refit,
+    wake: wake,
+    tuck: function () { tuck(true); },
+    isFolded: function () { return prefs.folded || peeking; }
+  };
+}
+
+/* ---- G. CLICK RIPPLES --------------------------------------------------
+   When ripples are on, each click shows a ring that grows and fades where
+   it landed, so people watching a recording or a screen share can see what
+   was clicked. Every home uses the same look and the same rule:
+     - a ripple shows for a CLICK, not for drawing: clicks that start a pen
+       stroke, a shape, a note or a text box don't ripple; clicks with the
+       Select / Interact tool, the laser, spotlight and magnifier do, and
+       so do clicks on the bar and on the page around it
+     - only the main button, a finger or a stylus (not right-clicks)
+   The home keeps a list of ripples, adds one with wbRippleAdd, and draws
+   them every frame with wbRippleDraw until it says none are left. The
+   extension draws them on its laser canvas (so a tab recording has them),
+   the app over its board, and SCRNCSTR into the recording itself.
+   ----------------------------------------------------------------------- */
+const WB_RIPPLE = {
+  ms: 700,                        // how long one ripple lasts
+  from: 5, to: 30,                // its radius at the start and the end (CSS pixels)
+  ring: '#f59e0b',                // amber...
+  edge: 'rgba(17, 24, 39, 0.5)',  // ...around a dark edge, so it shows on white pages and dark ones
+  core: 'rgba(245, 158, 11, 0.3)'
+};
+
+/** A new ripple at (x, y), in the home's own units. Keeps at most 20 at once. */
+function wbRippleAdd(list, x, y) {
+  list.push({ x: x, y: y, t: performance.now() });
+  if (list.length > 20) list.shift();
+}
+
+/**
+ * Draw every ripple still going onto canvas context c, and forget finished
+ * ones. scale = the home's units per CSS pixel (1 in the extension). With
+ * "reduce motion" on, a ripple doesn't grow: it just shows, then fades.
+ * Returns true while any are left (keep drawing frames until it is false).
+ */
+function wbRippleDraw(c, list, now, scale) {
+  const s = scale || 1;
+  const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  for (let i = list.length - 1; i >= 0; i--) {
+    if (now - list[i].t > WB_RIPPLE.ms) list.splice(i, 1);
+  }
+  list.forEach(function (r) {
+    const k = Math.max(0, (now - r.t) / WB_RIPPLE.ms);          // 0 = just clicked, 1 = gone
+    const grow = 1 - Math.pow(1 - k, 3);                          // fast at first, then slowing
+    const radius = (still ? WB_RIPPLE.to * 0.7 : WB_RIPPLE.from + (WB_RIPPLE.to - WB_RIPPLE.from) * grow) * s;
+    c.save();
+    c.globalAlpha = Math.min(1, (1 - k) * 1.6);                   // fully there for the first part, then fading
+    c.beginPath();
+    c.arc(r.x, r.y, radius, 0, Math.PI * 2);
+    c.fillStyle = WB_RIPPLE.core;
+    c.fill();
+    c.lineWidth = 7 * s;
+    c.strokeStyle = WB_RIPPLE.edge;
+    c.stroke();
+    c.lineWidth = 4 * s;
+    c.strokeStyle = WB_RIPPLE.ring;
+    c.stroke();
+    c.restore();
+  });
+  return list.length > 0;
+}
+
+/* ---- H. MARKS ON A CANVAS ----------------------------------------------
+   The extension and SCRNCSTR draw marks on a <canvas> (the app uses SVG).
+   These are the canvas way, shared so a mark looks the same in both.
+   A mark is a plain object:
+     { type: 'pen' | 'highlighter', color, width, pressure, points: [[x, y, p], ...] }
+     { type: 'arrow' | 'line' | 'rect' | 'ellipse', color, width, x1, y1, x2, y2 }
+     { type: 'text', color, font, size, x, y, text }     (x, y: its top-left corner)
+     { type: 'note', color, x, y, w, h, text }            (drawn by SCRNCSTR; the
+                                                           extension's notes are HTML)
+     { type: 'rubout', width, points }                    (SCRNCSTR's rub-out eraser:
+                                                           it punches a hole in its layer)
+   The numbers are in the home's own units: page pixels in the extension,
+   "frame units" in SCRNCSTR (its recording counts as 1280 units wide,
+   whatever its real size). Highlighters are drawn SOLID here: each home
+   fades its whole highlighter layer at once (WB_HIGHLIGHT_OPACITY), so
+   overlapping highlights never get darker.
+   ----------------------------------------------------------------------- */
+
+// Space between lines of typed text, as a multiple of the font size.
+const WB_LINE_HEIGHT = 1.25;
+// A sticky note drawn on a canvas: its least size, its margin, the size of
+// its words and the darker band across its top (all in the home's units).
+const WB_NOTE = { w: 220, h: 160, pad: 12, text: 18, band: 14 };
+
+/**
+ * Draw one mark onto canvas context c. skipId: a text or note being typed
+ * in right now isn't drawn (its typing box shows it instead).
+ */
+function wbDrawMark(c, item, skipId) {
+  if (skipId && item.id === skipId) return;
+  c.save();
+  c.strokeStyle = item.color || '#000000';
+  c.fillStyle = item.color || '#000000';
+  c.lineWidth = item.width || 1;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  if (item.type === 'pen' || item.type === 'highlighter' || item.type === 'rubout') {
+    if (item.type === 'rubout') c.globalCompositeOperation = 'destination-out';
+    if (item.pressure) {
+      // A stylus stroke is an outline, wider where it pressed harder: fill it.
+      c.fill(new Path2D(wbPressurePath(item.points, item.width)));
+    } else {
+      // Any other stroke is one line of one width (its round ends make a tap a dot).
+      c.stroke(new Path2D(wbSmoothPath(item.points)));
+    }
+  } else if (item.type === 'line') {
+    c.beginPath();
+    c.moveTo(item.x1, item.y1);
+    c.lineTo(item.x2, item.y2);
+    c.stroke();
+  } else if (item.type === 'arrow') {
+    wbDrawArrow(c, item);
+  } else if (item.type === 'rect') {
+    c.strokeRect(Math.min(item.x1, item.x2), Math.min(item.y1, item.y2),
+      Math.abs(item.x2 - item.x1), Math.abs(item.y2 - item.y1));
+  } else if (item.type === 'ellipse') {
+    c.beginPath();
+    c.ellipse((item.x1 + item.x2) / 2, (item.y1 + item.y2) / 2,
+      Math.abs(item.x2 - item.x1) / 2, Math.abs(item.y2 - item.y1) / 2, 0, 0, Math.PI * 2);
+    c.stroke();
+  } else if (item.type === 'text') {
+    wbDrawText(c, item);
+  } else if (item.type === 'note') {
+    wbDrawNote(c, item);
+  }
+  c.restore();
+}
+
+/** An arrow: a line, and a filled triangle at its end. */
+function wbDrawArrow(c, item) {
+  const angle = Math.atan2(item.y2 - item.y1, item.x2 - item.x1);
+  const head = Math.max(14, item.width * 4);
+  const spread = 0.45;                              // how wide the head opens (radians)
+  // The line stops a little early, so a thick one doesn't poke through the tip.
+  c.beginPath();
+  c.moveTo(item.x1, item.y1);
+  c.lineTo(item.x2 - Math.cos(angle) * head * 0.6, item.y2 - Math.sin(angle) * head * 0.6);
+  c.stroke();
+  c.beginPath();
+  c.moveTo(item.x2, item.y2);
+  c.lineTo(item.x2 - head * Math.cos(angle - spread), item.y2 - head * Math.sin(angle - spread));
+  c.lineTo(item.x2 - head * Math.cos(angle + spread), item.y2 - head * Math.sin(angle + spread));
+  c.closePath();
+  c.fill();
+}
+
+/**
+ * Typed text, a line at a time, from its top-left corner. It also notes its
+ * width and height on the mark (item.w, item.h), so the eraser and the Text
+ * tool know where it is.
+ */
+function wbDrawText(c, item) {
+  c.font = wbFontCss(item.font, item.size);
+  c.textBaseline = 'top';
+  const lines = String(item.text || '').split('\n');
+  const lineHeight = item.size * WB_LINE_HEIGHT;
+  let widest = 0;
+  lines.forEach(function (line, i) {
+    // A small nudge down puts the letters in the middle of their line, as in the typing box.
+    c.fillText(line, item.x, item.y + i * lineHeight + (lineHeight - item.size) / 2);
+    widest = Math.max(widest, c.measureText(line).width);
+  });
+  item.w = widest;
+  item.h = lines.length * lineHeight;
+}
+
+/** Break words into lines no wider than maxWidth (c.font must be set). Enter starts a new line. */
+function wbWrapLines(c, text, maxWidth) {
+  const out = [];
+  String(text || '').split('\n').forEach(function (para) {
+    let line = '';
+    para.split(' ').forEach(function (word) {
+      const tryLine = line ? line + ' ' + word : word;
+      if (line && c.measureText(tryLine).width > maxWidth) { out.push(line); line = word; }
+      else line = tryLine;
+    });
+    out.push(line);
+  });
+  return out;
+}
+
+/**
+ * A sticky note: colored paper with a soft shadow, a darker band across the
+ * top, and its words wrapped inside. It grows downward to fit its words; the
+ * height drawn is noted as item.hDrawn (for the eraser and for clicking it).
+ */
+function wbDrawNote(c, item) {
+  const size = item.size || WB_NOTE.text;
+  const font = WB_FONTS.find(function (f) { return f.id === item.font; }) || WB_FONTS[0];
+  c.font = size + 'px "' + font.family + '", ' + font.fallback;
+  const lines = wbWrapLines(c, item.text, item.w - WB_NOTE.pad * 2);
+  const lineHeight = size * 1.35;
+  const h = Math.max(item.h, WB_NOTE.band + WB_NOTE.pad * 2 + lines.length * lineHeight);
+  item.hDrawn = h;
+  c.save();
+  c.shadowColor = 'rgba(0, 0, 0, 0.22)';
+  c.shadowBlur = 16;
+  c.shadowOffsetY = 6;
+  c.fillStyle = item.color || WB_NOTE_COLORS[0];
+  c.beginPath();
+  if (c.roundRect) c.roundRect(item.x, item.y, item.w, h, 4); else c.rect(item.x, item.y, item.w, h);
+  c.fill();
+  c.restore();
+  c.fillStyle = 'rgba(0, 0, 0, 0.07)';
+  c.fillRect(item.x, item.y, item.w, WB_NOTE.band);
+  c.fillStyle = '#111827';
+  c.textBaseline = 'top';
+  lines.forEach(function (line, i) {
+    c.fillText(line, item.x + WB_NOTE.pad, item.y + WB_NOTE.band + WB_NOTE.pad + i * lineHeight);
+  });
+}
+
+/**
+ * Where a shape ends. Holding Shift snaps it: lines and arrows to every
+ * 45 degrees, rectangles to squares, ellipses to circles.
+ */
+function wbSetShapeEnd(shape, x, y, snap) {
+  let dx = x - shape.x1;
+  let dy = y - shape.y1;
+  if (snap) {
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      const length = Math.hypot(dx, dy);
+      const step = Math.PI / 4;
+      const angle = Math.round(Math.atan2(dy, dx) / step) * step;
+      dx = Math.cos(angle) * length;
+      dy = Math.sin(angle) * length;
+    } else {
+      const side = Math.max(Math.abs(dx), Math.abs(dy));
+      dx = Math.sign(dx || 1) * side;
+      dy = Math.sign(dy || 1) * side;
+    }
+  }
+  shape.x2 = shape.x1 + dx;
+  shape.y2 = shape.y1 + dy;
+}
+
+/** How far the point (px, py) is from the line segment (x1, y1)-(x2, y2). */
+function wbDistToSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const lengthSquared = dx * dx + dy * dy;
+  // t: how far along the segment the closest point is (0 = start, 1 = end).
+  let t = lengthSquared === 0 ? 0 : ((px - x1) * dx + (py - y1) * dy) / lengthSquared;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
+/** Any line-like mark as short straight pieces [x1, y1, x2, y2] (an ellipse as 48 of them). */
+function wbMarkSegments(item) {
+  const segments = [];
+  if (item.points) {
+    const pts = item.points;
+    if (pts.length === 1) segments.push([pts[0][0], pts[0][1], pts[0][0], pts[0][1]]);
+    for (let i = 1; i < pts.length; i++) segments.push([pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]]);
+  } else if (item.type === 'line' || item.type === 'arrow') {
+    segments.push([item.x1, item.y1, item.x2, item.y2]);
+  } else if (item.type === 'rect') {
+    const x1 = item.x1, y1 = item.y1, x2 = item.x2, y2 = item.y2;
+    segments.push([x1, y1, x2, y1], [x2, y1, x2, y2], [x2, y2, x1, y2], [x1, y2, x1, y1]);
+  } else if (item.type === 'ellipse') {
+    const cx = (item.x1 + item.x2) / 2, cy = (item.y1 + item.y2) / 2;
+    const rx = Math.abs(item.x2 - item.x1) / 2, ry = Math.abs(item.y2 - item.y1) / 2;
+    let prev = [cx + rx, cy];
+    for (let i = 1; i <= 48; i++) {
+      const a = (i / 48) * Math.PI * 2;
+      const next = [cx + rx * Math.cos(a), cy + ry * Math.sin(a)];
+      segments.push([prev[0], prev[1], next[0], next[1]]);
+      prev = next;
+    }
+  }
+  return segments;
+}
+
+/** The box a text or note takes up: { x, y, w, h } (or null for other marks). */
+function wbMarkBox(item) {
+  if (item.type === 'text') return { x: item.x, y: item.y, w: item.w || 0, h: item.h || 0 };
+  if (item.type === 'note') return { x: item.x, y: item.y, w: item.w, h: item.hDrawn || item.h };
+  return null;
+}
+
+/** Is the eraser (a circle of this radius at "point") touching the mark? A rub-out never counts. */
+function wbMarkTouches(item, point, radius) {
+  if (item.type === 'rubout') return false;
+  const box = wbMarkBox(item);
+  if (box) {
+    return point.x >= box.x - radius && point.x <= box.x + box.w + radius &&
+           point.y >= box.y - radius && point.y <= box.y + box.h + radius;
+  }
+  const reach = radius + (item.width || 1) / 2;
+  return wbMarkSegments(item).some(function (s) {
+    return wbDistToSegment(point.x, point.y, s[0], s[1], s[2], s[3]) <= reach;
+  });
+}
+
+/** The top-most mark of one of these types whose box holds the point (texts, notes), or null. */
+function wbMarkAt(items, point, types, slack) {
+  const pad = slack || 4;
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    if (types.indexOf(item.type) < 0) continue;
+    const box = wbMarkBox(item);
+    if (box && point.x >= box.x - pad && point.x <= box.x + box.w + pad &&
+        point.y >= box.y - pad && point.y <= box.y + box.h + pad) return item;
+  }
+  return null;
+}
 /* WHTBRDR BAR v1 - END ================================================== */
 
 
@@ -4028,7 +4742,7 @@ function wbBuildBar(opts) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.7.2';
+const APP_VERSION = '0.8.0';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -4137,6 +4851,7 @@ const ICONS = {
   // Present mode (section 8i): a screen on a stand, and disappearing ink (a dashed squiggle).
   present: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
   fade: '<path d="M3 17c3-7 6-7 8-3s5 4 10-4" stroke-dasharray="2.5 3.5"/>',
+  ripple: '<circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="9.5" stroke-dasharray="3 3"/>',
   // Copy, Cut and Paste pages (section 8h): DSKEDTR's drawings.
   clipboard: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   scissors: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12"/>',
@@ -4253,7 +4968,10 @@ function loadSettings() {
     // An exact size for one tool, set in the Inspector (null: use S / M / L).
     exact: { pen: null, highlighter: null },
     pens: copyPresets(DEFAULT_PENS),
-    highlighters: copyPresets(DEFAULT_HIGHLIGHTERS)
+    highlighters: copyPresets(DEFAULT_HIGHLIGHTERS),
+    ripples: raw.ripples === true,                                               // Show clicks (section 8q)
+    rail: dockPrefs(raw.rail),                                                   // where the tool rail sits (section 8q)
+    presentDock: dockPrefs(raw.presentDock)                                      // where Present mode's bar sits
   };
   if (raw.stampColors && typeof raw.stampColors === 'object') {
     for (const k of ['check', 'x', 'star', 'question']) if (isHex(raw.stampColors[k])) s.stampColors[k] = raw.stampColors[k].toLowerCase();
@@ -8358,9 +9076,12 @@ function buildPresent() {
   const fxBtn = btn('Effects: confetti, fireworks, hearts, a big check, a 3-2-1 countdown (Shift+C, F, H, G, L)', 'party', () => openEffectsMenu(fxBtn));
   fxBtn.setAttribute('aria-haspopup', 'menu');
   fullBtn.setAttribute('aria-pressed', 'false');
+  // Show clicks (section 8q): the same switch as the status bar's.
+  const rippleBtn = btn('Show clicks: a ripple where each click lands', 'ripple', () => setRipples(!settings.ripples));
+  rippleBtn.setAttribute('aria-pressed', String(settings.ripples));
   const groups = [
     el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Ink' }, fadeBtn,
-      btn('Undo (Ctrl+Z)', 'undo', () => stepHistory(-1)), fxBtn),
+      btn('Undo (Ctrl+Z)', 'undo', () => stepHistory(-1)), fxBtn, rippleBtn),
     el('div', { class: 'wb-group', role: 'group', 'aria-label': 'Pages' },
       btn('Page before (Left)', 'chevronLeft', () => presentStep(-1)), pageNum,
       btn('Next page (Right)', 'chevronRight', () => presentStep(1))),
@@ -8382,6 +9103,19 @@ function buildPresent() {
     }
   });
   presentBar.root.classList.add('present-bar');
+  presentBar.rippleBtn = rippleBtn;
+  // Its handle (the shared bar's, as on the rail: section 8q): drag it anywhere, fold it, dock it back at the bottom.
+  presentDock = wbDock({
+    frame: presentBar.root,
+    places: ['bottom'],
+    placeNames: { bottom: 'at the bottom' },
+    orient: { bottom: 'row' },
+    floatButton: true,
+    prefs: settings.presentDock,
+    announce,
+    save: (prefs) => { settings.presentDock = prefs; saveSettings(); }
+  });
+  presentBar.root.prepend(presentDock.handle);
   presentBar.fadeBtn = fadeBtn;
   presentBar.fullBtn = fullBtn;
   presentBar.pageNum = pageNum;
@@ -12962,6 +13696,123 @@ function wireA11y() {
 }
 
 /* =====================================================================
+   8q. THE TOOLBAR'S HANDLE, AND SHOW CLICKS (0.8.0)
+   The rail's handle is the shared bar's (section F of 8a), the same as the
+   extension's and SCRNCSTR's:
+     - the grip (six dots) floats the rail anywhere over the app: drag it,
+       or focus it and use the arrow keys (Shift goes further);
+     - Fold folds the rail down to its handle (and opens it again);
+     - Float / Dock moves it between its column and floating;
+     - Tuck away folds it by itself a moment after the pointer leaves it,
+       or as soon as a mark starts on the board.
+   A folded or floating rail gives its column to the board. The same handle
+   leads Present mode's floating bar (section 8i). Where each sits is kept
+   in the settings (settings.rail and settings.presentDock). On a phone the
+   rail stays as it was, along the bottom, with no handle (no room on its row).
+
+   SHOW CLICKS (the ripple button in the status bar, and on Present mode's
+   bar): a ripple where each click lands, so people watching a screen
+   recording or a share can see what was clicked (the shared bar's section
+   G). It follows the shared rule - a click, not drawing: a click that
+   starts a mark on the board doesn't ripple; every other click does,
+   buttons included. The ripples are drawn on one see-through canvas over
+   the whole window that never catches the mouse. Kept in the settings.
+   ===================================================================== */
+let railDock = null;                     // the rail's handle (wireRailDock)
+let presentDock = null;                  // Present mode's bar's handle (made with that bar: buildPresent)
+// The tools whose click on the board starts a mark (so no ripple, and the rail tucks away).
+const MARKING_TOOLS = ['pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'eraser', 'stamp', 'step'];
+
+/** Only the handle's own fields from saved settings, each the right kind (wbDock checks the values again). */
+function dockPrefs(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  return {
+    place: typeof raw.place === 'string' ? raw.place.slice(0, 20) : null,
+    orient: raw.orient === 'row' || raw.orient === 'column' ? raw.orient : null,
+    x: Number.isFinite(raw.x) ? Math.round(raw.x) : null,
+    y: Number.isFinite(raw.y) ? Math.round(raw.y) : null,
+    folded: raw.folded === true,
+    autoHide: raw.autoHide === true
+  };
+}
+
+/** Where a floating rail may go: over the app, between the top bar and the status bar. */
+function appArea() {
+  const r = $('app').getBoundingClientRect();
+  return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+}
+
+/** Give the rail its handle (start-up, after buildBar). */
+function wireRailDock() {
+  const rail = $('toolRail');
+  railDock = wbDock({
+    frame: rail,
+    places: ['home'],
+    placeNames: { home: 'beside the board' },
+    orient: { home: 'column' },
+    floatButton: true,
+    area: appArea,
+    prefs: settings.rail,
+    announce,
+    save: (prefs) => { settings.rail = prefs; saveSettings(); }
+  });
+  rail.prepend(railDock.handle);
+  railDock.refit();
+  window.addEventListener('resize', () => {
+    railDock.refit();
+    if (presentDock) presentDock.refit();
+  });
+  // A mark starting on the board: a rail set to tuck itself away does so now.
+  $('board').addEventListener('pointerdown', () => { if (MARKING_TOOLS.includes(tool)) railDock.tuck(); }, true);
+}
+
+/* ---- Show clicks ---- */
+const ripples = [];                      // the ripples still growing and fading (wbRippleAdd / wbRippleDraw)
+let rippleCanvas = null;
+let rippleFrame = 0;                     // the animation frame asked for (0: none)
+
+function wireRipples() {
+  rippleCanvas = el('canvas', { class: 'ripple-layer', 'aria-hidden': 'true' });
+  document.body.append(rippleCanvas);
+  // Listen on the whole window, first ("capture"), so every click counts, whatever it lands on.
+  window.addEventListener('pointerdown', (e) => {
+    if (!settings.ripples) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;                 // the main button only
+    if (MARKING_TOOLS.includes(tool) && e.target.closest && e.target.closest('#board')) return;   // drawing, not a click
+    wbRippleAdd(ripples, e.clientX, e.clientY);
+    if (!rippleFrame) rippleFrame = requestAnimationFrame(drawRipples);
+  }, true);
+  $('btnRipples').addEventListener('click', () => setRipples(!settings.ripples));
+  refreshRippleButtons();
+}
+
+/** One frame of the ripples (and another, while any are left). */
+function drawRipples() {
+  rippleFrame = 0;
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.round(window.innerWidth * dpr), h = Math.round(window.innerHeight * dpr);
+  if (rippleCanvas.width !== w || rippleCanvas.height !== h) { rippleCanvas.width = w; rippleCanvas.height = h; }
+  const c = rippleCanvas.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, w, h);
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (wbRippleDraw(c, ripples, performance.now(), 1)) rippleFrame = requestAnimationFrame(drawRipples);
+}
+
+function setRipples(on) {
+  settings.ripples = on;
+  saveSettings();
+  refreshRippleButtons();
+  announce(on ? 'Show clicks is on: a ripple shows where each click lands.' : 'Show clicks is off.');
+}
+
+/** The status bar's button and Present mode's show whether it is on. */
+function refreshRippleButtons() {
+  $('btnRipples').setAttribute('aria-pressed', String(settings.ripples));
+  if (presentBar && presentBar.rippleBtn) presentBar.rippleBtn.setAttribute('aria-pressed', String(settings.ripples));
+}
+
+/* =====================================================================
    9. TOOLS AND PRESETS
    The rail and the floating pill are the shared annotation bar (section
    8a), laid out as a "rail": one button per tool down the left, and the
@@ -14205,6 +15056,11 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.8.0', date: '2026-10-28', notes: [
+    'The tool rail has a handle, the same as the WHTBRDR Chrome extension\'s and SCRNCSTR\'s: drag its grip (or use the arrow keys on it) to float the rail anywhere over the app; Fold folds it down to its handle; Float and Dock move it between its column and floating; Tuck away folds it by itself when it isn\'t in use (or as soon as you start drawing), and opens it when the pointer or the keyboard comes back. A folded or floating rail gives its column to the board, and where it sits is remembered. Present mode\'s floating bar has the same handle.',
+    'Show clicks (the ripple button in the status bar, and on Present mode\'s bar): a ripple where each click lands, for screen recordings and shares. Clicks that start a mark don\'t ripple; every other click does.',
+    'The shared bar (version 2) is now in SCRNCSTR too, as its drawing bar, so the tools, keys, handle and ripples are the same in all three.'
+  ] },
   { version: '0.7.2', date: '2026-10-23', notes: [
     'A fresh board fills the screen: its first page is the shape and size of your display ("Fit the screen"), instead of a portrait Letter or A4 page. Present fills the screen edge to edge.',
     'The size is set once, as WHTBRDR opens, so resizing the window or opening the Inspector never reshapes what you drew. "Fit the screen" is the first choice in the New dialog and the Inspector\'s page sizes.'
@@ -14377,6 +15233,8 @@ function start() {
   buildNewDialog();
   wireBoardPointers();
   buildBar();
+  wireRailDock();                    // (the rail's handle: section 8q)
+  wireRipples();                     // (Show clicks: section 8q)
   wireEditor();
   wirePictures();
   wireClipboard();

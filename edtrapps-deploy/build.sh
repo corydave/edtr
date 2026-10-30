@@ -4,10 +4,12 @@
 # ================================================================
 # Gathers what edtrapps.com serves into one folder, "dist", at the top of
 # the repo:
-#     dist/              <- apps-landing (the home page)
+#     dist/              <- the home page (edtrapps-site, or apps-landing on GitHub)
 #     dist/create/       <- EDTR Studio, every app in one window
 #     dist/imgedtr/      <- each app's folder, so the Studio can open the
 #     dist/videdtr/ ...     apps from this same site (Open and Save work)
+#     (The phone remote and its relay wait in staging/ until they go live:
+#      see staging/README.md.)
 # Cloudflare runs this from the top of the repo before deploying. To try
 # it on a Mac: bash edtrapps-deploy/build.sh   (then look in dist/).
 # ================================================================
@@ -17,17 +19,29 @@ set -euo pipefail          # stop at the first error, instead of deploying half 
 rm -rf dist
 mkdir -p dist
 
-# 1. The home page and its pictures and fonts (apps-landing in the repo).
-cp -R apps-landing/. dist/
+# 1. The home page and its pictures and fonts. On the Mac it lives in
+#    edtrapps-site/; on GitHub the same page is in apps-landing/. Use
+#    whichever is there (edtrapps-site/ first).
+if [ -d edtrapps-site ]; then
+  cp -R edtrapps-site/. dist/
+  echo "Home page: edtrapps-site"
+else
+  cp -R apps-landing/. dist/
+  echo "Home page: apps-landing"
+fi
 
-# 2. The Studio and the apps. (GAMEDTR is paused, so it isn't here.)
-#    A folder that doesn't exist is skipped with a note, rather than
-#    failing the whole site.
-for app in create txtedtr pdfedtr imgedtr sndedtr videdtr scrncstr vctredtr 3dedtr dskedtr animedtr whtbrdr; do
-  if [ -d "$app" ]; then
+# 2. The Studio and the apps, found automatically, so a new app is never
+#    left off by mistake (TELEDTR was, for a week): every top-level folder
+#    with its own index.html AND manifest.webmanifest is an app (the Studio,
+#    create/, is one too). Left out on purpose:
+#      gamedtr  - paused
+SKIP="gamedtr"
+for dir in */; do
+  app="${dir%/}"                                   # "imgedtr/" -> "imgedtr"
+  case " $SKIP " in *" $app "*) echo "Skipped (on purpose): $app"; continue ;; esac
+  if [ -f "$app/index.html" ] && [ -f "$app/manifest.webmanifest" ]; then
     cp -R "$app" dist/
-  else
-    echo "Note: no $app folder, skipped."
+    echo "App: $app"
   fi
 done
 

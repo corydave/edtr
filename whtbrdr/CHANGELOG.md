@@ -1,5 +1,13 @@
 # WHTBRDR - changelog
 
+## 0.8.0 - 2026-10-28 - A handle for the rail, and Show clicks
+
+- **The tool rail has a handle** (the shared bar's new section F, the same as the WHTBRDR Chrome extension's and SCRNCSTR's): the **grip** floats the rail anywhere over the app (drag it, or arrow keys on the grip, Shift for bigger steps); **Fold** folds it down to its handle; **Float / Dock** moves it between its column and floating; **Tuck away** folds it by itself a moment after the pointer leaves it, or as soon as a mark starts on the board, and opens it when the pointer or keyboard focus comes back. A folded or floating rail gives its column to the board (`.app:has(...)`), and where it sits is kept in the settings (`settings.rail`, checked by `dockPrefs`). On a phone the rail stays as it was, along the bottom, with no handle (there is no room on its row), even if it was folded or floating on a bigger screen.
+- **Present mode's floating bar** has the same handle (`settings.presentDock`): float it anywhere, fold it, dock it back at the bottom.
+- **Show clicks** (the ripple button in the status bar, and on Present mode's bar): a ripple where each click lands, for screen recordings and shares (the shared bar's new section G). The shared rule: a click that starts a mark on the board doesn't ripple; every other click does, buttons included. Drawn on one see-through canvas over the window (`.ripple-layer`), never in the way of the mouse; kept in the settings (`settings.ripples`). With "reduce motion" on, a ripple fades without growing.
+- **The shared bar is version 2**, pasted in from `_edtr-suite/whtbrdr-bar.js` / `.css`: the handle (`wbDock`), click ripples (`WB_RIPPLE`, `wbRippleAdd`, `wbRippleDraw`), canvas drawing for the extension and SCRNCSTR (section H; the app keeps drawing in SVG), and new icons. It now has three homes: this app, the extension, and SCRNCSTR (its drawing bar since 1.25.0).
+- WHTBRDR's color is settled: deep rose `#9f1239` (Dave, 2026-10-22). The extension took it too.
+
 ## 0.7.2 - 2026-10-23 - A first page the size of the screen
 
 - **A fresh board fills the screen:** its first page is the display's own shape and size ("Fit the screen": a 1440 x 900 laptop gives a 1080 x 675 pt page, 15 x 9.375 in), instead of a portrait Letter or A4 page. It fills the board with a slim margin, and Present (F5) fills the screen edge to edge.

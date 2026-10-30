@@ -2,6 +2,30 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.24.2 - 2026-10-30 - Screenshot on the splash
+
+- **Screenshot** replaces **Paste** on the splash (with the screenshot icon): it pastes the picture on the clipboard and runs Make it a screenshot on it straight away - rounded corners, a shadow, padding - and copies the finished picture, ready to paste. With no picture on the clipboard it says so; where the browser blocks clipboard access it explains the keys instead (Ctrl+V, then Ctrl+Shift+X). Plain pasting still works anywhere with Ctrl+V and from the top bar's Paste button.
+- **Make a headshot** moved in the top bar to sit **beside Make it a screenshot**, just before Export, so the two one-click buttons are together. (It was in the file group after Paste since 1.23.2.) It still works the same: the picture on the canvas becomes a headshot, or with none it asks for a photo.
+
+## 1.24.1 - 2026-10-30 - A splash with no white box
+
+- **No white rectangle:** the splash itself is see-through. Behind it, **splashes of paint** - blobs and drops in IMGEDTR's greens, the family orange and a little gold, layered like wet paint - spill out around the content, so the splash has an organic, non-rectangular outline on the darkened page.
+- **Three panels on the paint** (very round corners, soft shadows):
+  - **left: a dark brand card** (always dark, like a product box): the icon, IMGEDTR, the version, and the one-line description;
+  - **right: the ways to begin** - the four big picture buttons (2 x 2), Pick up where you left off when there is a backup, the drop/paste hint and the Features card - on a slightly see-through panel;
+  - **underneath both: the family of apps**, the credits and the update check.
+- The close button is a round dark chip in the top corner. On a phone the panels stack: brand card, buttons, then the family.
+- Still the shared splash underneath: `decorateSplash()` moves the very same parts into the panels (nothing is rebuilt, so every button and keyboard path keeps working) and puts focus back on Open an image. The brush stroke from 1.24.0 gave way to the paint.
+
+## 1.24.0 - 2026-10-30 - A friendlier splash; one-click headshots
+
+- **A friendlier splash** (for people who are not "systems people"):
+  - The screenshot across the top is gone. Instead, an Affinity-style welcome: **IMGEDTR** in large letters above a **painted brush stroke** (the app's green warming to the family orange, see-through, with dry-brush streaks and flecks of paint), with the app's icon sitting on the stroke, tipped a little. The one-line description sits under it.
+  - The four ways to begin are **big, round picture buttons** (24 px corners, 46 px icons) with just their names - **Open an image**, **Paste**, **Blank canvas**, **Make a headshot** - and no small print. They lift a little under the mouse (not with "reduce motion" on). Four across on a computer, 2 x 2 on a phone.
+  - The rest stays: Pick up where you left off (when there is a backup), the drop/paste hint, the Features tour card, the family row, credits and the update check.
+  - How: the splash still comes from the shared SUITE block, unchanged. IMGEDTR passes no screenshot and no button details, then `decorateSplash()` adds its own class (`img-splash`) and rearranges the header (name, stroke with the icon, description). If the block ever changes shape, the splash simply keeps the shared look.
+- **One-click headshots from the top bar.** The Make a headshot button (since 1.23.2) now works like Make it a screenshot: with a picture on the canvas - the selected one, or else the biggest - it goes straight to the headshot screen with that picture (the part you can see, as cropped, with any magic wand colour changes). With no picture yet, it asks for a photo as before. Ctrl+Z goes back to the picture you had. (`beginHeadshot()` now holds the start-up steps both ways share.)
+
 ## 1.23.2 - 2026-10-24 - Clearer icons
 
 - **Make it a screenshot** has a new icon: a picture (hills and a sun) with rounded corners and a sparkle in its corner. The old one, two overlapping boxes, looked too much like **Copy image** right beside it.

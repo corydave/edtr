@@ -88,7 +88,22 @@
 >
 > **Then 0.7.2:** a fresh board's first page is the screen's shape and
 > size ("Fit the screen", `screenPageSize` in section 3). Waiting for
-> Dave's review of 0.7.2; next is 0.7.3 (PowerPoint export).
+> Dave's review of 0.7.2.
+>
+> **Then 0.8.0 (Dave's asks 2026-10-22, released 2026-10-28 on top of 0.7.2):** the shared
+> bar is version 2 with THREE homes (the app, the extension, and SCRNCSTR's
+> Draw row since SCRNCSTR 1.25.0): a handle on every bar (`wbDock`: float,
+> fold, dock, tuck away), click ripples (Show clicks), and canvas drawing
+> shared by the extension and SCRNCSTR. The app's rail and Present bar got
+> the handle, and Show clicks is in the status bar (section 8q). The
+> extension is **1.4.0**: tab recording with a camera bubble and the
+> microphone, Show clicks, the handle, deep rose (the color is settled),
+> and everything for the Chrome Web Store in its `store/` folder
+> (`store/LISTING.md` says what goes where; `store/make-zip.py` makes the
+> upload). `privacy.html` here is the policy the listing links to: upload
+> it with the app. Keep the tools in step from now on: change the master
+> bar, run `paste_whtbrdr_bar.py`, bump all three versions.
+> Next is PowerPoint export (it was planned as 0.7.3).
 
 WHTBRDR is the suite's whiteboard and annotation app. The plan is in
 `WHTBRDR-SPEC.md`. Milestone 1 was built in a chat as **0.1.0**

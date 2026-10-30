@@ -166,6 +166,16 @@ textarea { width: 100%; min-height: 140px; background: var(--surface-2); border:
 details.about { margin-top: 16px; color: var(--muted); font-size: 13px; }
 details.about summary { cursor: pointer; font-weight: 700; color: var(--text); min-height: 44px; display: flex; align-items: center; }
 
+/* ---- The ring light ----
+   A frame of light around the whole screen, to light your face. When it is
+   on, the lab is pulled in from every edge by the ring's width (layout()), so
+   the ring never covers the script or the controls. It sits BEHIND the lab
+   in the page, so the floating preview can still be dragged over it. */
+.ring { position: fixed; inset: 0; pointer-events: none; border: var(--ring-w, 0px) solid var(--ring-c, #fff); }
+.ring[hidden] { display: none; }
+.btn.ring-btn[aria-pressed="true"] { background: var(--ring-c, #fff); color: #111; border-color: var(--brand); }
+.ring-custom { width: 44px; height: 44px; border-radius: 50%; border: 3px dashed var(--border); padding: 0; background: none; cursor: pointer; }
+
 /* ---- The take: watch it, save it ---- */
 dialog { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px; padding: 0; width: min(720px, 94vw); max-height: 94vh; }
 dialog::backdrop { background: rgba(0,0,0,.7); }
@@ -181,6 +191,9 @@ dialog::backdrop { background: rgba(0,0,0,.7); }
 <!-- =====================================================================
      The two parts. Which half each one takes is set by the script (layout()).
      ===================================================================== -->
+<!-- The ring light: the frame of light around the screen (see .ring). -->
+<div class="ring" id="ring" aria-hidden="true" hidden></div>
+
 <div class="lab" id="lab" data-layout="stacked">
 
   <!-- THE STAGE: the script, and the camera preview. It belongs on the half
@@ -217,6 +230,7 @@ dialog::backdrop { background: rgba(0,0,0,.7); }
       <button class="btn record" id="btnRecord" type="button" aria-pressed="false" title="Record (R): a 3-second countdown, then the camera records and the script starts"><span class="dot" aria-hidden="true"></span><span id="recLabel">Record</span></button>
       <button class="btn play" id="btnPlay" type="button" title="Start or pause the script (Space)"><svg viewBox="0 0 24 24" aria-hidden="true"><path id="playIcon" d="M7 4.5v15l12.5-7.5z"/></svg><span id="playLabel">Start</span></button>
       <button class="btn" id="btnHome" type="button" title="Back to the start of the script (Home)" aria-label="Back to the start of the script"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button>
+      <button class="btn ring-btn" id="btnRing" type="button" aria-pressed="false" title="Ring light: a frame of light around the screen (L)" aria-label="Ring light"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/></svg></button>
       <button class="btn" id="btnFull" type="button" title="Full screen" aria-label="Full screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
     </div>
 
@@ -239,6 +253,7 @@ dialog::backdrop { background: rgba(0,0,0,.7); }
     <div class="tabs" role="tablist" aria-label="Settings" id="tabs">
       <button class="tab" role="tab" id="tabCam" aria-controls="paneCam" aria-selected="true" type="button">Camera</button>
       <button class="tab" role="tab" id="tabLook" aria-controls="paneLook" aria-selected="false" tabindex="-1" type="button">Look</button>
+      <button class="tab" role="tab" id="tabLight" aria-controls="paneLight" aria-selected="false" tabindex="-1" type="button">Light</button>
       <button class="tab" role="tab" id="tabBg" aria-controls="paneBg" aria-selected="false" tabindex="-1" type="button">Background</button>
       <button class="tab" role="tab" id="tabScript" aria-controls="paneScript" aria-selected="false" tabindex="-1" type="button">Script</button>
     </div>
@@ -280,6 +295,18 @@ dialog::backdrop { background: rgba(0,0,0,.7); }
       <div class="seg" role="group" aria-labelledby="presetLabel" id="presets"></div>
       <div id="lightSliders"></div>
       <p class="hint">Brightness and warmth help most in a dim office, or under the cold glow of a screen.</p>
+    </div>
+
+    <!-- The ring light: on or off, its color, how bright and how wide. -->
+    <div class="pane" role="tabpanel" id="paneLight" aria-labelledby="tabLight" hidden>
+      <div class="switch-row"><span id="ringLabel">Ring light: a frame of light around the screen (L)</span><button class="switch" type="button" role="switch" aria-labelledby="ringLabel" data-switch="ring"></button></div>
+      <div class="label">Color</div>
+      <div class="chips" id="ringChips" role="group" aria-label="Ring light color">
+        <!-- The ready-made colors are added by the script; this one is your own. -->
+        <input type="color" class="ring-custom" id="ringCustom" aria-label="Your own color" title="Your own color">
+      </div>
+      <div id="ringSliders"></div>
+      <p class="hint">Turn the phone's own screen brightness all the way up: the ring can only be as bright as the screen. Daylight white is the brightest; a warm color is kinder to skin. The ring is on your screen only: the video sees it as light on your face.</p>
     </div>
 
     <div class="pane" role="tabpanel" id="paneBg" aria-labelledby="tabBg" hidden>
@@ -377,6 +404,10 @@ const DEFAULTS = {
   shape: 'landscape', // the video's shape: 'landscape' (16:9), 'portrait' (9:16), 'square', or 'camera' (as the camera gives it)
   floatX: -1, floatY: -1, // where the floating preview sits: its left and top as shares of the screen (-1: not moved yet, so the corner)
   floatW: 0.34,       // the floating preview's width, as a share of the screen's width
+  ring: false,        // the ring light: a frame of light around the screen
+  ringColor: '#ffffff', // its color
+  ringBright: 100,    // how bright, % (10 - 100)
+  ringWidth: 48,      // how wide, px (12 - 200)
   mirror: true,       // mirror the preview (the recording is never mirrored)
   layout: 'auto',     // 'auto' (follow the fold), 'tabletop', 'book' or 'single'
   swap: false,        // put the two parts the other way round
@@ -388,7 +419,7 @@ const DEFAULTS = {
   edge: 3             // how soft the edge around you is, px (0 - 10)
 };
 const CHOICES = { quality: ['720', '1080'], shape: ['landscape', 'portrait', 'square', 'camera'], preview: ['corner', 'half', 'off'], layout: ['auto', 'tabletop', 'book', 'single'], facing: ['user', 'environment'], bg: ['none', 'blur', 'color', 'picture'] };
-const RANGES = { floatX: [-1, 1], floatY: [-1, 1], floatW: [0.12, 1], pace: [80, 220], size: [20, 120], readLine: [10, 60], bright: [50, 150], contrast: [50, 150], saturate: [0, 200], warmth: [-50, 50], blur: [4, 40], edge: [0, 10] };
+const RANGES = { ringBright: [10, 100], ringWidth: [12, 200], floatX: [-1, 1], floatY: [-1, 1], floatW: [0.12, 1], pace: [80, 220], size: [20, 120], readLine: [10, 60], bright: [50, 150], contrast: [50, 150], saturate: [0, 200], warmth: [-50, 50], blur: [4, 40], edge: [0, 10] };
 let S = { ...DEFAULTS };
 
 // Read the saved settings, keeping only values of the right kind and range.
@@ -399,6 +430,8 @@ function loadSettings() {
   for (const [k, list] of Object.entries(CHOICES)) if (list.includes(saved[k])) S[k] = saved[k];
   if (typeof saved.mirror === 'boolean') S.mirror = saved.mirror;
   if (typeof saved.swap === 'boolean') S.swap = saved.swap;
+  if (typeof saved.ring === 'boolean') S.ring = saved.ring;
+  if (typeof saved.ringColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.ringColor)) S.ringColor = saved.ringColor;
   if (typeof saved.color === 'string' && /^#[0-9a-f]{6}$/i.test(saved.color)) S.color = saved.color;
   if (S.bg === 'picture') S.bg = 'none';             // the picture itself is not kept between visits
 }
@@ -429,14 +462,17 @@ function layout() {
   if (mode === 'auto') mode = fold !== 'none' ? fold : (wide ? 'book' : 'tabletop');
   if (mode === 'single') mode = wide ? 'book' : 'tabletop';
   const stacked = mode === 'tabletop';
+  const ring = S.ring ? S.ringWidth : 0;          // the ring light's width: the lab is pulled in this far from every edge
+  lab.style.inset = ring + 'px';
   lab.dataset.layout = stacked ? 'stacked' : 'side';
   lab.classList.toggle('swap', S.swap);
   let a, b, hinge = 0, chip;
   if (fold !== 'none' && fold === mode && S.layout !== 'single') {
     // Split exactly at the fold: each part fills one half of the screen.
     const [s0, s1] = segs;
-    if (stacked) { a = s0.height; b = s1.height; hinge = Math.max(0, s1.y - (s0.y + s0.height)); }
-    else { a = s0.width; b = s1.width; hinge = Math.max(0, s1.x - (s0.x + s0.width)); }
+    // (Each half gives up the ring's width on its outer edge, so the split still lands on the fold.)
+    if (stacked) { a = s0.height - ring; b = s1.height - ring; hinge = Math.max(0, s1.y - (s0.y + s0.height)); }
+    else { a = s0.width - ring; b = s1.width - ring; hinge = Math.max(0, s1.x - (s0.x + s0.width)); }
     a += 'px'; b += 'px';
     chip = (stacked ? 'Tabletop' : 'Book') + ', at the fold';
   } else {
@@ -1102,6 +1138,7 @@ function syncControls() {
   $('btnCamera').disabled = recording;
   markPreset();
   fitOutput();      // (does nothing when the size is already right, or while recording)
+  applyRing();
   placePreview();
 }
 
@@ -1189,6 +1226,21 @@ function wireControls() {
     syncers.push(() => b.setAttribute('aria-pressed', String(S.color === hex)));
     $('chips').append(b);
   });
+  // The ring light's colors, its own color, and its sliders.
+  RING_COLORS.forEach(([hex, name]) => {
+    const b = el('button', 'chip-btn'); b.type = 'button'; b.style.background = hex;
+    b.setAttribute('aria-label', name); b.title = name;
+    b.addEventListener('click', () => { S.ringColor = hex; if (!S.ring) S.ring = true; saveSettings(); syncControls(); });
+    syncers.push(() => b.setAttribute('aria-pressed', String(S.ringColor === hex)));
+    $('ringChips').insertBefore(b, $('ringCustom'));
+  });
+  $('ringCustom').addEventListener('input', (e) => {
+    if (!/^#[0-9a-f]{6}$/i.test(e.target.value)) return;
+    S.ringColor = e.target.value.toLowerCase(); if (!S.ring) S.ring = true; saveSettings(); syncControls();
+  });
+  addSlider($('ringSliders'), { key: 'ringBright', label: 'Ring brightness', min: 10, max: 100, step: 5, fmt: (n) => n + ' %' });
+  addSlider($('ringSliders'), { key: 'ringWidth', label: 'Ring width', min: 12, max: 200, step: 4, fmt: (n) => n + ' px' });
+  $('btnRing').addEventListener('click', toggleRing);
   // A background picture: read on this device, never uploaded.
   $('btnPicture').addEventListener('click', () => $('pictureInput').click());
   $('pictureInput').addEventListener('change', async (e) => {
@@ -1241,6 +1293,7 @@ function wireControls() {
     const typing = e.target.closest && e.target.closest('textarea, input');
     if (typing || $('dlgTake').open || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'r' || e.key === 'R') { e.preventDefault(); toggleRecord(); }
+    else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); toggleRing(); }
     else if (e.key === ' ' && !(e.target.closest && e.target.closest('button'))) { e.preventDefault(); togglePlay(); }
     else if (e.key === 'ArrowUp' && !e.target.closest('[role="tab"]')) { e.preventDefault(); changePace(5); }
     else if (e.key === 'ArrowDown' && !e.target.closest('[role="tab"]')) { e.preventDefault(); changePace(-5); }
@@ -1250,6 +1303,36 @@ function wireControls() {
   });
   // Leaving with a take not yet saved: ask first.
   window.addEventListener('beforeunload', (e) => { if ((take && !take.saved) || rec) { e.preventDefault(); e.returnValue = ''; } });
+}
+
+/* =========================================================================
+   THE RING LIGHT - a frame of light around the screen
+   ========================================================================= */
+const RING_COLORS = [['#ffffff', 'Daylight white'], ['#fff1dc', 'Soft white'], ['#ffd29e', 'Warm'], ['#ffb46b', 'Candlelight'],
+  ['#dce9ff', 'Cool'], ['#ffd1dc', 'Rose'], ['#fde68a', 'Sunflower']];
+// The color at a brightness: each of red, green and blue scaled down (100 % is the color itself).
+function dimmed(hex, percent) {
+  const n = parseInt(hex.slice(1), 16), k = percent / 100;
+  const part = (shift) => Math.round(((n >> shift) & 255) * k);
+  return 'rgb(' + part(16) + ', ' + part(8) + ', ' + part(0) + ')';
+}
+let ringShown = null;                            // the ring as last laid out (on and width), to lay out again only on a change
+function applyRing() {
+  const ring = $('ring');
+  const color = dimmed(S.ringColor, S.ringBright);
+  ring.hidden = !S.ring;
+  ring.style.setProperty('--ring-w', S.ringWidth + 'px');
+  document.documentElement.style.setProperty('--ring-c', color);
+  $('btnRing').setAttribute('aria-pressed', String(S.ring));
+  $('ringCustom').value = S.ringColor;
+  const now = S.ring ? S.ringWidth : 0;
+  if (now !== ringShown) { ringShown = now; layout(); }
+}
+function toggleRing() {
+  S.ring = !S.ring;
+  saveSettings();
+  syncControls();
+  status(S.ring ? 'Ring light on.' : 'Ring light off.');
 }
 
 /* =========================================================================
@@ -1369,9 +1452,29 @@ function wirePreview() {
   });
 }
 
+/* ---- A script handed over by TELEDTR's Record button ----
+   TELEDTR leaves the script in this browser's storage under 'teledtr.toLab'
+   and opens this page. We read it once and delete it at once. Only a
+   recent hand-off (under 10 minutes old) is used, so an old one left behind
+   never surprises you. The text is only ever shown as text. */
+function takeHandoff() {
+  let h = null;
+  try {
+    h = JSON.parse(localStorage.getItem('teledtr.toLab') || 'null');
+    localStorage.removeItem('teledtr.toLab');
+  } catch (e) { return false; }
+  if (!h || typeof h.text !== 'string' || !h.text.trim() || h.text.length > 400000) return false;
+  if (typeof h.at !== 'number' || Math.abs(Date.now() - h.at) > 10 * 60 * 1000) return false;
+  scriptText = h.text;
+  $('scriptBox').value = h.text;
+  if (typeof h.pace === 'number' && isFinite(h.pace)) S.pace = clamp(Math.round(h.pace), 80, 220);
+  return true;
+}
+
 /* ---- Start ---- */
 function init() {
   loadSettings();
+  const fromTeledtr = takeHandoff();
   wireControls();
   wirePreview();
   applySize();
@@ -1379,6 +1482,7 @@ function init() {
   syncControls();
   layout();
   updatePlay();
+  if (fromTeledtr) status('Your script from TELEDTR is ready. Turn on the camera, then Record.');
   if (!window.MediaRecorder) status('This browser cannot record video; the camera and the script still work.');
   requestAnimationFrame(tick);
 }
