@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.5.1 - 2026-10-30 - A painted splash
+
+- A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.
+- The shared SUITE block was pasted in again from `_edtr-suite`: `suiteSplashPaint()` gives every splash the painted look (pass `look: 'classic'` for the old one), `suiteMix()` mixes the shades, and a button's detail is its tooltip.
+
 ## 0.5.0 - 2026-10-29 - Record, and a ring light
 
 - **Record**, beside Prompt (icon only below 900 px wide): opens the camera lab (`camera-lab.html`) in a new tab with your script and pace. The script travels through this browser's own storage (`teledtr.toLab`), which the lab reads once and deletes; a hand-off older than 10 minutes is ignored. The editor stays open behind it.

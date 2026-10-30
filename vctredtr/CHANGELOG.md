@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.16.4 - 2026-10-30 - A painted splash
+
+- A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.
+- The shared SUITE block was pasted in again from `_edtr-suite`: `suiteSplashPaint()` gives every splash the painted look (pass `look: 'classic'` for the old one), `suiteMix()` mixes the shades, and a button's detail is its tooltip.
+
 ## 0.16.3 - 2026-10-22 - Two new apps in the family
 
 - Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen's row of apps and in Help > More apps. ANIMEDTR joins the list too, the apps are in A to Z order, and the splash row marks the app you are in with "You are here".

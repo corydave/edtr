@@ -1,5 +1,10 @@
 # ANIMEDTR changelog
 
+## 0.24.2 - 2026-10-30
+
+- A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.
+- The shared SUITE block was pasted in again from `_edtr-suite`: `suiteSplashPaint()` gives every splash the painted look (pass `look: 'classic'` for the old one), `suiteMix()` mixes the shades, and a button's detail is its tooltip.
+
 ## 0.24.1 - 2026-10-22
 
 - Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen's row of apps and in Help > More apps.

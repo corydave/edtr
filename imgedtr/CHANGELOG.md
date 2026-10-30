@@ -2,6 +2,11 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.24.3 - 2026-10-30 - A painted splash
+
+- The painted splash now comes from the shared SUITE block, so every app in the family has it. IMGEDTR's own copy of it was taken out; it looks the same as before.
+- The shared SUITE block was pasted in again from `_edtr-suite`: `suiteSplashPaint()` gives every splash the painted look (pass `look: 'classic'` for the old one), `suiteMix()` mixes the shades, and a button's detail is its tooltip.
+
 ## 1.24.2 - 2026-10-30 - Screenshot on the splash
 
 - **Screenshot** replaces **Paste** on the splash (with the screenshot icon): it pastes the picture on the clipboard and runs Make it a screenshot on it straight away - rounded corners, a shadow, padding - and copies the finished picture, ready to paste. With no picture on the clipboard it says so; where the browser blocks clipboard access it explains the keys instead (Ctrl+V, then Ctrl+Shift+X). Plain pasting still works anywhere with Ctrl+V and from the top bar's Paste button.

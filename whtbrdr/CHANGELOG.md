@@ -1,5 +1,10 @@
 # WHTBRDR - changelog
 
+## 0.8.1 - 2026-10-30 - A painted splash
+
+- A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.
+- The shared SUITE block was pasted in again from `_edtr-suite`: `suiteSplashPaint()` gives every splash the painted look (pass `look: 'classic'` for the old one), `suiteMix()` mixes the shades, and a button's detail is its tooltip.
+
 ## 0.8.0 - 2026-10-28 - A handle for the rail, and Show clicks
 
 - **The tool rail has a handle** (the shared bar's new section F, the same as the WHTBRDR Chrome extension's and SCRNCSTR's): the **grip** floats the rail anywhere over the app (drag it, or arrow keys on the grip, Shift for bigger steps); **Fold** folds it down to its handle; **Float / Dock** moves it between its column and floating; **Tuck away** folds it by itself a moment after the pointer leaves it, or as soon as a mark starts on the board, and opens it when the pointer or keyboard focus comes back. A folded or floating rail gives its column to the board (`.app:has(...)`), and where it sits is kept in the settings (`settings.rail`, checked by `dockPrefs`). On a phone the rail stays as it was, along the bottom, with no handle (there is no room on its row), even if it was folded or floating on a bigger screen.

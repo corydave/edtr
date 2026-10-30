@@ -18,6 +18,13 @@ never had.
 
 ---
 
+## 1.26
+
+**Changed** - the shared block.
+
+- The shared SUITE block was pasted in again (the painted splash the other apps now share). TXTEDTR starts up just as before.
+- The shared SUITE block was pasted in again from `_edtr-suite`: `suiteSplashPaint()` gives every splash the painted look (pass `look: 'classic'` for the old one), `suiteMix()` mixes the shades, and a button's detail is its tooltip.
+
 ## 1.25
 
 **Added** - two new apps in the family.

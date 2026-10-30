@@ -1,5 +1,10 @@
 # 3DEDTR changelog
 
+## 0.24.1 - 2026-10-30 - A painted splash
+
+- A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.
+- The shared SUITE block was pasted in again from `_edtr-suite`: `suiteSplashPaint()` gives every splash the painted look (pass `look: 'classic'` for the old one), `suiteMix()` mixes the shades, and a button's detail is its tooltip.
+
 ## 0.24.0 - 2026-10-28 - Tutorials
 
 - **Tutorials** (section 15c, `TUTORIALS`): step-by-step guides with a screenshot for every step, opened from a new wide card on the start screen (*Step-by-step tutorials*, added under *See what 3DEDTR can do* by `addTutorialsCard`) and a *Tutorials...* button in Tips. Three to start:

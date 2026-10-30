@@ -672,6 +672,70 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    app inside it leaves out the splash's "More apps in this family" row and
    the install hint. (html.suite-in-studio is set by the block's script.) */
 .suite-in-studio .suite-splash-family, .suite-in-studio .suite-splash-install { display: none !important; }
+
+/* ---- The painted splash (the family's look since 2026-10-30; IMGEDTR's first) ----
+   No white box: the dialog itself is see-through, and splashes of paint in
+   the app's colours (suiteSplashPaint) spill out around three panels - the
+   dark brand card on the left, the ways to begin on the right, and the
+   family of apps underneath both. */
+.suite-splash.is-paint { width: min(1000px, 96vw); max-height: 94vh; padding: 52px 64px 44px; background: transparent;
+  border: 0; box-shadow: none; overflow: auto; }
+.suite-splash.is-paint::backdrop { background: rgba(8, 10, 14, .72); }
+/* The paint: one decorative drawing behind everything, never read out. */
+.suite-paint { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.is-paint .suite-paint-grid, .is-paint .suite-paint-bottom { position: relative; z-index: 1; }
+.is-paint .suite-paint-grid { display: grid; grid-template-columns: 250px 1fr; gap: 22px; align-items: stretch; }
+/* Every panel: very round, solid enough to read, with a soft shadow. */
+.is-paint .suite-paint-panel { border-radius: 26px; box-shadow: 0 18px 48px rgba(0, 0, 0, .38); }
+/* Left: the dark brand card (always dark, like a product box). */
+.is-paint .suite-paint-side { background: #15181e; color: #f3f4f6; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; padding: 30px 22px; gap: 6px; }
+.is-paint .suite-paint-side .suite-tile { width: 96px; height: 96px; border-radius: 24px; margin-bottom: 10px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .5); }
+.is-paint .suite-paint-side .suite-tile svg { width: 52px; height: 52px; }
+.is-paint .suite-paint-side .suite-tile img { width: 96px; height: 96px; }
+.is-paint .suite-paint-name { font-size: 32px; font-weight: 800; letter-spacing: .1em; margin: 0; line-height: 1.1; color: #fff; }
+.is-paint .suite-paint-version { font-size: 14px; color: var(--suite-paint-tint, #9bd66b); font-weight: 700; letter-spacing: .06em; }
+.is-paint .suite-paint-side .suite-splash-blurb { margin: 10px 0 0; font-size: 13.5px; color: #c9ced6; opacity: 1; }
+/* Right and below: slightly see-through, so the paint glows through their edges. */
+.is-paint .suite-paint-main, .is-paint .suite-paint-bottom { background: color-mix(in srgb, var(--suite-bg, #fff) 94%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.is-paint .suite-paint-main { padding: 22px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.is-paint .suite-paint-bottom { margin-top: 22px; padding: 6px 22px 12px; }
+.is-paint .suite-paint-bottom > :first-child { margin-top: 10px; border-top: 0; }
+/* The ways to begin: big picture buttons, one short label, very round corners. */
+.is-paint .suite-splash-actions { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+/* An odd number of buttons (1, 3, 5): the first, main one takes the whole row, so none is left alone. */
+.is-paint .suite-splash-actions > .suite-splash-choice:first-child:nth-last-child(odd) { grid-column: 1 / -1; }
+.is-paint .suite-splash-choice { flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  text-align: center; min-height: 118px; padding: 16px 10px 14px; border-radius: 22px;
+  transition: transform .15s ease, box-shadow .15s ease; }
+.is-paint .suite-splash-choice:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0, 0, 0, .16); }
+.is-paint .suite-splash-choice:active { transform: translateY(0); }
+.is-paint .suite-splash-choice-icon { width: 46px; height: 46px; margin: 0; stroke-width: 1.6; }
+.is-paint .suite-splash-choice-label { font-size: 15px; line-height: 1.2; }
+/* The small print is the button's tooltip now; screen readers still hear it. */
+.is-paint .suite-splash-choice-detail { position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.is-paint .suite-splash-hint { text-align: center; margin: 0; }
+/* The close button: a round dark chip in the top corner, readable on the paint. */
+.is-paint .suite-splash-x { position: absolute; top: 10px; right: 10px; float: none; margin: 0; z-index: 2;
+  width: 40px; height: 40px; min-width: 0; min-height: 0; padding: 0; display: grid; place-items: center;
+  font-size: 24px; line-height: 1; border-radius: 50%; background: #15181e; color: #fff; border: 1px solid rgba(255, 255, 255, .25); }
+.is-paint .suite-splash-x:hover { background: #2a2f39; }
+@media (prefers-reduced-motion: reduce) {
+  .is-paint .suite-splash-choice { transition: none; }
+  .is-paint .suite-splash-choice:hover { transform: none; }
+}
+@media (max-width: 720px) {
+  .suite-splash.is-paint { padding: 40px 14px 24px; }
+  .is-paint .suite-paint-grid { grid-template-columns: 1fr; gap: 14px; }
+  .is-paint .suite-paint-side { padding: 20px 16px; }
+  .is-paint .suite-paint-side .suite-tile, .is-paint .suite-paint-side .suite-tile img { width: 72px; height: 72px; border-radius: 18px; }
+  .is-paint .suite-paint-name { font-size: 26px; }
+  .is-paint .suite-paint-main { padding: 16px; }
+  .is-paint .suite-paint-bottom { margin-top: 14px; padding: 4px 14px 10px; }
+}
 /* SUITE BLOCK v4 (styles) - END ======================================== */
 
     /* Smooth color transitions on mode switch */
@@ -9257,6 +9321,12 @@ function suiteWhen(ms) {
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+     look:    'classic' - optional: the older plain white splash. Leave it
+              out for the family's look since 2026-10-30, IMGEDTR's: no white
+              box, splashes of paint in the app's colours, and three panels
+              (see suiteSplashPaint). In that look the hero picture is not
+              shown, and each button's detail becomes its tooltip (and is
+              still read out by screen readers).
    })
 
    It closes itself when a button is pressed, on Escape, on the X, and when
@@ -9292,7 +9362,8 @@ const SUITE_ACTION_ICONS = {
 
 function suiteSplash(opts) {
   const app = SUITE_APPS.find((a) => a.id === opts.appId);
-  const dlg = suiteEl('dialog', 'suite-splash' + (opts.hero ? ' has-hero' : ''));
+  const paint = opts.look !== 'classic';           // the family's painted look (the default)
+  const dlg = suiteEl('dialog', 'suite-splash' + (opts.hero && !paint ? ' has-hero' : ''));
   dlg.setAttribute('aria-labelledby', 'suite-splash-title');
 
   const close = suiteEl('button', 'suite-splash-x', '×');
@@ -9304,7 +9375,7 @@ function suiteSplash(opts) {
   // use (the same picture as on edtrapps.com). It is a data: URI inside the
   // app, so it shows offline and straight off a disk. Without one, the
   // splash falls back to the small icon tile beside the name.
-  if (opts.hero) {
+  if (opts.hero && !paint) {
     const hero = suiteEl('div', 'suite-splash-hero');
     const img = document.createElement('img');
     img.src = opts.hero;
@@ -9323,7 +9394,7 @@ function suiteSplash(opts) {
   title.id = 'suite-splash-title';
   const words = suiteEl('div');
   words.append(title, suiteEl('p', 'suite-splash-blurb', app.blurb));
-  if (!opts.hero) head.append(suiteTile(app));
+  if (!opts.hero || paint) head.append(suiteTile(app));
   head.append(words);
   dlg.append(head);
 
@@ -9343,7 +9414,10 @@ function suiteSplash(opts) {
     }
     const text = suiteEl('span', 'suite-splash-choice-words');
     text.append(suiteEl('span', 'suite-splash-choice-label', c.label));
-    if (c.detail) text.append(suiteEl('span', 'suite-splash-choice-detail', c.detail));
+    if (c.detail) {
+      text.append(suiteEl('span', 'suite-splash-choice-detail', c.detail));
+      b.title = c.detail;                          // a tooltip too (the painted look hides the small print)
+    }
     b.append(text);
     b.addEventListener('click', () => { suiteSplashClose(); c.run(); });
     actions.append(b);
@@ -9375,6 +9449,7 @@ function suiteSplash(opts) {
                                  check: opts.checkUpdate, name: app.name });
   dlg.append(suiteFamilyRow(opts.appId), suiteCreditsLine(), foot);
   dlg.suiteFoot = foot;
+  if (paint) suiteSplashPaint(dlg, app, opts.version || (typeof APP_VERSION !== 'undefined' ? APP_VERSION : ''));
 
   // Escape closes it like the X does (the app is simply left empty).
   dlg.addEventListener('cancel', (e) => { e.preventDefault(); suiteSplashClose(); });
@@ -9386,6 +9461,89 @@ function suiteSplash(opts) {
   const first = actions.querySelector('.is-primary') || actions.querySelector('button');
   if (first) first.focus();
   return dlg;
+}
+
+/* Mix two colours: `amount` 0 is `a`, 1 is `b` (both '#rrggbb'). */
+function suiteMix(a, b, amount) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const part = (shift) => Math.round(((pa >> shift) & 255) * (1 - amount) + ((pb >> shift) & 255) * amount);
+  return '#' + [16, 8, 0].map((s) => part(s).toString(16).padStart(2, '0')).join('');
+}
+
+/* ---- The painted splash (the family's look since 2026-10-30) -------------
+   First made for IMGEDTR (1.24.1), now every app's. suiteSplash builds the
+   ordinary splash; this rearranges the very same parts (nothing is rebuilt,
+   so every button and keyboard path keeps working):
+     - left:  a dark brand card - the icon, the name, the version, the blurb
+     - right: the ways to begin, "Pick up where you left off", the hint and
+              the Features card
+     - under both: the family of apps, the credits and the update check
+   and puts splashes of paint behind it all, in the app's own colour (darker
+   and lighter shades of it) with the family orange and a little gold, so
+   the splash has no white box around it. The paint is fixed drawing code
+   plus the app's colour from SUITE_APPS - never anything from a file. */
+function suiteSplashPaint(dlg, app, version) {
+  const head = dlg.querySelector('.suite-splash-head');
+  const title = head && head.querySelector('h2');
+  const blurb = head && head.querySelector('.suite-splash-blurb');
+  const tile = head && head.querySelector('.suite-tile');
+  const actions = dlg.querySelector('.suite-splash-actions');
+  const family = dlg.querySelector('.suite-splash-family');
+  if (!title || !blurb || !tile || !actions || !family) return;   // (should never happen: keep the plain look)
+  dlg.classList.add('is-paint');
+  title.classList.add('suite-paint-name');
+
+  // The app's colour, and shades of it for the paint and the version line.
+  const c = /^#[0-9a-f]{6}$/i.test(app.color) ? app.color : '#0046ad';
+  const deep = suiteMix(c, '#000000', 0.45), bright = suiteMix(c, '#ffffff', 0.3), pale = suiteMix(c, '#ffffff', 0.55);
+  dlg.style.setProperty('--suite-paint-tint', pale);            // the version line on the dark card
+
+  // Left: the brand card.
+  const side = suiteEl('div', 'suite-paint-panel suite-paint-side');
+  side.append(tile, title);
+  if (version) side.append(suiteEl('span', 'suite-paint-version', 'Version ' + version));
+  side.append(blurb);
+
+  // Right: everything from the buttons down to the family row, in order.
+  const main = suiteEl('div', 'suite-paint-panel suite-paint-main');
+  for (let n = actions; n && n !== family; ) { const next = n.nextElementSibling; main.append(n); n = next; }
+
+  // Under both: the family row and everything after it (credits, links, version check).
+  const bottom = suiteEl('div', 'suite-paint-panel suite-paint-bottom');
+  for (let n = family; n; ) { const next = n.nextElementSibling; bottom.append(n); n = next; }
+
+  // The paint: blobs and drops, see-through so they layer like wet paint.
+  // Everything is drawn a little smaller and moved in, so no splash is cut
+  // off at the dialog's edge.
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'suite-paint');
+  svg.setAttribute('viewBox', '0 0 1000 760');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="suitePaintA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bright}"/><stop offset="1" stop-color="${c}"/></linearGradient>
+      <linearGradient id="suitePaintB" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#facc15"/><stop offset="1" stop-color="#f45922"/></linearGradient>
+      <linearGradient id="suitePaintC" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="${c}"/><stop offset=".6" stop-color="${bright}"/><stop offset="1" stop-color="${pale}"/></linearGradient>
+    </defs>
+    <g transform="translate(40 30) scale(0.92)">
+    <path fill="${deep}" opacity=".9" d="M188 170C190 197 172 239 154 257C136 276 107 278 80 281C53 284 6 294 -9 275C-24 257 -10 203 -8 170C-6 137 -13 103 2 78C17 53 56 17 80 19C104 22 127 68 145 93C163 119 187 143 188 170Z"/>
+    <path fill="url(#suitePaintB)" opacity=".92" d="M979 150C980 176 955 204 934 229C913 253 882 291 851 295C820 299 780 269 748 253C716 236 672 223 658 199C645 174 653 130 668 104C683 79 718 63 749 48C779 33 820 7 850 12C880 16 907 52 929 75C950 98 978 124 979 150Z"/>
+    <path fill="#facc15" opacity=".85" d="M277 610C277 639 263 673 239 697C214 720 166 751 130 750C94 750 50 717 25 694C0 670 -20 639 -20 610C-21 581 -5 540 20 522C45 505 94 505 130 505C166 506 212 507 237 525C261 542 277 581 277 610Z"/>
+    <path fill="url(#suitePaintA)" opacity=".9" d="M979 380C985 426 992 480 971 523C949 565 893 600 848 635C802 669 755 708 697 729C639 750 562 765 500 759C438 753 377 716 324 692C270 668 231 643 178 616C124 589 28 571 2 531C-24 492 10 428 19 380C29 332 44 294 58 246C73 198 66 127 108 92C149 58 242 58 308 40C373 22 436 -15 500 -15C564 -15 631 19 692 40C754 61 827 76 867 111C907 146 915 203 934 248C953 293 972 334 979 380Z"/>
+    <path fill="url(#suitePaintC)" opacity=".8" d="M780 700C783 717 760 741 723 754C686 767 616 778 560 778C504 779 424 771 385 758C347 745 330 719 330 700C330 681 348 652 386 642C425 633 507 642 560 643C613 645 670 642 706 651C743 661 778 683 780 700Z"/>
+    <path fill="#f45922" opacity=".85" d="M960 560c30-14 60 6 60 40s-30 66-60 60-40-34-36-58 14-34 36-42Z"/>
+    <g fill="#f45922" opacity=".9"><circle cx="996" cy="300" r="9"/><circle cx="985" cy="336" r="5"/><circle cx="12" cy="350" r="7"/><circle cx="660" cy="772" r="6"/></g>
+    <g fill="#facc15" opacity=".85"><circle cx="300" cy="10" r="7"/><circle cx="330" cy="2" r="4"/><circle cx="990" cy="680" r="6"/></g>
+    <g fill="${pale}" opacity=".9"><circle cx="300" cy="752" r="8"/><circle cx="270" cy="772" r="4"/><circle cx="560" cy="-6" r="6"/><circle cx="10" cy="470" r="5"/></g>
+    </g>`;                                                         // fixed drawing + colours checked above (safe)
+
+  const grid = suiteEl('div', 'suite-paint-grid');
+  grid.append(side, main);
+  head.remove();
+  dlg.prepend(svg);
+  dlg.append(grid, bottom);
 }
 
 /* The row of the OTHER apps in the family, as small icon cards. Used at the
@@ -10551,7 +10709,7 @@ if (suiteInStudio()) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.24';
+const APP_VERSION = '1.25';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -10622,6 +10780,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.25', date: '2026-10-30', notes: [
+    'A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app\'s colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button\'s tooltip); and the family of apps underneath. The screenshot across the top made way.'
+  ] },
   { version: '1.24', date: '2026-10-22', notes: [
     'Two new apps in the family: TELEDTR, a teleprompter, and WHTBRDR, a whiteboard. Both are in the splash screen\'s row of apps and in Help > More apps. ANIMEDTR joins the list too, the apps are in A to Z order, and the splash row marks the app you are in with "You are here".'
   ] },
