@@ -1452,7 +1452,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.24.3';
+const APP_VERSION = '1.24.4';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1507,6 +1507,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.24.4', date: '2026-10-30', notes: [
+    'Paste is back on the splash, with the clipboard icon, in place of Screenshot (Dave changed his mind). It pastes the picture on the clipboard, like the top bar\'s Paste button. Make it a screenshot is still one click away in the top bar (Ctrl+Shift+X).'
+  ] },
   { version: '1.24.3', date: '2026-10-30', notes: [
     'The painted splash now comes from the shared SUITE block, so every app in the family has it. IMGEDTR\'s own copy of it was taken out; it looks the same as before.'
   ] },
@@ -3031,33 +3034,6 @@ async function pasteFromButton() {
   } catch (err) {
     if (doc && layerClipboard.layers) { pasteLayers(); return; }
     toast('Clipboard access was blocked. Press Ctrl+V (Cmd+V on Mac) instead.', 5000);
-  }
-}
-
-/**
- * The splash's Screenshot button: take the picture on the clipboard (say a
- * screen clipping you just made) and run Make it a screenshot on it - rounded
- * corners, a shadow, padding - so the finished version is copied back,
- * ready to paste. Without clipboard access, it says how to do it by hand.
- */
-async function screenshotFromClipboard() {
-  if (!navigator.clipboard || !navigator.clipboard.read) {
-    toast('This browser only allows pasting with the keyboard: press Ctrl+V (Cmd+V on Mac), then Ctrl+Shift+X.', 6000);
-    return;
-  }
-  try {
-    const items = await navigator.clipboard.read();
-    for (const item of items) {
-      const type = item.types.find((t) => t.startsWith('image/'));
-      if (type) {
-        await importBlobs([await item.getType(type)]);
-        if (doc) makeScreenshot();
-        return;
-      }
-    }
-    toast('There is no picture on the clipboard. Take a screen clipping (or copy a picture) first, then press Screenshot.', 6000);
-  } catch (err) {
-    toast('Clipboard access was blocked. Press Ctrl+V (Cmd+V on Mac), then Ctrl+Shift+X.', 6000);
   }
 }
 
@@ -12764,8 +12740,8 @@ async function startUp() {
     // shared block's painted splash, which IMGEDTR had first.)
     actions: [
       { icon: 'open', label: 'Open an image', run: openPicker, primary: true },
-      // Screenshot: paste the picture on the clipboard and make it a screenshot in one go.
-      { icon: ICONS.screenshot, label: 'Screenshot', run: screenshotFromClipboard },
+      // Paste: the picture on the clipboard (the same as the top bar's Paste button).
+      { icon: 'paste', label: 'Paste', run: pasteFromButton },
       { icon: 'size', label: 'Blank canvas', run: openNew },
       { icon: 'headshot', label: 'Make a headshot', run: startHeadshot }
     ],

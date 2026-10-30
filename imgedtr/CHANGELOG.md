@@ -2,6 +2,10 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.24.4 - 2026-10-30 - Paste is back on the splash
+
+- **Paste** returns to the splash, with the clipboard icon, in place of **Screenshot** (from 1.24.2). It pastes the picture on the clipboard (`pasteFromButton`, the same as the top bar's Paste). The Screenshot button's own function (`screenshotFromClipboard`) went with it; **Make it a screenshot** is still in the top bar (Ctrl+Shift+X).
+
 ## 1.24.3 - 2026-10-30 - A painted splash
 
 - The painted splash now comes from the shared SUITE block, so every app in the family has it. IMGEDTR's own copy of it was taken out; it looks the same as before.
