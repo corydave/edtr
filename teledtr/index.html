@@ -12,13 +12,17 @@
   book for this page. connect-src 'self' means the page may only talk to
   its own site, so the script can never send what you write anywhere.
   Your voice never goes to a server: there is no speech recognition here.
+  The camera (0.6.0) is the same: its picture is drawn on this page and a
+  take is saved to your Downloads; nothing is uploaded. 'wasm-unsafe-eval'
+  lets the background model (WebAssembly, in vendor/mediapipe/) run, and
+  media-src blob: mediastream: lets the page show the camera and a take.
 
   The SUITE block (the shared splash, Help, backups and install code) is
   copied in exactly as it is from the family's master files; do not edit
   it inside this app. Everything else is TELEDTR's own.
   =====================================================================
 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#facc15">
 <meta name="description" content="TELEDTR: a teleprompter for the EDTR suite. Write a script, time it, and read it full screen while you record. Runs entirely in your browser.">
@@ -159,9 +163,6 @@ svg.icon {
 .bar-group { display: inline-flex; align-items: center; gap: 2px; flex: none; }
 .bar-sep { width: 1px; height: 24px; background: var(--border); flex: none; margin: 0 4px; }
 .bar-spacer { flex: 1 1 auto; min-width: 8px; }
-/* Below 900 px, Record shows its icon only (its name is in its tooltip and
-   aria-label), so the bar still fits beside Prompt. */
-@media (max-width: 899px) { #btnRecord .btn-label { display: none; } #btnRecord { padding: 0 10px; } }
 .zoom-label { font-size: 13px; font-weight: 600; }
 .word-count-chip { font-size: 13px; color: var(--text-muted); white-space: nowrap; padding: 0 6px; }
 
@@ -676,6 +677,179 @@ kbd {
 /* Narrow screens: the prompter's Inspector covers the lower part of the text. */
 @media (max-width: 600px) {
   .pr-panel { width: 100%; align-self: end; height: 62%; border-left: 0; border-top: 1px solid #44403c; }
+}
+
+/* =====================================================================
+   4b. THE CAMERA, IN THE PROMPTER (0.6.0)
+   Prompting and recording are one screen now. The camera is off until you
+   turn it on (the camera button, C, or Record). When it is on:
+     - a floating preview shows what is being recorded (drag it anywhere,
+       drag its corner or pinch to resize it);
+     - Record (or R) counts down, then records and starts the text;
+     - the takes pile up in a Takes window, to watch, save or delete.
+   The prompter can also split the screen in two (on a folding phone, at
+   the fold): the script on one half, the controls and the Inspector on
+   the other. That is the "deck" (.pr-deck).
+   ===================================================================== */
+
+/* The camera's raw video: on the page (so it keeps handing out frames)
+   but too small and faint to see. The preview canvas shows the result. */
+.st-offstage { position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* ---- The deck: the controls and the Inspector together ----
+   On a full screen of text ("classic") the deck is invisible to layout
+   (display: contents), so the controls and the Inspector sit where they
+   always have. Split in two, it becomes one column on the other half. */
+.pr-deck { display: contents; }
+
+/* Split side by side: the script (and its timers) on one half, the deck on
+   the other. --deck is the deck's width: the fold's half, or a share. */
+.prompter.split { grid-template-rows: minmax(0, 1fr) auto auto; }
+.prompter[data-layout="side"] {
+  grid-template-columns: minmax(0, 1fr) var(--hinge, 0px) var(--deck, 42%);
+  grid-template-areas: "stage hinge deck" "progress hinge deck" "timers hinge deck";
+}
+.prompter[data-layout="side"].swap {
+  grid-template-columns: var(--deck, 42%) var(--hinge, 0px) minmax(0, 1fr);
+  grid-template-areas: "deck hinge stage" "deck hinge progress" "deck hinge timers";
+}
+/* Split one above the other (a phone half-folded like a laptop): the
+   script stands up on top, the deck lies flat below. */
+.prompter[data-layout="stacked"] {
+  grid-template-columns: 100%;
+  grid-template-rows: minmax(0, 1fr) auto auto var(--hinge, 0px) var(--deck, 44%);
+  grid-template-areas: "stage" "progress" "timers" "hinge" "deck";
+}
+.prompter[data-layout="stacked"].swap {
+  grid-template-rows: var(--deck, 44%) var(--hinge, 0px) minmax(0, 1fr) auto auto;
+  grid-template-areas: "deck" "hinge" "stage" "progress" "timers";
+}
+.prompter.split .pr-stage { grid-area: stage; }
+.prompter.split .pr-progress { grid-area: progress; }
+.prompter.split .pr-timers { grid-area: timers; }
+.prompter.split .pr-deck {
+  grid-area: deck; display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  background: #1c1917; color: #f5f5f4; overflow: hidden;
+}
+/* In the deck the controls never fade (they are not over the text), and
+   the Inspector is always open below them, scrolling on its own. */
+.prompter.split .pr-controls, .prompter.split.idle .pr-controls:not(:has(:focus-visible)) { flex: none; background: #1c1917; border-bottom: 1px solid #44403c; opacity: 1; pointer-events: auto; --pr-fg: #f5f5f4; --pr-muted: #d6d3d1; }
+/* The deck's controls, in three tidy rows rather than wherever they wrap:
+   Record and Start (big, side by side), then the two steppers, then the
+   small buttons sharing the last row (so all seven fit on half a fold).
+   (.pr-break is an empty, full-width piece that ends a row; hidden otherwise.) */
+.pr-break { display: none; }
+.prompter.split .pr-controls { gap: 8px 6px; padding: 10px; }
+.prompter.split .pr-break { display: block; flex: 0 0 100%; height: 0; }
+.prompter.split #prRecord, .prompter.split #prPlay { order: 0; flex: 1 1 40%; min-height: 60px; }
+.prompter.split .pr-break.one { order: 1; }
+.prompter.split .pr-step { order: 2; flex: 1 1 40%; justify-content: space-between; }
+.prompter.split .pr-step button { min-width: 48px; }
+.prompter.split .pr-val { min-width: 56px; }
+.prompter.split .pr-break.two { order: 3; }
+.prompter.split .pr-controls > button:not(#prRecord):not(#prPlay) { order: 4; flex: 1 1 0; min-width: 40px; min-height: 44px; padding: 0 4px; }
+.prompter.split .pr-panel { position: static; flex: 1 1 auto; width: auto; height: auto; align-self: stretch; border: 0; }
+.prompter.split .pr-hint, .prompter.split #prSettings, .prompter.split #prPanelClose { display: none; }
+
+/* ---- The ring light: a frame of light around the whole screen ----
+   When it is on, the prompter is pulled in from every edge by the ring's
+   width (studioLayout), so the ring never covers the text or the controls. */
+.st-ring { position: fixed; inset: 0; z-index: 799; pointer-events: none; border: var(--ring-w, 0px) solid var(--ring-c, #fff); }
+.st-ring[hidden] { display: none; }
+
+/* ---- Record, Camera and Takes in the controls ---- */
+.pr-controls button.st-rec { border-color: #dc2626; gap: 8px; }
+.pr-controls button.st-rec .dot { width: 18px; height: 18px; border-radius: 50%; background: #dc2626; transition: border-radius .15s; flex: none; }
+/* Recording (or counting down to it): the button turns red, and its dot a square (Stop). */
+.pr-controls button.st-rec[aria-pressed="true"] { background: #dc2626; color: #fff; }
+.pr-controls button.st-rec[aria-pressed="true"] .dot { border-radius: 4px; background: #fff; }
+.pr-controls button[aria-pressed="true"]:not(.st-rec) { background: rgba(250, 204, 21, .18); border-color: var(--pr-accent); }
+.st-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--pr-btn); color: #422006; font-size: 12px; font-weight: 800; display: inline-grid; place-items: center; }
+
+/* REC and its time, in the timers bar (always on screen, even when the controls fade). */
+.pr-timers .t.rec b { color: #f87171; }
+.pr-timers .t.rec small { color: #f87171; }
+.pr-timers .t.rec small::before { content: ''; display: inline-block; width: .8em; height: .8em; border-radius: 50%; background: #dc2626; margin-right: 6px; vertical-align: -1px; animation: st-blink 1s steps(2) infinite; }
+@keyframes st-blink { 50% { opacity: 0; } }
+
+/* ---- The floating preview ----
+   It floats over the whole prompter: --px, --py and --pw (its left, top and
+   width) are set by placePreview(). touch-action: none lets a finger drag it
+   without scrolling the page. It is never mirrored with the text: Mirror in
+   the Inspector is for prompter glass; "Mirror the preview" is its own switch. */
+.st-preview {
+  position: fixed; left: var(--px, auto); top: var(--py, auto); width: var(--pw, 30%); z-index: 810; margin: 0;
+  aspect-ratio: var(--cam-ratio, 16 / 9); border-radius: 14px; overflow: hidden; background: #111;
+  border: 2px solid rgba(255, 255, 255, .3); box-shadow: 0 6px 24px rgba(0, 0, 0, .55);
+  touch-action: none; cursor: grab;
+}
+.st-preview[hidden] { display: none; }
+.st-preview.dragging { cursor: grabbing; border-color: #facc15; }
+.st-preview:focus-visible { outline: 3px solid #facc15; outline-offset: 3px; }
+.st-preview canvas { width: 100%; height: 100%; display: block; }
+.st-preview.mirror canvas { transform: scaleX(-1); }   /* the preview only: the recording is the right way round */
+/* Recording: a red frame, so it is plain at a glance. */
+.st-preview.recording { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, .45), 0 6px 24px rgba(0, 0, 0, .55); }
+/* The resize corner (bottom right): a 44 px target, drawn as a sunflower notch. */
+.st-grip { position: absolute; right: 0; bottom: 0; width: 44px; height: 44px; cursor: nwse-resize; }
+.st-grip::after { content: ''; position: absolute; right: 7px; bottom: 7px; width: 14px; height: 14px;
+  border-right: 4px solid #facc15; border-bottom: 4px solid #facc15; border-radius: 0 0 6px 0; }
+
+/* ---- The studio's sections in the Inspector (dark, like the rest of it) ---- */
+.st-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.pr-panel .st-btn {
+  min-height: 44px; padding: 0 14px; border-radius: 10px; border: 2px solid #57534e; background: #292524; color: #f5f5f4;
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.pr-panel .st-btn:hover:not(:disabled) { border-color: #a8a29e; }
+.pr-panel .st-btn:disabled { opacity: .45; cursor: not-allowed; }
+.pr-panel .st-btn.primary { background: #facc15; color: #422006; border-color: #facc15; }
+.pr-panel .st-btn:focus-visible { outline: 3px solid #facc15; outline-offset: 2px; }
+.st-meter { height: 10px; border-radius: 5px; background: #292524; border: 1px solid #57534e; overflow: hidden; margin-top: 8px; }
+.st-meter span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #22c55e 0 70%, #facc15 70% 90%, #ef4444 90%); background-size: 100vw 100%; transition: width .08s; }
+.st-status { font-size: 13px; color: #fde68a; margin: 6px 0 0; min-height: 1em; }
+.st-status:empty { display: none; }
+.st-chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; align-items: center; }
+.st-chip { width: 44px; height: 44px; border-radius: 50%; border: 3px solid #57534e; cursor: pointer; padding: 0; }
+.st-chip[aria-pressed="true"] { border-color: #facc15; box-shadow: 0 0 0 3px #1c1917, 0 0 0 5px #facc15; }
+.st-chip:focus-visible { outline: 3px solid #facc15; outline-offset: 3px; }
+.st-custom { width: 44px; height: 44px; border-radius: 50%; border: 3px dashed #57534e; padding: 0; background: none; cursor: pointer; }
+
+/* ---- The Takes window ---- */
+.st-takes {
+  width: min(760px, 96vw); max-height: 94vh; padding: 0; border: 1px solid #44403c; border-radius: 16px;
+  background: #1c1917; color: #f5f5f4; box-shadow: 0 24px 60px rgba(0, 0, 0, .6);
+}
+.st-takes::backdrop { background: rgba(0, 0, 0, .7); }
+.st-takes-in { padding: 18px; display: grid; gap: 12px; }
+.st-takes-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.st-takes h2 { margin: 0; font-size: 20px; }
+.st-takes video { width: 100%; max-height: 52vh; background: #000; border-radius: 10px; display: block; }
+.st-takes .hint { color: #d6d3d1; margin: 0; }
+.st-takes .icon-btn { color: #f5f5f4; }
+/* The list of takes: one big button each (the one shown is pressed). */
+.st-take-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.st-take-list button {
+  flex: none; min-height: 52px; min-width: 104px; padding: 4px 12px; border-radius: 10px; border: 2px solid #57534e;
+  background: #292524; color: #f5f5f4; font: inherit; cursor: pointer; display: grid; justify-items: start; line-height: 1.2;
+}
+.st-take-list button b { font-size: 15px; }
+.st-take-list button small { font-size: 12px; color: #d6d3d1; }
+.st-take-list button[aria-pressed="true"] { border-color: #facc15; background: #3a2f0b; }
+.st-take-list button:focus-visible { outline: 3px solid #facc15; outline-offset: 2px; }
+.st-takes .st-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.st-takes .st-btn {
+  min-height: 48px; padding: 0 16px; border-radius: 10px; border: 2px solid #57534e; background: #292524; color: #f5f5f4;
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.st-takes .st-btn.primary { background: #facc15; color: #422006; border-color: #facc15; }
+.st-takes .st-btn.danger { border-color: #b91c1c; }
+.st-takes .st-btn:disabled { opacity: .45; cursor: not-allowed; }
+.st-takes .st-btn:focus-visible { outline: 3px solid #facc15; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-timers .t.rec small::before { animation: none; }
+  .st-meter span, .pr-controls button.st-rec .dot { transition: none; }
 }
 
 
@@ -1229,15 +1403,10 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 
   <div class="bar-spacer"></div>
 
-  <!-- The main action: start prompting from this script. -->
-  <button class="btn primary" id="btnPrompt" type="button" title="Prompt: read this script full screen (Ctrl+P)">
+  <!-- The main action: start prompting from this script. Recording is in the
+       prompter too (0.6.0): its Record button films you while you read. -->
+  <button class="btn primary" id="btnPrompt" type="button" title="Prompt: read this script full screen, and record yourself if you like (Ctrl+P)">
     <span data-icon="prompt"></span> Prompt
-  </button>
-  <!-- Record: opens the camera lab (camera-lab.html) in a new tab, carrying
-       this script and its pace along. The lab records the camera with the
-       script beside it; nothing is uploaded. -->
-  <button class="btn" id="btnRecord" type="button" aria-label="Record" title="Record: film yourself reading this script (opens the camera lab in a new tab)">
-    <span data-icon="camera"></span><span class="btn-label">Record</span>
   </button>
 
   <div class="bar-sep" aria-hidden="true"></div>
@@ -1361,7 +1530,10 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 <!-- =====================================================================
      THE PROMPTER - full screen. Built and driven by the script.
      ===================================================================== -->
-<section class="prompter" id="prompter" role="dialog" aria-modal="true" aria-labelledby="prTitle" hidden data-pr-theme="white" data-speakers="on">
+<!-- The ring light: a frame of light around the screen (camera part, 0.6.0). -->
+<div class="st-ring" id="stRing" aria-hidden="true" hidden></div>
+
+<section class="prompter" id="prompter" role="dialog" aria-modal="true" aria-labelledby="prTitle" hidden data-pr-theme="white" data-speakers="on" data-layout="classic">
   <h2 id="prTitle" class="sr-only">Prompter</h2>
   <div class="pr-stage" id="prStage">
     <div class="pr-flip" id="prFlip">
@@ -1375,17 +1547,6 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     </div>
   </div>
 
-  <!-- The prompter's own Inspector: the same sections as the one beside the
-       editor. It sits BESIDE the text, not inside it, so the wheel and swipes
-       over it scroll the settings and never move the script (0.2.0 fix). -->
-  <aside class="pr-panel" id="prPanel" hidden aria-labelledby="prPanelTitle">
-    <div class="panel-head pr-panel-head">
-      <div><h2 id="prPanelTitle">Inspector</h2><p class="hint">The text keeps its place while you change these.</p></div>
-      <button class="icon-btn" id="prPanelClose" type="button" title="Close the Inspector (Escape)" aria-label="Close the Inspector"><span data-icon="x"></span></button>
-    </div>
-    <div id="prPanelBody"></div>
-  </aside>
-
   <!-- How far along the script you are. -->
   <div class="pr-progress" id="prProgress" aria-hidden="true"><span id="prProgressBar"></span></div>
 
@@ -1395,11 +1556,20 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <span class="t" id="tEstWrap"><small>Estimate</small><b id="tEst">0:00</b></span>
     <span class="t" id="tRemWrap"><small>Remaining</small><b id="tRem">0:00</b></span>
     <span class="t" id="tTargetWrap" hidden><small>Target</small><b id="tTarget">0:00</b></span>
+    <!-- While recording: REC and its time (always on screen, even when the controls fade). -->
+    <span class="t rec" id="prRecWrap" hidden><small>Rec</small><b id="prRecTime">0:00</b></span>
   </div>
+
+  <!-- The deck: the controls and the Inspector. On a whole screen of text it is
+       invisible to the layout (each part sits where it always has); split in
+       two (a folding phone), it is one column on the other half. -->
+  <div class="pr-deck" id="prDeck">
 
   <div class="pr-controls" id="prControls">
     <button type="button" id="prHome" aria-label="Back to the start (Home)" title="Back to the start (Home)"><span data-icon="home"></span></button>
     <button type="button" id="prPrev" aria-label="Back one paragraph (Left arrow)" title="Back one paragraph (Left arrow or Page Up)"><span data-icon="prev"></span></button>
+    <!-- Record: a countdown, then the camera records while the text moves. -->
+    <button type="button" id="prRecord" class="st-rec" aria-pressed="false" aria-label="Record (R)" title="Record: a countdown, then the camera records while the text moves (R)"><span class="dot" aria-hidden="true"></span><span id="prRecordText">Record</span></button>
     <button type="button" id="prPlay" class="big" aria-label="Start" title="Start or pause (Space)"><span data-icon="play" id="prPlayIcon"></span><span id="prPlayText">Start</span></button>
     <button type="button" id="prNext" aria-label="Forward one paragraph (Right arrow)" title="Forward one paragraph (Right arrow or Page Down)"><span data-icon="next"></span></button>
     <!-- Change the pace and the text size in the moment. Hold a button to keep going. -->
@@ -1413,12 +1583,59 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <span class="pr-val" id="prSize" aria-live="polite"><b id="prSizeNum">64</b><small>px text</small></span>
       <button type="button" id="prBigger" aria-label="Bigger text (plus key)" title="Bigger text (+)"><span class="pr-a big" aria-hidden="true">A</span></button>
     </div>
+    <button type="button" id="prCamera" aria-pressed="false" aria-label="Camera on or off (C)" title="Camera on or off, to rehearse without recording (C)"><span data-icon="camera"></span></button>
+    <button type="button" id="prTakes" hidden aria-label="Takes (T)" title="Takes: watch, save or delete them (T)"><span data-icon="film"></span><span class="st-badge" id="prTakesCount" aria-hidden="true">0</span></button>
     <button type="button" id="prFull" aria-label="Full screen on or off (F)" title="Full screen on or off (F)"><span data-icon="maximize"></span></button>
     <button type="button" id="prSettings" aria-expanded="false" aria-controls="prPanel" aria-label="Inspector: look and pace" title="Inspector: look and pace"><span data-icon="inspector"></span></button>
     <button type="button" id="prClose" aria-label="Stop and go back to editing (Escape)" title="Stop and go back to editing (Escape)"><span data-icon="x"></span></button>
-    <p class="pr-hint">Space starts and pauses. Up and Down change the pace. Left and Right move a paragraph. + and - change the text size. Right-click or long-press for more. On a touch screen, when the controls are hidden, a tap brings them back. Escape goes back to editing.</p>
+    <span class="pr-break one" aria-hidden="true"></span><span class="pr-break two" aria-hidden="true"></span>
+    <p class="pr-hint">Space starts and pauses. R records, C turns the camera on. Up and Down change the pace. Left and Right move a paragraph. + and - change the text size. Right-click or long-press for more. On a touch screen, when the controls are hidden, a tap brings them back. Escape goes back to editing.</p>
   </div>
+
+  <!-- The prompter's own Inspector: the same sections as the one beside the
+       editor. It sits BESIDE the text, not inside it, so the wheel and swipes
+       over it scroll the settings and never move the script (0.2.0 fix). -->
+  <aside class="pr-panel" id="prPanel" hidden aria-labelledby="prPanelTitle">
+    <div class="panel-head pr-panel-head">
+      <div><h2 id="prPanelTitle">Inspector</h2><p class="hint">The text keeps its place while you change these.</p></div>
+      <button class="icon-btn" id="prPanelClose" type="button" title="Close the Inspector (Escape)" aria-label="Close the Inspector"><span data-icon="x"></span></button>
+    </div>
+    <div id="prPanelBody"></div>
+  </aside>
+  </div><!-- end of the deck -->
+
+  <!-- The camera preview: what is being recorded, with its effects. It floats
+       over the prompter; drag it, or drag its corner (or pinch) to resize it. -->
+  <figure class="st-preview" id="stPreview" hidden aria-label="Camera preview" aria-describedby="stPreviewHelp">
+    <canvas id="stOut" width="1280" height="720"></canvas>
+    <span class="st-grip" aria-hidden="true"></span>
+    <span class="sr-only" id="stPreviewHelp">Drag to move it anywhere on the screen; drag its corner, or pinch, to resize it. With the keyboard: the arrow keys move it, Shift and the arrow keys resize it.</span>
+  </figure>
+  <!-- The camera's own picture, before the effects. Never shown: the preview
+       shows the result. It is tiny and see-through rather than "hidden",
+       because a hidden video stops handing out new frames in some browsers. -->
+  <video id="stCam" class="st-offstage" playsinline muted aria-hidden="true"></video>
 </section>
+
+<!-- The Takes window: every take of this visit, to watch, save or delete. -->
+<dialog class="st-takes" id="dlgTakes" aria-labelledby="takesTitle">
+  <div class="st-takes-in">
+    <div class="st-takes-head">
+      <h2 id="takesTitle">Take</h2>
+      <button class="icon-btn" id="takesClose" type="button" aria-label="Close the Takes window" title="Close (Escape)"><span data-icon="x"></span></button>
+    </div>
+    <video id="takeVideo" controls playsinline></video>
+    <p class="hint" id="takeInfo"></p>
+    <div class="st-take-list" id="takeList" role="group" aria-label="Your takes"></div>
+    <div class="st-actions">
+      <button class="st-btn primary" id="takeSave" type="button">Save the video</button>
+      <button class="st-btn" id="takeCaptions" type="button">Save captions (.vtt)</button>
+      <button class="st-btn" id="takeAgain" type="button">Record again from the start</button>
+      <button class="st-btn danger" id="takeDelete" type="button">Delete this take</button>
+    </div>
+    <p class="hint">Takes are kept while this page is open, and never uploaded. Saved videos go to your Downloads.</p>
+  </div>
+</dialog>
 
 <!-- =====================================================================
      DIALOG: Paste a script. Clean formatting is kept: headings become
@@ -1487,6 +1704,9 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <p>Press <kbd>Ctrl+P</kbd> or the Prompt button. The prompter starts a countdown, then the text moves up to the reading line. Lines you have read are dimmed, and the bar at the bottom shows the section you are in. The prompter remembers where you stopped, and keeps the screen awake while it is open.</p>
       <h3>Change things while prompting</h3>
       <p>The pace and the text size have their own <strong>- and +</strong> buttons in the prompter's controls (hold one to keep going), as do the keys: <kbd>Up</kbd> and <kbd>Down</kbd> for the pace while the text moves, <kbd>+</kbd> and <kbd>-</kbd> for the size. The sliders button opens the Inspector beside the text, with every setting. <kbd>F</kbd> switches full screen, and a right-click or long-press on the text opens a menu. On a touch screen, when the controls have faded, the first tap brings them back without pausing.</p>
+      <h3>Record yourself</h3>
+      <p>In the prompter, press <strong>Record</strong> (or <kbd>R</kbd>). The camera turns on (the browser asks the first time), a countdown runs, then the camera records while the text moves. Press <strong>Stop</strong> (or <kbd>R</kbd>) when you are done; with the script finished, the take stops by itself two seconds after the last word. Each take opens in the <strong>Takes</strong> window: watch it, save the video (MP4 where the browser can) and its captions (.vtt, timed from the prompter), record again, or delete it. Takes are kept while the page is open; save the ones you want.</p>
+      <p>The camera button (<kbd>C</kbd>) turns the camera on for a rehearsal without recording. The preview floats over the text: drag it anywhere, and drag its corner (or pinch) to resize it. The Inspector's <strong>Camera</strong>, <strong>Look</strong>, <strong>Background</strong> (blur it, or put a color or a picture behind you) and <strong>Ring light</strong> (<kbd>L</kbd>: a frame of light around the screen) sections set it up. On a folding phone, <strong>Screen layout</strong> puts the text on one half and the controls on the other, at the fold. Recording needs a web address (https), not a file. Nothing is uploaded: the camera picture stays on this device.</p>
       <h3>Movement</h3>
       <p>In the Inspector's Pace section: <strong>Smooth</strong> (the text glides up steadily, the default), <strong>A line at a time</strong> (each line holds still, then moves up) or <strong>A page at a time</strong> (the text stays still while you read down the screen, then turns).</p>
     </div>
@@ -1495,7 +1715,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <p><strong>Private by design.</strong> Your script never leaves this device. There are no uploads, accounts or analytics, and the page's security policy blocks it from sending data anywhere.</p>
       <p><strong>Files.</strong> Save writes a <em>.teledtr</em> file. Open reads one, or a plain text or Markdown file; you can also drop one anywhere on TELEDTR. Installed as an app, TELEDTR opens <em>.teledtr</em> files from your desktop.</p>
       <p><strong>Your settings</strong> (text size, pace, colors, mirror) and which Inspector sections are open are remembered in this browser only.</p>
-      <p><strong>Foldable Lab:</strong> <a href="camera-lab">https://teledtr.app/camera-lab</a></p>
+      <p><strong>Recording.</strong> The camera is only on when you turn it on, and off when the prompter closes. Takes stay in this page until you save them to your Downloads; nothing is uploaded. The background model (MediaPipe Selfie Segmentation, by Google, Apache 2.0) is in the vendor folder beside TELEDTR and runs on this device.</p>
       <div id="suiteCredits"></div>
     </div>
     <div role="tabpanel" id="paneChangelog" aria-labelledby="tabChangelog" hidden>
@@ -1524,7 +1744,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ========================================================================= */
 
 // The version. Keep this line in exactly this form: the update check reads it.
-const APP_VERSION = '0.5.1';
+const APP_VERSION = '0.6.0';
 
 // The storage key for this app's own UI preferences (theme, Inspector height,
 // which Inspector sections are open). Every key starts with the app's name,
@@ -1650,6 +1870,7 @@ const ICONS = {
   help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   install: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 7v7M9 11.5l3 3 3-3"/>',
   x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  film: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 3v18M17 3v18M3 7.5h4M3 12h18M3 16.5h4M17 7.5h4M17 16.5h4"/>',
   home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   prev: '<path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/>',
   next: '<path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/>',
@@ -1671,6 +1892,12 @@ const ICONS = {
 
 // The changelog, newest first. Each release is added at the top.
 const CHANGELOG = [
+  { version: '0.6.0', date: '2026-10-31', notes: [
+    'Prompt and Record are one: the prompter records. Record (or R) counts down, then films you while the text moves; Stop (or R) ends the take, and the script\'s end stops it by itself.',
+    'The Takes window keeps every take of this visit: watch one, save the video and its captions, record again from the start, or delete it.',
+    'The camera lab moved in: a floating preview you can drag and resize, looks and lighting, a blurred, colored or picture background, the ring light, and a split screen at the fold of a folding phone (Inspector > Screen layout).',
+    'Fixed: the Features tour shows its drawings again, with a new slide for recording.'
+  ] },
   { version: '0.5.1', date: '2026-10-30', notes: [
     'A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app\'s colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button\'s tooltip); and the family of apps underneath. The screenshot across the top made way.'
   ] },
@@ -1725,7 +1952,7 @@ const APP_FEATURES = [
     text: 'Headings make sections, and **bold** or *italic* marks the words to stress. Cue marks go in brackets and are never read aloud.',
     alt: 'A script page fills with lines of text, and a gray cue tag appears.',
     still: 2.5,
-    art: '<svg viewBox="0 0 320 200" aria-hidden="true">'
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" aria-hidden="true">'
       + '<rect class="fx-paper fx-edge" x="92" y="16" width="136" height="168" rx="10"/>'
       + '<rect class="fx-acc-soft" x="112" y="38" width="64" height="10" rx="4"/>'
       + '<rect class="fx-ink" x="112" y="64" width="96" height="6" rx="3"><animate attributeName="width" values="0;96;96;0" dur="6s" repeatCount="indefinite"/></rect>'
@@ -1738,7 +1965,7 @@ const APP_FEATURES = [
     text: 'The timeline under the script gives each section a block as wide as its time, so a long one stands out. Change the pace and every time updates at once.',
     alt: 'A row of section blocks of different widths; the widths grow as the pace slows, and one block is highlighted.',
     still: 3,
-    art: '<svg viewBox="0 0 320 200" aria-hidden="true">'
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" aria-hidden="true">'
       + '<rect class="fx-paper fx-edge" x="30" y="30" width="260" height="70" rx="10"/>'
       + '<rect class="fx-soft" x="48" y="48" width="180" height="6" rx="3"/>'
       + '<rect class="fx-soft" x="48" y="64" width="150" height="6" rx="3"/>'
@@ -1753,7 +1980,7 @@ const APP_FEATURES = [
     text: 'The text rises to a reading line near the top, so your eyes stay near the camera. Lines you have read fade, and a bar shows how far along you are.',
     alt: 'Lines of text rise past a band that marks the reading line; the lines above it are dimmed.',
     still: 2,
-    art: '<svg viewBox="0 0 320 200" aria-hidden="true">'
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" aria-hidden="true">'
       + '<rect class="fx-edge" x="70" y="10" width="180" height="180" rx="12" fill="none"/>'
       + '<rect class="fx-hl" x="72" y="62" width="176" height="26"/>'
       + '<g><animateTransform attributeName="transform" type="translate" values="0 40;0 -70;0 40" dur="8s" repeatCount="indefinite"/>'
@@ -1767,11 +1994,27 @@ const APP_FEATURES = [
       + '<rect class="fx-soft" x="90" y="176" width="140" height="5" rx="2.5"/>'
       + '<rect class="fx-acc" x="90" y="176" width="20" height="5" rx="2.5"><animate attributeName="width" values="20;140;20" dur="8s" repeatCount="indefinite"/></rect>'
       + '</svg>' },
+  { title: 'Record while you read',
+    text: 'Press Record in the prompter: a countdown, then the camera films you while the text moves. Blur the background, light your face with the ring light, and keep the best take. Nothing is uploaded.',
+    alt: 'The prompter with its text, a small camera preview in the corner showing a person, and a blinking red recording dot.',
+    still: 2,
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" aria-hidden="true">'
+      + '<rect class="fx-edge" x="40" y="14" width="240" height="172" rx="12" fill="none"/>'
+      + '<rect class="fx-hl" x="42" y="52" width="236" height="24"/>'
+      + '<rect class="fx-ink" x="60" y="60" width="150" height="8" rx="4"/>'
+      + '<rect class="fx-ink" x="60" y="88" width="170" height="8" rx="4"/>'
+      + '<rect class="fx-ink" x="60" y="108" width="120" height="8" rx="4"/>'
+      + '<rect class="fx-soft" x="60" y="128" width="90" height="8" rx="4"/>'
+      + '<rect class="fx-paper fx-edge" x="186" y="112" width="84" height="60" rx="8"/>'
+      + '<circle class="fx-soft" cx="228" cy="138" r="11"/>'
+      + '<rect class="fx-soft" x="208" y="152" width="40" height="18" rx="9"/>'
+      + '<circle class="fx-pop" cx="198" cy="123" r="5"><animate attributeName="opacity" values="1;1;0;0" dur="1.2s" repeatCount="indefinite"/></circle>'
+      + '</svg>' },
   { title: 'Keys and a clicker',
     text: 'Presentation clickers send the arrow and Page keys, so they just work. Space starts and pauses. Home goes back to the top.',
     alt: 'A key is pressed, and the text moves on by one paragraph.',
     still: 1.5,
-    art: '<svg viewBox="0 0 320 200" aria-hidden="true">'
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" aria-hidden="true">'
       + '<rect class="fx-paper fx-edge" x="60" y="60" width="60" height="60" rx="10"/>'
       + '<path class="fx-line" d="M80 80 L90 90 L100 80" fill="none"/>'
       + '<rect class="fx-paper fx-edge" x="130" y="60" width="60" height="60" rx="10"/>'
@@ -1783,7 +2026,7 @@ const APP_FEATURES = [
     text: 'Script check spots sentences too long for one breath, cue marks with a typo, bold left open and doubled words. Click one to go to it, or fix it in one tap.',
     alt: 'A script page with one line underlined in orange; a check mark appears beside it as it is fixed.',
     still: 3.5,
-    art: '<svg viewBox="0 0 320 200" aria-hidden="true">'
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" aria-hidden="true">'
       + '<rect class="fx-paper fx-edge" x="70" y="22" width="150" height="156" rx="10"/>'
       + '<rect class="fx-ink" x="90" y="46" width="110" height="6" rx="3"/>'
       + '<rect class="fx-ink" x="90" y="66" width="96" height="6" rx="3"/>'
@@ -1816,7 +2059,12 @@ const SHORTCUT_ROWS = [
   ['+ / -', 'Prompter: bigger or smaller text'],
   ['F', 'Prompter: full screen on or off'],
   ['Home', 'Prompter: back to the start'],
-  ['Escape', 'Prompter: close the Inspector, or stop and go back to editing on the word where you stopped']
+  ['R', 'Prompter: record (a countdown first), or stop recording'],
+  ['C', 'Prompter: camera on or off (a rehearsal, without recording)'],
+  ['T', 'Prompter: the Takes window (watch, save or delete a take)'],
+  ['L', 'Prompter: ring light on or off'],
+  ['Arrow keys (Shift: resize)', 'On the camera preview: move it (or make it bigger and smaller)'],
+  ['Escape', 'Prompter: stop recording, close the Inspector, or stop and go back to editing on the word where you stopped']
 ];
 
 
@@ -4041,9 +4289,10 @@ function makeSlider(o) {
     const next = clamp(Number(input.value) + count * o.step, o.min, o.max);
     input.value = String(next);
     o.set(next);
-    settingsChanged();
+    (o.changed || settingsChanged)();
   };
-  input.addEventListener('input', () => { o.set(Number(input.value)); settingsChanged(); });
+  // o.changed: what to do after a change (the camera settings have their own; the script's use settingsChanged).
+  input.addEventListener('input', () => { o.set(Number(input.value)); (o.changed || settingsChanged)(); });
   // Page Up and Page Down move ten steps at a time.
   input.addEventListener('keydown', (e) => {
     if (e.key === 'PageUp') { e.preventDefault(); moveBy(10); }
@@ -4078,7 +4327,7 @@ function makeSwitch(o) {
   button.type = 'button';
   button.setAttribute('role', 'switch');
   button.setAttribute('aria-labelledby', id);
-  button.addEventListener('click', () => { o.set(!o.get()); settingsChanged(); });
+  button.addEventListener('click', () => { o.set(!o.get()); (o.changed || settingsChanged)(); });
   row.append(label, button);
   controls.push({ sync() { button.setAttribute('aria-checked', String(!!o.get())); } });
   return row;
@@ -4094,7 +4343,7 @@ function makeChoice(o) {
   const buttons = o.options.map((opt) => {
     const b = el('button', '', opt.label);
     b.type = 'button';
-    b.addEventListener('click', () => { o.set(opt.value); settingsChanged(); });
+    b.addEventListener('click', () => { o.set(opt.value); (o.changed || settingsChanged)(); });
     group.append(b);
     return { value: opt.value, button: b };
   });
@@ -5772,6 +6021,7 @@ function nudgeLine(dir) {
 function play() {
   if (!P.model || !P.model.words.length) return;
   if (P.wi >= P.model.words.length) setPosition(0);
+  clearTimeout(CAM.stopTimer);                  // reading on: no stop at the end of the take
   P.playing = true;
   P.countdown = settings.countdown;             // every start gets its countdown
   P.last = 0;                                   // the first frame takes no time
@@ -5785,6 +6035,7 @@ function pause() {
   P.countdown = 0;
   hideCount();
   updatePlayButton();
+  camPaused();                                  // a take still counting down is cancelled
 }
 
 function togglePlay() { if (P.playing) pause(); else play(); }
@@ -5871,6 +6122,7 @@ function tick(now) {
   const dt = P.last ? Math.min(0.25, (now - P.last) / 1000) : 0;   // seconds since the last frame
   P.last = now;
   if (P.playing) step(now, dt);
+  camTick(now);                                 // the recording's time, its captions, the microphone level
   refreshTimers(false);
   layoutPrompter();
   // Hide the controls after a while of reading, so the text is clear.
@@ -5888,6 +6140,7 @@ function step(now, dt) {
     if (P.countdown > 0) { showCount(Math.ceil(P.countdown)); return; }
     P.countdown = 0;
     hideCount();
+    camCountdownDone();                         // Record was pressed: the camera starts recording now
     return;
   }
   P.elapsed += dt;
@@ -5915,7 +6168,7 @@ function step(now, dt) {
   if (P.wi >= model.words.length) {
     P.wi = model.words.length;
     pause();
-    toast('End of the script.');
+    camScriptEnded();                           // "End of the script" (and the end of a take)
   }
 }
 
@@ -6006,6 +6259,7 @@ function openPrompter() {
   prompter.hidden = false;
   P.open = true;
   setBackgroundInert(true);
+  camOpen();                                    // the layout (and the ring light); the camera stays off
   updatePlayButton();
   refreshTimers(true);
   layoutPrompter();
@@ -6025,6 +6279,7 @@ function closePrompter() {
   closeMenu(false);
   resumePos = positionFromWord();
   P.open = false;
+  camClose();                                   // any take is kept; the camera turns off
   prompter.hidden = true;
   keepScreenAwake(false);
   setBackgroundInert(false);
@@ -6042,6 +6297,11 @@ function closePrompter() {
 // It sits beside the text (not inside it), so it scrolls on its own: the
 // wheel and swipes over it scroll the settings, not the script (0.2.0 fix).
 function togglePrSettings(force) {
+  if (CAM.layout !== 'classic') {               // split: the Inspector is always open in the deck
+    const first = prPanel.querySelector('.fold');
+    if (first) first.focus();
+    return;
+  }
   const open = typeof force === 'boolean' ? force : prPanel.hidden;
   prPanel.hidden = !open;
   document.getElementById('prSettings').setAttribute('aria-expanded', String(open));
@@ -6060,9 +6320,11 @@ function togglePrSettings(force) {
 function onPrompterKey(e) {
   if (!P.open) return;
   if (!ctxMenu.hidden) return;                   // the menu has the keys while it is open
+  if (dlgTakes.open) return;                     // so has the Takes window
   if (e.key === 'Escape') {
     e.preventDefault();
-    if (!prPanel.hidden) togglePrSettings(false);
+    if (camIsRecording()) stopRecording();       // first, Escape stops a recording
+    else if (!prPanel.hidden && CAM.layout === 'classic') togglePrSettings(false);
     else closePrompter();
     return;
   }
@@ -6104,6 +6366,26 @@ function onPrompterKey(e) {
     case 'F':
       e.preventDefault();
       toggleFullscreen();
+      break;
+    case 'r':                                    // record, or stop
+    case 'R':
+      e.preventDefault();
+      toggleRecord();
+      break;
+    case 'c':                                    // the camera on or off
+    case 'C':
+      e.preventDefault();
+      toggleCamera();
+      break;
+    case 't':                                    // the Takes window
+    case 'T':
+      e.preventDefault();
+      openTakes();
+      break;
+    case 'l':                                    // the ring light
+    case 'L':
+      e.preventDefault();
+      toggleRing();
       break;
     case 'ArrowUp':                              // faster, or forward one line when paused
       e.preventDefault();
@@ -6193,6 +6475,11 @@ function openPrompterMenu(x, y) {
     { label: settings.mirrorX ? 'Mirror left to right: turn off' : 'Mirror left to right', fn: () => { settings.mirrorX = !settings.mirrorX; settingsChanged(); } },
     { label: settings.fadeRead ? 'Stop dimming the lines read' : 'Dim the lines already read', fn: () => { settings.fadeRead = !settings.fadeRead; settingsChanged(); } },
     'sep',
+    { label: camIsRecording() ? 'Stop recording' : 'Record', key: 'R', fn: toggleRecord },
+    { label: CAM.stream ? 'Camera off' : 'Camera on', key: 'C', fn: toggleCamera },
+    { label: 'Takes (' + CAM.takes.length + ')', key: 'T', fn: () => openTakes() },
+    { label: camSettings.ring ? 'Ring light off' : 'Ring light on', key: 'L', fn: toggleRing },
+    'sep',
     { label: 'Inspector', fn: () => togglePrSettings(true) },
     { label: document.fullscreenElement ? 'Leave full screen' : 'Full screen', key: 'F', fn: toggleFullscreen },
     { label: 'Back to editing', key: 'Esc', fn: closePrompter }
@@ -6211,6 +6498,7 @@ document.addEventListener('fullscreenchange', () => {
   if (!P.open) return;
   if (!document.fullscreenElement) {
     if (P.keepOpenOnExit) { P.keepOpenOnExit = false; layoutPrompter(); }
+    else if (camIsRecording()) { stopRecording(); layoutPrompter(); }   // stop the take; stay in the prompter
     else closePrompter();
   } else {
     layoutPrompter();
@@ -6230,7 +6518,1093 @@ holdToRepeat(document.getElementById('prFaster'), () => { changePace(5); wake();
 holdToRepeat(document.getElementById('prSmaller'), () => { changeTextSize(-4); wake(); });
 holdToRepeat(document.getElementById('prBigger'), () => { changeTextSize(4); wake(); });
 document.getElementById('prPanelClose').addEventListener('click', () => togglePrSettings(false));
-document.getElementById('prClose').addEventListener('click', closePrompter);
+// The X: while recording, it stops the take first (a second press goes back to editing).
+document.getElementById('prClose').addEventListener('click', () => { if (camIsRecording()) stopRecording(); else closePrompter(); });
+
+
+/* =========================================================================
+   PART 2b - THE CAMERA, IN THE PROMPTER (0.6.0)
+   Prompting and recording are one screen. The prompter reads the script as
+   it always has; this part adds the camera beside it:
+
+     - the camera and microphone, turned on only when you ask (the camera
+       button, C, or Record), and off again when the prompter closes;
+     - effects drawn on a canvas: a look, the lighting, and the background
+       (blurred, a color or a picture - found by a small model that runs on
+       this device, loaded from vendor/mediapipe/ the first time it is used);
+     - Record: a countdown, then the canvas and the microphone are recorded
+       while the text moves; captions are timed from the words as they cross
+       the reading line;
+     - the Takes window: every take of this visit, to watch, save or delete;
+     - a ring light (a frame of light around the screen) and a layout that
+       can split the screen in two, at the fold of a folding phone.
+
+   PRIVACY: nothing here is uploaded. The camera picture goes from the camera
+   to a canvas on this page, and a saved take goes to your Downloads. The
+   page's security policy (connect-src 'self') would block any upload anyway.
+   ========================================================================= */
+
+/* ---- The camera settings: kept in this browser only ----
+   They are about you and your room, not about a script, so they are not in
+   .teledtr files. The camera itself always starts OFF: opening the
+   prompter never turns it on by surprise (on a projector, say). */
+const CAM_KEY = 'teledtr.camera';
+const CAM_DEFAULTS = {
+  quality: '720',       // '720' or '1080': the video's height (its short side)
+  shape: 'landscape',   // 'landscape' (16:9), 'portrait' (9:16), 'square', or 'camera' (as the camera gives it)
+  preview: 'float',     // 'float' (the floating preview) or 'off'
+  floatX: -1,           // where the floating preview sits: its left and top as shares
+  floatY: -1,           //   of the screen (-1: never moved, so the corner of the text)
+  floatW: 0.3,          // its width, as a share of the screen's width
+  mirror: true,         // mirror the preview like a mirror (the recording is never mirrored)
+  facing: 'user',       // 'user' (the camera facing you) or 'environment' (the one on the back)
+  autoStop: true,       // stop recording two seconds after the last word
+  bright: 100, contrast: 100, saturate: 100, warmth: 0,   // the lighting (percent; warmth -50 to 50)
+  bg: 'none',           // the background: 'none', 'blur', 'color' or 'picture'
+  blur: 14,             // how strong the blur is, px (4 - 40)
+  color: '#1f2937',     // the plain background color
+  edge: 3,              // how soft the edge around you is, px (0 - 10)
+  ring: false,          // the ring light: a frame of light around the screen
+  ringColor: '#ffffff', // its color
+  ringBright: 100,      // how bright, % (10 - 100)
+  ringWidth: 48,        // how wide, px (12 - 200)
+  layout: 'auto',       // 'auto' (split at a fold), 'classic' (text fills the screen), 'side' or 'stacked'
+  swap: false           // split: the controls first (left, or on top) instead of the text
+};
+// The allowed values, so a broken or old saved copy can never break the page.
+const CAM_CHOICES = {
+  quality: ['720', '1080'], shape: ['landscape', 'portrait', 'square', 'camera'], preview: ['float', 'off'],
+  facing: ['user', 'environment'], bg: ['none', 'blur', 'color', 'picture'], layout: ['auto', 'classic', 'side', 'stacked']
+};
+const CAM_RANGES = {
+  floatX: [-1, 1], floatY: [-1, 1], floatW: [0.12, 1], bright: [50, 150], contrast: [50, 150], saturate: [0, 200],
+  warmth: [-50, 50], blur: [4, 40], edge: [0, 10], ringBright: [10, 100], ringWidth: [12, 200]
+};
+const CAM_SWITCHES = ['mirror', 'autoStop', 'ring', 'swap'];
+const camSettings = { ...CAM_DEFAULTS };
+
+// Keep only values of the right kind and in range (from storage, or the old camera lab).
+function cleanCameraSettings(saved) {
+  if (!saved || typeof saved !== 'object') return;
+  for (const [k, [lo, hi]] of Object.entries(CAM_RANGES)) {
+    if (typeof saved[k] === 'number' && isFinite(saved[k])) camSettings[k] = clamp(saved[k], lo, hi);
+  }
+  for (const [k, list] of Object.entries(CAM_CHOICES)) if (list.includes(saved[k])) camSettings[k] = saved[k];
+  for (const k of CAM_SWITCHES) if (typeof saved[k] === 'boolean') camSettings[k] = saved[k];
+  for (const k of ['color', 'ringColor']) {
+    if (typeof saved[k] === 'string' && /^#[0-9a-f]{6}$/i.test(saved[k])) camSettings[k] = saved[k].toLowerCase();
+  }
+  if (camSettings.bg === 'picture') camSettings.bg = 'none';   // the picture itself is never kept
+}
+function loadCameraSettings() {
+  try {
+    const raw = localStorage.getItem(CAM_KEY);
+    if (raw) { cleanCameraSettings(JSON.parse(raw)); return; }
+    // First time here: carry over the camera lab's settings (0.5), in its words.
+    const lab = JSON.parse(localStorage.getItem('teledtr.camlab') || 'null');
+    if (lab && typeof lab === 'object') {
+      const moved = { ...lab };
+      moved.preview = lab.preview === 'off' ? 'off' : 'float';
+      moved.layout = { tabletop: 'stacked', book: 'side', single: 'classic', auto: 'auto' }[lab.layout] || 'auto';
+      moved.swap = false;                        // the lab's halves were the other way round
+      if (typeof lab.floatW === 'number') moved.floatW = lab.floatW;
+      cleanCameraSettings(moved);
+    }
+  } catch (e) { /* storage blocked or broken: the defaults are fine */ }
+}
+let camSaveTimer = 0;
+function saveCameraSettings() {
+  clearTimeout(camSaveTimer);
+  camSaveTimer = setTimeout(() => {
+    try { localStorage.setItem(CAM_KEY, JSON.stringify(camSettings)); } catch (e) { /* not saved: fine */ }
+  }, 300);
+}
+
+/* ---- The camera's running state (none of it is saved) ---- */
+const CAM = {
+  stream: null,          // the camera and microphone, while on
+  video: document.getElementById('stCam'),      // the camera's own picture (never shown)
+  out: document.getElementById('stOut'),        // the picture with its effects: shown AND recorded
+  person: document.createElement('canvas'),    // you, cut out from the background
+  picture: null,         // the background picture you chose (an ImageBitmap; kept for this visit only)
+  meter: null,           // the microphone level: { ctx, an, data }
+  rec: null,             // the MediaRecorder, while recording
+  chunks: [],            // the recording so far, a piece a second
+  pending: false,        // Record was pressed: waiting for the countdown
+  recStart: 0,           // when this recording started (performance.now)
+  capLog: [],            // [word number, seconds]: when each word reached the reading line
+  lastLogged: -1,        // the last word logged
+  capText: [],           // each word as the captions show it (with its punctuation)
+  takes: [],             // this visit's takes: { n, blob, url, ext, seconds, vtt, saved }
+  takeCount: 0,          // takes made so far (for their numbers, even after a delete)
+  shown: -1,             // the take showing in the Takes window
+  stopTimer: 0,          // the stop two seconds after the last word
+  hiddenWhileRecording: false,
+  layout: 'classic'      // the prompter's layout right now: 'classic', 'side' or 'stacked'
+};
+const octx = CAM.out.getContext('2d');
+const pctx = CAM.person.getContext('2d');
+const stPreview = document.getElementById('stPreview');
+const stRing = document.getElementById('stRing');
+const dlgTakes = document.getElementById('dlgTakes');
+
+function camIsRecording() { return !!(CAM.rec || CAM.pending); }
+
+/* =========================================================================
+   THE LAYOUT: the whole screen of text, or split in two at the fold
+   Chrome tells a page where a folding screen bends: window.viewport.segments
+   lists the screen's parts (two on an open fold). One above the other means
+   the phone is half-folded like a laptop; side by side, open like a book.
+   "Auto" splits only on a folding screen; elsewhere the text fills the
+   screen as a teleprompter should. Side by side and Stacked can be chosen.
+   ========================================================================= */
+function screenSegments() {
+  const segs = window.viewport && window.viewport.segments;
+  return segs && segs.length === 2 ? segs : null;
+}
+function camLayout() {
+  const s = camSettings;
+  const segs = screenSegments();
+  const fold = segs ? (Math.abs(segs[0].x - segs[1].x) < 1 ? 'stacked' : 'side') : 'none';
+  const mode = s.layout === 'auto' ? (fold === 'none' ? 'classic' : fold) : s.layout;
+  const was = CAM.layout;
+  CAM.layout = mode;
+  // The ring light: the prompter is pulled in from every edge by its width.
+  const ring = P.open && s.ring ? s.ringWidth : 0;
+  prompter.style.inset = ring ? ring + 'px' : '';
+  prompter.dataset.layout = mode;
+  prompter.classList.toggle('split', mode !== 'classic');
+  prompter.classList.toggle('swap', mode !== 'classic' && s.swap);
+  if (mode !== 'classic') {
+    let deck = '', hinge = 0;
+    if (fold === mode) {
+      // Split exactly at the fold: the deck fills its half (less the ring on its outer edge).
+      const [s0, s1] = segs;
+      const deckSeg = s.swap ? s0 : s1;
+      deck = Math.max(120, (mode === 'stacked' ? deckSeg.height : deckSeg.width) - ring) + 'px';
+      hinge = mode === 'stacked' ? Math.max(0, s1.y - (s0.y + s0.height)) : Math.max(0, s1.x - (s0.x + s0.width));
+    }
+    prompter.style.setProperty('--deck', deck || (mode === 'stacked' ? '44%' : '42%'));
+    prompter.style.setProperty('--hinge', hinge + 'px');
+    prPanel.hidden = false;                       // split: the Inspector is always open in the deck
+    prompter.classList.remove('idle');
+  } else if (was !== 'classic') {
+    prPanel.hidden = true;                        // back to the whole screen: the Inspector closes
+  }
+  document.getElementById('prSettings').setAttribute('aria-expanded', String(!prPanel.hidden));
+  requestAnimationFrame(() => { if (P.open) { layoutPrompter(); placePreview(); } });
+}
+window.addEventListener('resize', () => { if (P.open) camLayout(); });
+// Folding or unfolding changes the screen's parts: lay out again.
+['(horizontal-viewport-segments: 2)', '(vertical-viewport-segments: 2)'].forEach((q) => {
+  try { matchMedia(q).addEventListener('change', () => { if (P.open) camLayout(); }); } catch (e) { /* older browser: resize covers it */ }
+});
+
+/* =========================================================================
+   THE CAMERA AND ITS EFFECTS
+   ========================================================================= */
+
+// The lighting as a canvas filter: brightness, contrast and saturation.
+function lookFilter() {
+  const s = camSettings;
+  return 'brightness(' + s.bright + '%) contrast(' + s.contrast + '%) saturate(' + s.saturate + '%)';
+}
+// Warmth: a thin wash of orange (warmer) or blue (cooler) in "soft light",
+// which tints the mid-tones gently without washing out the whites.
+function applyWarmth(ctx, w, h) {
+  const k = camSettings.warmth;
+  if (!k) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'soft-light';
+  const a = Math.abs(k) / 50 * 0.45;
+  ctx.fillStyle = k > 0 ? 'rgba(255,150,40,' + a + ')' : 'rgba(60,140,255,' + a + ')';
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+// How big a picture is, whatever kind it is (a video, a canvas, a bitmap).
+function sizeOf(img) { return [img.videoWidth || img.naturalWidth || img.width, img.videoHeight || img.naturalHeight || img.height]; }
+// Draw `img` into the box (x, y, w, h), trimming its edges so it fills the
+// box without stretching (the middle is kept, like "cover" for a picture).
+function drawTrimmed(ctx, img, x, y, w, h) {
+  const [iw, ih] = sizeOf(img);
+  if (!iw || !ih) return;
+  const scale = Math.max(w / iw, h / ih);        // the bigger scale fills the box
+  const sw = w / scale, sh = h / scale;          // the part of the picture that fits
+  ctx.drawImage(img, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x, y, w, h);
+}
+// The video's size in pixels, from Quality and Shape.
+function outputSize() {
+  const s = camSettings, v = CAM.video;
+  const long = s.quality === '1080' ? 1920 : 1280, short = s.quality === '1080' ? 1080 : 720;
+  if (s.shape === 'portrait') return [short, long];
+  if (s.shape === 'square') return [short, short];
+  if (s.shape === 'camera' && v.videoWidth) return [v.videoWidth, v.videoHeight];
+  return [long, short];                          // landscape (and 'camera' before the camera is on)
+}
+// Size the video to match the settings. Never during a recording: a video
+// cannot change size partway through (it changes after the take instead).
+function fitOutput() {
+  if (camIsRecording()) return;
+  const [w, h] = outputSize();
+  if (CAM.out.width === w && CAM.out.height === h) return;
+  CAM.out.width = w;
+  CAM.out.height = h;
+  stPreview.style.setProperty('--cam-ratio', w + ' / ' + h);
+  placePreview();
+}
+// The background model has one version for wide pictures and one for upright ones.
+function segModel() { return CAM.video.videoWidth >= CAM.video.videoHeight ? 1 : 0; }
+
+// A frame with no background effect: the camera, with the lighting.
+function drawPlainFrame() {
+  const w = CAM.out.width, h = CAM.out.height;
+  octx.filter = lookFilter();
+  drawTrimmed(octx, CAM.video, 0, 0, w, h);
+  octx.filter = 'none';
+  applyWarmth(octx, w, h);
+}
+
+/* ---- Finding you: MediaPipe Selfie Segmentation, loaded on first use ----
+   The files are in vendor/mediapipe/ beside this page (Apache 2.0, see its
+   README). For each frame the model returns a "mask": a picture that is solid
+   where you are and clear where the background is. Nothing leaves the device. */
+const SEG = { state: 'off', engine: null, busy: false, message: '' };
+async function loadSegmenter() {
+  if (SEG.state === 'ready' || SEG.state === 'loading') return;
+  SEG.state = 'loading';
+  SEG.message = 'Loading the background model (about 6 MB, the first time only)...';
+  syncControls();
+  try {
+    if (typeof window.SelfieSegmentation !== 'function') {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'vendor/mediapipe/selfie_segmentation.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('the model files are missing from vendor/mediapipe'));
+        document.head.append(s);
+      });
+    }
+    const engine = new window.SelfieSegmentation({ locateFile: (file) => 'vendor/mediapipe/' + file });
+    // Model 1 is made for wide pictures (and is faster); model 0 for square or upright ones.
+    engine.setOptions({ modelSelection: segModel(), selfieMode: false });
+    engine.onResults(compositeFrame);
+    await engine.initialize();
+    SEG.engine = engine;
+    SEG.state = 'ready';
+    SEG.message = 'Background effects are on. Everything happens on this device.';
+  } catch (e) {
+    SEG.state = 'failed';
+    SEG.message = 'Background effects could not start here (' + (e && e.message ? e.message : 'unknown problem') + '). The camera still works without them.';
+    camSettings.bg = 'none';
+  }
+  syncControls();
+}
+
+// Put a frame together: the background (blurred, a color or a picture), then you on top.
+function compositeFrame(results) {
+  const s = camSettings, w = CAM.out.width, h = CAM.out.height;
+  if (s.bg === 'none' || !CAM.stream) return;    // (turned off while a frame was on its way)
+  const frame = results.image, mask = results.segmentationMask;
+  // 1. You: the mask (its edge softened), then the frame kept only where the mask is.
+  if (CAM.person.width !== w || CAM.person.height !== h) { CAM.person.width = w; CAM.person.height = h; }
+  pctx.globalCompositeOperation = 'copy';
+  pctx.filter = s.edge ? 'blur(' + s.edge + 'px)' : 'none';
+  drawTrimmed(pctx, mask, 0, 0, w, h);
+  pctx.globalCompositeOperation = 'source-in';
+  pctx.filter = lookFilter();
+  drawTrimmed(pctx, frame, 0, 0, w, h);
+  pctx.filter = 'none';
+  pctx.globalCompositeOperation = 'source-over';
+  // 2. The background.
+  octx.globalCompositeOperation = 'copy';
+  if (s.bg === 'blur') {
+    // Drawn a little larger than the frame, so the blur does not fade at the edges.
+    const pad = s.blur * 2;
+    octx.filter = lookFilter() + ' blur(' + s.blur + 'px)';
+    drawTrimmed(octx, frame, -pad, -pad, w + pad * 2, h + pad * 2);
+  } else if (s.bg === 'picture' && CAM.picture) {
+    octx.filter = 'none';
+    drawTrimmed(octx, CAM.picture, 0, 0, w, h);
+  } else {
+    octx.filter = 'none';
+    octx.fillStyle = s.color;
+    octx.fillRect(0, 0, w, h);
+  }
+  octx.filter = 'none';
+  octx.globalCompositeOperation = 'source-over';
+  // 3. You, on top; then the warmth over the whole picture.
+  octx.drawImage(CAM.person, 0, 0);
+  applyWarmth(octx, w, h);
+}
+
+// A new camera frame: draw it (or hand it to the model first).
+function onCameraFrame() {
+  if (!CAM.stream) return;
+  if (camSettings.bg !== 'none' && SEG.state === 'ready') {
+    if (!SEG.busy) {                              // one frame at a time; a busy model skips a frame
+      SEG.busy = true;
+      SEG.engine.send({ image: CAM.video }).catch(() => {}).finally(() => { SEG.busy = false; });
+    }
+  } else {
+    drawPlainFrame();
+  }
+}
+// Call onCameraFrame for every new camera frame (or every screen frame,
+// where the browser cannot say when a camera frame arrives).
+function watchFrames() {
+  const v = CAM.video;
+  if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+    const next = () => { if (!CAM.stream) return; onCameraFrame(); v.requestVideoFrameCallback(next); };
+    v.requestVideoFrameCallback(next);
+  } else {
+    const next = () => { if (!CAM.stream) return; onCameraFrame(); requestAnimationFrame(next); };
+    requestAnimationFrame(next);
+  }
+}
+
+// Turn the camera and microphone on (the browser asks permission the first time).
+async function startCamera() {
+  stopCamera(true);
+  const s = camSettings;
+  const q = s.quality === '1080' ? { w: 1920, h: 1080 } : { w: 1280, h: 720 };
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('The camera needs a web address that starts with https (it does not work from a file).', 6000);
+    return false;
+  }
+  try {
+    CAM.stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: s.facing, width: { ideal: q.w }, height: { ideal: q.h }, frameRate: { ideal: 30 } },
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    });
+  } catch (e) {
+    CAM.stream = null;
+    toast(e && e.name === 'NotAllowedError'
+      ? 'The camera was not allowed. Allow it in the browser\'s site settings, then try again.'
+      : 'The camera could not start (' + (e && e.name ? e.name : 'unknown problem') + ').', 6000);
+    syncControls();
+    return false;
+  }
+  if (!P.open) { stopCamera(); return false; }   // the prompter closed while we waited for permission
+  const v = CAM.video;
+  v.srcObject = CAM.stream;
+  await v.play().catch(() => {});
+  if (!v.videoWidth) await new Promise((r) => v.addEventListener('loadedmetadata', r, { once: true }));
+  fitOutput();
+  if (SEG.engine) SEG.engine.setOptions({ modelSelection: segModel() });
+  startMeter();
+  watchFrames();
+  camSync();
+  return true;
+}
+// Turn them off. `quiet` is for a restart (Switch camera, Quality), which says nothing.
+function stopCamera(quiet) {
+  if (CAM.rec && !quiet) stopRecording();
+  if (CAM.stream) CAM.stream.getTracks().forEach((t) => t.stop());
+  CAM.stream = null;
+  CAM.video.srcObject = null;
+  stopMeter();
+  if (!quiet) camSync();
+}
+async function toggleCamera() {
+  if (camIsRecording()) { toast('Stop the recording first (R).'); return; }
+  if (CAM.stream) { stopCamera(); toast('Camera off.'); }
+  else if (await startCamera()) toast('Camera on. Press Record (R) when you are ready.');
+}
+
+/* ---- The microphone level: how loud the recording hears you ---- */
+function startMeter() {
+  try {
+    const ctx = new AudioContext();
+    const src = ctx.createMediaStreamSource(CAM.stream);
+    const an = ctx.createAnalyser();
+    an.fftSize = 1024;
+    src.connect(an);                              // never to the speakers: no echo
+    CAM.meter = { ctx, an, data: new Float32Array(an.fftSize) };
+  } catch (e) { CAM.meter = null; }
+}
+function stopMeter() {
+  if (CAM.meter) CAM.meter.ctx.close().catch(() => {});
+  CAM.meter = null;
+  document.querySelectorAll('.st-meter span').forEach((m) => { m.style.width = '0'; });
+}
+function drawMeter() {
+  if (!CAM.meter) return;
+  const m = CAM.meter;
+  m.an.getFloatTimeDomainData(m.data);
+  let sum = 0;
+  for (const v of m.data) sum += v * v;
+  const level = clamp(Math.round(Math.sqrt(Math.sqrt(sum / m.data.length)) * 160), 0, 100) + '%';
+  document.querySelectorAll('.st-meter span').forEach((bar) => { bar.style.width = level; });
+}
+
+/* =========================================================================
+   RECORDING - the canvas (with its effects) and the microphone
+   ========================================================================= */
+
+// The best format this browser can record: MP4 with H.264 first (it opens
+// almost everywhere: phones, editors, course sites), then any MP4, then WebM.
+function recordingType() {
+  const list = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1.4D401F,mp4a.40.2',
+    'video/mp4;codecs=avc1.42E01F,mp4a.40.2', 'video/mp4;codecs=avc1,opus', 'video/mp4',
+    'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+  return list.find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+}
+
+// Record, or Stop. Record turns the camera on if it is off, then counts down
+// (at least 3 seconds) and starts the text and the recording together.
+async function toggleRecord() {
+  if (camIsRecording()) { stopRecording(); return; }
+  if (!window.MediaRecorder) { toast('This browser cannot record video.', 5000); return; }
+  if (!CAM.stream && !(await startCamera())) return;
+  clearTimeout(CAM.stopTimer);
+  if (P.wi >= P.model.words.length) setPosition(0);   // at the end: record from the start
+  pause();                                            // (pause first: it would cancel a pending take)
+  CAM.pending = true;
+  play();
+  if (P.countdown < 3) { P.countdown = 3; showCount(3); }
+  camSync();
+}
+
+// The countdown is over (called by step() in the prompter): roll.
+function camCountdownDone() {
+  if (CAM.pending) beginRecording();
+}
+// The text was paused. During the countdown that cancels the take; while
+// recording, the camera keeps rolling (you may want to say something extra).
+function camPaused() {
+  if (CAM.pending) { CAM.pending = false; camSync(); toast('Recording cancelled.'); }
+}
+
+function beginRecording() {
+  CAM.pending = false;
+  if (!CAM.stream) { camSync(); return; }
+  const type = recordingType();
+  const video = CAM.out.captureStream(30).getVideoTracks();
+  const mixed = new MediaStream([...video, ...CAM.stream.getAudioTracks()]);
+  try {
+    CAM.rec = new MediaRecorder(mixed, {
+      mimeType: type || undefined,
+      videoBitsPerSecond: camSettings.quality === '1080' ? 8000000 : 5000000,
+      audioBitsPerSecond: 128000
+    });
+  } catch (e) {
+    CAM.rec = null;
+    toast('Recording could not start (' + (e && e.name ? e.name : 'unknown problem') + ').', 5000);
+    camSync();
+    return;
+  }
+  CAM.chunks = [];
+  CAM.capLog = [];
+  CAM.capText = captionWords(P.model);
+  CAM.lastLogged = Math.floor(P.wi) - 1;
+  CAM.hiddenWhileRecording = false;
+  CAM.rec.ondataavailable = (e) => { if (e.data && e.data.size) CAM.chunks.push(e.data); };
+  CAM.rec.onstop = finishTake;
+  CAM.rec.start(1000);                            // a piece every second, so a long take never waits to the end
+  CAM.recStart = performance.now();
+  camSync();
+}
+
+// Stop: cancel the countdown, or end the take (the Takes window opens with it).
+function stopRecording() {
+  clearTimeout(CAM.stopTimer);
+  if (CAM.pending) { pause(); return; }           // pause() cancels the pending take (camPaused)
+  if (CAM.rec && CAM.rec.state !== 'inactive') CAM.rec.stop();
+  pause();
+}
+
+// The last word has passed the reading line (called by step()).
+function camScriptEnded() {
+  if (!CAM.rec) { toast('End of the script.'); return; }
+  if (camSettings.autoStop) {
+    toast('End of the script. The take stops in 2 seconds.');
+    clearTimeout(CAM.stopTimer);
+    CAM.stopTimer = setTimeout(() => { if (CAM.rec) stopRecording(); }, 2000);
+  } else {
+    toast('End of the script. Press R (or Stop) to end the take.', 4000);
+  }
+}
+
+// Each word as the captions show it: the word, with any punctuation glued
+// to it ("Security" + "." after **Security**.), so sentences end properly.
+function captionWords(model) {
+  const words = model.words.map((w) => w.text);
+  for (const line of model.lines) {
+    if (line.kind !== 'para') continue;
+    let last = -1;
+    for (const item of line.items) {
+      if (item.type === 'word') last = item.word.idx;
+      else if (item.type === 'punct' && last >= 0) words[last] += item.text;
+    }
+  }
+  return words;
+}
+// Note the words as they reach the reading line (called every frame while recording).
+function logCaptionWords() {
+  if (!CAM.rec) return;
+  const now = Math.floor(P.wi);
+  const t = (performance.now() - CAM.recStart) / 1000;
+  while (CAM.lastLogged < now && CAM.lastLogged + 1 < CAM.capText.length) {
+    CAM.lastLogged += 1;
+    CAM.capLog.push([CAM.lastLogged, t]);
+  }
+}
+
+// The recording has stopped: make the file, add it to the takes, and show it.
+function finishTake() {
+  const type = (CAM.rec && CAM.rec.mimeType) || recordingType() || 'video/webm';
+  const seconds = (performance.now() - CAM.recStart) / 1000;
+  CAM.rec = null;
+  const blob = new Blob(CAM.chunks, { type });
+  CAM.chunks = [];
+  CAM.takeCount += 1;
+  CAM.takes.push({
+    n: CAM.takeCount, blob, url: URL.createObjectURL(blob),
+    ext: type.includes('mp4') ? 'mp4' : 'webm', seconds, vtt: buildCaptions(), saved: false
+  });
+  setTimeout(fitOutput, 0);                       // a turn during the take: the video's new size, now that it is over
+  camSync();
+  openTakes(CAM.takes.length - 1);
+  if (CAM.hiddenWhileRecording) toast('TELEDTR was in the background for a moment: that part of the take shows a still picture.', 6000);
+}
+
+/* ---- Captions: WebVTT, timed from the prompter ----
+   A caption ends at a sentence's end, or after about 7 words (but never
+   leaving 1 to 3 words of a sentence on their own). They follow the
+   prompter, not your voice: a good first draft to check. */
+function vttTime(t) {
+  const ms = Math.max(0, Math.round(t * 1000));
+  const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s = Math.floor(ms / 1000) % 60, r = ms % 1000;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + '.' + String(r).padStart(3, '0');
+}
+function buildCaptions() {
+  const log = CAM.capLog;
+  if (!log.length) return '';
+  const lines = ['WEBVTT', ''];
+  const wordAt = (k) => CAM.capText[log[k][0]];
+  const endsSentence = (k) => /[.!?…]["'”’)\]]*$/.test(wordAt(k));
+  // How many words are left in the sentence after word k (99 = more than a few).
+  const leftInSentence = (k) => {
+    for (let j = k + 1, n = 1; j < log.length && n <= 3; j++, n++) if (endsSentence(j)) return n;
+    return 99;
+  };
+  let group = [], start = 0, lastEnd = 0, n = 0;
+  log.forEach(([, t], k) => {
+    if (!group.length) start = Math.max(t, lastEnd);   // never before the last caption ends
+    group.push(wordAt(k));
+    const last = k === log.length - 1;
+    const full = (group.length >= 7 && leftInSentence(k) > 3) || group.length >= 11;
+    if (endsSentence(k) || full || last) {
+      // It stays up until the next word arrives, but no more than 1.5 seconds
+      // after its last word (so a long pause does not leave it hanging).
+      const next = last ? Infinity : log[k + 1][1];
+      const end = Math.max(Math.min(next, t + 1.5), start + 0.5);
+      n += 1;
+      lines.push(String(n), vttTime(start) + ' --> ' + vttTime(end), group.join(' '), '');
+      lastEnd = end;
+      group = [];
+    }
+  });
+  return lines.join('\n');
+}
+
+/* =========================================================================
+   THE TAKES WINDOW - watch a take, save it (and its captions), or delete it
+   Takes are kept in memory while this page is open, never uploaded. Saved
+   files go to your Downloads, named after the script: "welcome-take-2.mp4".
+   ========================================================================= */
+function takeFileName(take, ext) {
+  const slug = (scriptTitle || 'teledtr').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'teledtr';
+  return slug + '-take-' + take.n + '.' + ext;
+}
+// Save a file the page made. Nothing is uploaded: the browser saves it on this device.
+function saveMadeFile(blobOrText, name, type) {
+  const blob = blobOrText instanceof Blob ? blobOrText : new Blob([blobOrText], { type });
+  const url = URL.createObjectURL(blob);
+  const a = el('a');
+  a.href = url;
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function openTakes(index) {
+  if (!CAM.takes.length) { toast('No takes yet. Press Record (R) to make one.'); return; }
+  CAM.shown = clamp(typeof index === 'number' ? index : CAM.takes.length - 1, 0, CAM.takes.length - 1);
+  pause();
+  renderTakes();
+  if (!dlgTakes.open) dlgTakes.showModal();
+  document.getElementById('takeSave').focus();
+}
+function renderTakes() {
+  const take = CAM.takes[CAM.shown];
+  const video = document.getElementById('takeVideo');
+  if (!take) { video.removeAttribute('src'); video.load(); return; }
+  if (video.getAttribute('src') !== take.url) video.src = take.url;
+  document.getElementById('takesTitle').textContent = 'Take ' + take.n;
+  document.getElementById('takeInfo').textContent = fmtClock(take.seconds) + ', '
+    + (take.blob.size / 1048576).toFixed(1) + ' MB, ' + take.ext.toUpperCase()
+    + (take.saved ? '. Saved to your Downloads.' : '. Not saved yet.');
+  document.getElementById('takeCaptions').disabled = !take.vtt;
+  const del = document.getElementById('takeDelete');
+  del.textContent = 'Delete this take';
+  delete del.dataset.armed;
+  // One button per take; the one showing is pressed.
+  const list = document.getElementById('takeList');
+  list.replaceChildren(...CAM.takes.map((t, i) => {
+    const b = el('button');
+    b.type = 'button';
+    b.append(el('b', '', 'Take ' + t.n), el('small', '', fmtClock(t.seconds) + (t.saved ? ', saved' : '')));
+    b.setAttribute('aria-pressed', String(i === CAM.shown));
+    b.addEventListener('click', () => { CAM.shown = i; renderTakes(); });
+    return b;
+  }));
+  list.hidden = CAM.takes.length < 2;
+}
+document.getElementById('takeSave').addEventListener('click', () => {
+  const take = CAM.takes[CAM.shown];
+  if (!take) return;
+  saveMadeFile(take.blob, takeFileName(take, take.ext));
+  take.saved = true;
+  renderTakes();
+  camSync();
+});
+document.getElementById('takeCaptions').addEventListener('click', () => {
+  const take = CAM.takes[CAM.shown];
+  if (take && take.vtt) saveMadeFile(take.vtt, takeFileName(take, 'vtt'), 'text/vtt');
+});
+// Delete asks twice for a take that is not saved (the first press arms it).
+document.getElementById('takeDelete').addEventListener('click', (e) => {
+  const take = CAM.takes[CAM.shown];
+  if (!take) return;
+  const b = e.currentTarget;
+  if (!take.saved && !b.dataset.armed) {
+    b.dataset.armed = '1';
+    b.textContent = 'Not saved: press again to delete';
+    return;
+  }
+  URL.revokeObjectURL(take.url);
+  CAM.takes.splice(CAM.shown, 1);
+  camSync();
+  if (!CAM.takes.length) { dlgTakes.close(); toast('Take deleted.'); return; }
+  CAM.shown = Math.min(CAM.shown, CAM.takes.length - 1);
+  renderTakes();
+});
+// Record again: back to the start of the script, and roll.
+document.getElementById('takeAgain').addEventListener('click', () => {
+  dlgTakes.close();
+  if (!P.open) { toast('Open the prompter (Prompt) to record again.'); return; }
+  setPosition(0);
+  toggleRecord();
+});
+document.getElementById('takesClose').addEventListener('click', () => dlgTakes.close());
+dlgTakes.addEventListener('close', () => {
+  document.getElementById('takeVideo').pause();
+  if (P.open) document.getElementById('prRecord').focus();
+});
+// Leaving the page with a take not saved: the browser asks first.
+window.addEventListener('beforeunload', (e) => {
+  if (CAM.rec || CAM.takes.some((t) => !t.saved)) { e.preventDefault(); e.returnValue = ''; }
+});
+
+/* =========================================================================
+   THE RING LIGHT - a frame of light around the screen, to light your face
+   ========================================================================= */
+const RING_COLORS = [['#ffffff', 'Daylight white'], ['#fff1dc', 'Soft white'], ['#ffd29e', 'Warm'], ['#ffb46b', 'Candlelight'],
+  ['#dce9ff', 'Cool'], ['#ffd1dc', 'Rose'], ['#fde68a', 'Sunflower']];
+// A color at a brightness: red, green and blue each scaled down (100 % is the color itself).
+function ringShade(hex, percent) {
+  const n = parseInt(hex.slice(1), 16), k = percent / 100;
+  const part = (shift) => Math.round(((n >> shift) & 255) * k);
+  return 'rgb(' + part(16) + ', ' + part(8) + ', ' + part(0) + ')';
+}
+function applyRing() {
+  const s = camSettings;
+  stRing.hidden = !(P.open && s.ring);
+  stRing.style.setProperty('--ring-w', s.ringWidth + 'px');
+  stRing.style.setProperty('--ring-c', ringShade(s.ringColor, s.ringBright));
+}
+function toggleRing() {
+  camSettings.ring = !camSettings.ring;
+  camChanged();
+  toast(camSettings.ring ? 'Ring light on. Turn the screen brightness all the way up.' : 'Ring light off.');
+}
+
+/* =========================================================================
+   THE FLOATING PREVIEW - drag it anywhere, resize it
+   Its place is kept as shares of the screen (so it stays put when the
+   phone turns or folds, just scaled), and it is always kept on screen.
+   ========================================================================= */
+function placePreview() {
+  const show = P.open && !!CAM.stream && camSettings.preview === 'float';
+  stPreview.hidden = !show;
+  stPreview.tabIndex = show ? 0 : -1;
+  if (!show) return;
+  const s = camSettings, vw = innerWidth, vh = innerHeight;
+  const ratio = CAM.out.width / CAM.out.height;
+  let w = clamp(s.floatW * vw, Math.min(120, vw), vw), h = w / ratio;
+  if (h > vh * 0.9) { h = vh * 0.9; w = h * ratio; }   // a tall video on a short screen: fit the height
+  let x, y;
+  if (s.floatX < 0 || s.floatY < 0) {            // never moved: the bottom-right corner of the text
+    const r = prStage.getBoundingClientRect();
+    x = r.right - w - 12;
+    y = r.bottom - h - 12;
+  } else { x = s.floatX * vw; y = s.floatY * vh; }
+  stPreview.style.setProperty('--px', clamp(x, 0, Math.max(0, vw - w)) + 'px');
+  stPreview.style.setProperty('--py', clamp(y, 0, Math.max(0, vh - h)) + 'px');
+  stPreview.style.setProperty('--pw', w + 'px');
+}
+// Move and size the preview by hand (in screen pixels), then remember it.
+function setPreviewBox(x, y, w) {
+  const s = camSettings, vw = innerWidth, vh = innerHeight;
+  const ratio = CAM.out.width / CAM.out.height;
+  w = clamp(w, Math.min(120, vw), vw);
+  if (w / ratio > vh * 0.9) w = vh * 0.9 * ratio;
+  const h = w / ratio;
+  s.floatX = clamp(x, 0, Math.max(0, vw - w)) / vw;
+  s.floatY = clamp(y, 0, Math.max(0, vh - h)) / vh;
+  s.floatW = w / vw;
+  placePreview();
+  saveCameraSettings();
+}
+// Drag to move, drag the corner (or pinch) to resize. Arrow keys too.
+(function wirePreview() {
+  const pv = stPreview;
+  const pointers = new Map();                    // the fingers (or the mouse) on the preview, by id
+  let gesture = null;                            // 'move', 'resize' or 'pinch'
+  const begin = (target) => {
+    const rect = pv.getBoundingClientRect();
+    const pts = [...pointers.values()];
+    if (pts.length >= 2) {
+      const [a, b] = pts;
+      gesture = { kind: 'pinch', rect, dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+    } else if (pts.length === 1) {
+      const resize = target && target.closest && target.closest('.st-grip');
+      gesture = { kind: resize ? 'resize' : 'move', rect, x: pts[0].x, y: pts[0].y };
+    } else gesture = null;
+  };
+  pv.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();                         // not a tap on the text (which would start or pause it)
+    try { pv.setPointerCapture(e.pointerId); } catch (err) { /* not a real pointer: fine */ }
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    begin(e.target);
+    pv.classList.add('dragging');
+    wake();
+  });
+  pv.addEventListener('pointermove', (e) => {
+    if (!gesture || !pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const r = gesture.rect;
+    if (gesture.kind === 'move') {
+      setPreviewBox(r.left + e.clientX - gesture.x, r.top + e.clientY - gesture.y, r.width);
+    } else if (gesture.kind === 'resize') {
+      // The corner follows the finger: whichever way it moved more sets the new size.
+      const ratio = r.width / r.height;
+      const dx = e.clientX - gesture.x, dy = (e.clientY - gesture.y) * ratio;
+      setPreviewBox(r.left, r.top, r.width + (Math.abs(dx) > Math.abs(dy) ? dx : dy));
+    } else if (pointers.size >= 2) {
+      // Pinch: the size follows the spread of two fingers; the middle follows their midpoint.
+      const [a, b] = [...pointers.values()];
+      const w = r.width * Math.hypot(a.x - b.x, a.y - b.y) / gesture.dist;
+      const h = w * r.height / r.width;
+      const cx = r.left + r.width / 2 + (a.x + b.x) / 2 - gesture.mx;
+      const cy = r.top + r.height / 2 + (a.y + b.y) / 2 - gesture.my;
+      setPreviewBox(cx - w / 2, cy - h / 2, w);
+    }
+  });
+  const end = (e) => {
+    if (!pointers.delete(e.pointerId)) return;
+    begin(null);                                 // a finger left a pinch: carry on moving with the other
+    if (!pointers.size) pv.classList.remove('dragging');
+  };
+  pv.addEventListener('pointerup', end);
+  pv.addEventListener('pointercancel', end);
+  pv.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); });
+  // Keys, when the preview has focus: arrows move it, Shift and the arrows resize it.
+  // (stopPropagation keeps the prompter's Up and Down, which change the pace, out of it.)
+  pv.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const r = pv.getBoundingClientRect();
+    if (e.shiftKey) setPreviewBox(r.left, r.top, r.width + (d[0] || -d[1]) * 24);   // Right or Up: bigger
+    else setPreviewBox(r.left + d[0] * 16, r.top + d[1] * 16, r.width);
+  });
+  // The camera turned its picture (the phone was turned): follow it.
+  CAM.video.addEventListener('resize', () => {
+    if (SEG.engine) SEG.engine.setOptions({ modelSelection: segModel() });
+    fitOutput();
+  });
+})();
+
+/* =========================================================================
+   KEEPING EVERYTHING IN STEP
+   ========================================================================= */
+
+// A camera setting changed (from the Inspector): remember it, and show it.
+function camChanged() {
+  saveCameraSettings();
+  camSync();
+}
+// Show the camera's state everywhere: the controls, the preview, the ring, the layout.
+function camSync() {
+  const on = !!CAM.stream, recording = !!CAM.rec, armed = camIsRecording();
+  const rec = document.getElementById('prRecord');
+  rec.setAttribute('aria-pressed', String(armed));
+  rec.setAttribute('aria-label', armed ? 'Stop recording (R)' : 'Record (R)');
+  rec.title = armed ? 'Stop recording (R)' : 'Record: a countdown, then the camera records while the text moves (R)';
+  document.getElementById('prRecordText').textContent = armed ? 'Stop' : 'Record';
+  const camBtn = document.getElementById('prCamera');
+  camBtn.setAttribute('aria-pressed', String(on));
+  camBtn.disabled = armed;
+  // Takes: the button shows how many there are (and only once there are some).
+  const takesBtn = document.getElementById('prTakes');
+  takesBtn.hidden = !CAM.takes.length;
+  document.getElementById('prTakesCount').textContent = String(CAM.takes.length);
+  takesBtn.setAttribute('aria-label', 'Takes: ' + CAM.takes.length + ' (T)');
+  // REC and its time in the timers bar, and a red frame on the preview.
+  document.getElementById('prRecWrap').hidden = !recording;
+  stPreview.classList.toggle('recording', recording);
+  stPreview.classList.toggle('mirror', camSettings.mirror && camSettings.facing === 'user');
+  fitOutput();
+  applyRing();
+  if (P.open) camLayout();
+  placePreview();
+  syncControls();
+}
+
+// Called by the prompter on every frame while it is open.
+function camTick(now) {
+  logCaptionWords();
+  if (CAM.rec) document.getElementById('prRecTime').textContent = fmtClock((now - CAM.recStart) / 1000);
+  drawMeter();
+}
+// The prompter opened: lay it out (the camera stays off until asked).
+function camOpen() {
+  camLayout();
+  camSync();
+}
+// The prompter is closing: stop any recording (its take is kept), turn the
+// camera off, and put the ring and the layout away.
+function camClose() {
+  clearTimeout(CAM.stopTimer);
+  if (CAM.pending) CAM.pending = false;
+  if (CAM.rec && CAM.rec.state !== 'inactive') CAM.rec.stop();   // finishTake shows the take
+  stopCamera(true);
+  prompter.style.inset = '';
+  camSync();
+}
+// The page went to the background while recording: the take shows a still picture there.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && CAM.rec) CAM.hiddenWhileRecording = true;
+});
+
+/* =========================================================================
+   THE CAMERA'S SECTIONS IN THE PROMPTER'S INSPECTOR
+   Built with the same sliders, switches and big choices as every other
+   setting (makeSlider, makeSwitch, makeChoice), but these save into the
+   camera settings (camChanged), not into the script.
+   ========================================================================= */
+const LOOKS = [
+  ['natural', 'Natural', { bright: 100, contrast: 100, saturate: 100, warmth: 0 }],
+  ['warm', 'Warm', { bright: 102, contrast: 102, saturate: 110, warmth: 25 }],
+  ['cool', 'Cool', { bright: 100, contrast: 102, saturate: 95, warmth: -20 }],
+  ['vivid', 'Vivid', { bright: 103, contrast: 115, saturate: 135, warmth: 0 }],
+  ['mono', 'Black and white', { bright: 102, contrast: 112, saturate: 0, warmth: 0 }]
+];
+// The look the lighting matches right now ('' when the sliders were moved by hand).
+function currentLook() {
+  const hit = LOOKS.find(([, , p]) => Object.keys(p).every((k) => camSettings[k] === p[k]));
+  return hit ? hit[0] : '';
+}
+const BG_COLORS = [['#1f2937', 'Slate'], ['#0b3d2e', 'Forest'], ['#1e3a8a', 'Navy'], ['#f5f5f4', 'Off-white'], ['#facc15', 'Sunflower']];
+const BG_NAMES = { none: 'None', blur: 'Blur', color: 'Color', picture: 'Picture' };
+const LAYOUT_NAMES = { auto: 'Auto', classic: 'Whole screen', side: 'Side by side', stacked: 'Stacked' };
+
+// A plain button for the dark Inspector.
+function camButton(label, onClick, primary) {
+  const b = el('button', 'st-btn' + (primary ? ' primary' : ''), label);
+  b.type = 'button';
+  b.addEventListener('click', onClick);
+  return b;
+}
+// A row of round color buttons. `pick(hex)` chooses one; `get()` says which is chosen.
+function colorChips(label, colors, get, pick) {
+  const box = el('div', 'st-chips');
+  box.setAttribute('role', 'group');
+  box.setAttribute('aria-label', label);
+  const chips = colors.map(([hex, name]) => {
+    const b = el('button', 'st-chip');
+    b.type = 'button';
+    b.style.background = hex;
+    b.setAttribute('aria-label', name);
+    b.title = name;
+    b.addEventListener('click', () => pick(hex));
+    box.append(b);
+    return [hex, b];
+  });
+  controls.push({ sync() { chips.forEach(([hex, b]) => b.setAttribute('aria-pressed', String(get() === hex))); } });
+  return box;
+}
+
+function buildCameraSections(container) {
+  const s = camSettings;
+  const add = (id, title, note, parts) => {
+    const sec = foldSection('pr', id, title);
+    sec.body.append(...parts);
+    controls.push({ sync() { sec.note.textContent = note(); } });
+    container.append(sec.box);
+  };
+  // Settings that change the video's size cannot change during a take.
+  const notWhileRecording = (fn) => (v) => {
+    if (camIsRecording()) { toast('Change this after the take.'); return; }
+    fn(v);
+  };
+
+  /* -- Camera: on and off, which camera, the microphone, the video's size -- */
+  const camOnBtn = camButton('Turn on the camera', toggleCamera, true);
+  const flipBtn = camButton('Switch camera', async () => {
+    if (camIsRecording()) { toast('Change this after the take.'); return; }
+    s.facing = s.facing === 'user' ? 'environment' : 'user';
+    camChanged();
+    if (CAM.stream) await startCamera();
+  });
+  const previewBack = camButton('Put the preview back in the corner', () => {
+    s.floatX = -1; s.floatY = -1; s.floatW = CAM_DEFAULTS.floatW; s.preview = 'float';
+    camChanged();
+  });
+  const meter = el('div', 'st-meter');
+  meter.setAttribute('aria-hidden', 'true');
+  meter.append(el('span'));
+  controls.push({ sync() {
+    camOnBtn.textContent = CAM.stream ? 'Turn off the camera' : 'Turn on the camera';
+    camOnBtn.disabled = camIsRecording();
+    flipBtn.disabled = camIsRecording();
+  } });
+  const row1 = el('div', 'st-row');
+  row1.append(camOnBtn, flipBtn);
+  const previewRow = el('div', 'st-row');
+  previewRow.append(previewBack);
+  add('camera', 'Camera', () => (CAM.rec ? 'Recording' : CAM.stream ? 'On' : 'Off'), [
+    row1,
+    el('div', 'seg-title', 'Microphone'),
+    meter,
+    el('p', 'hint', 'Speak, and the bar moves: that is what the recording hears.'),
+    makeChoice({ label: 'Quality', get: () => s.quality, changed: camChanged,
+      set: notWhileRecording((v) => { s.quality = v; if (CAM.stream) startCamera(); }),
+      options: [{ value: '720', label: '720p' }, { value: '1080', label: '1080p' }] }),
+    makeChoice({ label: 'Shape of the video', get: () => s.shape, changed: camChanged,
+      set: notWhileRecording((v) => { s.shape = v; }),
+      options: [{ value: 'landscape', label: 'Landscape 16:9' }, { value: 'portrait', label: 'Portrait 9:16' },
+        { value: 'square', label: 'Square' }, { value: 'camera', label: 'As the camera sees it' }] }),
+    makeChoice({ label: 'Preview', get: () => s.preview, set: (v) => { s.preview = v; }, changed: camChanged,
+      options: [{ value: 'float', label: 'Floating' }, { value: 'off', label: 'Off' }] }),
+    previewRow,
+    makeSwitch({ label: 'Mirror the preview (the video is never flipped)', get: () => s.mirror, set: (v) => { s.mirror = v; }, changed: camChanged }),
+    makeSwitch({ label: 'Stop recording 2 seconds after the last word', get: () => s.autoStop, set: (v) => { s.autoStop = v; }, changed: camChanged }),
+    el('p', 'hint', 'Drag the preview anywhere; drag its corner, or pinch, to resize it. Recordings stay on this device until you save them.')
+  ]);
+
+  /* -- Look: a ready-made look, and the lighting sliders -- */
+  add('look', 'Look', () => { const k = currentLook(); return k ? LOOKS.find((l) => l[0] === k)[1] : 'Custom'; }, [
+    makeChoice({ label: 'Looks', get: currentLook, changed: camChanged,
+      set: (v) => { const hit = LOOKS.find((l) => l[0] === v); if (hit) Object.assign(s, hit[2]); },
+      options: LOOKS.map(([value, label]) => ({ value, label })) }),
+    makeSlider({ label: 'Brightness', min: 50, max: 150, step: 1, get: () => s.bright, set: (v) => { s.bright = v; }, format: (v) => v + ' %', changed: camChanged }),
+    makeSlider({ label: 'Contrast', min: 50, max: 150, step: 1, get: () => s.contrast, set: (v) => { s.contrast = v; }, format: (v) => v + ' %', changed: camChanged }),
+    makeSlider({ label: 'Warmth', min: -50, max: 50, step: 1, get: () => s.warmth, set: (v) => { s.warmth = v; }, changed: camChanged,
+      format: (v) => (v === 0 ? 'Neutral' : v > 0 ? 'Warmer +' + v : 'Cooler ' + v) }),
+    makeSlider({ label: 'Color', min: 0, max: 200, step: 5, get: () => s.saturate, set: (v) => { s.saturate = v; }, changed: camChanged,
+      format: (v) => (v === 0 ? 'Black and white' : v + ' %') }),
+    el('p', 'hint', 'Brightness and warmth help most in a dim office, or under the cold glow of a screen.')
+  ]);
+
+  /* -- Background: blurred, a color or a picture (found on this device) -- */
+  const bgStatus = el('p', 'st-status');
+  bgStatus.setAttribute('role', 'status');
+  const blurBox = el('div');
+  blurBox.append(makeSlider({ label: 'Blur strength', min: 4, max: 40, step: 1, get: () => s.blur, set: (v) => { s.blur = v; }, format: (v) => v + ' px', changed: camChanged }));
+  const colorBox = el('div');
+  colorBox.append(colorChips('Background color', BG_COLORS, () => s.color, (hex) => { s.color = hex; camChanged(); }));
+  const pictureInput = el('input');
+  pictureInput.type = 'file';
+  pictureInput.accept = 'image/*';
+  pictureInput.hidden = true;
+  // A background picture: read on this device, kept for this visit, never uploaded.
+  pictureInput.addEventListener('change', async () => {
+    const file = pictureInput.files && pictureInput.files[0];
+    pictureInput.value = '';
+    if (!file) return;
+    if (file.size > 30 * 1048576) { SEG.message = 'That picture is too large (over 30 MB).'; syncControls(); return; }
+    try { CAM.picture = await createImageBitmap(file); SEG.message = 'Picture: ' + file.name + '.'; }
+    catch (err) { SEG.message = 'That file could not be read as a picture.'; }
+    syncControls();
+  });
+  const pictureBox = el('div', 'st-row');
+  pictureBox.append(camButton('Choose a picture...', () => pictureInput.click()), pictureInput);
+  const edgeBox = el('div');
+  edgeBox.append(makeSlider({ label: 'Soft edge around you', min: 0, max: 10, step: 1, get: () => s.edge, set: (v) => { s.edge = v; },
+    format: (v) => (v === 0 ? 'Sharp' : v + ' px'), changed: camChanged }));
+  controls.push({ sync() {
+    bgStatus.textContent = s.bg === 'none' ? '' : SEG.message;
+    blurBox.hidden = s.bg !== 'blur';
+    colorBox.hidden = s.bg !== 'color';
+    pictureBox.hidden = s.bg !== 'picture';
+    edgeBox.hidden = s.bg === 'none';
+  } });
+  add('background', 'Background', () => BG_NAMES[s.bg], [
+    makeChoice({ label: 'Background', get: () => s.bg, changed: camChanged,
+      set: (v) => {
+        s.bg = v;
+        if (v !== 'none') loadSegmenter();
+        if (v === 'picture' && !CAM.picture) pictureInput.click();
+      },
+      options: Object.entries(BG_NAMES).map(([value, label]) => ({ value, label })) }),
+    bgStatus, blurBox, colorBox, pictureBox, edgeBox,
+    el('p', 'hint', 'The background is found on this device by a small model (MediaPipe, by Google). No picture ever leaves it.')
+  ]);
+
+  /* -- Ring light: a frame of light around the screen -- */
+  const custom = el('input', 'st-custom');
+  custom.type = 'color';
+  custom.setAttribute('aria-label', 'Your own ring color');
+  custom.title = 'Your own color';
+  custom.addEventListener('input', () => {
+    if (!/^#[0-9a-f]{6}$/i.test(custom.value)) return;
+    s.ringColor = custom.value.toLowerCase();
+    s.ring = true;
+    camChanged();
+  });
+  const ringChips = colorChips('Ring light color', RING_COLORS, () => s.ringColor, (hex) => { s.ringColor = hex; s.ring = true; camChanged(); });
+  ringChips.append(custom);
+  controls.push({ sync() { custom.value = s.ringColor; } });
+  add('ring', 'Ring light', () => (s.ring ? 'On' : 'Off'), [
+    makeSwitch({ label: 'Ring light (L)', get: () => s.ring, set: (v) => { s.ring = v; }, changed: camChanged }),
+    el('div', 'seg-title', 'Color'),
+    ringChips,
+    makeSlider({ label: 'Ring brightness', min: 10, max: 100, step: 5, get: () => s.ringBright, set: (v) => { s.ringBright = v; }, format: (v) => v + ' %', changed: camChanged }),
+    makeSlider({ label: 'Ring width', min: 12, max: 200, step: 4, get: () => s.ringWidth, set: (v) => { s.ringWidth = v; }, format: (v) => v + ' px', changed: camChanged }),
+    el('p', 'hint', 'Turn the screen\'s own brightness all the way up: the ring is only as bright as the screen. A warm color is kind to skin.')
+  ]);
+
+  /* -- Screen layout: the whole screen of text, or split in two -- */
+  add('layout', 'Screen layout', () => LAYOUT_NAMES[s.layout], [
+    makeChoice({ label: 'Layout', get: () => s.layout, set: (v) => { s.layout = v; }, changed: camChanged,
+      options: Object.entries(LAYOUT_NAMES).map(([value, label]) => ({ value, label })) }),
+    makeSwitch({ label: 'Controls first (on the left, or on top)', get: () => s.swap, set: (v) => { s.swap = v; }, changed: camChanged }),
+    el('p', 'hint', 'Auto splits the screen at the fold of a folding phone: half-folded like a laptop, the text stands up and the controls lie flat; open like a book, they sit side by side. Put the text on the half with the camera. Elsewhere the text fills the screen.')
+  ]);
+}
+
+/* ---- The controls bar: Record, Camera and Takes ---- */
+document.getElementById('prRecord').addEventListener('click', () => { toggleRecord(); wake(); });
+document.getElementById('prCamera').addEventListener('click', () => { toggleCamera(); wake(); });
+document.getElementById('prTakes').addEventListener('click', () => openTakes());
+
 
 
 /* =========================================================================
@@ -6708,32 +8082,6 @@ document.getElementById('btnCue').addEventListener('click', () => {
 });
 document.getElementById('btnPrompt').addEventListener('click', openPrompter);
 
-/* ---- Record: hand the script to the camera lab ----
-   The lab (camera-lab.html, beside this file) is a separate page for now, so
-   the script travels through this browser's own storage: we leave it under
-   LAB_HANDOFF_KEY, open the lab in a new tab, and the lab reads it once and
-   deletes it. It never leaves this device. A new tab keeps this editor (and
-   any unsaved changes) open behind it. */
-const LAB_HANDOFF_KEY = 'teledtr.toLab';
-function openCameraLab() {
-  if (!editor.value.trim()) {
-    toast('Write some script first, then Record.', 4000);
-    return;
-  }
-  try {
-    localStorage.setItem(LAB_HANDOFF_KEY, JSON.stringify({
-      text: editor.value,              // the script, exactly as written (# headings, **bold**, [CUES])
-      pace: settings.pace,             // words a minute
-      at: Date.now()                   // when: the lab ignores a hand-off more than 10 minutes old
-    }));
-  } catch (e) {
-    toast('The script could not be passed to the camera lab (this browser blocks storage). Paste it into the lab\'s Script tab instead.', 6000);
-  }
-  const tab = window.open('camera-lab.html', '_blank');
-  if (!tab) toast('The camera lab could not open a new tab. Allow pop-ups for this site, then try again.', 6000);
-  else tab.opener = null;              // the lab cannot reach back into this page
-}
-document.getElementById('btnRecord').addEventListener('click', openCameraLab);
 document.getElementById('btnTheme').addEventListener('click', () => {
   const next = isDarkNow() ? 'light' : 'dark';
   applyTheme(next);
@@ -6769,6 +8117,10 @@ function init() {
   // The Inspector and the prompter's own Inspector use the same sections and controls.
   buildSettingsInto(document.getElementById('inspectorBody'), 'insp');
   buildSettingsInto(prPanelBody, 'pr');
+  // The camera's sections, under the prompter's own (camera settings are this browser's, not the script's).
+  loadCameraSettings();
+  buildCameraSections(prPanelBody);
+  camSync();
   selectSideTab(uiPrefs.sideTab === 'tabCheck' ? 'tabCheck' : 'tabInspector', false);
 
   // The family: More apps, the Features tour, the credits, the shortcut table and the changelog.

@@ -2,6 +2,27 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.6.0 - 2026-10-31 - Prompt and Record are one
+
+Dave: "the Prompt and Record feature should be rolled into one; they are both prompting - it's just that the recording has more options." The camera lab's features now live in the prompter, and the top bar's Record button (which opened the lab in a new tab) is gone.
+
+- **Record, in the prompter** (beside Start, or `R`): the camera turns on if it is off (the browser asks the first time), a countdown runs (at least 3 seconds), then the camera records while the text moves. **Stop** (or `R`, or `Escape`) ends the take. When the last word passes the reading line, the take stops by itself 2 seconds later (a switch in Inspector > Camera turns that off). Pausing during the countdown cancels the take; pausing while recording keeps the camera rolling.
+- **REC and its time** sit in the timers bar, so they stay on screen when the controls fade, and the preview gets a red frame.
+- **The Takes window** (`T`, or the film button once there is a take): every take of this visit, to watch, **save the video** (MP4 where the browser can, else WebM; named after the script, like `welcome-take-2.mp4`), **save its captions** (.vtt, timed from the words crossing the reading line, with their punctuation), **record again from the start**, or **delete** it (an unsaved take asks twice). Takes stay in memory until the page closes; leaving with an unsaved take asks first. Nothing is uploaded.
+- **The camera button** (`C`): the camera on for a rehearsal, without recording. It always starts off, and turns off when the prompter closes.
+- **The floating preview**: shows what is recorded, with its effects. Drag it anywhere; drag its corner, or pinch, to resize it; with the keyboard, the arrow keys move it and Shift with the arrows resizes it. It is mirrored like a mirror by default (the recording never is).
+- **Five new sections in the prompter's Inspector** (the editor's Inspector keeps its seven, all of which act there):
+  - **Camera:** on and off, switch camera, a microphone meter, Quality (720p, 1080p), Shape of the video (Landscape 16:9, Portrait 9:16, Square, As the camera sees it), Preview (Floating, Off) and putting it back in the corner, Mirror the preview, and the stop at the end.
+  - **Look:** Natural, Warm, Cool, Vivid, Black and white, plus Brightness, Contrast, Warmth and Color sliders (the heading says Custom once a slider moves).
+  - **Background:** None, Blur, Color (five swatches) or Picture (read on this device, kept for this visit only), with Blur strength and Soft edge. The person is found by MediaPipe Selfie Segmentation (Apache 2.0) from `vendor/mediapipe/`, loaded the first time a background effect is chosen.
+  - **Ring light** (`L`): a frame of light around the screen, in seven colors or your own, with brightness and width. The prompter moves in from the edges so the ring never covers the text.
+  - **Screen layout:** Auto (split at the fold of a folding phone, otherwise the whole screen of text), Whole screen, Side by side, Stacked, and Controls first. Split, the controls and the Inspector form one column on the other half (the deck); the controls never fade there, and sit in three tidy rows (Record and Start; pace and size; the small buttons).
+- **Camera settings** are kept in this browser (`teledtr.camera`), not in .teledtr files. The first time, the camera lab's settings (`teledtr.camlab`) carry over.
+- **The prompter's menu** has Record, Camera, Takes and Ring light; Help has a "Record yourself" section, and the shortcut table has R, C, T and L.
+- **Security:** the page's policy adds `'wasm-unsafe-eval'` (for the background model's WebAssembly), `media-src 'self' blob: mediastream:` (the camera and a take) and `worker-src blob:`. `connect-src 'self'` is unchanged, so nothing can be sent anywhere.
+- **Fixed:** the Features tour's drawings were blank. The shared block reads each drawing as an SVG document, and TELEDTR's drawings lacked `xmlns`, so they were not SVG at all. They have it now. The tour has a new fourth slide, "Record while you read."
+- `camera-lab.html` is left as it was. It is no longer linked from TELEDTR (the About tab's link is gone) and can be deleted.
+
 ## 0.5.1 - 2026-10-30 - A painted splash
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.
