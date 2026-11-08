@@ -1,5 +1,18 @@
 # DSKEDTR changelog
 
+## 0.47.0 - 2026-11-08
+
+Equations, three ways.
+
+- **The Equation button** on the rail (E) opens a dialog with three tabs that all make the same thing. **Build it**: MathLive's visual editor. Type as on a calculator (/ makes a fraction, ^ a power) or use its keyboard of symbols, which opens by itself on a touch screen. **Type LaTeX**: for people who know it, with buttons for the usual pieces (fraction, root, power, sum, integral, matrix, Greek letters, signs). **Chemistry**: formulas and reactions written the mhchem way (`2H2 + O2 -> 2H2O`), with buttons for arrows, states and charges, and examples to start from. The tab used last opens next time.
+- **A preview as you type**, and a plain description of any mistake (a missing brace, a command it doesn't know). Add stays off until it is right.
+- **An object of its own**, like a picture: move it, size it from its corners (it always keeps its shape), turn it, wrap text around it, colour it, give it a shadow. The Inspector's Equation section shows its LaTeX, changes it, and sets the size of its letters in points. Double-click it, press Enter, or use the pill's button to change it: it stays where it is, at the size it is.
+- **Alt text written for you**: the equation read aloud ("x squared plus half"; for chemistry, "2 H 2 plus O 2 gives 2 H 2 O"). Edit it and it is yours; "Use the automatic words" brings them back.
+- **Everywhere it goes**: an equation is drawn as outlines, exactly like a shape, so the page, the PNG and the PDF are crisp at any size and never need the equation tools again. A tagged PDF marks it as a Formula with its alt text; the web page export has real MathML (which screen readers can step through), with the alt text as well.
+- **Inside the one-file edition**: MathJax 3.2.2 (Apache licence 2.0; it draws the equations) and MathLive 0.111.1 (MIT; the visual editor, with the KaTeX fonts) are in index.html as text, run only when the equation editor first opens, so DSKEDTR starts no slower. index.html grows from 5.1 MB to 8.6 MB. The online edition fetches them from jsDelivr the first time (fingerprint-checked) and keeps them for offline use.
+- **Safe by design**: the LaTeX only ever goes to MathJax, inside the editor, with a fixed list of packages: none that make links, load files, add styles or define commands. What goes in the document is the outline (numbers, checked like any shape when a file opens), the LaTeX as plain text, and three small settings. Older DSKEDTRs open the file and see a plain shape.
+- KaTeX was the first idea, but it writes HTML, which can't become part of the page drawing or a PDF. MathJax reads the same LaTeX (and mhchem) and can write pure outlines. The visual editor uses KaTeX's fonts.
+
 ## 0.46.3 - 2026-10-30
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.

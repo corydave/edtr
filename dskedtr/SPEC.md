@@ -142,6 +142,8 @@ colour is never the only difference: the icon's drawing and the name carry it.
 - Alt text on every picture and meaningful shape or group (required; see
   Accessibility).
 - Tables (0.19.0).
+- Equations (0.47.0): built visually, typed as LaTeX, or written as
+  chemistry; an object of its own, drawn as outlines.
 - Templates and building blocks (0.20.0).
 - Folds, booklet printing, 2-up and 4-up with cut marks (0.21.0).
 - Group, ungroup, lock, hide, flip, rotate, z-order.
@@ -1249,6 +1251,83 @@ into the first box's overflow, the next boxes emptied (as before).
   are both in reach, the nearer one wins; on narrow boxes the diagonal
   ports sit 26 px out on touch (18).
 
+## Equations (0.47.0)
+
+Dave, 2026-11-08: "we need a math expression editor... KaTeX (and mhchem
+for chemistry)... others might want the graphical interface". Decided
+with him: an equation is **its own box** (moved, sized, turned, wrapped,
+given alt text like a picture; inline equations in a line of text would
+be a later release), and **everything inside** the one-file edition
+(MathJax and MathLive embedded, loaded only when the editor opens).
+
+- **MathJax, not KaTeX, draws them.** KaTeX writes HTML and CSS fonts,
+  which can't join the page's SVG drawing or a PDF. MathJax 3.2.2
+  (`tex-svg-full.js`, Apache 2.0) reads the same LaTeX, has mhchem, and
+  writes pure SVG shapes. The visual editor is MathLive 0.111.1 (MIT),
+  which uses the KaTeX fonts (20 woff2 files in `vendor/mathlive-fonts/`).
+  MathLive has no `\ce`, so chemistry is typed (the Chemistry tab).
+- **The object:** `type: 'path'` with `eq: { latex, mode: 'visual' |
+  'latex' | 'chem', size, altAuto }`. Its `contours` are read out of
+  MathJax's SVG by `svgToContours` (paths, rects, lines, outlined rects
+  and ellipses, and `<text>` for letters MathJax lacks, drawn with
+  Atkinson Hyperlegible); quadratic curves become exact cubics; the
+  outlines are made at `eq.size` points (an em is 1000 MathJax units) and
+  the object can be shown bigger or smaller (`w / w0`). So the desk, PNG,
+  PDF, thumbnails, tight text wrap and every other path code draw it with
+  no MathJax. Differences from a merged shape: the non-zero fill rule
+  (`evenOddFill(o)`: letters overlap), picked anywhere in its box,
+  corner handles only and always keeps its shape (handles, X/Y/W/H
+  fields, Inspector size), not mergeable and not a crop shape, double-click
+  / Enter / the pill's button / Inspector open the dialog.
+- **The dialog** (`#eqDialog`): tabs Build it / Type LaTeX / Chemistry
+  (`suiteWireTabs`; the last one used is remembered in localStorage
+  `dskedtr-eq-mode`). Each tab is a view of one LaTeX string; maths left
+  behind on a trip through Chemistry comes back (`eqStash`). MathLive's
+  value is read as `latex-expanded` so MathJax can read it; an empty
+  placeholder says "fill in the empty boxes". The preview is our own
+  drawing of the outlines (not MathJax's SVG). MathLive's keyboard of
+  symbols is put inside the dialog (`mathVirtualKeyboard.container`; outside
+  it the modal makes it inert), sticky at the dialog's bottom, with the
+  form padded underneath while it is up. Its menu is hidden (it opens
+  outside the dialog). Ctrl/Cmd+Enter adds from anywhere; E opens it.
+- **Alt text:** `autoAlt` - MathLive's `convertLatexToSpeakableText`,
+  tidied (letters lower case, "pie" -> pi, pauses as commas), or for
+  `\ce{}` our `chemSpeech` (arrows, states, charges with and without `^`,
+  atoms counted, brackets). `altAuto` stays true until the alt text is
+  typed in (dialog or Inspector); then a change to the equation keeps
+  the person's words.
+- **Tagged PDF:** a `Formula` structure element (and marked content) with
+  Alt and its BBox, in place of `Figure`. **Web page export:** MathML from
+  `MathJax.tex2mml`, parsed as XML and rebuilt element by element from a
+  whitelist of MathML elements and attributes (`mathMLFor`), with
+  `alttext`, its colour and size; the outline SVG with `role=img` if
+  MathJax can't be had.
+- **Loading:** `loadMathLibs()` once per session. The one-file edition
+  carries both libraries as `<script type="text/plain" id="libMathJax">`
+  and `id="libMathLive"` (put at the `<!--MATH-LIBRARIES...-->` marker by
+  build-offline.py, after the same SRI check as the other libraries) and
+  runs them by injecting a script with their text (allowed by
+  `'unsafe-inline'`); the KaTeX fonts are base64 in
+  `DSK_EMBEDDED.mathFonts` and registered with the FontFace API
+  (`fontsDirectory` and `soundsDirectory` are null, so MathLive fetches
+  nothing). The online edition loads them from jsDelivr with SRI; sw.js
+  allows and keeps them (`LAZY_LIBRARIES`, not fetched at install).
+  MathJax runs with `loader.load: []`, no menu, no typesetting of the
+  page, no assistive MathML.
+- **Security:** LaTeX only reaches MathJax inside the editor (and for the
+  HTML export), with a fixed package list: base, ams, mhchem, boldsymbol,
+  cancel, mathtools, braket, gensymb, upgreek, textmacros, cases, enclose,
+  extpfeil, physics. Left out: html (`\href`, `\class`, `\style`),
+  require and autoload (load code), newcommand (macros), unicode, color,
+  bbox, action, and noerrors / noundefined (mistakes must be reported).
+  `maxBuffer` 20 KB, `maxMacros` 2000. The loader keeps `eq` only with a
+  non-empty string LaTeX (`cleanText`, 5000 characters, line breaks kept
+  for `%` comments), a known mode, size 1 to 400, a boolean; the
+  outline is checked like any path. No project version bump: older
+  versions read a plain path shape.
+- **Sizes:** index.html 5.1 MB -> 8.6 MB (MathJax 2.3 MB, MathLive 0.8 MB,
+  fonts 0.4 MB as base64).
+
 ## Teal (0.46.0)
 
 Dave, 2026-10-16: DSKEDTR's colour becomes `#37c6d0`. Decided with him:
@@ -1449,7 +1528,9 @@ old three joined dots read as Share).
 
 - No network calls unless you ask for a Google font (Document, Your
   fonts): then only that font's name goes to jsDelivr, and only its
-  files come back. Fonts, templates, building blocks and libraries are
+  files come back. (The online edition, index-online.html, also loads
+  its pinned, fingerprint-checked libraries from jsDelivr, the equation
+  editor's the first time it opens; the one-file edition has them all.) Fonts, templates, building blocks and libraries are
   inside the file. The Content Security Policy allows `connect-src` to
   `https://cdn.jsdelivr.net/npm/@fontsource/` and nowhere else.
 - Pictures, project files and exports never leave the browser.

@@ -7,7 +7,7 @@
    this worker again, and the cache name below changes with it - so old
    files are thrown away and the new release is downloaded.
 
-   Privacy: this worker only stores the app's own files and its four
+   Privacy: this worker only stores the app's own files and its six
    pinned libraries. It never sees, stores or sends your documents.
    ======================================================================= */
 const VERSION = new URL(self.location.href).searchParams.get('v') || 'dev';
@@ -42,6 +42,13 @@ const LIBRARIES = [
   'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js'
 ];
 
+// The equation editor's two libraries (0.47.0): allowed, and kept once fetched, but
+// only fetched when someone first opens the equation editor (they are 3 MB).
+const LAZY_LIBRARIES = [
+  'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js',
+  'https://cdn.jsdelivr.net/npm/mathlive@0.111.1/mathlive.min.js'
+];
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const c = await caches.open(CACHE);
@@ -68,7 +75,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;                  // never cache anything but plain downloads
   const url = new URL(req.url);
   const sameSite = url.origin === self.location.origin;
-  const isLibrary = LIBRARIES.includes(req.url);
+  const isLibrary = LIBRARIES.includes(req.url) || LAZY_LIBRARIES.includes(req.url);
   if (!sameSite && !isLibrary) return;               // everything else: let the browser handle it
 
   // Pages: the network first (so every launch gets the newest version), and

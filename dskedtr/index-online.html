@@ -595,6 +595,27 @@ legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
 .help-body li { margin: 3px 0; }
 .changelog h3 { margin: 12px 0 4px; font-size: 14px; }
 .changelog ul { margin: 0; padding-left: 20px; font-size: 13px; }
+/* Equations (0.47.0): the dialog's three tabs, the quick bits, the preview. */
+.eq-dialog { max-width: 720px; }
+.eq-dialog .tabs { padding: 0; margin-bottom: 10px; }
+.eq-help { font-size: 13px; margin: 0 0 8px; }
+.eq-visual math-field { display: block; width: 100%; box-sizing: border-box; min-height: 64px; font-size: 26px; padding: 8px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg, #fff); color: var(--fg); }
+.eq-visual math-field:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.eq-visual math-field::part(menu-toggle) { display: none; }
+/* MathLive's keyboard of symbols lives inside the dialog (outside it, the open dialog would make it unusable):
+   kept at the bottom of what shows of the dialog, over the fields below the equation. */
+#eqDialog .ML__keyboard { position: sticky; bottom: 0; overflow: visible; z-index: 10; }
+.eq-bits, .eq-examples { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+.eq-bit { min-width: 40px; min-height: 36px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); cursor: pointer; font-size: 15px; }
+.eq-example { min-height: 32px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); color: var(--fg); cursor: pointer; font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.eq-bit:hover, .eq-example:hover { border-color: var(--accent); }
+.eq-bit:focus-visible, .eq-example:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.eq-code { font: 15px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.eq-preview-wrap { display: grid; gap: 4px; margin: 10px 0 0; font-size: 12px; }
+.eq-preview { width: 100%; height: 110px; border: 1px dashed var(--line); border-radius: 8px; color: var(--fg); }
+.eq-latex-show { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; max-height: 7.5em; overflow: auto; margin: 0 0 6px; }
+@media (pointer: coarse) { .eq-bit { min-width: 44px; min-height: 44px; } .eq-example { min-height: 44px; } }
 .warn-box { border: 1px solid var(--danger); border-radius: 8px; padding: 6px 10px; margin: 10px 0 0; }
 .warn-box ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; }
 :root[data-theme="dark"] .warn-box { border-color: #fca5a5; }
@@ -1250,6 +1271,10 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <button class="icon-btn" data-tool="table" aria-pressed="false" aria-label="Table" title="Table: drag on the page to draw one, or click for one (B)">
       <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.5h18M3 14.75h18M9 4v16M15 4v16"/></svg>
     </button>
+    <!-- Equations (0.47.0): build one, type its LaTeX, or write chemistry. -->
+    <button class="icon-btn" id="eqBtn" aria-haspopup="dialog" aria-label="Equation" title="Equation: build it, type LaTeX, or write chemistry (E)">
+      <svg viewBox="0 0 24 24"><path d="M2.5 13h2.5l3 7 4.5-16H22"/><path d="M14.5 9.5l5.5 7M20 9.5l-5.5 7"/></svg>
+    </button>
     <!-- Building blocks: ready-made pieces (a pull quote, a sidebar, a coupon...) added to the page. -->
     <button class="icon-btn" id="blocksBtn" aria-haspopup="dialog" aria-label="Building blocks" title="Building blocks: a pull quote, sidebar, coupon, page border and more (K)">
       <svg viewBox="0 0 24 24"><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><rect x="8" y="3" width="8" height="8" rx="1"/></svg>
@@ -1300,6 +1325,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14"/></svg></button>
     <button type="button" data-act="cropShape" aria-label="Crop to shape" title="Crop to shape: cut the picture to the shape (Alt+Shift+P)">
       <svg viewBox="0 0 24 24"><path d="M12 2.5l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 16.9 6.3 20l1.2-6.4-4.7-4.4 6.4-.8Z"/><path d="M7.5 15.5l3-3.5 2.5 2.5 1.5-1.5 2.5 2.5" stroke-width="1.5"/></svg></button>
+    <button type="button" data-act="editEq" aria-label="Change the equation" title="Change the equation (Enter, or double-click it)">
+      <svg viewBox="0 0 24 24"><path d="M2.5 13h2.5l3 7 4.5-16H22"/><path d="M13.5 19.5l1-3.5 5.5-5.5 2.5 2.5-5.5 5.5z" stroke-width="1.6"/></svg></button>
     <button type="button" data-act="unlock" aria-label="Unlock" title="Unlock: it can be moved and picked on the page again">
       <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></button>
     <button type="button" data-act="group" aria-label="Group" title="Group: they move and size together (Ctrl+G)">
@@ -1665,6 +1692,17 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <label class="check"><input type="checkbox" id="contPrev"> "Continued from page…" at the top</label>
       <label class="check"><input type="checkbox" id="contNext"> "Continued on page…" at the bottom</label>
       <p class="muted" style="font-size:12px">These show only when the text comes from, or goes on to, a box on another page.</p>
+      </div>
+    </section>
+
+    <!-- An equation (0.47.0): its LaTeX, a button to change it, and the size of its letters -->
+    <section id="secEquation" hidden>
+      <h2><button class="fold" data-fold="eqBody" aria-expanded="false"><span class="fold-chev" aria-hidden="true"></span><span class="fold-title">Equation</span></button></h2>
+      <div class="fold-body" id="eqBody" hidden>
+      <p class="eq-latex-show" id="eqLatexShow"></p>
+      <p class="muted" id="eqHow" style="font-size:12px;margin:0 0 6px"></p>
+      <button class="btn" type="button" id="eqEditBtn">Change the equation&hellip;</button>
+      <label class="field" style="margin-top:8px">Size of the letters (pt)<input type="number" id="eqSize" min="6" max="300" step="1" inputmode="decimal"></label>
       </div>
     </section>
 
@@ -2126,6 +2164,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector). To cut a picture to a shape, put the shape over it where you want the cut, pick both, and choose <strong>Crop to shape</strong> in the floating pill (or Alt+Shift+P). An empty picture frame on a <strong>master page</strong> is a placeholder: on each page that uses the master, double-click it or drop a picture on it to give that page its own picture (the Document section lists them too).</p>
       <h3>Tables</h3>
       <p>The Table tool (B) draws a table: drag for one that size, or click for one that fits its words. Type in a cell; Tab goes to the next one, row by row. Each row grows to fit what is in it. The Inspector's Table section adds and deletes rows and columns (beside the cell you are typing in), turns the header row and banded rows on or off, and sets their colours; Look sets the lines. While you type in a cell, the floating pill above the table inserts a row above or below it, or a column left or right of it, or deletes its row or column. Drag the line between two columns, or the green tab above it, to change their widths; drag the line under a row to make it taller. While you type in a cell, the Table section can <strong>merge</strong> it with the cell to its right or below it (and split it again), colour the cell, its row or its column, set its row's height, and move that row and the ones below it to the next page (for a table too long for one page, with its header row repeated). "Words in the cells" puts them at the top, in the middle or at the bottom. Screen readers read a table's cells row by row, and the header row tells them what each column holds.</p>
+      <h3>Equations</h3>
+      <p>The Equation button on the rail (E) adds an equation, three ways. <strong>Build it</strong>: type as on a calculator (/ makes a fraction, ^ a power), or tap symbols on its keyboard. <strong>Type LaTeX</strong>: the language mathematicians write equations in, with buttons for the usual pieces. <strong>Chemistry</strong>: formulas and reactions written plainly, like 2H2 + O2 -&gt; 2H2O. A preview shows it as you go, and a mistake is described. The equation is an object of its own, like a picture: move it, size it (it keeps its shape), turn it, wrap text around it and colour it (Look, in the Inspector). Double-click it, or press Enter, to change it. Its alt text is written for you (edit it if you like): screen readers read it, a tagged PDF marks it as a formula, and the web page export has real MathML, which screen readers can step through.</p>
       <h3>4. Pages</h3>
       <p>The filmstrip along the bottom shows every page. + adds one after the page showing (with master pages, it asks which one the new page uses). Click or tap a page for its buttons: move it left or right, its master page, duplicate, copy, cut, paste, delete. You can also drag pages into order, or use Alt with Left or Right. Shift+click picks a run of pages and Ctrl+click (Cmd+click) one more, and the buttons then work on all of them. Copied pages paste after any page, in this document or another one (their master pages, pictures and fonts come too). For a booklet, tick <strong>Facing pages</strong> in Document (or Booklet in the View menu): page 1 sits on its own, then 2 and 3 side by side.</p>
       <h3>5. Reading order</h3>
@@ -2236,6 +2276,45 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <div class="row" style="justify-content:flex-end">
       <button class="btn" type="button" id="calCancel">Cancel</button>
       <button class="btn primary" type="submit">Add calendar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===================== EQUATIONS (0.47.0) =====================
+     Three tabs, three ways to the same thing (LaTeX): build it in MathLive's
+     visual editor, type the LaTeX, or write chemistry the mhchem way. -->
+<dialog id="eqDialog" class="eq-dialog" aria-labelledby="eqTitle">
+  <h2 id="eqTitle" style="margin-top:0">Add an equation</h2>
+  <form id="eqForm" novalidate>
+    <div class="tabs" id="eqTabs" role="tablist" aria-label="How to make the equation">
+      <button type="button" role="tab" id="eqTab-visual" aria-controls="eqPane-visual" aria-selected="true">Build it</button>
+      <button type="button" role="tab" id="eqTab-latex" aria-controls="eqPane-latex" aria-selected="false" tabindex="-1">Type LaTeX</button>
+      <button type="button" role="tab" id="eqTab-chem" aria-controls="eqPane-chem" aria-selected="false" tabindex="-1">Chemistry</button>
+    </div>
+    <div role="tabpanel" id="eqPane-visual" aria-labelledby="eqTab-visual">
+      <p class="muted eq-help">Type as on a calculator: <kbd>/</kbd> makes a fraction, <kbd>^</kbd> a power, <kbd>_</kbd> something below, and words like sqrt, pi or sum become their symbols. Arrow keys move around it. The keyboard button at the right of the box opens a keyboard of symbols (on a touch screen it opens by itself).</p>
+      <div id="eqVisualBox" class="eq-visual"></div>
+      <p id="eqVisualNote" class="muted" hidden>This equation has chemistry in it, which the visual editor can't show. Change it in Chemistry or Type LaTeX.</p>
+    </div>
+    <div role="tabpanel" id="eqPane-latex" aria-labelledby="eqTab-latex" hidden>
+      <div class="eq-bits" id="eqLatexBits" role="group" aria-label="Put in at the cursor"></div>
+      <label class="field">LaTeX<textarea class="field-text eq-code" id="eqLatexIn" rows="3" maxlength="5000" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}"></textarea></label>
+      <p class="muted eq-help">Chemistry works here too, inside <code>\ce{...}</code>.</p>
+    </div>
+    <div role="tabpanel" id="eqPane-chem" aria-labelledby="eqTab-chem" hidden>
+      <div class="eq-bits" id="eqChemBits" role="group" aria-label="Put in at the cursor"></div>
+      <label class="field">Formula or reaction<input type="text" class="eq-code" id="eqChemIn" maxlength="2000" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="2H2 + O2 -> 2H2O"></label>
+      <p class="muted eq-help">Numbers after an element shrink (H2O is H&#8322;O), <code>-&gt;</code> is an arrow, <code>^2+</code> a charge. Try one:</p>
+      <div class="eq-examples" id="eqChemExamples"></div>
+    </div>
+    <div id="eqPreviewWrap" class="eq-preview-wrap"><span class="muted">How it will look</span><svg id="eqPreview" class="eq-preview" aria-hidden="true" focusable="false"></svg></div>
+    <p id="eqStatus" class="warn reserve2" role="status"></p>
+    <label class="field">Alt text (what screen readers say)<textarea class="field-text" id="eqAlt" rows="2" maxlength="500"></textarea></label>
+    <div class="row" style="margin-top:4px"><button type="button" class="btn" id="eqAltAuto">Use the automatic words</button></div>
+    <label class="field" id="eqSizeRow" style="margin-top:8px">Size of the letters (pt)<input type="number" id="eqSizeIn" min="6" max="300" step="1" inputmode="decimal"></label>
+    <div class="row" style="justify-content:flex-end;margin-top:8px">
+      <button class="btn" type="button" id="eqCancel">Cancel</button>
+      <button class="btn primary" type="submit" id="eqGo">Add equation</button>
     </div>
   </form>
 </dialog>
@@ -2360,7 +2439,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.46.3';
+const APP_VERSION = '0.47.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -7614,7 +7693,7 @@ function shapeElement(o) {
     return g;
   }
   const fill = { fill: o.fill || 'none' };
-  if (o.type === 'path') return svgEl('path', Object.assign({ d: pathData(o), 'fill-rule': 'evenodd' }, fill, stroke));
+  if (o.type === 'path') return svgEl('path', Object.assign({ d: pathData(o), 'fill-rule': evenOddFill(o) ? 'evenodd' : 'nonzero' }, fill, stroke));
   if (o.type === 'ellipse') {
     return svgEl('ellipse', Object.assign({ cx: o.x + o.w / 2, cy: o.y + o.h / 2, rx: o.w / 2, ry: o.h / 2 }, fill, stroke));
   }
@@ -7907,6 +7986,7 @@ function handlePoints() {
     { name: 'sw', x: xs.w, y: ys.s }, { name: 'w', x: xs.w, y: ys.m }
   ];
   if (one) {
+    if (one.eq) pts.splice(0, pts.length, ...pts.filter((p) => p.name.length === 2));   // an equation: its corners only (it always keeps its shape)
     if (one.type !== 'table') pts.push({ name: 'rot', x: xs.c, y: ys.n - rotHandlePx() * onePx() });   // tables don't turn
     const c = centreOf(one);
     return pts.map((p) => Object.assign(p, rotatePoint(p, one.rotation, c)));
@@ -7942,7 +8022,8 @@ function renderHandles() {
   const pts = handlePoints();
   const rot = pts.find((h) => h.name === 'rot');
   if (rot) {
-    const n = pts.find((h) => h.name === 'n');
+    // (An equation has no middle handles: the line starts halfway along its top edge.)
+    const n = pts.find((h) => h.name === 'n') || (() => { const nw = pts.find((h) => h.name === 'nw'), ne = pts.find((h) => h.name === 'ne'); return { x: (nw.x + ne.x) / 2, y: (nw.y + ne.y) / 2 }; })();
     layers.handles.appendChild(svgEl('line', { x1: n.x, y1: n.y, x2: rot.x, y2: rot.y, stroke: '#195d61', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
   }
   const one = singleShape();
@@ -10059,7 +10140,7 @@ function setupPaper() {
   paperReady = true;
   return true;
 }
-const isMergeable = (o) => o && !o.locked && !o.hidden && (o.type === 'rect' || o.type === 'ellipse' || o.type === 'path');
+const isMergeable = (o) => o && !o.locked && !o.hidden && (o.type === 'rect' || o.type === 'ellipse' || (o.type === 'path' && !o.eq));   // (not an equation)
 const hasArea = (item) => item && Math.abs(item.area) > MERGE_AREA_EPS;
 
 /** One of our objects as a Paper.js outline (turned the way it looks on the page). */
@@ -11036,7 +11117,7 @@ function hitObject(o, p) {
     const cx = o.x1 + t * dx, cy = o.y1 + t * dy;
     return Math.hypot(p.x - cx, p.y - cy) <= Math.max(tol, o.strokeWidth / 2 + tol / 2);
   }
-  if (o.type === 'path' || hasMask(o)) {
+  if ((o.type === 'path' && !o.eq) || hasMask(o)) {   // (an equation: anywhere in its box, below)
     if (p.x < o.x - tol || p.x > o.x + o.w + tol || p.y < o.y - tol || p.y > o.y + o.h + tol) return false;
     return pointInPath(hasMask(o) ? maskObj(o) : o, p);
   }
@@ -11370,6 +11451,9 @@ function wirePointer() {
       if (o && o.type === 'table' && clicks >= 2) {       // double-click a table: type in the cell clicked
         const cell = tableCellAt(o, p);
         if (cell) { drag = textClick(cell, p, 1, false); svg.setPointerCapture(e.pointerId); return; }
+      }
+      if (o && o.eq && clicks >= 2) {                   // double-click an equation: change it
+        openEquationDialog(o); return;
       }
       if (o && o.type === 'picture' && clicks >= 2) {     // double-click a picture: crop it (or fill an empty frame)
         startCrop(o); return;
@@ -11820,6 +11904,7 @@ function updateQuickBar() {
     link: !st.only && !!story && !flowsOn && !locked,
     unlink: !st.only && !!story && flowsOn && !locked,
     crop: !st.only && !!one && one.type === 'picture' && !locked,
+    editEq: !st.only && !!one && !!one.eq && !locked,
     cropShape: !st.only && !!cropToShapeParts(st.list),
     unlock: !st.only && locked,
     // Typing in a cell: rows and columns beside it (never the last row or column away, never past the limits).
@@ -11842,7 +11927,7 @@ function updateQuickBar() {
     delete: !st.only && !locked
   };
   for (const b of bar.querySelectorAll('button')) b.hidden = !show[b.dataset.act];
-  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.cropShape || show.unlock || show.group || show.ungroup || show.addRow || show.pickMore) || st.only;
+  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.editEq || show.cropShape || show.unlock || show.group || show.ungroup || show.addRow || show.pickMore) || st.only;
   bar.querySelector('[data-act=pickMore]').setAttribute('aria-pressed', String(pickMore));
   const crop = bar.querySelector('[data-act=crop]');
   crop.setAttribute('aria-pressed', String(!!one && cropId === one.id));
@@ -12009,6 +12094,7 @@ function wireQuickBar() {
       case 'unlink': if (one) unlinkAfter(one.id); break;
       case 'crop': if (one) { if (cropId === one.id) endCrop(); else startCrop(one); } break;
       case 'cropShape': cropToShape(); break;
+      case 'editEq': if (one && one.eq) openEquationDialog(one); break;
       case 'unlock': toggleFlag(list, 'locked'); break;
       case 'addRow': if (one && one.type === 'table') tableAddRow(one, one.cells.length); break;
       case 'rowAbove': case 'rowBelow': case 'rowDel': case 'colLeft': case 'colRight': case 'colDel': {
@@ -12292,7 +12378,7 @@ function updateTransform(d, p, e) {
     if (h.includes('s')) y2 += ld.y;
     // Shift on a corner keeps the shape. With a finger (no Shift), a picture's corner always does, as on
     // phones and tablets generally; its side handles still stretch it (0.44.0).
-    const keepShape = e.shiftKey || (e.pointerType === 'touch' && o.type === 'picture');
+    const keepShape = e.shiftKey || (e.pointerType === 'touch' && o.type === 'picture') || !!o.eq;   // (an equation always keeps its shape)
     if (keepShape && h.length === 2 && c.w > 0 && c.h > 0) {
       const s = Math.max(Math.abs(x2 - x1) / c.w, Math.abs(y2 - y1) / c.h);
       if (h.includes('w')) x1 = x2 - c.w * s; else x2 = x1 + c.w * s;
@@ -12438,6 +12524,8 @@ function updateInspector() {
   const tableObj = typedTable || (one && one.type === 'table' && !typing ? one : null);
   show('secTable', !!tableObj);
   if (tableObj) fillTable(tableObj, typedTable ? typedBox : null);
+  show('secEquation', !!(one && one.eq && !typing));
+  if (one && one.eq && !typing) fillEquation(one);
   show('secPicture', !!(one && one.type === 'picture' && !typing));
   if (one && one.type === 'picture' && !typing) fillPicture(one);
   show('secArrange', picked.length > 0 && !typing);
@@ -12979,6 +13067,9 @@ function wireInspector() {
         if (key === 'w' || key === 'h') pt = Math.max(9, pt);
         const oldW = o.w, oldH = o.h;
         o[key] = pt;
+        // An equation keeps its shape: the other side follows.
+        if (o.eq && key === 'w') o.h = oldH * pt / oldW;
+        if (o.eq && key === 'h') o.w = oldW * pt / oldH;
         refitPicture(o, oldW, oldH);
       }
       const sid = o.type === 'text' ? o.story : null;
@@ -13207,6 +13298,7 @@ function wireInspector() {
     const o = picked(); if (!o) return;
     recordUndo('field:alt' + o.id);
     o.alt = $('altText').value;
+    if (o.eq) o.eq.altAuto = false;                  // (an equation's own words now: changing it won't replace them)
     updateInspector(); renderOrderList();
   });
 
@@ -15335,6 +15427,7 @@ function wireChrome() {
     ['Enter', 'Type in the picked text box (or a picked table\'s first cell); with a drawing tool, add one in the middle'],
     ['B', 'Table tool: drag on the page for a table that size, or click for one'],
     ['K', 'Building blocks: a pull quote, sidebar, coupon, event details, page border and more'],
+    ['E', 'Add an equation: build it, type LaTeX, or write chemistry. Enter or double-click changes a picked one; ' + mod + ' + Enter adds it from anywhere in the dialog'],
     ['Tab, Shift + Tab in a table', 'The next or the cell before, row by row (after the last cell: on to the next story). Escape picks the whole table'],
     ['Escape', 'Stop typing and pick the box; or drop the selection'],
     ['Double-click a text box', 'Type in it (a table: in the cell clicked)'],
@@ -15449,6 +15542,7 @@ function wireChrome() {
     if (k === 'w' && !e.shiftKey) { setPrintPreview(true); return; }
     if (k === 'u' && !e.shiftKey) { openShapeGallery('tool', null); return; }   // U: the Shapes gallery
     if (k === 'k' && !e.shiftKey) { openBlocks(); return; }                       // K: building blocks
+    if (k === 'e' && !e.shiftKey) { openEquationDialog(null); return; }           // E: an equation
     if (e.key === ']') { moveOrder('forward'); return; }
     if (e.key === '[') { moveOrder('backward'); return; }
     if (e.key === 'Escape') {
@@ -15483,6 +15577,7 @@ function wireChrome() {
       if (cropId) { endCrop(); return; }
       if (one && one.type === 'text') { startEditing(one.story, doc.stories[one.story].text.length); return; }
       if (one && one.type === 'picture') { startCrop(one); return; }
+      if (one && one.eq && !one.locked) { openEquationDialog(one); return; }   // change the equation
       if (one && one.type === 'table') { const c = one.cells[0][0]; startEditing(c.story, doc.stories[c.story].text.length); return; }   // type in its first cell
       if (['text', 'rect', 'ellipse', 'line', 'picture', 'shape', 'table'].includes(tool)) createInMiddle(tool);
     }
@@ -18189,6 +18284,695 @@ function openBlocks() {
   $('blocksDialog').showModal();
   grid.querySelector('button').focus();
 }
+/* ======================================================================
+   EQUATIONS (0.47.0)
+   Dave: "we need a math expression editor... some people [will use]
+   KaTeX (and mhchem for chemistry)... others might want the graphical
+   interface... insert an equation, and then the user decides which route".
+
+   An equation is an object of its own on the page, like a picture: it
+   moves, sizes (always keeping its shape), turns, takes text wrap, a drop
+   shadow and alt text. Three ways to make one, in one dialog, all making
+   the same thing (LaTeX, the language mathematicians type equations in):
+     - Build it: MathLive's visual editor. Type like on a calculator ("/"
+       makes a fraction, "^" a power) or use its on-screen keyboard.
+     - Type LaTeX: for people who know it, with buttons for the usual bits.
+     - Chemistry: mhchem's simple way of writing formulas and reactions
+       ("2H2 + O2 -> 2H2O"), shown properly (2H₂ + O₂ → 2H₂O).
+
+   How it is drawn. MathJax (the library behind maths on most of the web)
+   turns the LaTeX into SVG shapes. DSKEDTR does NOT put MathJax's SVG on the
+   page: it reads the outlines out of it (svgToContours) and stores them as
+   the same kind of outline a merged shape has (type 'path', `contours`).
+   So an equation draws, prints, exports to PDF and PNG, wraps text and
+   scales exactly like any shape - crisp at any size, and never needing
+   MathJax again to show, print or save. MathJax and MathLive are only loaded
+   when an equation is made or edited (or a web page is exported).
+
+   Why MathJax and not KaTeX: KaTeX writes HTML and fonts, which can't be
+   part of DSKEDTR's page drawing or its PDFs; MathJax can write pure shapes.
+   Both read the same LaTeX (and both have mhchem). The visual editor,
+   MathLive, uses the KaTeX fonts for itself.
+
+   What is saved with the object (`o.eq`): the LaTeX, which editor it was
+   last made in, the size it was made at, and whether its alt text is still
+   the automatic one. Older DSKEDTRs open the file and see a plain shape.
+
+   Accessibility: every equation gets alt text automatically (MathLive's
+   spoken form for maths, our own reading for chemistry), which can be
+   edited. In a tagged PDF it is a Formula with that alt text; in the web
+   page export it is real MathML (which screen readers can step through),
+   with the alt text as well.
+
+   Security: the LaTeX only ever goes to MathJax inside the editor, with a
+   fixed list of LaTeX packages (none that make links, load files, add
+   styles or run anything). What lands in the document is only numbers
+   (the outlines), checked like any shape when a file is opened.
+   ====================================================================== */
+
+/* ---------- 1. The libraries, loaded only when needed ----------
+   The online edition fetches them from jsDelivr with a fingerprint check
+   (the browser refuses a file that doesn't match). The one-file edition
+   carries them inside the page as text (build-offline.py puts them in
+   <script type="text/plain"> blocks) and runs them from there. */
+const MATH_LIBS = {
+  mathjax: {
+    id: 'libMathJax',
+    url: 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js',
+    sri: 'sha384-4kE/rQ11E8xT9QgrCBTyvenkuPfQo8rXYQvJZuMgxyPOoUfpatjQPlgdv6V5yhUK'
+  },
+  mathlive: {
+    id: 'libMathLive',
+    url: 'https://cdn.jsdelivr.net/npm/mathlive@0.111.1/mathlive.min.js',
+    sri: 'sha384-fnT74hn6eDg87dvsrlWHThK0ymBGqcjBpUEH0G2PGfpjT1Np0HMWfmheS3xKuzoX'
+  }
+};
+/* The LaTeX packages MathJax may use. Left out on purpose: html (links,
+   classes, styles), require and autoload (they load more code), unicode,
+   color, bbox, action, newcommand (macros), noerrors and noundefined (we
+   WANT mistakes reported, so the editor can say what is wrong). */
+const MATH_PACKAGES = ['base', 'ams', 'mhchem', 'boldsymbol', 'cancel', 'mathtools', 'braket', 'gensymb',
+  'upgreek', 'textmacros', 'cases', 'enclose', 'extpfeil', 'physics'];
+/* MathLive's fonts (the KaTeX fonts): file name, family, style, weight. */
+const MATH_FONTS = [
+  ['KaTeX_AMS-Regular', 'KaTeX_AMS', 'normal', 400], ['KaTeX_Caligraphic-Bold', 'KaTeX_Caligraphic', 'normal', 700],
+  ['KaTeX_Caligraphic-Regular', 'KaTeX_Caligraphic', 'normal', 400], ['KaTeX_Fraktur-Bold', 'KaTeX_Fraktur', 'normal', 700],
+  ['KaTeX_Fraktur-Regular', 'KaTeX_Fraktur', 'normal', 400], ['KaTeX_Main-BoldItalic', 'KaTeX_Main', 'italic', 700],
+  ['KaTeX_Main-Bold', 'KaTeX_Main', 'normal', 700], ['KaTeX_Main-Italic', 'KaTeX_Main', 'italic', 400],
+  ['KaTeX_Main-Regular', 'KaTeX_Main', 'normal', 400], ['KaTeX_Math-BoldItalic', 'KaTeX_Math', 'italic', 700],
+  ['KaTeX_Math-Italic', 'KaTeX_Math', 'italic', 400], ['KaTeX_SansSerif-Bold', 'KaTeX_SansSerif', 'normal', 700],
+  ['KaTeX_SansSerif-Italic', 'KaTeX_SansSerif', 'italic', 400], ['KaTeX_SansSerif-Regular', 'KaTeX_SansSerif', 'normal', 400],
+  ['KaTeX_Script-Regular', 'KaTeX_Script', 'normal', 400], ['KaTeX_Size1-Regular', 'KaTeX_Size1', 'normal', 400],
+  ['KaTeX_Size2-Regular', 'KaTeX_Size2', 'normal', 400], ['KaTeX_Size3-Regular', 'KaTeX_Size3', 'normal', 400],
+  ['KaTeX_Size4-Regular', 'KaTeX_Size4', 'normal', 400], ['KaTeX_Typewriter-Regular', 'KaTeX_Typewriter', 'normal', 400]
+];
+let mathLoading = null;                              // the promise of both libraries being ready (null: not asked yet, or it failed)
+/** Add one library to the page: from the one-file edition's text block, or from jsDelivr. */
+function addMathLib(lib) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    const inside = document.getElementById(lib.id);   // (the one-file edition)
+    if (inside) {
+      s.textContent = inside.textContent;            // runs as soon as it joins the page
+      // Run from text, MathLive can't tell which address it came from, and says so in the
+      // browser's console while it starts ("Can't use relative paths..."). That only matters
+      // for finding its fonts, which we give it ourselves, so just those messages are kept quiet.
+      const say = console.error;
+      console.error = (...args) => { if (!(Array.isArray(args[0]) || /relative paths/.test(String(args[0])))) say.apply(console, args); };
+      try { document.head.append(s); } finally { console.error = say; }
+      resolve();
+      return;
+    }
+    s.src = lib.url;
+    s.integrity = lib.sri;                           // the browser checks the file's fingerprint
+    s.crossOrigin = 'anonymous';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Could not load ' + lib.url));
+    document.head.append(s);
+  });
+}
+/** Both libraries, ready to use (loaded once; later calls get the same promise). */
+function loadMathLibs() {
+  if (mathLoading) return mathLoading;
+  // MathJax reads its settings from window.MathJax before it starts: no menus,
+  // no typesetting of the page, nothing loaded from anywhere, outlines inline.
+  if (!window.MathJax || !window.MathJax.version) {
+    window.MathJax = {
+      loader: { load: [] },
+      startup: { typeset: false },
+      options: { enableMenu: false, enableAssistiveMml: false, enableExplorer: false, enableEnrichment: false },
+      tex: { packages: MATH_PACKAGES, maxBuffer: 20 * 1024, maxMacros: 2000 },
+      svg: { fontCache: 'none' }
+    };
+  }
+  mathLoading = addMathLib(MATH_LIBS.mathjax)
+    .then(() => window.MathJax.startup.promise)
+    .then(() => addMathLib(MATH_LIBS.mathlive))
+    .then(setUpMathLive)
+    .catch((err) => { mathLoading = null; throw err; });
+  return mathLoading;
+}
+/** MathLive: its fonts from inside the page (or vendor/), no sounds, nothing fetched. */
+function setUpMathLive() {
+  const ML = window.MathLive;
+  if (!ML || !ML.MathfieldElement) throw new Error('MathLive did not start');
+  ML.MathfieldElement.fontsDirectory = null;         // we give it the fonts ourselves (below)
+  ML.MathfieldElement.soundsDirectory = null;        // no clicks and beeps fetched or played
+  const inside = window.DSK_EMBEDDED && DSK_EMBEDDED.mathFonts;
+  for (const [file, family, style, weight] of MATH_FONTS) {
+    const src = inside && inside[file] ? 'data:font/woff2;base64,' + inside[file] : 'vendor/mathlive-fonts/' + file + '.woff2';
+    try {
+      const face = new FontFace(family, 'url(' + src + ') format("woff2")', { style, weight: String(weight) });
+      document.fonts.add(face);
+      face.load().catch(() => { /* a missing font only makes the editor plainer */ });
+    } catch (err) { /* (very old browsers) */ }
+  }
+}
+
+/* ---------- 2. LaTeX to outlines ----------
+   MathJax's SVG is in its own units: 1000 to the em (the size of the
+   letters). The outlines are read in those units, with the top-left corner
+   of MathJax's box at 0, 0. */
+
+/** Multiply two 2D transforms [a, b, c, d, e, f] (first m, then n inside it). */
+function matMul(m, n) {
+  return [m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1], m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
+    m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5]];
+}
+/** An SVG transform attribute ("translate(10,20) scale(1,-1)") as one matrix. */
+function parseTransform(text) {
+  let m = [1, 0, 0, 1, 0, 0];
+  const re = /(matrix|translate|scale|rotate)\s*\(([^)]*)\)/g;
+  let t;
+  while ((t = re.exec(text || ''))) {
+    const v = (t[2].match(/-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi) || []).map(Number);
+    let n = [1, 0, 0, 1, 0, 0];
+    if (t[1] === 'matrix' && v.length === 6) n = v;
+    else if (t[1] === 'translate') n = [1, 0, 0, 1, v[0] || 0, v[1] || 0];
+    else if (t[1] === 'scale') n = [v[0], 0, 0, v.length > 1 ? v[1] : v[0], 0, 0];
+    else if (t[1] === 'rotate') {
+      const a = (v[0] || 0) * Math.PI / 180, cos = Math.cos(a), sin = Math.sin(a), cx = v[1] || 0, cy = v[2] || 0;
+      n = [cos, sin, -sin, cos, cx - cx * cos + cy * sin, cy - cx * sin - cy * cos];
+    }
+    m = matMul(m, n);
+  }
+  return m;
+}
+/**
+ * SVG path text as outlines of cubic curves: [{ closed, pts: [[x, y, inX, inY, outX, outY], ...] }],
+ * each point with its handles measured from the point (the merged shapes' format), every
+ * point passed through `apply` (the transform). Straight lines get zero handles; quadratic
+ * curves (most letters) become the cubic curve that is exactly the same shape.
+ */
+function pathToContours(d, apply) {
+  const tokens = (d || '').match(/[MmLlHhVvCcSsQqTtAaZz]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/g) || [];
+  const out = [];
+  let i = 0, cmd = '', x = 0, y = 0, sx = 0, sy = 0, lastC = null, lastQ = null, cur = null;
+  const num = () => Number(tokens[i++]);
+  const isNum = () => i < tokens.length && !/^[A-Za-z]$/.test(tokens[i]);
+  const start = (px, py) => { cur = { closed: false, pts: [[px, py, 0, 0, 0, 0]] }; out.push(cur); };
+  // Add a cubic piece from the current point to (x3, y3), with control points (x1, y1), (x2, y2).
+  const cubic = (x1, y1, x2, y2, x3, y3) => {
+    if (!cur) start(x, y);
+    const prev = cur.pts[cur.pts.length - 1];
+    prev[4] = x1 - prev[0]; prev[5] = y1 - prev[1];
+    cur.pts.push([x3, y3, x2 - x3, y2 - y3, 0, 0]);
+    x = x3; y = y3;
+  };
+  let guard = 0;
+  while (i < tokens.length && guard++ < 500000) {
+    if (!isNum()) cmd = tokens[i++];
+    const rel = cmd === cmd.toLowerCase(), C = cmd.toUpperCase();
+    const ox = rel ? x : 0, oy = rel ? y : 0;
+    if (C === 'Z') { if (cur) cur.closed = true; x = sx; y = sy; cur = null; lastC = lastQ = null; continue; }
+    if (!isNum()) { if (C !== 'Z') i++; continue; }  // (a command with no numbers: skip it)
+    if (C === 'M') { x = ox + num(); y = oy + num(); sx = x; sy = y; start(x, y); cmd = rel ? 'l' : 'L'; lastC = lastQ = null; continue; }
+    if (C === 'L') { const nx = ox + num(), ny = oy + num(); cubic(x, y, nx, ny, nx, ny); lastC = lastQ = null; continue; }
+    if (C === 'H') { const nx = ox + num(); cubic(x, y, nx, y, nx, y); lastC = lastQ = null; continue; }
+    if (C === 'V') { const ny = oy + num(); cubic(x, y, x, ny, x, ny); lastC = lastQ = null; continue; }
+    if (C === 'C') { const a = ox + num(), b = oy + num(), c = ox + num(), e = oy + num(), f = ox + num(), g = oy + num(); cubic(a, b, c, e, f, g); lastC = [c, e]; lastQ = null; continue; }
+    if (C === 'S') {
+      const a = lastC ? 2 * x - lastC[0] : x, b = lastC ? 2 * y - lastC[1] : y;
+      const c = ox + num(), e = oy + num(), f = ox + num(), g = oy + num(); cubic(a, b, c, e, f, g); lastC = [c, e]; lastQ = null; continue;
+    }
+    if (C === 'Q' || C === 'T') {
+      let qx, qy;
+      if (C === 'Q') { qx = ox + num(); qy = oy + num(); } else { qx = lastQ ? 2 * x - lastQ[0] : x; qy = lastQ ? 2 * y - lastQ[1] : y; }
+      const ex = ox + num(), ey = oy + num();
+      // A quadratic curve as a cubic: control points two thirds of the way to the quadratic's one.
+      cubic(x + 2 / 3 * (qx - x), y + 2 / 3 * (qy - y), ex + 2 / 3 * (qx - ex), ey + 2 / 3 * (qy - ey), ex, ey);
+      lastQ = [qx, qy]; lastC = null; continue;
+    }
+    if (C === 'A') { i += 5; const nx = ox + num(), ny = oy + num(); cubic(x, y, nx, ny, nx, ny); lastC = lastQ = null; continue; }   // (arcs: never in MathJax's letters; a straight line stands in)
+    i++;
+  }
+  // Every point (and its handles) through the transform; a closed outline that ends where it began loses the repeated point.
+  for (const c of out) {
+    if (c.closed && c.pts.length > 2) {
+      const a = c.pts[0], z = c.pts[c.pts.length - 1];
+      if (Math.abs(a[0] - z[0]) < 1e-6 && Math.abs(a[1] - z[1]) < 1e-6) { a[2] = z[2]; a[3] = z[3]; c.pts.pop(); }
+    }
+    c.pts = c.pts.map(([px, py, ix, iy, qx, qy]) => {
+      const p = apply(px, py), pin = apply(px + ix, py + iy), pout = apply(px + qx, py + qy);
+      return [p[0], p[1], pin[0] - p[0], pin[1] - p[1], pout[0] - p[0], pout[1] - p[1]];
+    });
+  }
+  return out.filter((c) => c.pts.length > 1);
+}
+/** A closed outline through the given corners (straight sides). */
+function polyContour(corners) {
+  return { closed: true, pts: corners.map(([x, y]) => [x, y, 0, 0, 0, 0]) };
+}
+/** An ellipse as four cubic curves (the usual 0.5523 handle length); `reverse` runs it the other way round, for a hole. */
+function ellipseContour(cx, cy, rx, ry, apply, reverse) {
+  const k = 0.5523;
+  let pts = [[cx + rx, cy, 0, -k * ry, 0, k * ry], [cx, cy + ry, k * rx, 0, -k * rx, 0], [cx - rx, cy, 0, k * ry, 0, -k * ry], [cx, cy - ry, -k * rx, 0, k * rx, 0]];
+  if (reverse) pts = pts.reverse().map(([x, y, a, b, c, d]) => [x, y, c, d, a, b]);
+  return { closed: true, pts: pts.map(([x, y, a, b, c, d]) => { const p = apply(x, y), i = apply(x + a, y + b), o = apply(x + c, y + d); return [p[0], p[1], i[0] - p[0], i[1] - p[1], o[0] - p[0], o[1] - p[1]]; }) };
+}
+/**
+ * Read every outline out of MathJax's SVG. Paths are letters and symbols;
+ * rects are fraction bars and the bars of square roots; lines (from \cancel)
+ * and outlined rects and ellipses (from \boxed, \enclose) become thin filled
+ * shapes; <text> (a letter MathJax's fonts don't have, like é or 東) is drawn
+ * with DSKEDTR's own font. Anything else is left out. Nothing from the SVG
+ * is ever put on the page as it is: only these numbers.
+ */
+function svgToContours(svg) {
+  const out = [];
+  const walk = (el, m) => {
+    const tag = el.tagName.toLowerCase();
+    if (el.getAttribute('transform')) m = matMul(m, parseTransform(el.getAttribute('transform')));
+    if (tag === 'svg' && el !== svg) m = matMul(m, [1, 0, 0, 1, Number(el.getAttribute('x')) || 0, Number(el.getAttribute('y')) || 0]);
+    const apply = (x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+    const fill = el.getAttribute('fill'), stroke = el.getAttribute('stroke');
+    const sw = Number(el.getAttribute('stroke-width')) || 0;
+    const outlined = fill === 'none' && stroke && stroke !== 'none' && sw > 0;
+    if (tag === 'path') {
+      if (fill !== 'none') out.push(...pathToContours(el.getAttribute('d'), apply));
+    } else if (tag === 'rect') {
+      const x = Number(el.getAttribute('x')) || 0, y = Number(el.getAttribute('y')) || 0;
+      const w = Number(el.getAttribute('width')) || 0, h = Number(el.getAttribute('height')) || 0;
+      if (outlined) {
+        // A box drawn as its outline: four thin bars.
+        const s = sw / 2;
+        for (const [a, b, c, d] of [[x - s, y - s, x + w + s, y + s], [x - s, y + h - s, x + w + s, y + h + s], [x - s, y - s, x + s, y + h + s], [x + w - s, y - s, x + w + s, y + h + s]]) {
+          out.push(polyContour([apply(a, b), apply(c, b), apply(c, d), apply(a, d)]));
+        }
+      } else if (fill !== 'none' && w > 0 && h > 0) out.push(polyContour([apply(x, y), apply(x + w, y), apply(x + w, y + h), apply(x, y + h)]));
+    } else if (tag === 'line') {
+      // A line: a thin rectangle along it, as wide as the line is thick.
+      const x1 = Number(el.getAttribute('x1')) || 0, y1 = Number(el.getAttribute('y1')) || 0;
+      const x2 = Number(el.getAttribute('x2')) || 0, y2 = Number(el.getAttribute('y2')) || 0;
+      const len = Math.hypot(x2 - x1, y2 - y1), t = (sw || 40) / 2;
+      if (len > 0) {
+        const nx = -(y2 - y1) / len * t, ny = (x2 - x1) / len * t;
+        out.push(polyContour([apply(x1 + nx, y1 + ny), apply(x2 + nx, y2 + ny), apply(x2 - nx, y2 - ny), apply(x1 - nx, y1 - ny)]));
+      }
+    } else if (tag === 'ellipse' || tag === 'circle') {
+      const cx = Number(el.getAttribute('cx')) || 0, cy = Number(el.getAttribute('cy')) || 0;
+      const rx = Number(el.getAttribute(tag === 'circle' ? 'r' : 'rx')) || 0, ry = Number(el.getAttribute(tag === 'circle' ? 'r' : 'ry')) || 0;
+      if (outlined) {
+        out.push(ellipseContour(cx, cy, rx + sw / 2, ry + sw / 2, apply, false));
+        if (rx > sw / 2 && ry > sw / 2) out.push(ellipseContour(cx, cy, rx - sw / 2, ry - sw / 2, apply, true));   // (the hole)
+      } else if (fill !== 'none' && rx > 0 && ry > 0) out.push(ellipseContour(cx, cy, rx, ry, apply, false));
+    } else if (tag === 'text') {
+      // A letter MathJax has no outline for: DSKEDTR's own font draws it, at the size MathJax asked for.
+      const font = FONTS['atkinson-hyperlegible-400'];
+      const size = parseFloat(el.getAttribute('font-size')) || 1000;
+      if (font && el.textContent) {
+        const p = font.getPath(el.textContent.slice(0, 200), Number(el.getAttribute('x')) || 0, Number(el.getAttribute('y')) || 0, size);
+        out.push(...pathToContours(p.toPathData(3), apply));
+      }
+      return;
+    }
+    for (const kid of el.children) walk(kid, m);
+  };
+  walk(svg, [1, 0, 0, 1, 0, 0]);
+  return out;
+}
+/**
+ * LaTeX -> { contours, w, h } in MathJax units (1000 to the em), the box's
+ * top-left at 0, 0; or { error } with the words to show when the LaTeX has a
+ * mistake. Needs MathJax loaded (loadMathLibs).
+ */
+function texToArt(latex) {
+  const text = String(latex || '').trim();
+  if (!text || !window.MathJax || !window.MathJax.tex2svg) return { error: 'empty' };   // (nothing yet, or still loading)
+  let node;
+  try { node = window.MathJax.tex2svg(text, { display: true }); } catch (err) { return { error: 'MathJax couldn’t read that: ' + String(err && err.message || err).slice(0, 200) }; }
+  const bad = node.querySelector('[data-mml-node="merror"]');
+  if (bad) return { error: (bad.getAttribute('data-mjx-error') || bad.textContent || 'There is a mistake in it.').slice(0, 200) };
+  const svg = node.querySelector('svg');
+  if (!svg) return { error: 'MathJax made nothing.' };
+  const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  if (vb.length !== 4 || !vb.every(Number.isFinite) || vb[2] <= 0 || vb[3] <= 0) return { error: 'MathJax made nothing.' };
+  const contours = svgToContours(svg);
+  if (!contours.length) return { error: 'empty' };
+  // Put the box's top-left at 0, 0 (MathJax's box starts above the baseline, at a negative y).
+  for (const c of contours) for (const p of c.pts) { p[0] -= vb[0]; p[1] -= vb[1]; }
+  return { contours, w: vb[2], h: vb[3] };
+}
+/** The outlines scaled to points, for letters `size` pt tall (an em is 1000 MathJax units). */
+function artAtSize(art, size) {
+  const k = size / 1000;
+  return {
+    w0: Math.max(0.01, art.w * k), h0: Math.max(0.01, art.h * k),
+    contours: art.contours.map((c) => ({ closed: c.closed, pts: c.pts.map((p) => p.map((v) => Math.round(v * k * 100) / 100)) }))
+  };
+}
+
+/* ---------- 3. Words for screen readers (the alt text) ---------- */
+/** Maths read aloud, from MathLive ("the fraction x squared over 2"). */
+function mathSpeech(latex) {
+  try {
+    let t = String(window.MathLive.convertLatexToSpeakableText(String(latex || '')) || '');
+    // MathLive writes a letter as 'X' (so a speech engine says its name) and a capital as
+    // 'capital E'. Written down, "x" and "capital E" read better: small letters back, quotes off.
+    t = t.replace(/'([A-Z])'/g, (m, c) => c.toLowerCase()).replace(/['‘’]/g, '');
+    // It also spells pi "pie" (so it is said right) and marks pauses with ";": pi, and commas.
+    t = t.replace(/\bpie\b/g, 'pi').replace(/;/g, ',');
+    return cleanText(t.replace(/\s+/g, ' ').replace(/\s+([.;,])/g, '$1').replace(/[;,\s]+$/, '').trim(), 500);
+  } catch (err) { return ''; }
+}
+/** Chemistry read aloud, from mhchem's way of writing it ("2H2 + O2 -> 2H2O": "2 H 2 plus O 2 gives 2 H 2 O"). */
+function chemSpeech(input) {
+  let t = ' ' + String(input || '') + ' ';
+  const words = [
+    [/<=>|<->|⇌/g, ' is in equilibrium with '], [/->|→/g, ' gives '], [/<-|←/g, ' comes from '],
+    [/\(aq\)/g, ' aqueous '], [/\(s\)/g, ' solid '], [/\(l\)/g, ' liquid '], [/\(g\)/g, ' gas '],
+    [/\^\s*(\d*)\s*\+/g, (m, n) => ' charge ' + (n ? n + ' ' : '') + 'plus '], [/\^\s*(\d*)\s*-/g, (m, n) => ' charge ' + (n ? n + ' ' : '') + 'minus '],
+    // A charge written without ^ ("OH-", "Na+"): a sign straight after a letter or bracket, at the end of a word.
+    [/([A-Za-z)\]])(\d*)\+(?=\s)/g, (m, a, n) => a + ' charge ' + (n ? n + ' ' : '') + 'plus '],
+    [/([A-Za-z)\]])(\d*)-(?=\s)/g, (m, a, n) => a + ' charge ' + (n ? n + ' ' : '') + 'minus '],
+    [/\s\^\s/g, ' gas given off '], [/\sv\s/g, ' precipitate '], [/\s\+\s/g, ' plus '], [/[*·.](?=\d*[A-Z])/g, ' dot ']
+  ];
+  for (const [re, w] of words) t = t.replace(re, w);
+  // Numbers after a letter or a closing bracket are how many atoms: say them apart ("H2" -> "H 2"),
+  // and each element apart from the next ("NaOH" -> "Na O H").
+  t = t.replace(/([A-Za-z)\]])(\d+)/g, '$1 $2').replace(/(\d)([A-Z(\[])/g, '$1 $2').replace(/([A-Za-z])(?=[A-Z])/g, '$1 ');
+  t = t.replace(/\(/g, ' open bracket ').replace(/\)/g, ' close bracket ').replace(/\[/g, ' open square bracket ').replace(/\]/g, ' close square bracket ');
+  t = t.replace(/[{}^_]/g, ' ').replace(/\s+/g, ' ').trim();
+  return cleanText(t, 500);
+}
+/** The chemistry inside \ce{...} when the whole equation is one, else null. */
+function chemInside(latex) {
+  const m = /^\s*\\ce\{([\s\S]*)\}\s*$/.exec(String(latex || ''));
+  if (!m) return null;
+  // "\ce{A} + \ce{B}" also starts with \ce{ and ends with }: the braces inside must pair up.
+  let depth = 0;
+  for (const ch of m[1]) {
+    if (ch === '{') depth++;
+    else if (ch === '}' && --depth < 0) return null;
+  }
+  return depth === 0 ? m[1] : null;
+}
+/** The automatic alt text for an equation's LaTeX. */
+function autoAlt(latex) {
+  const chem = chemInside(latex);
+  if (chem != null) return chemSpeech(chem);
+  if (/\\ce\{/.test(latex)) return cleanText(String(latex).replace(/\\ce\{([^}]*)\}/g, (m, c) => ' ' + chemSpeech(c) + ' ').replace(/\s+/g, ' ').trim(), 500);
+  return mathSpeech(latex);
+}
+
+/* ---------- 4. Equation objects ----------
+   An equation is a 'path' object (a shape) with `eq` = { latex, mode, size,
+   altAuto }. Its outlines were made at `eq.size` points; the object can be
+   bigger or smaller than that (w / w0 says how much), always keeping its
+   shape. */
+const isEquation = (o) => !!(o && o.type === 'path' && o.eq);
+/** The letter size the equation is shown at now, in points. */
+function equationSize(o) { return Math.round(o.eq.size * (o.w / o.w0) * 10) / 10; }
+const EQ_SIZE_MIN = 6, EQ_SIZE_MAX = 300;
+let eqLastSize = 24;                                 // new equations start at the size last used (24 pt at first)
+/** Put a new equation on the page showing, in the middle of what you can see. */
+function addEquation(latex, mode, art, size, alt, altAuto) {
+  const a = artAtSize(art, size);
+  // In the middle of the page showing (as Enter puts a new shape there), as near as it fits.
+  const x = Math.max(0, (PAGE.width - a.w0) / 2), y = Math.max(0, (PAGE.height - a.h0) / 2);
+  recordUndo('other');
+  const o = {
+    id: newId('o'), type: 'path', name: 'Equation ' + (allObjects().filter(isEquation).length + 1),
+    x, y, w: a.w0, h: a.h0, w0: a.w0, h0: a.h0, contours: a.contours,
+    fill: schemeColour(0), stroke: null, strokeWidth: 0, decorative: false, alt: alt || '',
+    eq: { latex: cleanEqLatex(latex), mode, size, altAuto: !!altAuto }
+  };
+  pageObjs().push(o);
+  reindex();
+  syncInputs();
+  setTool('select');
+  selectObjects([o.id]);
+  relayoutAndRender();
+  announce(o.name + ' added: ' + (o.alt || 'an equation') + '. Double-click it, or press Enter, to change it.');
+  return o;
+}
+/** Give an equation new LaTeX (its place and how big it is shown stay the same). */
+function changeEquation(o, latex, mode, art, alt, altAuto) {
+  const scale = o.w / o.w0;                          // how much bigger than its outlines it is shown
+  const a = artAtSize(art, o.eq.size);
+  recordUndo('other');
+  o.w0 = a.w0; o.h0 = a.h0; o.contours = a.contours;
+  o.w = a.w0 * scale; o.h = a.h0 * scale;
+  o.eq = { latex: cleanEqLatex(latex), mode, size: o.eq.size, altAuto: !!altAuto };
+  o.alt = alt || '';
+  relayoutAndRender();
+  updateInspector();
+  renderOrderList();
+  announce(objName(o) + ' changed: ' + (o.alt || 'an equation') + '.');
+}
+/** Show an equation at a new letter size (points), keeping its top-left corner. */
+function setEquationSize(o, size) {
+  const s = Math.max(EQ_SIZE_MIN, Math.min(EQ_SIZE_MAX, size));
+  recordUndo('field:eqsize' + o.id);
+  o.w = o.w0 * s / o.eq.size; o.h = o.h0 * s / o.eq.size;
+  eqLastSize = s;
+  relayoutAndRender();
+}
+/** LaTeX as kept in a document: plain text, no control characters, at most 5000 characters. */
+function cleanEqLatex(t) { return cleanText(String(t || ''), 5000, true); }   // (line breaks kept: in LaTeX, % hides the rest of its line)
+/** Merged shapes fill with the even-odd rule (their holes stay holes); an equation's letters, drawn the way fonts are, with the non-zero rule. */
+function evenOddFill(o) { return o.type === 'path' && !o.eq; }
+
+/* ---------- 5. The Equation dialog ---------- */
+let eqEditing = null;                                // the equation being changed (its id), or null for a new one
+let eqLatex = '';                                    // what the dialog holds now
+let eqArt = null;                                    // its outlines (null while it has a mistake or is empty)
+let eqAltAuto = true;                                // is the alt text still the automatic one?
+let eqMode = 'visual';                               // which tab: 'visual', 'latex' or 'chem'
+let eqField = null;                                  // MathLive's <math-field>, made the first time
+let eqSelectTab = null;                              // suiteWireTabs' "select this tab" function
+let eqTimer = 0;
+let eqStash = { math: '', chem: '' };                // what each kind of tab last held (so a look at Chemistry doesn't lose the maths)
+try { const m = localStorage.getItem('dskedtr-eq-mode'); if (['visual', 'latex', 'chem'].includes(m)) eqMode = m; } catch (err) { /* (private window) */ }
+/* The buttons above the LaTeX box: what they show, what they put in. */
+const EQ_LATEX_BITS = [
+  ['a/b', '\\frac{a}{b}', 'Fraction'], ['√x', '\\sqrt{x}', 'Square root'], ['x²', 'x^{2}', 'Power'], ['x₁', 'x_{1}', 'Below (subscript)'],
+  ['Σ', '\\sum_{i=1}^{n}', 'Sum'], ['∫', '\\int_{a}^{b}', 'Integral'], ['lim', '\\lim_{x \\to 0}', 'Limit'],
+  ['( )', '\\left( x \\right)', 'Brackets that grow'], ['[ ]', '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}', 'Matrix'],
+  ['π', '\\pi', 'pi'], ['θ', '\\theta', 'theta'], ['α', '\\alpha', 'alpha'], ['β', '\\beta', 'beta'], ['Δ', '\\Delta', 'Delta'],
+  ['≤', '\\le', 'less than or equal to'], ['≥', '\\ge', 'greater than or equal to'], ['≠', '\\ne', 'not equal to'],
+  ['±', '\\pm', 'plus or minus'], ['×', '\\times', 'times'], ['÷', '\\div', 'divided by'], ['∞', '\\infty', 'infinity'], ['°', '^{\\circ}', 'degrees']
+];
+const EQ_CHEM_BITS = [
+  ['→', ' -> ', 'Gives (reaction arrow)'], ['⇌', ' <=> ', 'Equilibrium'], ['+', ' + ', 'Plus'],
+  ['(aq)', '(aq)', 'Aqueous'], ['(s)', '(s)', 'Solid'], ['(l)', '(l)', 'Liquid'], ['(g)', '(g)', 'Gas'],
+  ['X²⁺', '^2+', 'Charge: 2 plus'], ['X⁻', '^-', 'Charge: minus'], ['↑', ' ^ ', 'Gas given off'], ['↓', ' v ', 'Precipitate'], ['·', '*', 'Dot (as in a hydrate)']
+];
+const EQ_CHEM_EXAMPLES = ['2H2 + O2 -> 2H2O', 'CuSO4*5H2O', 'Fe^3+ + 3OH- -> Fe(OH)3 v', 'N2 + 3H2 <=> 2NH3', 'CaCO3(s) -> CaO(s) + CO2(g) ^'];
+/** Open the dialog: for a new equation (o null) or to change one. */
+async function openEquationDialog(o) {
+  if (printPreview) setPrintPreview(false);
+  if (focusedStoryId) stopEditingToFrame(focusedStoryId);
+  eqEditing = isEquation(o) ? o.id : null;
+  eqLatex = eqEditing ? o.eq.latex : '';
+  eqAltAuto = eqEditing ? o.eq.altAuto !== false : true;
+  eqStash = { math: '', chem: '' };
+  if (eqEditing) eqMode = o.eq.mode || 'latex';
+  setText('eqTitle', eqEditing ? 'Change the equation' : 'Add an equation');
+  setText('eqGo', eqEditing ? 'Change equation' : 'Add equation');
+  setField($('eqAlt'), eqEditing ? o.alt || '' : '');
+  $('eqSizeIn').value = String(eqEditing ? equationSize(o) : eqLastSize);
+  $('eqSizeRow').hidden = !!eqEditing;               // (a placed equation's size is in the Inspector)
+  $('eqGo').disabled = true;
+  setText('eqStatus', 'Getting the equation tools ready…');
+  $('eqDialog').showModal();
+  try {
+    await loadMathLibs();
+  } catch (err) {
+    setText('eqStatus', 'The equation tools couldn’t load. This edition fetches them from the internet the first time; check the connection, or use the one-file edition (index.html), which has them inside.');
+    return;
+  }
+  if (!$('eqDialog').open) return;                   // (closed while loading)
+  makeEquationField();
+  $('eqLatexIn').value = eqLatex;
+  $('eqChemIn').value = chemInside(eqLatex) || '';
+  if (eqMode === 'visual' && /\\ce\{/.test(eqLatex)) eqMode = 'chem';   // (the visual editor can't show chemistry)
+  eqSelectTab('eqTab-' + eqMode, false);
+  showEquationMode();
+  eqUpdate(true);
+  const first = eqMode === 'visual' ? eqField : eqMode === 'latex' ? $('eqLatexIn') : $('eqChemIn');
+  setTimeout(() => first && first.focus(), 30);
+}
+/** MathLive's visual editor, made once, inside the dialog (so its on-screen keyboard works there too). */
+function makeEquationField() {
+  if (eqField) return;
+  eqField = document.createElement('math-field');
+  eqField.id = 'eqVisualIn';
+  eqField.setAttribute('aria-label', 'Equation (visual editor)');
+  eqField.setAttribute('math-virtual-keyboard-policy', touchScreen() ? 'auto' : 'manual');
+  $('eqVisualBox').append(eqField);
+  try {
+    const vk = window.mathVirtualKeyboard;
+    vk.container = $('eqDialog');
+    // While the keyboard of symbols is up it covers the bottom of the dialog: room
+    // underneath, so everything can still be scrolled to (the CSS keeps it at the bottom).
+    vk.addEventListener('geometrychange', () => {
+      $('eqForm').style.paddingBottom = vk.visible ? Math.round(vk.boundingRect.height) + 'px' : '';
+    });
+  } catch (err) { /* (older MathLive) */ }
+  try { eqField.menuItems = []; } catch (err) { /* (its menu opens outside the dialog, where it can't be used) */ }
+  // Its LaTeX with MathLive's own shorthand spelled out (\differentialD -> \mathrm{d}), so MathJax reads it.
+  eqField.addEventListener('input', () => { if (eqMode === 'visual') { eqLatex = eqField.getValue('latex-expanded'); eqUpdate(false); } });
+}
+/** Fill the tab that is showing from eqLatex. */
+function showEquationMode() {
+  try { localStorage.setItem('dskedtr-eq-mode', eqMode); } catch (err) { /* (private window) */ }
+  const chem = /\\ce\{/.test(eqLatex);
+  $('eqVisualNote').hidden = !(eqMode === 'visual' && chem);
+  $('eqVisualBox').hidden = eqMode === 'visual' && chem;
+  if (eqMode === 'visual' && eqField && !chem && eqField.getValue('latex-expanded') !== eqLatex) {
+    try { eqField.setValue(eqLatex, { silenceNotifications: true }); } catch (err) { eqField.value = eqLatex; }
+  }
+  if (eqMode === 'latex') $('eqLatexIn').value = eqLatex;
+  if (eqMode === 'chem') { const inside = chemInside(eqLatex); $('eqChemIn').value = inside != null ? inside : ''; }
+  $('eqPreviewWrap').hidden = eqMode === 'visual';   // (the visual editor IS its own preview)
+}
+/** After every change: draw the preview, check for mistakes, refresh the automatic alt text. */
+function eqUpdate(now) {
+  clearTimeout(eqTimer);
+  const run = () => {
+    const art = texToArt(eqLatex);
+    const prev = $('eqPreview');
+    clear(prev);
+    if (art.error) {
+      eqArt = null;
+      setText('eqStatus', art.error === 'empty' ? '' : /placeholder/.test(art.error) ? 'Not right yet: fill in the empty boxes.' : 'Not right yet: ' + art.error);
+      $('eqGo').disabled = true;
+    } else {
+      eqArt = art;
+      setText('eqStatus', '');
+      $('eqGo').disabled = false;
+      // The preview: our own drawing of the outlines (not MathJax's SVG), scaled to fit.
+      const d = pathData({ x: 0, y: 0, w: art.w, h: art.h, w0: art.w, h0: art.h, contours: art.contours });
+      prev.setAttribute('viewBox', [-60, -60, art.w + 120, art.h + 120].map(r2).join(' '));
+      prev.append(svgEl('path', { d, fill: 'currentColor' }));
+    }
+    if (eqAltAuto) setField($('eqAlt'), art.error ? '' : autoAlt(eqLatex));
+  };
+  if (now) run(); else eqTimer = setTimeout(run, 120);
+}
+/** Put text into the LaTeX or chemistry box at the cursor. */
+function eqInsertBit(input, bit) {
+  const a = input.selectionStart ?? input.value.length, b = input.selectionEnd ?? a;
+  input.setRangeText(bit, a, b, 'end');
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.focus();
+}
+/** Add or change the equation from the dialog. */
+function eqFinish() {
+  if (!eqArt) { setText('eqStatus', eqLatex.trim() ? 'Fix the mistake first (it’s described above).' : 'Type or build an equation first.'); return; }
+  const alt = cleanText($('eqAlt').value, 500).trim();
+  if (!alt) { setText('eqStatus', 'Say in words what the equation says (or tick the automatic words back on): screen readers read this.'); $('eqAlt').focus(); return; }
+  const size = parseFloat($('eqSizeIn').value);
+  $('eqDialog').close();
+  const o = eqEditing ? obj(eqEditing) : null;
+  if (o && isEquation(o)) changeEquation(o, eqLatex, eqMode, eqArt, alt, eqAltAuto);
+  else {
+    eqLastSize = Number.isFinite(size) ? Math.max(EQ_SIZE_MIN, Math.min(EQ_SIZE_MAX, size)) : eqLastSize;
+    addEquation(eqLatex, eqMode, eqArt, eqLastSize, alt, eqAltAuto);
+  }
+  $('desk').focus({ preventScroll: true });
+}
+function wireEquations() {
+  const tabs = $('eqTabs');
+  eqSelectTab = suiteWireTabs(tabs, (id) => {
+    const mode = id.replace('eqTab-', '');
+    if (mode === eqMode) return;
+    if (mode !== 'visual') { try { window.mathVirtualKeyboard.hide(); } catch (err) { /* (not loaded yet) */ } }
+    // Each tab is another way of writing the same LaTeX, so what one holds
+    // carries over to the next - except into and out of Chemistry, which only
+    // shows chemistry: maths left behind there comes back on the way out.
+    const old = eqMode;
+    eqMode = mode;
+    if (old === 'chem') eqStash.chem = eqLatex; else eqStash.math = eqLatex;
+    if (mode === 'chem') { if (chemInside(eqLatex) == null) eqLatex = eqStash.chem; }
+    else if (old === 'chem' && eqStash.math) eqLatex = eqStash.math;
+    showEquationMode();
+    eqUpdate(true);
+  });
+  // The quick bits: buttons that type a piece of LaTeX or chemistry for you.
+  const bits = (box, list, input) => {
+    for (const [label, bit, name] of list) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'eq-bit'; b.textContent = label; b.title = name;
+      b.setAttribute('aria-label', name);
+      b.addEventListener('click', () => eqInsertBit($(input), bit));
+      $(box).append(b);
+    }
+  };
+  bits('eqLatexBits', EQ_LATEX_BITS, 'eqLatexIn');
+  bits('eqChemBits', EQ_CHEM_BITS, 'eqChemIn');
+  for (const ex of EQ_CHEM_EXAMPLES) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'eq-example'; b.textContent = ex;
+    b.setAttribute('aria-label', 'Example: ' + ex);
+    b.addEventListener('click', () => { $('eqChemIn').value = ex; $('eqChemIn').dispatchEvent(new Event('input', { bubbles: true })); $('eqChemIn').focus(); });
+    $('eqChemExamples').append(b);
+  }
+  $('eqLatexIn').addEventListener('input', () => { eqLatex = $('eqLatexIn').value; eqUpdate(false); });
+  $('eqChemIn').addEventListener('input', () => { eqLatex = $('eqChemIn').value.trim() ? '\\ce{' + $('eqChemIn').value.trim() + '}' : ''; eqUpdate(false); });
+  // Alt text: typing in it makes it yours (no longer automatic); the button puts the automatic words back.
+  $('eqAlt').addEventListener('input', () => { eqAltAuto = false; });
+  $('eqAltAuto').addEventListener('click', () => { eqAltAuto = true; setField($('eqAlt'), eqArt ? autoAlt(eqLatex) : ''); announce('The automatic words are back.'); });
+  $('eqCancel').addEventListener('click', () => $('eqDialog').close());
+  $('eqForm').addEventListener('submit', (e) => { e.preventDefault(); eqFinish(); });
+  // Ctrl+Enter (Cmd+Enter) adds it from anywhere in the dialog.
+  $('eqDialog').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); eqFinish(); } });
+  $('eqDialog').addEventListener('close', () => { try { window.mathVirtualKeyboard && window.mathVirtualKeyboard.hide(); } catch (err) { /* (not loaded) */ } });
+  $('eqBtn').addEventListener('click', () => openEquationDialog(null));
+  // The Inspector's Equation section.
+  $('eqEditBtn').addEventListener('click', () => { const o = obj(selectedIds[0]); if (isEquation(o)) openEquationDialog(o); });
+  $('eqSize').addEventListener('input', () => {
+    const o = obj(selectedIds[0]); const v = parseFloat($('eqSize').value);
+    if (!isEquation(o) || !Number.isFinite(v)) return;
+    if (o.locked) { announce('Locked: unlock it in the layers list to change it.'); updateInspector(); return; }
+    setEquationSize(o, v);
+    updateInspector();
+  });
+}
+/** The Inspector's Equation section, for one picked equation. */
+function fillEquation(o) {
+  setText('eqLatexShow', o.eq.latex);
+  setField($('eqSize'), equationSize(o));
+  setText('eqHow', o.eq.mode === 'chem' ? 'Made in Chemistry.' : o.eq.mode === 'visual' ? 'Made in the visual editor.' : 'Made in LaTeX.');
+}
+
+/* ---------- 6. MathML for the web page export ----------
+   MathJax turns the LaTeX into MathML, the web's own language for maths,
+   which browsers draw and screen readers can step through part by part.
+   Its MathML is read as data and rebuilt element by element from a fixed
+   list of MathML elements and attributes, so nothing else can get in. */
+const MATHML_TAGS = new Set(['math', 'mi', 'mn', 'mo', 'ms', 'mtext', 'mspace', 'mrow', 'mfrac', 'msqrt', 'mroot', 'mstyle', 'mpadded',
+  'mphantom', 'mfenced', 'menclose', 'msub', 'msup', 'msubsup', 'munder', 'mover', 'munderover', 'mmultiscripts', 'mprescripts', 'none',
+  'mtable', 'mtr', 'mtd', 'mlabeledtr', 'semantics', 'mglyph', 'maligngroup', 'malignmark']);
+const MATHML_ATTRS = new Set(['display', 'mathvariant', 'displaystyle', 'scriptlevel', 'stretchy', 'fence', 'separator', 'form', 'lspace', 'rspace',
+  'linethickness', 'accent', 'accentunder', 'columnalign', 'rowalign', 'columnspacing', 'rowspacing', 'notation', 'open', 'close', 'separators',
+  'width', 'height', 'depth', 'minsize', 'maxsize', 'movablelimits', 'largeop', 'symmetric', 'columnlines', 'rowlines', 'frame', 'framespacing',
+  'equalrows', 'equalcolumns', 'align', 'rowspan', 'columnspan', 'voffset', 'numalign', 'denomalign', 'bevelled']);
+/** An equation as a MathML element for the exported page (null if MathJax can't be had). */
+async function mathMLFor(hd, o) {
+  try { await loadMathLibs(); } catch (err) { return null; }
+  let text;
+  try { text = window.MathJax.tex2mml(o.eq.latex, { display: true }); } catch (err) { return null; }
+  const src = new DOMParser().parseFromString(text, 'application/xml');
+  if (src.querySelector('parsererror') || !src.documentElement || src.documentElement.localName !== 'math') return null;
+  const NS = 'http://www.w3.org/1998/Math/MathML';
+  const copy = (el, depth) => {
+    if (depth > 60 || !MATHML_TAGS.has(el.localName)) return null;
+    const out = hd.createElementNS(NS, el.localName);
+    for (const a of el.attributes) if (MATHML_ATTRS.has(a.localName)) out.setAttribute(a.localName, a.value.slice(0, 80));
+    for (const kid of el.childNodes) {
+      if (kid.nodeType === 3) out.append(hd.createTextNode(kid.nodeValue));
+      else if (kid.nodeType === 1) { const k = copy(kid, depth + 1); if (k) out.append(k); }
+    }
+    return out;
+  };
+  const m = copy(src.documentElement, 0);
+  if (!m) return null;
+  m.setAttribute('display', 'block');
+  if (o.alt) m.setAttribute('alttext', o.alt);
+  return m;
+}
 function wireTemplates() {
   wireCalendar();
   $('newClose').addEventListener('click', () => $('newDialog').close());
@@ -18896,6 +19680,17 @@ function checkObject(r, known, groups) {
       };
     });
     look(true);
+    // An equation (0.47.0): its LaTeX (plain text, only ever given to MathJax in the
+    // equation editor), which tab made it, the letter size it was made at, and whether
+    // its alt text is the automatic one. What is drawn is the outline above.
+    if (r.eq && typeof r.eq === 'object' && typeof r.eq.latex === 'string' && r.eq.latex.trim()) {
+      o.eq = {
+        latex: cleanText(r.eq.latex, 5000, true),
+        mode: ['visual', 'latex', 'chem'].includes(r.eq.mode) ? r.eq.mode : 'latex',
+        size: num(typeof r.eq.size === 'number' ? r.eq.size : 24, 1, 400),
+        altAuto: r.eq.altAuto !== false
+      };
+    }
   } else {
     box();
     look(true);
@@ -21502,7 +22297,7 @@ function pdfTagTree(pdf, L) {
       const o = obj(id);
       if (!o || o.hidden) continue;
       if (o.type === 'table') addTable(o);
-      else if (!o.decorative && (o.alt || '').trim() && !(o.type === 'picture' && !o.image)) figures.set(o.id, make('Figure', root, { alt: o.alt.trim() }));
+      else if (!o.decorative && (o.alt || '').trim() && !(o.type === 'picture' && !o.image)) figures.set(o.id, make(o.eq ? 'Formula' : 'Figure', root, { alt: o.alt.trim() }));   // (an equation is a Formula)
     }
     pageEnd[pageEnd.length - 1] = order - 0.5;
   }
@@ -21768,7 +22563,7 @@ async function pdfPageContent(ops, pi, page, kit, toSheet, tags) {
       }
       if (asArtifact) ops.push(pdfArtifact(L));
       if (fig) {
-        ops.push(pdfBDC(L, pdf, 'Figure', { MCID: tag.mcr(fig, 0) }));
+        ops.push(pdfBDC(L, pdf, o.eq ? 'Formula' : 'Figure', { MCID: tag.mcr(fig, 0) }));
         // Where it is on the sheet (Layout BBox), for tools that reflow or highlight it.
         const b = bounds(o), q = [toSheet(b.x, b.y), toSheet(b.x + b.w, b.y + b.h)];
         fig.bbox = [r2(Math.min(q[0][0], q[1][0])), r2(Math.min(q[0][1], q[1][1])), r2(Math.max(q[0][0], q[1][0])), r2(Math.max(q[0][1], q[1][1]))];
@@ -21947,8 +22742,8 @@ function pdfShape(ops, o, L, op) {
   if (!hasFill && !hasStroke) return;
   if (hasFill) ops.push(L.setFillingRgbColor(...rgb01(o.fill)));
   pdfOutline(ops, o, L);
-  // Merged shapes use the even-odd rule, so their holes stay holes (as on the desk).
-  const N = L.PDFOperatorNames, eo = o.type === 'path';
+  // Merged shapes use the even-odd rule, so their holes stay holes (as on the desk); equations, the non-zero rule.
+  const N = L.PDFOperatorNames, eo = evenOddFill(o);
   if (hasFill && hasStroke) ops.push(op(eo ? N.FillEvenOddAndStroke : N.FillNonZeroAndStroke));
   else if (hasFill) ops.push(op(eo ? N.FillEvenOdd : N.FillNonZero));
   else ops.push(L.stroke());
@@ -22409,7 +23204,7 @@ async function drawObjectOn(g, o, texts, bitmaps) {
       strokeIt(outline());
     } else {
       const p = outline();
-      if (o.fill) { g.fillStyle = o.fill; g.fill(p, o.type === 'path' ? 'evenodd' : 'nonzero'); }
+      if (o.fill) { g.fillStyle = o.fill; g.fill(p, evenOddFill(o) ? 'evenodd' : 'nonzero'); }
       strokeIt(p);
     }
     g.restore();
@@ -22571,6 +23366,17 @@ function htmlTable(hd, t) {
 /** A picture (as data inside the page) or a meaningful shape (drawn, named by its alt text), as a figure. */
 async function htmlFigure(hd, o) {
   const fig = hd.createElement('figure');
+  if (o.eq) {
+    // An equation: real MathML (browsers draw it, screen readers step through it), in its colour and size.
+    const m = await mathMLFor(hd, o);
+    if (m) {
+      if (/^#[0-9a-f]{6}$/i.test(o.fill || '')) m.style.color = o.fill;
+      m.style.fontSize = equationSize(o) + 'pt';
+      fig.append(m);
+      return fig;
+    }
+    // (MathJax couldn't be had: the drawing below, named by its alt text.)
+  }
   if (o.type === 'picture') {
     const img = hd.createElement('img');
     img.src = await blobToDataURL(imageFiles[o.image].blob);
@@ -22782,6 +23588,17 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.47.0", date: "2026-11-08", title: "", notes: [
+    "Equations, three ways.",
+    "The Equation button on the rail (E) opens a dialog with three tabs that all make the same thing. Build it: MathLive's visual editor. Type as on a calculator (/ makes a fraction, ^ a power) or use its keyboard of symbols, which opens by itself on a touch screen. Type LaTeX: for people who know it, with buttons for the usual pieces (fraction, root, power, sum, integral, matrix, Greek letters, signs). Chemistry: formulas and reactions written the mhchem way (2H2 + O2 -> 2H2O), with buttons for arrows, states and charges, and examples to start from. The tab used last opens next time.",
+    "A preview as you type, and a plain description of any mistake (a missing brace, a command it doesn't know). Add stays off until it is right.",
+    "An object of its own, like a picture: move it, size it from its corners (it always keeps its shape), turn it, wrap text around it, colour it, give it a shadow. The Inspector's Equation section shows its LaTeX, changes it, and sets the size of its letters in points. Double-click it, press Enter, or use the pill's button to change it: it stays where it is, at the size it is.",
+    "Alt text written for you: the equation read aloud (\"x squared plus half\"; for chemistry, \"2 H 2 plus O 2 gives 2 H 2 O\"). Edit it and it is yours; \"Use the automatic words\" brings them back.",
+    "Everywhere it goes: an equation is drawn as outlines, exactly like a shape, so the page, the PNG and the PDF are crisp at any size and never need the equation tools again. A tagged PDF marks it as a Formula with its alt text; the web page export has real MathML (which screen readers can step through), with the alt text as well.",
+    "Inside the one-file edition: MathJax 3.2.2 (Apache licence 2.0; it draws the equations) and MathLive 0.111.1 (MIT; the visual editor, with the KaTeX fonts) are in index.html as text, run only when the equation editor first opens, so DSKEDTR starts no slower. index.html grows from 5.1 MB to 8.6 MB. The online edition fetches them from jsDelivr the first time (fingerprint-checked) and keeps them for offline use.",
+    "Safe by design: the LaTeX only ever goes to MathJax, inside the editor, with a fixed list of packages: none that make links, load files, add styles or define commands. What goes in the document is the outline (numbers, checked like any shape when a file opens), the LaTeX as plain text, and three small settings. Older DSKEDTRs open the file and see a plain shape.",
+    "KaTeX was the first idea, but it writes HTML, which can't become part of the page drawing or a PDF. MathJax reads the same LaTeX (and mhchem) and can write pure outlines. The visual editor uses KaTeX's fonts."
+  ] },
   { version: "0.46.3", date: "2026-10-30", title: "", notes: [
     "A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way."
   ] },
@@ -23723,6 +24540,7 @@ async function start() {
   wireMasters();
   wireWrap();
   wireTemplates();
+  wireEquations();
   wireA11y();
   wireAltDialog();
   wirePictureInput();
@@ -24021,6 +24839,7 @@ Build Date: Mon Dec  7 20:19:27 EST 2020
 Wordlist Command: mk-list --accents=strip en_US 60
 
 -->
+<!--MATH-LIBRARIES (the one-file edition puts MathJax and MathLive here, as text, for the equation editor)-->
 <script type="text/plain" id="wordsEnUs">
 eNp0fUmD20ay9L3/yLuaAMhuHWXJi2ZsyyNpPO97twJQBKoJoGgspMhf/9USkUBRmsOMW91cgEJVLpGRkT+8fdr9z/S0e/uUuf9k7l8/8qfs3VPufsrdP36Xnz4/7d7FF/z276fC//fLU/5r+Gn3Pv7B/f29f0v2Z3jX7mf3YR/++ZT9yE/M3ruX/OHfufsQ3/L+c/ws9+p/Pu1+e9r9LhfxPn7IH58/PBXuN//3789Pe/+Lj7/FP/wZXxk+PHMf9/Ep+/S0++T/ufv81v313YcP4R17f83x+/985+7zy+/4R/zPX0+7v/wH7P7z9l38isx9Rbiqz/Gb/i9+05f4L1W1eng6+N905qbap2f/42iHeHllqab4taYOf8rtPIeX57f4qfXSxa/RcXG78OtCjfH1xeQ+KrxxrLX7phf/u0HN7e3pjX+XqV8VXtAo08WfOj3oeCGDHuOn29E0xv3Wv+mNv0LVqj5+Q891CXcxqc7GP2TLq4pvvk2TGYyKbx6elL+zKi6Dqt3vw/2cl66y4fqySg/zMsYvy0d8iL7o2sYPbpXmRetSh7cX46DGeHdyx6br9BQ/0Q6VapZ4Bfk0x690y3y2nXG/Wb7G75iV5pvxBNxmDcu8HI/xidQqrnMf1zk+nXzAqsd/jeFffp/Xqo/rkuux07dwMbnR4WVyoZnuFB+yjveAVxg8B/n8RcebdEsw4iZMrfAVbtfUqjqF9XW/K/1fT2bAg+n4KHt3BaPq5ptbli7e1d7GRTy38ZMGE9900H6V9KA6M/DR50bFDXtQ4dr2s6lw0cMQLz+7uAcYX2OmmW88hEcSV1E3WnHbH0f3AdhtuJXC7fbwR9stE5/VsbNz/Pipam/+D/6Di6VTZ7PE283tOX7+sWl5lSZ89rN76EN4zcF/mLuSKq7fYcDfn4qTUkP80IPf97xfG9feb0p/pWrqn6r46HcNNnGv+8HGFcoHt0Hcfo8ffo+Pb27xsBo8+6xT2PfupuMe
 Kq5x85i44dzjDZvIVNbtjrC+53Nc8YMZ4k7OFnd8ui7+o5gq95jcReqwzu40PMez3rljE14wjthN02ziXe9aVcav61Udd4Iq3U9vwmYc9Kv7Oayrjn/NRtPj5O3cvotvPekB96RpynqN2xwW3I2uVRc3x4ucmmxq477fvaqv0fafSoVd2vZqthfcp2nNbLGUOGMXmIWT4qXRZnZ4KE95qfq4Ys8Dv/rgdy+fbF1jHfLexrtv7OhWS/23I12453+AVTg97p+sjAtSeFOXfuv+BiOAcz0ai7OzPUnu9QfcpWn0MBns2MIOsHEaf17+dobA/S+e8UrNo7pH26Lds51gZkqjarcZVLim2kbLkffuOMPExXsr6FEWM8C1WNr/WsEMavdgsHLFgJtQPawCjkg+4gMyXXHztrqPX+vcTD3Gx/kS92Pel3qMJzo/ny2uYYYlVOviuV9/xcMY6vVgPvPj3HIHk+eemDawH7AaRztMWOp7/G8x1rCWut4uPlY+cwtvSrySl/LwNJ0BL2H7xglLGe1aMfy9+CuHBX6RrebsdV+OCs9ooOmOrqSitYcnbFqjRwNrEv/m3D5M84SHBosie2PCv2dl4CJOila0c3FFergLPtbGhR9GR+v5EmOC/ahgOuKbao29aq943K3qOnuNO4vebL/1vM7YzvG05zfxcj2OR9XiSnEoTNPO8Iy2VQhbRnUx8VKzwRkzhBqzOsXPssM9bpjs7PfQIV4VYx5dVXGp3a3M93jDbiPEK3q2OB5DjBy4eeHoJ1Uhopg3e5COJZ+x3i5UiHdTYt1NXIVoH/Zj/GVv+MxbjYdrzp0aeADgo3Jr6mm75u5qFWKomn7+gi8cVR3vYK+jd4HzdjeEaAv7KZ8e9kZ2b7XpcYB2PQMwveC7ow3MO+5DF03gqDgnE7+zWLAMelTTElc23nl+t3S4/q68OWTAoddPjLfQ2lmfEd25Qz3RJhfeKW/PGg+4c7l+g5buLN3VbNw3Hd0/
