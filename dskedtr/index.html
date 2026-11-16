@@ -400,6 +400,14 @@ input[type="number"].num-active { outline: 3px solid var(--accent); outline-offs
 .inspector p { margin: 4px 0; }
 .muted { color: var(--muted); }
 .grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Sliders beside number fields (0.48.0, after IMGEDTR): the slider first, the exact number after it.
+   (The number comes first in the page's code, so the field's label still names the number.) */
+.slider-row { display: flex; align-items: center; gap: 8px; }
+.slider-row .num-slider { order: -1; flex: 1; min-width: 0; height: 26px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.slider-row input[type="number"] { flex: none; width: 76px; }
+.slider-row .num-slider:disabled { opacity: .4; cursor: default; }
+.grid4 > .field:has(.slider-row) { grid-column: 1 / -1; }   /* a field with a slider takes the whole row */
+@media (pointer: coarse) { .slider-row .num-slider { height: 40px; } }
 label.field { display: grid; gap: 2px; font-size: 13px; color: var(--muted); }   /* the family's Inspector label size (IMGEDTR) */
 input, select, button { font: inherit; color: inherit; }
 input[type="number"], select {
@@ -1327,6 +1335,20 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <svg viewBox="0 0 24 24"><path d="M12 2.5l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 16.9 6.3 20l1.2-6.4-4.7-4.4 6.4-.8Z"/><path d="M7.5 15.5l3-3.5 2.5 2.5 1.5-1.5 2.5 2.5" stroke-width="1.5"/></svg></button>
     <button type="button" data-act="editEq" aria-label="Change the equation" title="Change the equation (Enter, or double-click it)">
       <svg viewBox="0 0 24 24"><path d="M2.5 13h2.5l3 7 4.5-16H22"/><path d="M13.5 19.5l1-3.5 5.5-5.5 2.5 2.5-5.5 5.5z" stroke-width="1.6"/></svg></button>
+    <!-- Drawing a polygon (0.48.0): finish it, take the last corner away, or cancel. (Double-tapping is unreliable on touch screens.) -->
+    <button type="button" data-act="polyDone" aria-label="Done: finish the polygon" title="Done: finish the polygon (Enter, or double-click)">
+      <svg viewBox="0 0 24 24"><path d="M4.5 12.5l5 5L19.5 7"/></svg></button>
+    <button type="button" data-act="polyBack" aria-label="Take away the last corner" title="Take away the last corner (Backspace)">
+      <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button type="button" data-act="polyCancel" aria-label="Cancel the polygon" title="Cancel the polygon (Escape)">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    <!-- A polygon: change its points; and while changing them, delete the picked point, or finish. -->
+    <button type="button" data-act="editPoints" aria-label="Edit points" title="Edit points: move, add and delete the corners (Enter, or double-click it)">
+      <svg viewBox="0 0 24 24"><path d="M5 19 8 5l11 4-3 10Z"/><rect x="3" y="17" width="4" height="4" rx="1" fill="currentColor"/><rect x="6" y="3" width="4" height="4" rx="1" fill="currentColor"/><rect x="17" y="7" width="4" height="4" rx="1" fill="currentColor"/></svg></button>
+    <button type="button" data-act="pointDel" class="danger" aria-label="Delete this point" title="Delete the picked point (Delete)">
+      <svg viewBox="0 0 24 24"><rect x="8" y="8" width="8" height="8" rx="1.5"/><path d="M3 3l18 18"/></svg></button>
+    <button type="button" data-act="pointsDone" aria-label="Done changing points" title="Done changing points (Enter or Escape)">
+      <svg viewBox="0 0 24 24"><path d="M4.5 12.5l5 5L19.5 7"/></svg></button>
     <button type="button" data-act="unlock" aria-label="Unlock" title="Unlock: it can be moved and picked on the page again">
       <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></button>
     <button type="button" data-act="group" aria-label="Group" title="Group: they move and size together (Ctrl+G)">
@@ -1356,6 +1378,9 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <span class="qb-sep" aria-hidden="true"></span>
     <button type="button" data-act="arrange" aria-haspopup="menu" aria-expanded="false" aria-controls="arrangeMenu" aria-label="Arrange" title="Arrange: bring to front, forward, backward, send to back">
       <svg viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/><path d="m3 17.5 9 5 9-5" opacity=".5"/></svg></button>
+    <!-- Lock (0.48.0): it can't be moved or picked on the page after this (Layers still picks it); Unlock is at the front of the pill. -->
+    <button type="button" data-act="lock" aria-label="Lock" title="Lock: it can't be moved or picked on the page; clicks go to what is under it (Ctrl+Shift+L)">
+      <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>
     <button type="button" data-act="duplicate" aria-label="Duplicate" title="Duplicate (Ctrl+D)">
       <svg viewBox="0 0 24 24"><rect x="8" y="7" width="12" height="15" rx="2"/><path d="M5 17V4a2 2 0 0 1 2-2h9"/></svg></button>
     <button type="button" data-act="copy" aria-label="Copy" title="Copy (Ctrl+C)">
@@ -1726,6 +1751,11 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       </div>
       <label class="field" style="margin-top:8px">Outline width (pt)<input type="number" id="strokeWidth" min="0" max="72" step="0.25"></label>
       <label class="field" style="margin-top:8px" id="arrowsRow">Arrowheads<select id="lineArrows"><option value="none">None</option><option value="end">At the end</option><option value="start">At the start</option><option value="both">At both ends</option></select></label>
+      <!-- A polygon (0.48.0): change its corners, and whether its outline closes. -->
+      <div id="polyRow" hidden style="margin-top:8px">
+        <button class="btn" type="button" id="polyEditBtn">Edit points&hellip;</button>
+        <label class="check"><input type="checkbox" id="polyClosed"> Close the outline (the last point joins the first)</label>
+      </div>
       <label class="field" style="margin-top:8px" id="radiusRow"><span>Rounded corners (<span class="u-short">in</span>)</span><input type="number" id="cornerRadius" class="u-input" min="0"></label>
       <label class="field" style="margin-top:8px"><span id="opacityLabel">Opacity: 100%</span><input type="range" id="opacity" min="5" max="100" step="5" aria-describedby="opacityLabel"></label>
       <label class="check"><input type="checkbox" id="shadowOn"> Drop shadow</label>
@@ -2161,7 +2191,7 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
       <h3>2. Text boxes, and text that flows</h3>
       <p>Pick the Text box tool (T) and drag on the page. Type. Headings are paragraph roles: Heading 1, Heading 2, Body and Caption, in the Inspector's Paragraph section (or Ctrl+Alt+1, 2, 0, 9). Below the role is its style: size, line and letter spacing, kerning, space above and below, indents (left, right, and the first line: in, or hanging out for "a)" and "1." lists), alignment and colour. Changing it changes every paragraph with that role, so all your headings stay alike. When a box is too full, a red <strong>+</strong> appears. Click or tap the round chain-link tab just below its bottom-right corner (or Link in the floating pill), then click an empty text box, even on another page: the text carries on there. Unlink in the pill stops the flow again. A text box can also split into columns (up to six, with the gap you choose): Text flow, in the Inspector. Text can follow a curve: an arch, a dip or a circle (<strong>Shape of the text</strong>, in Text flow); it straightens while you type in it. A story can start with a <strong>drop cap</strong> (its first letter, two to five lines tall): Story, in the Inspector. Long words can break with a hyphen at the ends of lines: <strong>Hyphenate</strong>, in a role's style in Paragraph (English documents). For a price list, a program or a form, put a tab between the words (Insert, Tab, or Ctrl+Alt+Shift+T) and set <strong>tab stops</strong> for the paragraph's role in Paragraph: left, centred or right, or right at the edge, with dots or a line leading up to them. The text fills one column, then the next, then the next linked box.</p>
       <h3>3. Pictures and shapes</h3>
-      <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector). To cut a picture to a shape, put the shape over it where you want the cut, pick both, and choose <strong>Crop to shape</strong> in the floating pill (or Alt+Shift+P). An empty picture frame on a <strong>master page</strong> is a placeholder: on each page that uses the master, double-click it or drop a picture on it to give that page its own picture (the Document section lists them too).</p>
+      <p>The Picture tool (F) adds a picture, or drop one on the page. DSKEDTR asks for its alt text straight away. Rectangles (R), ellipses (O) and lines (L) are decoration unless you give them alt text. Overlapping shapes can be merged (Arrange, in the Inspector). The <strong>Polygon</strong> tool (P, or in the Shapes gallery) draws a shape of your own, corner by corner: click for each corner (Shift keeps edges at 15&deg; steps), then click the first corner to close it, or double-click (or press Enter, or Done in the floating pill) to finish it open; an open polygon still fills. Double-click a polygon (or press Enter, or Edit points) to change it: drag a point, click an edge to add one, Delete takes the picked one away. To cut a picture to a shape, put the shape over it where you want the cut, pick both, and choose <strong>Crop to shape</strong> in the floating pill (or Alt+Shift+P). An empty picture frame on a <strong>master page</strong> is a placeholder: on each page that uses the master, double-click it or drop a picture on it to give that page its own picture (the Document section lists them too).</p>
       <h3>Tables</h3>
       <p>The Table tool (B) draws a table: drag for one that size, or click for one that fits its words. Type in a cell; Tab goes to the next one, row by row. Each row grows to fit what is in it. The Inspector's Table section adds and deletes rows and columns (beside the cell you are typing in), turns the header row and banded rows on or off, and sets their colours; Look sets the lines. While you type in a cell, the floating pill above the table inserts a row above or below it, or a column left or right of it, or deletes its row or column. Drag the line between two columns, or the green tab above it, to change their widths; drag the line under a row to make it taller. While you type in a cell, the Table section can <strong>merge</strong> it with the cell to its right or below it (and split it again), colour the cell, its row or its column, set its row's height, and move that row and the ones below it to the next page (for a table too long for one page, with its header row repeated). "Words in the cells" puts them at the top, in the middle or at the bottom. Screen readers read a table's cells row by row, and the header row tells them what each column holds.</p>
       <h3>Equations</h3>
@@ -2585,7 +2615,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.47.0';
+const APP_VERSION = '0.48.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -8117,7 +8147,7 @@ function singleShape() {
  */
 function handlePoints() {
   const list = selectedIds.map(obj).filter(Boolean);
-  if (cropId || !list.length || activeStoryId || list.some((o) => o.locked)) return [];
+  if (cropId || pointEdit || !list.length || activeStoryId || list.some((o) => o.locked)) return [];
   if (list.length === 1 && list[0].type === 'line') {
     const o = list[0];
     return [{ name: 'p1', x: o.x1, y: o.y1 }, { name: 'p2', x: o.x2, y: o.y2 }];
@@ -8142,10 +8172,13 @@ function handlePoints() {
 
 function renderHandles() {
   clear(layers.handles);
+  if (polyDraw) { renderPolygonDraft(); return; }      // drawing a polygon (0.48.0)
   if (cropId && obj(cropId)) { renderCropOverlay(obj(cropId)); return; }
   const list = selectedIds.map(obj).filter(Boolean);
   if (!list.length || activeStoryId) return;
   const px = onePx();
+  if (pointEdit && !(list.length === 1 && list[0].id === pointEdit.id && isPolygon(list[0]))) pointEdit = null;   // (undone, or picked away)
+  if (pointEdit) { renderPointHandles(list[0]); return; }   // changing a polygon's points: its points, not its handles
   for (const o of list) renderWrapOutline(o);       // text wrap (section 5b): what pushes text aside
   for (const o of list) {
     const stroke = { fill: 'none', stroke: o.locked ? '#94a3b8' : '#37c6d0', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' };
@@ -8371,6 +8404,7 @@ function createObject(type, r) {
   if (type === 'text') {
     o = { id, type: 'text', story: null, x: r.x, y: r.y, w: r.w, h: r.h, inset: 3 };
     o.story = makeStory(id, '').id;
+    freshBox = { id, undo: undoStack.length };      // (taken away again if it is left empty: dropFreshBox)
   } else if (type === 'table') {
     o = makeTable(id, r, 3, 3);                      // three rows (the first a header row) and three columns
   } else if (type === 'line') {
@@ -8401,6 +8435,30 @@ function createObject(type, r) {
     announce(o.name + ' added. It is decoration until you give it alt text.');
   }
   return o;
+}
+
+/* A text box just made, not yet typed in (0.48.0). Clicking away from it while it is
+   still empty takes it away again, as in PowerPoint: an empty box nobody wanted is
+   invisible on the page but still there, in Layers, in the reading order and in PDFs.
+   `undo` is how long the undo list was right after it was made: if nothing else has
+   happened since, its "make a box" step goes too, so Undo doesn't step through it. */
+let freshBox = null;
+function dropFreshBox(storyId) {
+  const f = freshBox;
+  freshBox = null;
+  const o = f ? obj(f.id) : null;
+  if (!o || o.type !== 'text' || o.story !== storyId) return;
+  const story = doc.stories[o.story];
+  if (!story || story.text !== '' || story.frames.length !== 1) return;   // typed in, or linked to: it stays
+  if (undoStack.length === f.undo) { undoStack.pop(); updateUndoButtons(); }
+  else recordUndo('other');
+  removeObjects([o]);
+  selectedIds = selectedIds.filter((id) => id !== o.id);
+  reindex();
+  syncInputs();
+  relayoutAndRender();
+  updateInspector();
+  announce('The empty text box was taken away.');
 }
 
 /** Can text from box `fromId` flow into box `toId`? (An empty, unlinked text box, on any page.) */
@@ -9087,6 +9145,7 @@ function toggleFlag(list, flag) {
 /* ---------- Picking objects (the Select tool's selection) ---------- */
 
 function selectObjects(ids) {
+  if (pointEdit && !(ids.length === 1 && ids[0] === pointEdit.id)) pointEdit = null;   // picking something else ends changing points
   selectedIds = ids.slice();
   if (!ids.length) pickMore = false;                 // nothing picked: "pick several" is over (0.44.0)
   if (cropId && !ids.includes(cropId)) cropId = null;
@@ -10734,7 +10793,7 @@ const SHAPES = {
 /** The gallery's sections, in order (Recently used comes first, when there are any). */
 const SHAPE_GROUPS = [
   ['Lines', ['line', 'arrowLine', 'arrowLine2', 'elbow', 'curve', 'arc', 'waveLine', 'zigzag', 'bracketL', 'bracketR', 'braceL', 'braceR']],
-  ['Basic shapes', ['rect', 'ellipse', 'triangle', 'rtriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'decagon', 'dodecagon',
+  ['Basic shapes', ['rect', 'ellipse', 'polygon', 'triangle', 'rtriangle', 'diamond', 'parallelogram', 'trapezoid', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'decagon', 'dodecagon',
     'semicircle', 'pie', 'teardrop', 'arch', 'frame', 'halfFrame', 'lshape', 'puffy', 'scallop', 'plaque', 'snip', 'folded', 'can', 'cube', 'donut', 'noSymbol', 'smiley', 'cross']],
   ['Block arrows', ['arrow', 'arrowLeft', 'arrowUp', 'arrowDown', 'arrow2', 'arrowUpDown', 'arrow4', 'notchedArrow', 'stripedArrow', 'homePlate', 'chevron', 'bentArrow', 'uturn']],
   ['Flowchart', ['fcProcess', 'fcAltProcess', 'fcDecision', 'fcData', 'fcPredefined', 'fcInternal', 'fcDocument', 'fcTerminator', 'fcPreparation', 'fcManualInput',
@@ -10750,12 +10809,13 @@ const SHAPE_GROUPS = [
    same 0-100 box as the gallery shapes, so their icons match. */
 const GALLERY_TOOLS = {
   rect:    { label: 'Rectangle', d: 'M0 15H100V85H0Z' },
+  polygon: { label: 'Polygon: click each corner', d: 'M8 88L22 12L64 30L92 8L80 92Z' },   // (0.48.0: the Polygon tool)
   ellipse: { label: 'Ellipse',   d: 'M0 50A50 40 0 1 1 100 50A50 40 0 1 1 0 50Z' }
 };
 /** A gallery entry's drawing and name: a real shape, or one of the two tools above. */
 const galleryDef = (key) => SHAPES[key] || GALLERY_TOOLS[key];
 /** Which gallery entry the drawing tool in use stands for (shown pressed in the gallery). */
-const galleryChoice = () => (tool === 'rect' || tool === 'ellipse') ? tool : currentShape;
+const galleryChoice = () => (tool === 'rect' || tool === 'ellipse' || tool === 'polygon') ? tool : currentShape;
 
 /* Recently used shapes: a convenience kept in this browser only (never
    needed: an empty or blocked store just means no Recently used row). */
@@ -10826,9 +10886,357 @@ function createShapeLine(key, seg) {
 /** The rail button keeps its square-circle-triangle picture; its name says which shape is being drawn. */
 function showShapeButton() {
   const b = $('shapeToolBtn');
-  const drawing = (tool === 'rect' || tool === 'ellipse' || tool === 'shape') ? galleryDef(galleryChoice()).label : '';
+  const drawing = (tool === 'rect' || tool === 'ellipse' || tool === 'polygon' || tool === 'shape') ? galleryDef(galleryChoice()).label : '';
   b.setAttribute('aria-label', drawing ? 'Shapes: drawing ' + drawing : 'Shapes');
   b.title = (drawing ? 'Shapes: drawing ' + drawing + '. ' : 'Shapes: ') + 'Click for all shapes (U)';
+}
+/* ======================================================================
+   POLYGONS (0.48.0)
+   Dave: "add Polygon. We can add vertices and lines will form a shape.
+   Shift to make them snap to angles. These shapes can be filled in (even
+   if the endpoints aren't the same)... We'll also need a way to edit points."
+
+   Drawing one (the Polygon tool: in the Shapes gallery, or P):
+     - each click puts down a corner; a line follows the pointer to show
+       where the next edge would go;
+     - Shift keeps that edge at a 15 degree step (flat, upright, 45...);
+     - click the FIRST corner again to close the shape;
+     - double-click to finish it open: its outline stops at the last corner,
+       but it still fills, as if a straight edge ran back to the first;
+     - Enter finishes it (open), Backspace takes the last corner away,
+       Escape throws it away. On a touch screen (where double-tapping is
+       unreliable) the floating pill offers Done, Back and Cancel.
+     - Keyboard only: Enter on the page with the Polygon tool makes a
+       triangle in the middle, ready to have its points changed.
+
+   Changing its points ("Edit points": double-click it, press Enter, or the
+   pill's or the Inspector's button):
+     - drag a point to move it (Shift: 15 degree steps from the point
+       before it; it snaps like everything else otherwise);
+     - click an edge to add a point there (and drag it at once);
+     - Delete takes the picked point away (a polygon keeps at least two);
+     - from the keyboard: Tab and Shift+Tab go from point to point, the
+       arrow keys move the picked one (Shift: 10 points at a time), Insert
+       or + adds a point halfway to the next; Enter or Escape when done.
+
+   A polygon is an ordinary outline object (type 'path', like a merged
+   shape) with `poly: true` and one outline of straight edges, so filling,
+   outlines, shadows, text wrap, merging, turning, PDF and PNG all work as
+   they do for any shape. `contours[0].closed` says whether its outline
+   closes. Older DSKEDTRs see a plain shape.
+   ====================================================================== */
+const POLY_STEP_DEG = 15;                            // Shift: edges at 15 degree steps
+let polyDraw = null;                                 // drawing one: { pts: [{x, y}], hover: {x, y} | null, closing: bool }
+let pointEdit = null;                                // changing one's points: { id, sel } (sel: the picked point's number)
+const isPolygon = (o) => !!(o && o.type === 'path' && o.poly && o.contours && o.contours.length === 1);
+
+/** The point b, moved so the edge from a to it is at a 15 degree step (same length). */
+function polyConstrain(a, b) {
+  const step = POLY_STEP_DEG * Math.PI / 180;
+  const ang = Math.round(Math.atan2(b.y - a.y, b.x - a.x) / step) * step, len = Math.hypot(b.x - a.x, b.y - a.y);
+  return { x: a.x + Math.cos(ang) * len, y: a.y + Math.sin(ang) * len };
+}
+/** Where a click at p would put the next corner: Shift-stepped from the last corner, else snapped. */
+function polyNext(p, e) {
+  const pts = polyDraw ? polyDraw.pts : [];
+  if (e && e.shiftKey && pts.length) return { p: polyConstrain(pts[pts.length - 1], p), guides: [] };
+  return snapPoint(p, e && e.altKey, new Set());
+}
+/** Is p close enough to the first corner to close the shape (3 corners at least)? */
+function nearFirstCorner(p) {
+  if (!polyDraw || polyDraw.pts.length < 3) return false;
+  const f = polyDraw.pts[0];
+  return Math.hypot(p.x - f.x, p.y - f.y) <= handleReach() * onePx() * 1.5;
+}
+
+/* ---------- The corners of a polygon on the page ---------- */
+/** Each corner's place on the page (stretched and turned as the object is). */
+function polyPoints(o) {
+  const sx = o.w / o.w0, sy = o.h / o.h0, c = centreOf(o);
+  return o.contours[0].pts.map((q) => rotatePoint({ x: o.x + q[0] * sx, y: o.y + q[1] * sy }, o.rotation, c));
+}
+/**
+ * Give a polygon new corners, given as places on the page. Its box is worked
+ * out again around them (so handles and wrap fit the new shape), keeping its
+ * turn: the corners are un-turned around the old centre, boxed, and the box is
+ * placed so that turning it again puts every corner exactly where it was asked.
+ */
+function setPolyPoints(o, P) {
+  const rot = o.rotation || 0, c0 = centreOf(o);
+  const Q = P.map((p) => rotatePoint(p, -rot, c0));
+  const minX = Math.min(...Q.map((q) => q.x)), minY = Math.min(...Q.map((q) => q.y));
+  const w = Math.max(0.01, Math.max(...Q.map((q) => q.x)) - minX), h = Math.max(0.01, Math.max(...Q.map((q) => q.y)) - minY);
+  const mid = rotatePoint({ x: minX + w / 2, y: minY + h / 2 }, rot, c0);   // the new box's centre, on the page
+  o.w = o.w0 = w; o.h = o.h0 = h;
+  o.x = mid.x - w / 2; o.y = mid.y - h / 2;
+  o.contours[0].pts = Q.map((q) => [r2(q.x - minX), r2(q.y - minY), 0, 0, 0, 0]);   // straight edges: no curve handles
+}
+
+/* ---------- Drawing one ---------- */
+/** A click with the Polygon tool. */
+function polygonClick(p, e, clicks) {
+  const next = polyNext(p, e).p;
+  if (!polyDraw) {
+    polyDraw = { pts: [next], hover: null, closing: false };
+    renderSelection();
+    announce('First corner. Click for each next corner; click the first corner again to close the shape, or double-click (or press Enter) to finish. Shift keeps edges at 15 degree steps.');
+    return;
+  }
+  if (clicks >= 2) { finishPolygon(false); return; }  // the second click of a double-click (the first one put the last corner here)
+  if (nearFirstCorner(p)) { finishPolygon(true); return; }
+  const last = polyDraw.pts[polyDraw.pts.length - 1];
+  if (Math.hypot(next.x - last.x, next.y - last.y) < 2 * onePx()) return;   // (the same place again)
+  polyDraw.pts.push(next);
+  renderSelection();
+  announce('Corner ' + polyDraw.pts.length + '.');
+}
+/** The pointer moving while drawing: the edge to it follows (and the first corner lights up when it would close). */
+function polygonHover(p, e) {
+  const n = polyNext(p, e);
+  polyDraw.hover = n.p;
+  polyDraw.closing = nearFirstCorner(p);
+  renderSnap(polyDraw.closing ? [] : n.guides, null);
+  renderSelection();
+}
+/** Done drawing: make the polygon (closed, or open but still filled). */
+function finishPolygon(closed) {
+  const d = polyDraw;
+  polyDraw = null;
+  renderSnap([], null);
+  if (!d || d.pts.length < 2) { renderSelection(); announce('A polygon needs at least two corners.'); return null; }
+  if (d.pts.length < 3) closed = false;               // (two corners: a line, which can't close)
+  recordUndo('other');
+  const count = allObjects().filter((o) => isPolygon(o)).length;
+  const o = {
+    id: newId('o'), type: 'path', name: 'Polygon ' + (count + 1), poly: true,
+    x: 0, y: 0, w: 1, h: 1, w0: 1, h0: 1, contours: [{ closed, pts: [] }],
+    fill: schemeColour(4), stroke: schemeColour(1), strokeWidth: 1, decorative: true, alt: ''   // the scheme's colours, like other shapes
+  };
+  setPolyPoints(o, d.pts);
+  pageObjs().push(o);
+  reindex();
+  setTool('select');
+  selectObjects([o.id]);
+  relayoutAndRender();
+  announce(o.name + ' added, ' + d.pts.length + ' corners, ' + (closed ? 'closed' : 'open (it still fills)') + '. Double-click it or press Enter to change its points. It is decoration until you give it alt text.');
+  return o;
+}
+/** Throw away the one being drawn. */
+function cancelPolygon(say) {
+  if (!polyDraw) return;
+  polyDraw = null;
+  renderSnap([], null);
+  renderSelection();
+  if (say) announce('Polygon cancelled.');
+}
+/** Take the last corner away (the first one too: then nothing is being drawn). */
+function polygonBack() {
+  if (!polyDraw) return;
+  polyDraw.pts.pop();
+  if (!polyDraw.pts.length) { cancelPolygon(true); return; }
+  renderSelection();
+  announce('Corner taken away. ' + polyDraw.pts.length + ' left.');
+}
+/** Keyboard only: Enter on the page with the Polygon tool makes a triangle in the middle, ready to change. */
+function polygonInMiddle() {
+  const cx = PAGE.width / 2, cy = PAGE.height / 2;
+  polyDraw = { pts: [{ x: cx, y: cy - 54 }, { x: cx + 62, y: cy + 54 }, { x: cx - 62, y: cy + 54 }], hover: null, closing: false };
+  const o = finishPolygon(true);
+  if (o) startPointEdit(o);
+}
+/** The polygon being drawn: its edges so far, the edge to the pointer (dashed), and its corners. */
+function renderPolygonDraft() {
+  const d = polyDraw, px = onePx(), s = handlePx() * px;
+  const line = { fill: 'none', stroke: '#195d61', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' };
+  // The fill it will have (pale), as if closed: what you see is what you get.
+  const all = d.hover && !d.closing ? d.pts.concat([d.hover]) : d.pts;
+  if (all.length >= 3) layers.handles.appendChild(svgEl('polygon', { points: all.map((q) => r2(q.x) + ',' + r2(q.y)).join(' '), fill: 'rgba(55,198,208,0.18)', stroke: 'none' }));
+  if (d.pts.length > 1) layers.handles.appendChild(svgEl('polyline', Object.assign({ points: d.pts.map((q) => r2(q.x) + ',' + r2(q.y)).join(' ') }, line)));
+  if (d.hover) {
+    const a = d.pts[d.pts.length - 1], b = d.closing ? d.pts[0] : d.hover;
+    layers.handles.appendChild(svgEl('line', Object.assign({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, 'stroke-dasharray': '5 4' }, line)));
+  }
+  d.pts.forEach((q, i) => {
+    const first = i === 0;
+    // The first corner is round, and grows and fills when a click would close the shape there.
+    if (first) layers.handles.appendChild(svgEl('circle', { cx: q.x, cy: q.y, r: s * (d.closing ? 0.9 : 0.6), fill: d.closing ? '#195d61' : '#ffffff', stroke: '#195d61', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' }));
+    else layers.handles.appendChild(svgEl('rect', { x: q.x - s / 2.5, y: q.y - s / 2.5, width: s / 1.25, height: s / 1.25, fill: '#195d61', stroke: '#ffffff', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke' }));
+  });
+}
+
+/* ---------- Changing its points ---------- */
+function startPointEdit(o) {
+  if (!isPolygon(o)) return;
+  if (o.locked) { announce('Locked: unlock it in the layers list to change its points.'); return; }
+  if (cropId) endCrop();
+  setTool('select');
+  selectObjects([o.id]);
+  pointEdit = { id: o.id, sel: 0 };
+  renderSelection();
+  updateInspector();
+  $('desk').focus({ preventScroll: true });
+  announce('Changing the points of ' + objName(o) + ': ' + o.contours[0].pts.length + ' points. Drag a point to move it, click an edge to add one, Delete takes the picked one away. '
+    + 'From the keyboard: Tab goes to the next point, the arrow keys move it, Insert adds one. Enter or Escape when done.');
+}
+function endPointEdit(say) {
+  if (!pointEdit) return;
+  const o = obj(pointEdit.id);
+  pointEdit = null;
+  renderSelection();
+  updateInspector();
+  if (say && o) announce('Done changing the points. ' + objName(o) + ' picked.');
+}
+/** Say which point is picked, and where (in the units the rulers use). */
+function announcePoint(o) {
+  const P = polyPoints(o), i = pointEdit.sel;
+  announce('Point ' + (i + 1) + ' of ' + P.length + ', at ' + fmtU(P[i].x) + ' across, ' + fmtU(P[i].y) + ' down.');
+}
+/** The point under p (its number), or -1. */
+function pointAt(o, p) {
+  const P = polyPoints(o), reach = handleReach() * onePx();
+  let best = -1, bestD = Infinity;
+  P.forEach((q, i) => { const dd = Math.hypot(q.x - p.x, q.y - p.y); if (dd <= reach && dd < bestD) { bestD = dd; best = i; } });
+  return best;
+}
+/** The edge under p: { after, at } (a new point would go after point `after`, at `at`), or null. */
+function edgeAt(o, p) {
+  const P = polyPoints(o), reach = handleReach() * onePx() * 0.8;
+  const n = P.length, edges = o.contours[0].closed ? n : n - 1;
+  let best = null, bestD = Infinity;
+  for (let i = 0; i < edges; i++) {
+    const a = P[i], b = P[(i + 1) % n], dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy || 1;
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+    const at = { x: a.x + t * dx, y: a.y + t * dy }, dd = Math.hypot(p.x - at.x, p.y - at.y);
+    if (dd <= reach && dd < bestD && t > 0.02 && t < 0.98) { bestD = dd; best = { after: i, at }; }
+  }
+  return best;
+}
+/** Points mode, a press on the page: a point (drag it), an edge (a new point, dragged), else not handled (false). */
+function pointEditDown(p) {
+  const o = obj(pointEdit.id);
+  if (!isPolygon(o) || o.locked) { endPointEdit(false); return false; }
+  const i = pointAt(o, p);
+  if (i >= 0) {
+    pointEdit.sel = i;
+    renderSelection();
+    return { kind: 'polyPoint', o, i, snap: snapshot(), changed: false };
+  }
+  const edge = edgeAt(o, p);
+  if (edge) {
+    const snap = snapshot();
+    const P = polyPoints(o);
+    P.splice(edge.after + 1, 0, edge.at);
+    setPolyPoints(o, P);
+    pointEdit.sel = edge.after + 1;
+    relayoutAndRender();
+    announce('Point added: ' + P.length + ' points.');
+    return { kind: 'polyPoint', o, i: edge.after + 1, snap, changed: true };
+  }
+  return false;
+}
+/** Dragging a point. */
+function movePolyPoint(d, p, e) {
+  const o = d.o, P = polyPoints(o), n = P.length;
+  let q;
+  if (e.shiftKey && n > 1) q = polyConstrain(P[(d.i - 1 + n) % n], p);
+  else { const s = snapPoint(p, e.altKey, new Set([o.id])); q = s.p; renderSnap(s.guides, null); }
+  P[d.i] = q;
+  setPolyPoints(o, P);
+  d.changed = true;
+  relayoutAndRender();
+}
+/** Points mode: its outline (dashed), each point a square (the picked one filled). */
+function renderPointHandles(o) {
+  const s = handlePx() * onePx();
+  layers.handles.appendChild(svgEl('path', { d: pathData(Object.assign({}, o, { rotation: 0 })), transform: o.rotation ? 'rotate(' + r2(o.rotation) + ' ' + r2(centreOf(o).x) + ' ' + r2(centreOf(o).y) + ')' : '',
+    fill: 'none', stroke: '#195d61', 'stroke-width': 1.25, 'stroke-dasharray': '4 3', 'vector-effect': 'non-scaling-stroke' }));
+  const P = polyPoints(o);
+  if (pointEdit.sel >= P.length) pointEdit.sel = P.length - 1;
+  P.forEach((q, i) => {
+    const on = i === pointEdit.sel;
+    layers.handles.appendChild(svgEl('rect', { x: q.x - s / 2, y: q.y - s / 2, width: s, height: s, rx: handleRound() * onePx(),
+      fill: on ? '#195d61' : '#ffffff', stroke: on ? '#ffffff' : '#195d61', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke' }));
+  });
+}
+/** Delete the picked point (a polygon keeps two at least). */
+function deletePolyPoint() {
+  const o = obj(pointEdit.id);
+  if (!isPolygon(o)) return;
+  const P = polyPoints(o);
+  if (P.length <= 2) { announce('A polygon keeps at least two points.'); return; }
+  recordUndo('other');
+  P.splice(pointEdit.sel, 1);
+  if (P.length < 3) o.contours[0].closed = false;     // (two points: a line, which can't close)
+  setPolyPoints(o, P);
+  pointEdit.sel = Math.min(pointEdit.sel, P.length - 1);
+  relayoutAndRender();
+  updateInspector();
+  announce('Point taken away: ' + P.length + ' left.');
+}
+/** Insert or +: a new point halfway between the picked one and the next. */
+function insertPolyPoint() {
+  const o = obj(pointEdit.id);
+  if (!isPolygon(o)) return;
+  const P = polyPoints(o), i = pointEdit.sel, j = (i + 1) % P.length;
+  if (!o.contours[0].closed && i === P.length - 1) { announce('That is the last point: pick an earlier one to add a point after it.'); return; }
+  recordUndo('other');
+  P.splice(i + 1, 0, { x: (P[i].x + P[j].x) / 2, y: (P[i].y + P[j].y) / 2 });
+  setPolyPoints(o, P);
+  pointEdit.sel = i + 1;
+  relayoutAndRender();
+  announcePoint(o);
+}
+/**
+ * The keys for drawing a polygon and for changing its points (on the page).
+ * True when the key was theirs.
+ */
+function polyKeys(e, mod2, k) {
+  if (polyDraw) {
+    if (e.key === 'Escape') { e.preventDefault(); cancelPolygon(true); return true; }
+    if (e.key === 'Enter') { e.preventDefault(); finishPolygon(false); return true; }
+    if (e.key === 'Backspace' || e.key === 'Delete' || (mod2 && k === 'z' && !e.shiftKey)) { e.preventDefault(); polygonBack(); return true; }
+    return false;
+  }
+  if (!pointEdit) return false;
+  const o = obj(pointEdit.id);
+  if (!isPolygon(o)) { pointEdit = null; return false; }
+  if (mod2 || e.altKey) return false;                 // (undo and the rest work as usual)
+  if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); endPointEdit(true); return true; }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const n = o.contours[0].pts.length;
+    pointEdit.sel = (pointEdit.sel + (e.shiftKey ? n - 1 : 1)) % n;
+    renderSelection();
+    announcePoint(o);
+    return true;
+  }
+  if (e.key.startsWith('Arrow')) {
+    e.preventDefault();
+    const step = e.shiftKey ? 10 : 1, P = polyPoints(o);
+    recordUndo('nudge');
+    P[pointEdit.sel] = { x: P[pointEdit.sel].x + (e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0), y: P[pointEdit.sel].y + (e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0) };
+    setPolyPoints(o, P);
+    relayoutAndRender();
+    announcePoint(o);
+    return true;
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deletePolyPoint(); return true; }
+  if (e.key === 'Insert' || e.key === '+') { e.preventDefault(); insertPolyPoint(); return true; }
+  return false;
+}
+/** The Inspector's polygon buttons (in Look): Edit points, and whether the outline closes. */
+function wirePolygons() {
+  $('polyEditBtn').addEventListener('click', () => { const o = obj(selectedIds[0]); if (isPolygon(o)) startPointEdit(o); });
+  $('polyClosed').addEventListener('change', () => {
+    const o = obj(selectedIds[0]);
+    if (!isPolygon(o)) return;
+    if (o.locked) { announce('Locked: unlock it in the layers list to change it.'); updateInspector(); return; }
+    recordUndo('other');
+    o.contours[0].closed = $('polyClosed').checked && o.contours[0].pts.length >= 3;
+    relayoutAndRender();
+    updateInspector();
+    announce(o.contours[0].closed ? 'The outline now closes.' : 'The outline is open now (it still fills).');
+  });
 }
 /** A square view around a shape's outline, so every icon is the same size whatever its proportions. */
 function shapeViewBox(key) {
@@ -11224,12 +11632,15 @@ function setTool(t) {
   if (pageView === 'grid') setPageView(lastPageView);  // a tool works on a page: show it
   if (tool === t) return;
   if (printPreview) setPrintPreview(false);           // picking a tool means you want to edit again
+  // Leaving the Polygon tool in the middle of one: three corners or more make it (open); fewer are dropped.
+  if (polyDraw) { if (polyDraw.pts.length >= 3) { const d = polyDraw; tool = t; polyDraw = d; finishPolygon(false); } else cancelPolygon(true); }
+  if (pointEdit && t !== 'select') endPointEdit(false);
   tool = t;
   if (cropId) endCrop();
   orderClicks = [];
   cancelLinkPick();
   for (const b of document.querySelectorAll('[data-tool]')) b.setAttribute('aria-pressed', String(b.dataset.tool === t));
-  $('shapeToolBtn').setAttribute('aria-pressed', String(t === 'shape' || t === 'rect' || t === 'ellipse'));
+  $('shapeToolBtn').setAttribute('aria-pressed', String(t === 'shape' || t === 'rect' || t === 'ellipse' || t === 'polygon'));
   showShapeButton();
   svg.style.cursor = t === 'text' ? 'text' : (t === 'select' || t === 'order') ? '' : 'crosshair';
   if (t === 'order') {
@@ -11237,6 +11648,8 @@ function setTool(t) {
     announce('Reading order tool. Click the items in the order they should be read. The Inspector list does the same from the keyboard. Escape to finish.');
   } else if (t === 'picture') {
     announce('Picture tool. Click on the page to add a picture there, or drag to draw an empty frame. Enter adds one in the middle. You can also drop or paste pictures.');
+  } else if (t === 'polygon') {
+    announce('Polygon tool. Click on the page for each corner; click the first corner again to close it, or double-click (or press Enter) to finish it open. Shift keeps edges at 15 degree steps. Backspace takes the last corner away, Escape cancels. Enter on the page makes a triangle to change instead.');
   } else if (t === 'shape') {
     announce('Shapes tool: ' + SHAPES[currentShape].label + '. Drag on the page to draw it, or press Enter on the page for one in the middle. Press U, or click the Shapes button, for all the shapes.');
   } else if (t !== 'text' && t !== 'select') {
@@ -11532,6 +11945,16 @@ function wirePointer() {
       return;
     }
 
+    // The Polygon tool: every click is a corner (0.48.0).
+    if (tool === 'polygon') { polygonClick(p, e, clicks); return; }
+    // Changing a polygon's points: a point or an edge is grabbed; anywhere else ends it (and the click goes on as usual).
+    if (pointEdit && tool === 'select') {
+      const pd = pointEditDown(p);
+      if (pd) { drag = pd; svg.setPointerCapture(e.pointerId); return; }
+      const o = obj(pointEdit && pointEdit.id);
+      if (!o || !hitObject(o, p)) endPointEdit(false);   // (inside the shape: it can still be moved whole)
+    }
+
     // Facing pages: a click on the other page of the spread (where nothing of
     // this page is) makes it the page you work on, and picks what is there.
     const across = partnerPoint(p);
@@ -11540,6 +11963,19 @@ function wirePointer() {
       const there = tool === 'select' ? objectAt({ x: across.x, y: across.y }) : null;
       if (there) { selectObjects(groupMembers(there).filter((x) => !x.hidden).map((x) => x.id)); announceSelection(); }
       return;
+    }
+
+    // Typing, and the click lands outside every text box (0.48.0): that only stops the
+    // typing, and from here on it is the Select tool's click (it picks what is there, or
+    // nothing). Typing always switches to the Text tool, so before 0.48.0 a click away
+    // made a new, empty text box. With the Text tool picked on the rail and nothing being
+    // typed, a click on empty space still makes one.
+    if (tool === 'text' && (focusedStoryId || activeStoryId) && !textFrameAt(p)) {
+      const was = focusedStoryId || activeStoryId;
+      if (focusedStoryId) inputs[focusedStoryId].blur();
+      activeStoryId = null;
+      setTool('select');
+      dropFreshBox(was);
     }
 
     if (tool === 'order') { orderToolClick(orderItemAt(p)); return; }
@@ -11600,6 +12036,9 @@ function wirePointer() {
       }
       if (o && o.eq && clicks >= 2) {                   // double-click an equation: change it
         openEquationDialog(o); return;
+      }
+      if (o && isPolygon(o) && clicks >= 2 && !o.locked) { // double-click a polygon: change its points
+        startPointEdit(o); return;
       }
       if (o && o.type === 'picture' && clicks >= 2) {     // double-click a picture: crop it (or fill an empty frame)
         startCrop(o); return;
@@ -11677,6 +12116,7 @@ function wirePointer() {
 
     if (tool === 'text') {
       const f = textFrameAt(p);
+      if (f && freshBox && f.id !== freshBox.id) dropFreshBox(activeStoryId);   // (on to another box: a new one left empty goes)
       if (f) { drag = textClick(f, p, clicks, e.shiftKey); svg.setPointerCapture(e.pointerId); return; }
     }
     // Text (on empty space), Rectangle, Ellipse, Line: draw a new one.
@@ -11689,7 +12129,7 @@ function wirePointer() {
   });
 
   svg.addEventListener('pointermove', (e) => {
-    if (!drag) { updateHoverCursor(toPage(e)); return; }
+    if (!drag) { const hp = toPage(e); if (polyDraw) polygonHover(hp, e); updateHoverCursor(hp); return; }
     if (drag.kind === 'pan') { desk.scrollLeft = drag.left - (e.clientX - drag.x); desk.scrollTop = drag.top - (e.clientY - drag.y); return; }
     // Space held in the middle of a drag: the view slides with the pointer, and
     // what is being dragged stays under it (so it can be carried a long way).
@@ -11721,6 +12161,7 @@ function wirePointer() {
       renderSnap([], r);
       return;
     }
+    if (drag.kind === 'polyPoint') { movePolyPoint(drag, p, e); return; }
     if (drag.kind === 'create') {
       let q = p;
       if (e.shiftKey) q = constrain(drag.start, p, drag.type === 'line' || (drag.type === 'shape' && !!SHAPES[currentShape].line));
@@ -11771,6 +12212,7 @@ function wirePointer() {
       return;
     }
     if (d.kind === 'create') { finishCreate(d); return; }
+    if (d.kind === 'polyPoint') { if (d.changed) { pushUndo(d.snap); lastUndoKind = ''; } updateInspector(); if (pointEdit) announcePoint(d.o); return; }
     if (d.press) clearTimeout(d.press.timer);
     if (d.kind === 'move' || d.kind === 'resize' || d.kind === 'rotate') {
       if (d.changed && d.kind === 'move') carryAcrossSpread();
@@ -11817,7 +12259,7 @@ function numRange(el) {
   const W = PAGE.width, H = PAGE.height, big = Math.max(W, H);
   const fixed = {
     fX: [0, u(W)], fW: [u(9), u(W)], fY: [0, u(H)], fH: [u(9), u(H)], fR: [-180, 180],
-    strokeWidth: [0, 24], chSize: [4, 144], stSize: [4, 144], chKern: [-200, 400],
+    eqSize: [6, 120], shOpacity: [5, 100], strokeWidth: [0, 24], chSize: [4, 144], stSize: [4, 144], chKern: [-200, 400],
     stTracking: [-20, 100], stLeading: [0.7, 3], stBefore: [0, 72], stAfter: [0, 72],
     stIndL: [0, 144], stIndF: [-72, 72], stIndR: [0, 144], shX: [-36, 36], shY: [-36, 36], shBlur: [0, 36],
     tblRows: [1, 30], tblCols: [1, 12], listStart: [1, 50], boxCols: [1, 6], colCount: [2, 12],
@@ -11836,6 +12278,59 @@ function numRange(el) {
   }
   if (isFinite(v)) { min = Math.min(min, v); max = Math.max(max, v); }
   return { min, max, step: numStep(el) };
+}
+/* ---------- Sliders beside number fields (0.48.0) ----------
+   Dave: "Many of the settings in the Inspector should be sliders (look at
+   IMGEDTR)". The settings that are a matter of taste - outline width,
+   shadows, rounded corners, text sizes and spacing - get a slider beside
+   their number field. The number stays: it can still be typed, it still
+   takes the arrow keys, and screen readers still use it. The slider is an
+   extra way to set it with the mouse or a finger, so it is hidden from
+   screen readers and left out of the Tab order (two controls for one
+   setting would be read twice).
+   Each slider covers the same range as the number panel on touch screens
+   (numRange), widening to take in a value outside it. Moving the slider
+   types into the number field and fires the field's own events, so each
+   field keeps doing exactly what it did (undo groups a whole slide as one
+   step, as typing does). Positions and sizes (X, Y, Width, Height,
+   Rotation) and counts (rows, columns) keep plain number fields: they are
+   about precision, not taste. */
+const SLIDER_FIELDS = ['eqSize', 'strokeWidth', 'cornerRadius', 'picRadius', 'shX', 'shY', 'shBlur', 'shOpacity',
+  'chSize', 'chKern', 'stSize', 'stLeading', 'stTracking', 'stBefore', 'stAfter', 'stIndL', 'stIndF', 'stIndR',
+  'wrapGap', 'boxGutter', 'tblPad'];
+function addSliders() {
+  for (const id of SLIDER_FIELDS) {
+    const num = $(id);
+    if (!num || num.dataset.slider) continue;
+    const range = document.createElement('input');
+    range.type = 'range';
+    range.className = 'num-slider';
+    range.id = id + 'Slider';
+    range.tabIndex = -1;                             // (the number field is the keyboard's way in)
+    range.setAttribute('aria-hidden', 'true');
+    const row = document.createElement('span');
+    row.className = 'slider-row';
+    num.replaceWith(row);
+    row.append(num, range);                          // the number first in the code (its label names it); CSS shows the slider first
+    num.dataset.slider = range.id;
+    range.addEventListener('input', () => {
+      num.value = range.value;
+      num.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    range.addEventListener('change', () => num.dispatchEvent(new Event('change', { bubbles: true })));
+    num.addEventListener('input', () => syncSlider(num));
+    syncSlider(num);
+  }
+}
+/** Put a field's slider where its number is (its range worked out again: units and the page can change). */
+function syncSlider(num) {
+  const range = document.getElementById(num.dataset.slider);
+  if (!range) return;
+  const r = numRange(num);
+  range.min = String(r.min); range.max = String(r.max); range.step = String(r.step);
+  const v = parseFloat(num.value);
+  if (isFinite(v)) range.value = String(v);
+  range.disabled = num.disabled;
 }
 /** How much one press of - or + changes the field (its own step, or the units' step). */
 function numStep(el) {
@@ -12029,6 +12524,8 @@ function quickBarState() {
     const box = doc.stories[activeStoryId] ? obj(doc.stories[activeStoryId].frames[0]) : null, t = cellTable(box);
     return t ? { list: [t], cell: cellPlace(box), only: 'cell' } : null;
   }
+  if (polyDraw) return { list: [], only: 'polyDraw' };   // drawing a polygon (0.48.0): the pill waits at the top of the page area, out of the way of the next corner
+  if (pointEdit && obj(pointEdit.id)) return { list: [obj(pointEdit.id)], only: 'points' };   // changing its points
   if (!list.length) return coarse && canPaste && tool === 'select' ? { list, only: 'paste' } : null;
   return { list, canPaste };
 }
@@ -12051,8 +12548,12 @@ function updateQuickBar() {
     unlink: !st.only && !!story && flowsOn && !locked,
     crop: !st.only && !!one && one.type === 'picture' && !locked,
     editEq: !st.only && !!one && !!one.eq && !locked,
+    editPoints: !st.only && isPolygon(one) && !locked,
+    polyDone: st.only === 'polyDraw', polyBack: st.only === 'polyDraw', polyCancel: st.only === 'polyDraw',
+    pointDel: st.only === 'points', pointsDone: st.only === 'points',
     cropShape: !st.only && !!cropToShapeParts(st.list),
     unlock: !st.only && locked,
+    lock: !st.only && !locked && !!st.list.length,
     // Typing in a cell: rows and columns beside it (never the last row or column away, never past the limits).
     rowAbove: st.only === 'cell' && !locked && st.list[0].cells.length < TABLE_MAX_ROWS,
     rowBelow: st.only === 'cell' && !locked && st.list[0].cells.length < TABLE_MAX_ROWS,
@@ -12073,7 +12574,7 @@ function updateQuickBar() {
     delete: !st.only && !locked
   };
   for (const b of bar.querySelectorAll('button')) b.hidden = !show[b.dataset.act];
-  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.editEq || show.cropShape || show.unlock || show.group || show.ungroup || show.addRow || show.pickMore) || st.only;
+  bar.querySelector('.qb-sep').hidden = !(show.link || show.unlink || show.crop || show.editEq || show.editPoints || show.cropShape || show.unlock || show.group || show.ungroup || show.addRow || show.pickMore) || st.only;
   bar.querySelector('[data-act=pickMore]').setAttribute('aria-pressed', String(pickMore));
   const crop = bar.querySelector('[data-act=crop]');
   crop.setAttribute('aria-pressed', String(!!one && cropId === one.id));
@@ -12084,6 +12585,7 @@ function updateQuickBar() {
   bar.querySelector('[data-act=paste]').title = 'Paste (' + mod + '+V)';
   bar.querySelector('[data-act=group]').title = 'Group: they move and size together (' + mod + '+G)';
   bar.querySelector('[data-act=ungroup]').title = 'Ungroup (' + mod + '+Shift+G)';
+  bar.querySelector('[data-act=lock]').title = 'Lock: it can\'t be moved or picked on the page; clicks go to what is under it (' + mod + '+Shift+L)';
   bar.setAttribute('aria-label', 'Quick actions' + (st.cell ? ' for ' + objName(one) + ', row ' + (st.cell.r + 1) + ', column ' + (st.cell.c + 1)
     : one ? ' for ' + objName(one) : st.list.length ? ' for ' + st.list.length + ' objects' : ''));
   bar.hidden = false;
@@ -12109,7 +12611,8 @@ function placeQuickBar(list) {
       // of the handles (the turn handle above all, which the top of the desk used to hide on a phone), else the top (0.44.0).
       // When nowhere is clear, the place that covers least wins (covering the turn handle counts three times over).
       const pad = touchScreen() ? 24 : 12;
-      const bands = handlePoints().map((q) => [o.top + q.y * o.k - pad, o.top + q.y * o.k + pad, q.name === 'rot' ? 3 : 1])
+      const spots = pointEdit && isPolygon(obj(pointEdit.id)) ? polyPoints(obj(pointEdit.id)).map((q) => ({ x: q.x, y: q.y, name: 'point' })) : handlePoints();   // (changing points: the points)
+      const bands = spots.map((q) => [o.top + q.y * o.k - pad, o.top + q.y * o.k + pad, q.name === 'rot' ? 3 : 1])
         .concat([[upper - pad - 30, upper + pad, 1], [lower - pad, lower + pad + 30, 1]]);   // (the link ports sit just outside the box)
       const covered = (t) => bands.reduce((sum, [a, z, weight]) => sum + Math.max(0, Math.min(z, t + h) - Math.max(a, t)) * weight, 0);
       top = desk.top + 8; bar.dataset.side = 'top';
@@ -12241,7 +12744,21 @@ function wireQuickBar() {
       case 'crop': if (one) { if (cropId === one.id) endCrop(); else startCrop(one); } break;
       case 'cropShape': cropToShape(); break;
       case 'editEq': if (one && one.eq) openEquationDialog(one); break;
-      case 'unlock': toggleFlag(list, 'locked'); break;
+      case 'editPoints': if (isPolygon(one)) startPointEdit(one); break;
+      case 'polyDone': finishPolygon(false); break;
+      case 'polyBack': polygonBack(); break;
+      case 'polyCancel': cancelPolygon(true); break;
+      case 'pointDel': if (pointEdit) deletePolyPoint(); break;
+      case 'pointsDone': endPointEdit(true); break;
+      case 'unlock': case 'lock': {
+        // Lock and Unlock swap places: from the keyboard, focus goes to the one that appears.
+        const fromKeys = bar.contains(document.activeElement);
+        toggleFlag(list, 'locked');
+        updateQuickBar();
+        const other = bar.querySelector('[data-act=' + (b.dataset.act === 'lock' ? 'unlock' : 'lock') + ']');
+        if (fromKeys && other && !other.hidden) { for (const x of bar.querySelectorAll('button')) x.tabIndex = x === other ? 0 : -1; other.focus(); }
+        break;
+      }
       case 'addRow': if (one && one.type === 'table') tableAddRow(one, one.cells.length); break;
       case 'rowAbove': case 'rowBelow': case 'rowDel': case 'colLeft': case 'colRight': case 'colDel': {
         // Beside the cell being typed in. (A mouse press doesn't take focus, so the cursor stays in its cell.)
@@ -12411,9 +12928,17 @@ function renderCreatePreview(d) {
 function finishCreate(d) {
   clear(layers.handles);
   const a = d.start;
+  // Was it a click (or a drag too small to mean anything), so a ready-made size is wanted?
+  // Measured in SCREEN pixels (0.48.0): it was 9 points, so zoomed in to 400%, a shape
+  // dragged out 30 pixels wide (7 points) was thrown away and the 1-inch default landed
+  // instead - it looked small while dragging and big when let go.
+  const tiny = (r) => !d.moved || (r.w < 9 * onePx() && r.h < 9 * onePx());
+  // A real drag keeps its size, with at least a point each way (a thin bar is fine).
+  const atLeast = (r) => Object.assign(r, { w: Math.max(r.w, 1), h: Math.max(r.h, 1) });
   if (d.type === 'picture') {
     const r = rectFrom(a, d.end);
-    if (!d.moved || r.w < 9 || r.h < 9) { choosePicture({ point: a }); return; }
+    if (tiny(r)) { choosePicture({ point: a }); return; }
+    atLeast(r);
     // A drawn frame: make it now (empty), then offer the file picker for it.
     recordUndo('other');
     const o = makePictureObject(r, null, 'rect');
@@ -12438,14 +12963,14 @@ function finishCreate(d) {
       createShapeLine(currentShape, { x1: a.x, y1: a.y, x2: b.x, y2: b.y });
       return;
     }
-    if (!d.moved || r.w < 9 || r.h < 9) r = defaultShapeBox(currentShape, a.x, a.y);
+    if (tiny(r)) r = defaultShapeBox(currentShape, a.x, a.y); else atLeast(r);
     createShape(currentShape, r);
     return;
   }
-  if (!d.moved || r.w < 9 || r.h < 9) {
+  if (tiny(r)) {
     // A click: a table as wide as the margins allow (up to 5 inches), each row just fitting its words.
     r = d.type === 'text' ? { x: a.x, y: a.y, w: 144, h: 72 } : d.type === 'table' ? { x: a.x, y: a.y, w: Math.min(360, marginBox().w), h: 0 } : { x: a.x, y: a.y, w: 72, h: 72 };
-  }
+  } else atLeast(r);
   createObject(d.type, r);
 }
 
@@ -12581,13 +13106,30 @@ function updateTransform(d, p, e) {
 
 /** The mouse pointer shape, so it shows what a click would do. */
 const CURSORS = { nw: 'nwse-resize', se: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize', p1: 'move', p2: 'move', rot: 'grab' };
+/* Which way each sizing handle pulls, before the object is turned (x right, y down). */
+const HANDLE_DIRS = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0], ne: [1, -1], nw: [-1, -1], se: [1, 1], sw: [-1, 1] };
+/**
+ * The pointer for a handle (0.48.0). On a turned object, a handle's arrows follow the
+ * way it really pulls on screen: the "top" handle of a box turned 90 degrees pulls
+ * sideways, so it shows a left-right arrow. (Before, each handle kept its arrows by
+ * name, so they pointed the wrong way.) Browsers only have four double arrows, so the
+ * nearest one is used.
+ */
+function handleCursor(name) {
+  const dir = HANDLE_DIRS[name];
+  const one = singleShape();
+  if (!dir || !one || !one.rotation) return CURSORS[name];
+  const a = Math.atan2(dir[1], dir[0]) + one.rotation * Math.PI / 180;   // its direction, turned with the object
+  const step = ((Math.round(a / (Math.PI / 4)) % 4) + 4) % 4;              // nearest 45 degrees: 0 across, 1 down-right, 2 up-down, 3 down-left
+  return ['ew-resize', 'nwse-resize', 'ns-resize', 'nesw-resize'][step];
+}
 function updateHoverCursor(p) {
   if (printPreview) { svg.style.cursor = 'grab'; return; }
   if (linkFrom) { svg.style.cursor = 'alias'; return; }
   if (spaceHeld) { svg.style.cursor = 'grab'; return; }
   if (tool === 'select') {
     const h = handleAt(p);
-    if (h) { svg.style.cursor = CURSORS[h.name]; return; }
+    if (h) { svg.style.cursor = handleCursor(h.name); return; }
     if (tableColAt(p)) { svg.style.cursor = 'col-resize'; return; }
     if (tableRowAt(p)) { svg.style.cursor = 'row-resize'; return; }
     if (outPortAt(p)) { svg.style.cursor = 'alias'; return; }
@@ -12646,7 +13188,10 @@ function activeFrameId() {
 const show = (id, on) => { $(id).hidden = !on; };
 const setText = (id, text) => { if ($(id).textContent !== text) $(id).textContent = text; };
 /** Put a value in a field unless someone is typing in it. */
-function setField(el, v) { if (document.activeElement !== el && el.value !== String(v)) el.value = String(v); }
+function setField(el, v) {
+  if (document.activeElement !== el && el.value !== String(v)) el.value = String(v);
+  if (el.dataset && el.dataset.slider) syncSlider(el);   // its slider follows (0.48.0)
+}
 
 function updateInspector() {
   if (document.querySelector('.swatch-row')) requestAnimationFrame(updateSwatches);   // after the fields below are filled
@@ -12828,6 +13373,11 @@ function describeBox(o, what) {
 
 function fillLook(o) {
   const isLine = o.type === 'line';
+  show('polyRow', isPolygon(o));
+  if (isPolygon(o)) {
+    $('polyClosed').checked = !!o.contours[0].closed;
+    $('polyClosed').disabled = o.contours[0].pts.length < 3;   // (two points: a line)
+  }
   const noFill = isLine || o.type === 'picture';     // a picture frame shows its picture, not a fill
   show('fillRow', !noFill);
   if (!noFill) {
@@ -12925,7 +13475,43 @@ function fillParagraph() {
   const names = { left: 'left', center: 'centred', right: 'right', justify: 'justified' };
   const what = [own.size ? 'alignment (' + [...own].map((a) => names[a]).join(' or ') + ')' : '', ownIndents ? 'indents' : '', ownTabs ? 'tab stops' : ''].filter(Boolean);
   const list = what.length > 1 ? what.slice(0, -1).join(', ') + ' and ' + what[what.length - 1] : what[0];
-  if (what.length) setText('ownAlignText', (to > from ? 'Some of these paragraphs have their' : 'This paragraph has its') + ' own ' + list + ', kept from the file it came from; the style doesn\u2019t change ' + (to > from ? 'those.' : 'it.'));
+  if (what.length) setText('ownAlignText', (to > from ? 'Some of these paragraphs have their' : 'This paragraph has its') + ' own ' + list + ', kept from the file it came from; the style doesn\u2019t change ' + (to > from ? 'those.' : 'it.')
+    + (own.size ? ' The alignment buttons change ' + (to > from ? 'these paragraphs' : 'this paragraph') + ' only.' : ''));
+  // The alignment buttons show what is on the page: a paragraph's own alignment when it has one.
+  if (own.size === 1) {
+    const here = [...own][0];
+    for (const btn of $('stAlign').querySelectorAll('[role="radio"]')) {
+      const on = btn.dataset.alignText === here;
+      btn.setAttribute('aria-checked', String(on));
+      btn.tabIndex = on ? 0 : -1;
+    }
+  }
+}
+/**
+ * The alignment buttons, while typing in paragraphs that have an alignment of their
+ * own: give those paragraphs (all the ones picked) the new alignment. False when none
+ * of them has its own, so the buttons change the style as usual.
+ */
+function setOwnAlign(value) {
+  const story = doc.stories[activeStoryId];
+  if (!story) return false;
+  const sel = lastSel[activeStoryId] || getSel(activeStoryId);
+  const a = story.text.lastIndexOf('\n', sel.start - 1) + 1;   // the first picked paragraph's start
+  let b = story.text.indexOf('\n', sel.end);
+  b = b < 0 ? story.text.length : b + 1;                         // the last one's end (its mark too)
+  const fmts = charFormats(story);
+  // Does any picked paragraph have its own alignment? (It is kept on each paragraph's first letter.)
+  let any = false;
+  for (let i = a; i < b; i = (story.text.indexOf('\n', i) + 1) || b) if (fmts[i] && fmts[i].al) any = true;
+  if (!any) return false;
+  recordUndo('other');
+  for (let i = a; i < b; i++) fmts[i] = patchFormat(fmts[i], { al: value });
+  packRuns(story, fmts);
+  relayoutAndRender();
+  fillParagraph();
+  const names = { left: 'left', center: 'centred', right: 'right', justify: 'justified' };
+  announce((countNewlines(story.text, a, Math.max(a, b - 1)) ? 'These paragraphs are' : 'This paragraph is') + ' now ' + names[value] + ' (its own alignment; the style is unchanged).');
+  return true;
 }
 /** Make the paragraphs picked follow their style's alignment, indents and tab stops again (they drop their own). */
 function clearOwnAlign() {
@@ -13043,7 +13629,14 @@ function wireStyleEditor() {
   // Alignment: a radio group (arrow keys move and pick, as radio buttons do).
   const radios = [...$('stAlign').querySelectorAll('[role="radio"]')];
   radios.forEach((b, i) => {
-    b.addEventListener('click', () => { setStyle('align', b.dataset.alignText); announce('Aligned ' + b.getAttribute('aria-label').toLowerCase()); });
+    b.addEventListener('click', () => {
+      // A paragraph with an alignment of its own (from a Publisher file, or a document made
+      // elsewhere) ignores its style's alignment, so changing the style there seemed to do
+      // nothing (0.48.0). There, the buttons change those paragraphs' own alignment instead.
+      if (setOwnAlign(b.dataset.alignText)) return;
+      setStyle('align', b.dataset.alignText);
+      announce('Aligned ' + b.getAttribute('aria-label').toLowerCase());
+    });
     b.addEventListener('keydown', (e) => {
       const d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
       if (!d) return;
@@ -15573,6 +16166,8 @@ function wireChrome() {
     ['Enter', 'Type in the picked text box (or a picked table\'s first cell); with a drawing tool, add one in the middle'],
     ['B', 'Table tool: drag on the page for a table that size, or click for one'],
     ['K', 'Building blocks: a pull quote, sidebar, coupon, event details, page border and more'],
+    ['P', 'Polygon tool: click each corner (Shift: 15\u00b0 steps), click the first corner to close it or double-click / Enter to finish it open, Backspace takes the last corner away, Escape cancels'],
+    ['Changing a polygon\u2019s points (double-click it, or Enter)', 'Drag a point; click an edge to add one; Tab / Shift + Tab from point to point, arrow keys move it, Insert adds one, Delete takes it away; Enter or Escape when done'],
     ['E', 'Add an equation: build it, type LaTeX, or write chemistry. Enter or double-click changes a picked one; ' + mod + ' + Enter adds it from anywhere in the dialog'],
     ['Tab, Shift + Tab in a table', 'The next or the cell before, row by row (after the last cell: on to the next story). Escape picks the whole table'],
     ['Escape', 'Stop typing and pick the box; or drop the selection'],
@@ -15616,7 +16211,7 @@ function wireChrome() {
   }
 
   // Keys when not typing in a story or a field.
-  const TOOL_KEYS = { v: 'select', t: 'text', r: 'rect', o: 'ellipse', l: 'line', f: 'picture', b: 'table', n: 'order' };
+  const TOOL_KEYS = { v: 'select', t: 'text', r: 'rect', o: 'ellipse', l: 'line', f: 'picture', b: 'table', n: 'order', p: 'polygon' };
   document.addEventListener('keydown', (e) => {
     const t = e.target;
     if (e.key === 'Escape' && gridDrag) { e.preventDefault(); endGridDrag(false); return; }   // cancel moving a page
@@ -15667,6 +16262,8 @@ function wireChrome() {
       const looking = (mod2 && ['z', 'y'].includes(k)) || e.key === '?';
       if (!looking) return;                          // editing keys stand down (arrows just scroll the desk)
     }
+    // Drawing a polygon, or changing its points (0.48.0): their keys come first.
+    if (onPage && polyKeys(e, mod2, k)) return;
     if (mod2 && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod2 && k === 'y' && !isMac) { e.preventDefault(); redo(); return; }
     if (mod2 && k === 'd') { e.preventDefault(); duplicateSelected(); return; }
@@ -15694,7 +16291,7 @@ function wireChrome() {
     if (e.key === 'Escape') {
       if (cropId) { endCrop(); return; }
       if (linkFrom) { cancelLinkPick(); announce('Linking cancelled.'); }
-      else if (tool === 'order') setTool('select');
+      else if (tool === 'order' || tool === 'polygon') setTool('select');
       else if (selectedIds.length) { selectObjects([]); announce('Nothing picked'); }
       return;
     }
@@ -15724,6 +16321,8 @@ function wireChrome() {
       if (one && one.type === 'text') { startEditing(one.story, doc.stories[one.story].text.length); return; }
       if (one && one.type === 'picture') { startCrop(one); return; }
       if (one && one.eq && !one.locked) { openEquationDialog(one); return; }   // change the equation
+      if (isPolygon(one) && !one.locked) { startPointEdit(one); return; }        // change the polygon's points
+      if (tool === 'polygon') { polygonInMiddle(); return; }                     // a triangle in the middle, ready to change
       if (one && one.type === 'table') { const c = one.cells[0][0]; startEditing(c.story, doc.stories[c.story].text.length); return; }   // type in its first cell
       if (['text', 'rect', 'ellipse', 'line', 'picture', 'shape', 'table'].includes(tool)) createInMiddle(tool);
     }
@@ -19826,6 +20425,7 @@ function checkObject(r, known, groups) {
       };
     });
     look(true);
+    if (r.poly === true && o.contours.length === 1) o.poly = true;   // a polygon (0.48.0): its points can be changed
     // An equation (0.47.0): its LaTeX (plain text, only ever given to MathJax in the
     // equation editor), which tab made it, the letter size it was made at, and whether
     // its alt text is the automatic one. What is drawn is the outline above.
@@ -23734,6 +24334,17 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.48.0", date: "2026-11-16", title: "", notes: [
+    "Polygons, sliders, and five fixes.",
+    "Polygon tool (P, or Polygon in the Shapes gallery). Click on the page for each corner; a line follows the pointer to show the next edge, and Shift keeps it at 15° steps. Click the first corner again to close the shape, or double-click (or press Enter) to finish it open: its outline stops at the last corner, but it still fills, as if an edge ran back to the first. Backspace takes the last corner away, Escape cancels. On a touch screen the floating pill offers Done, Back and Cancel (it waits at the top of the page area, out of the way of the next corner). From the keyboard, Enter on the page with the Polygon tool makes a triangle, ready to have its points changed.",
+    "Edit points. Double-click a polygon, press Enter, or use Edit points (in the pill, or in Look): drag a point to move it, click an edge to add a point there, Delete takes the picked point away. From the keyboard, Tab and Shift+Tab go from point to point, the arrow keys move it (Shift: 10 points), Insert or + adds one halfway to the next; Enter or Escape when done. Look's \"Close the outline\" opens or closes it later. A turned polygon keeps its turn, and its other points stay exactly where they are.",
+    "Sliders in the Inspector, after IMGEDTR: outline width, rounded corners, the drop shadow, text size and kerning, the paragraph styles' size, line and letter spacing, space before and after and indents, the equation size, the text wrap distance, the gap between columns and the space inside table cells. The exact number is still beside each slider, to type or to step with the arrow keys (it is what screen readers use). Positions, sizes and counts keep plain number fields.",
+    "Lock in the floating pill, beside Arrange (Unlock was already there for locked things).",
+    "Fixed: a shape drawn while zoomed in landed much bigger than drawn. A drag under 9 points counted as a click, which makes a ready-made 1-inch shape; zoomed in to 400%, a 30-pixel drag is only 7 points. The test is now in screen pixels, and a real drag keeps its size (the same for text boxes, tables and picture frames).",
+    "Fixed: clicking out of a text box sometimes made a new, empty one. Typing switches to the Text tool, so a click on empty space made a box. Now a click away while typing only stops typing (and picks what was clicked, if anything), and the tool goes back to Select. A box just made and never typed in is taken away again when you click off it, as in PowerPoint (and its step leaves the undo list too).",
+    "Fixed: some paragraphs wouldn't change alignment. Paragraphs from a Publisher file, or from a document made elsewhere, can carry an alignment of their own, which the style's alignment buttons didn't touch. Now the buttons change those paragraphs' own alignment, the buttons show what is on the page, and the note in Paragraph says so. (Rotation had nothing to do with it.)",
+    "Fixed: the sizing arrows on a turned object. Each handle showed its arrows by name, so the top handle of a box turned 90° showed up-and-down while it pulls sideways. Each now shows the double arrow nearest the way it really pulls."
+  ] },
   { version: "0.47.0", date: "2026-11-08", title: "", notes: [
     "Equations, three ways.",
     "The Equation button on the rail (E) opens a dialog with three tabs that all make the same thing. Build it: MathLive's visual editor. Type as on a calculator (/ makes a fraction, ^ a power) or use its keyboard of symbols, which opens by itself on a touch screen. Type LaTeX: for people who know it, with buttons for the usual pieces (fraction, root, power, sum, integral, matrix, Greek letters, signs). Chemistry: formulas and reactions written the mhchem way (2H2 + O2 -> 2H2O), with buttons for arrows, states and charges, and examples to start from. The tab used last opens next time.",
@@ -24687,6 +25298,8 @@ async function start() {
   wireWrap();
   wireTemplates();
   wireEquations();
+  wirePolygons();
+  addSliders();
   wireA11y();
   wireAltDialog();
   wirePictureInput();

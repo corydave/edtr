@@ -144,6 +144,7 @@ colour is never the only difference: the icon's drawing and the name carry it.
 - Tables (0.19.0).
 - Equations (0.47.0): built visually, typed as LaTeX, or written as
   chemistry; an object of its own, drawn as outlines.
+- Polygons drawn corner by corner, with their points editable (0.48.0).
 - Templates and building blocks (0.20.0).
 - Folds, booklet printing, 2-up and 4-up with cut marks (0.21.0).
 - Group, ungroup, lock, hide, flip, rotate, z-order.
@@ -1250,6 +1251,76 @@ into the first box's overflow, the next boxes emptied (as before).
   bigger, with a matching reach. On pointerdown, when a handle and a port
   are both in reach, the nearer one wins; on narrow boxes the diagonal
   ports sit 26 px out on touch (18).
+
+## Polygons, sliders and fixes (0.48.0)
+
+Dave, 2026-11-16, after using it: a Polygon shape (corners, Shift for
+angles, fills even when open, a way to finish open, a way to edit points),
+Lock in the "context menu" (the floating pill: DSKEDTR has no right-click
+menus), sliders in the Inspector like IMGEDTR's, and four bugs. Choices
+agreed with him: 15 degree Shift steps; click the first corner to close,
+double-click / Enter / the pill's Done to finish open; Edit points by
+double-click, Enter, the pill or Look.
+
+- **Polygon tool** (`tool === 'polygon'`, P; a `GALLERY_TOOLS` entry in
+  Basic shapes). State `polyDraw = { pts, hover, closing }`, drawn in
+  `layers.handles` by `renderPolygonDraft` (pale fill as if closed, solid
+  edges, dashed edge to the pointer, round first corner that fills when a
+  click would close). `polygonClick`: first click starts; `clicks >= 2`
+  (the second click of a double-click) finishes open; near the first corner
+  (1.5 x handle reach, 3 corners at least) closes; otherwise a corner,
+  `polyNext` (Shift: `polyConstrain` to 15 degrees from the last corner;
+  else `snapPoint`). Keys in `polyKeys`: Enter finishes, Backspace / Delete
+  / Ctrl+Z take the last corner away, Escape cancels (Escape again: Select
+  tool). Leaving the tool keeps 3 corners or more (open) and drops fewer.
+  The pill (`only: 'polyDraw'`, an empty list so it waits at the top of
+  the page area) has Done, Back and Cancel. Enter on the page with the tool
+  and nothing drawn: `polygonInMiddle` (a triangle, in points mode).
+- **The object:** `type: 'path'`, `poly: true`, one contour of straight
+  edges (zero handles), `closed` per the contour. Fill and outline as other
+  shapes (an open contour still fills in SVG, canvas and PDF). Loader keeps
+  `poly` only with one contour. Merging makes a plain path (no `poly`).
+- **Points mode** (`pointEdit = { id, sel }`): `startPointEdit` / `endPointEdit`;
+  `handlePoints()` is empty, `renderHandles` draws `renderPointHandles`
+  (dashed outline, a square per point, the picked one filled).
+  `pointEditDown`: a point starts a `polyPoint` drag; an edge (not its
+  ends) inserts a point there and drags it (one undo step); inside the
+  shape it can still be moved whole; outside ends points mode. Keys: Tab /
+  Shift+Tab, arrows (Shift 10), Delete (keeps 2; under 3 opens it), Insert
+  or +, Enter / Escape. `selectObjects` of anything else ends it; undo
+  that removes it ends it (in `renderHandles`). The pill (`only: 'points'`):
+  Delete point, Done; when there is no room above or below, it keeps clear
+  of the points. Look has Edit points and "Close the outline".
+- **Turned polygons:** `polyPoints(o)` gives page places (stretched and
+  turned); `setPolyPoints(o, P)` un-turns them about the old centre, boxes
+  them, and places the new box so turning it again puts every point where
+  it was asked (w0 = w, h0 = h: any stretch is baked in).
+- **Sliders** (`SLIDER_FIELDS`, `addSliders`, `syncSlider`): a range input
+  after each number field in the code (so the label still names the
+  number), shown first by CSS `order`; `aria-hidden` and `tabindex=-1`
+  (the number field is the accessible control). Its range is `numRange`
+  (the touch number panel's), refreshed on every `setField`; moving it
+  writes the number and fires the field's own `input` / `change`. A field
+  with a slider takes a whole row of a `.grid4`.
+- **Lock in the pill:** `data-act="lock"` (shown when nothing picked is
+  locked), beside Arrange; Lock and Unlock swap, and keyboard focus follows.
+- **Fixed, zoomed-in shapes landing big:** `finishCreate` tested `w < 9 ||
+  h < 9` points; now a click is `!moved` or both sides under 9 SCREEN
+  pixels (`9 * onePx()`), and a drag keeps its size (at least 1 pt).
+- **Fixed, stray text boxes:** typing forces the Text tool, so a click on
+  empty space made a box. Now, typing and a click outside every text box:
+  blur, Select tool, and the click goes on as a Select click. `freshBox`
+  (set when a text box is made) is removed by `dropFreshBox` if it is still
+  empty and unlinked when the click goes elsewhere; if nothing else has
+  happened since, its undo step is popped too.
+- **Fixed, alignment:** paragraphs with their own `al` (Publisher files,
+  generated documents) ignored the style buttons. `setOwnAlign` changes
+  their own alignment when any picked paragraph has one; `fillParagraph`
+  shows it on the buttons, and the note says the buttons change them.
+- **Fixed, turned objects' sizing arrows:** `handleCursor(name)` turns the
+  handle's direction (`HANDLE_DIRS`) by the object's rotation and picks the
+  nearest of the four double arrows. (The link tabs on turned boxes were
+  checked: they already turn with the box.)
 
 ## Equations (0.47.0)
 

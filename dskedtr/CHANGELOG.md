@@ -1,5 +1,18 @@
 # DSKEDTR changelog
 
+## 0.48.0 - 2026-11-16
+
+Polygons, sliders, and five fixes.
+
+- **Polygon tool** (P, or Polygon in the Shapes gallery). Click on the page for each corner; a line follows the pointer to show the next edge, and Shift keeps it at 15° steps. Click the first corner again to close the shape, or double-click (or press Enter) to finish it open: its outline stops at the last corner, but it still fills, as if an edge ran back to the first. Backspace takes the last corner away, Escape cancels. On a touch screen the floating pill offers Done, Back and Cancel (it waits at the top of the page area, out of the way of the next corner). From the keyboard, Enter on the page with the Polygon tool makes a triangle, ready to have its points changed.
+- **Edit points.** Double-click a polygon, press Enter, or use Edit points (in the pill, or in Look): drag a point to move it, click an edge to add a point there, Delete takes the picked point away. From the keyboard, Tab and Shift+Tab go from point to point, the arrow keys move it (Shift: 10 points), Insert or + adds one halfway to the next; Enter or Escape when done. Look's "Close the outline" opens or closes it later. A turned polygon keeps its turn, and its other points stay exactly where they are.
+- **Sliders in the Inspector**, after IMGEDTR: outline width, rounded corners, the drop shadow, text size and kerning, the paragraph styles' size, line and letter spacing, space before and after and indents, the equation size, the text wrap distance, the gap between columns and the space inside table cells. The exact number is still beside each slider, to type or to step with the arrow keys (it is what screen readers use). Positions, sizes and counts keep plain number fields.
+- **Lock in the floating pill**, beside Arrange (Unlock was already there for locked things).
+- **Fixed: a shape drawn while zoomed in landed much bigger than drawn.** A drag under 9 points counted as a click, which makes a ready-made 1-inch shape; zoomed in to 400%, a 30-pixel drag is only 7 points. The test is now in screen pixels, and a real drag keeps its size (the same for text boxes, tables and picture frames).
+- **Fixed: clicking out of a text box sometimes made a new, empty one.** Typing switches to the Text tool, so a click on empty space made a box. Now a click away while typing only stops typing (and picks what was clicked, if anything), and the tool goes back to Select. A box just made and never typed in is taken away again when you click off it, as in PowerPoint (and its step leaves the undo list too).
+- **Fixed: some paragraphs wouldn't change alignment.** Paragraphs from a Publisher file, or from a document made elsewhere, can carry an alignment of their own, which the style's alignment buttons didn't touch. Now the buttons change those paragraphs' own alignment, the buttons show what is on the page, and the note in Paragraph says so. (Rotation had nothing to do with it.)
+- **Fixed: the sizing arrows on a turned object.** Each handle showed its arrows by name, so the top handle of a box turned 90° showed up-and-down while it pulls sideways. Each now shows the double arrow nearest the way it really pulls.
+
 ## 0.47.0 - 2026-11-08
 
 Equations, three ways.
