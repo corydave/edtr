@@ -1345,6 +1345,8 @@ ul.suite-splash-list { grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)
     <!-- A polygon: change its points; and while changing them, delete the picked point, or finish. -->
     <button type="button" data-act="editPoints" aria-label="Edit points" title="Edit points: move, add and delete the corners (Enter, or double-click it)">
       <svg viewBox="0 0 24 24"><path d="M5 19 8 5l11 4-3 10Z"/><rect x="3" y="17" width="4" height="4" rx="1" fill="currentColor"/><rect x="6" y="3" width="4" height="4" rx="1" fill="currentColor"/><rect x="17" y="7" width="4" height="4" rx="1" fill="currentColor"/></svg></button>
+    <button type="button" data-act="pointAdd" aria-label="Add a point" title="Add a point after the picked one, halfway to the next (Insert, or click an edge)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="15" width="6" height="6" rx="1.5"/><path d="M9 15 15 9"/><path d="M18 3v8M14 7h8"/></svg></button>
     <button type="button" data-act="pointDel" class="danger" aria-label="Delete this point" title="Delete the picked point (Delete)">
       <svg viewBox="0 0 24 24"><rect x="8" y="8" width="8" height="8" rx="1.5"/><path d="M3 3l18 18"/></svg></button>
     <button type="button" data-act="pointsDone" aria-label="Done changing points" title="Done changing points (Enter or Escape)">
@@ -2615,7 +2617,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.48.0';
+const APP_VERSION = '0.48.1';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -11076,7 +11078,7 @@ function startPointEdit(o) {
   updateInspector();
   $('desk').focus({ preventScroll: true });
   announce('Changing the points of ' + objName(o) + ': ' + o.contours[0].pts.length + ' points. Drag a point to move it, click an edge to add one, Delete takes the picked one away. '
-    + 'From the keyboard: Tab goes to the next point, the arrow keys move it, Insert adds one. Enter or Escape when done.');
+    + 'The pill has Add point, Delete point and Done. From the keyboard: Tab goes to the next point, the arrow keys move it, Insert adds one. Enter or Escape when done.');
 }
 function endPointEdit(say) {
   if (!pointEdit) return;
@@ -11152,6 +11154,14 @@ function renderPointHandles(o) {
     fill: 'none', stroke: '#195d61', 'stroke-width': 1.25, 'stroke-dasharray': '4 3', 'vector-effect': 'non-scaling-stroke' }));
   const P = polyPoints(o);
   if (pointEdit.sel >= P.length) pointEdit.sel = P.length - 1;
+  // Halfway along each edge: a small round "+" (click or tap it, or anywhere on the edge, for a new point there).
+  const edges = o.contours[0].closed ? P.length : P.length - 1, rr = s * 0.45;
+  for (let i = 0; i < edges; i++) {
+    const a = P[i], b = P[(i + 1) % P.length], m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    layers.handles.appendChild(svgEl('circle', { cx: m.x, cy: m.y, r: rr, fill: '#ffffff', stroke: '#195d61', 'stroke-width': 1, opacity: 0.85, 'vector-effect': 'non-scaling-stroke' }));
+    layers.handles.appendChild(svgEl('path', { d: 'M' + r2(m.x - rr * 0.55) + ' ' + r2(m.y) + 'H' + r2(m.x + rr * 0.55) + 'M' + r2(m.x) + ' ' + r2(m.y - rr * 0.55) + 'V' + r2(m.y + rr * 0.55),
+      stroke: '#195d61', 'stroke-width': 1.25, 'vector-effect': 'non-scaling-stroke' }));
+  }
   P.forEach((q, i) => {
     const on = i === pointEdit.sel;
     layers.handles.appendChild(svgEl('rect', { x: q.x - s / 2, y: q.y - s / 2, width: s, height: s, rx: handleRound() * onePx(),
@@ -11177,8 +11187,12 @@ function deletePolyPoint() {
 function insertPolyPoint() {
   const o = obj(pointEdit.id);
   if (!isPolygon(o)) return;
-  const P = polyPoints(o), i = pointEdit.sel, j = (i + 1) % P.length;
-  if (!o.contours[0].closed && i === P.length - 1) { announce('That is the last point: pick an earlier one to add a point after it.'); return; }
+  const P = polyPoints(o);
+  // After the picked point, halfway to the next. An open polygon's last point has no next:
+  // then the new point goes halfway along the edge before it.
+  let i = pointEdit.sel;
+  if (!o.contours[0].closed && i === P.length - 1) i--;
+  const j = (i + 1) % P.length;
   recordUndo('other');
   P.splice(i + 1, 0, { x: (P[i].x + P[j].x) / 2, y: (P[i].y + P[j].y) / 2 });
   setPolyPoints(o, P);
@@ -12550,7 +12564,7 @@ function updateQuickBar() {
     editEq: !st.only && !!one && !!one.eq && !locked,
     editPoints: !st.only && isPolygon(one) && !locked,
     polyDone: st.only === 'polyDraw', polyBack: st.only === 'polyDraw', polyCancel: st.only === 'polyDraw',
-    pointDel: st.only === 'points', pointsDone: st.only === 'points',
+    pointAdd: st.only === 'points', pointDel: st.only === 'points', pointsDone: st.only === 'points',
     cropShape: !st.only && !!cropToShapeParts(st.list),
     unlock: !st.only && locked,
     lock: !st.only && !locked && !!st.list.length,
@@ -12748,6 +12762,7 @@ function wireQuickBar() {
       case 'polyDone': finishPolygon(false); break;
       case 'polyBack': polygonBack(); break;
       case 'polyCancel': cancelPolygon(true); break;
+      case 'pointAdd': if (pointEdit) insertPolyPoint(); break;
       case 'pointDel': if (pointEdit) deletePolyPoint(); break;
       case 'pointsDone': endPointEdit(true); break;
       case 'unlock': case 'lock': {
@@ -13128,6 +13143,11 @@ function updateHoverCursor(p) {
   if (linkFrom) { svg.style.cursor = 'alias'; return; }
   if (spaceHeld) { svg.style.cursor = 'grab'; return; }
   if (tool === 'select') {
+    if (pointEdit && isPolygon(obj(pointEdit.id))) {
+      const o = obj(pointEdit.id);
+      if (pointAt(o, p) >= 0) { svg.style.cursor = 'move'; return; }   // a point: drag it
+      if (edgeAt(o, p)) { svg.style.cursor = 'copy'; return; }         // an edge: a click adds a point (the arrow with a +)
+    }
     const h = handleAt(p);
     if (h) { svg.style.cursor = handleCursor(h.name); return; }
     if (tableColAt(p)) { svg.style.cursor = 'col-resize'; return; }
@@ -24334,6 +24354,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.48.1", date: "2026-11-17", title: "", notes: [
+    "Adding points is easier to find. While a polygon's points are being changed, a small round + sits halfway along each edge (click or tap it, or anywhere on the edge, for a new point there), the pointer becomes an arrow with a + over an edge and a move pointer over a point, and the floating pill has Add point (after the picked point, halfway to the next), beside Delete point and Done.",
+    "On an open polygon, adding a point after the last one (Insert, or Add point) puts it halfway along the last edge instead of saying no."
+  ] },
   { version: "0.48.0", date: "2026-11-16", title: "", notes: [
     "Polygons, sliders, and five fixes.",
     "Polygon tool (P, or Polygon in the Shapes gallery). Click on the page for each corner; a line follows the pointer to show the next edge, and Shift keeps it at 15° steps. Click the first corner again to close the shape, or double-click (or press Enter) to finish it open: its outline stops at the last corner, but it still fills, as if an edge ran back to the first. Backspace takes the last corner away, Escape cancels. On a touch screen the floating pill offers Done, Back and Cancel (it waits at the top of the page area, out of the way of the next corner). From the keyboard, Enter on the page with the Polygon tool makes a triangle, ready to have its points changed.",

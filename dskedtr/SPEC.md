@@ -1291,6 +1291,10 @@ double-click, Enter, the pill or Look.
   that removes it ends it (in `renderHandles`). The pill (`only: 'points'`):
   Delete point, Done; when there is no room above or below, it keeps clear
   of the points. Look has Edit points and "Close the outline".
+  (0.48.1) Points mode also draws a small round + halfway along each
+  edge, the pointer is `copy` over an edge and `move` over a point, and
+  the pill has Add point (`insertPolyPoint`: after the picked point; on an
+  open polygon's last point, along the edge before it).
 - **Turned polygons:** `polyPoints(o)` gives page places (stretched and
   turned); `setPolyPoints(o, P)` un-turns them about the old centre, boxes
   them, and places the new box so turning it again puts every point where

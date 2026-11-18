@@ -1,5 +1,10 @@
 # DSKEDTR changelog
 
+## 0.48.1 - 2026-11-17
+
+- **Adding points is easier to find.** While a polygon's points are being changed, a small round + sits halfway along each edge (click or tap it, or anywhere on the edge, for a new point there), the pointer becomes an arrow with a + over an edge and a move pointer over a point, and the floating pill has **Add point** (after the picked point, halfway to the next), beside Delete point and Done.
+- On an open polygon, adding a point after the last one (Insert, or Add point) puts it halfway along the last edge instead of saying no.
+
 ## 0.48.0 - 2026-11-16
 
 Polygons, sliders, and five fixes.
