@@ -2,6 +2,17 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.25.0 - 2026-11-19 - Torn and stamp edges, sticky notes, exact slider values
+
+- **Torn edges.** A picture that is a rectangle (Shape = Rectangle) has a new **Edges** setting in the Inspector: **None**, **Torn** or **Stamp**.
+  - **Torn** rips the sides you pick - **Top**, **Right**, **Bottom**, **Left** (each its own on/off button; it starts with the bottom) - like paper torn out of a page. A thin **paper strip** shows along the rip (it can be turned off), in the **Paper** colour you choose. **Rip size** sets how deep the rip goes, and **New tear** rips it a different way.
+  - The rip is worked out from a few settings and a "seed" number, never stored as pixels, so it can be changed or removed at any time, the same seed always gives the same rip, and a bigger picture simply gets more rip rather than a stretched one. Flipping the picture keeps Left on the left.
+- **Stamp edges.** **Stamp** turns the picture into a postage stamp: a **paper border** with round bites all along every side (perforations), one in each corner. Choose the **Bite size**, the **Paper border** and the **Paper** colour. The picture fills the window inside the border, trimmed evenly.
+- Both edges are cut into the prepared copy of the picture, so the **drop shadow, perspective tilt, export and copy all follow the edge**. They take the place of the rounded corners and the border (those controls are hidden while an edge is on). Make it a screenshot keeps an edge you chose, so a screenshot with a torn bottom works too.
+- **Sticky notes.** A new **Sticky note** tool (rail, under Text; shortcut **O**): click to stick a square note there and start typing (Enter on the canvas adds one in the middle). The note has a soft shadow, a faint glue band at the top and its **bottom-right corner turned up**. Pick its colour with the **colour picker** or the classic note swatches (yellow, orange, pink, purple, blue, green, white); words wrap inside it and the corner handles resize it without changing the text size. The default note is yellow, 240 px, in Permanent Marker; with the tool picked (and nothing selected) the Inspector sets the next note's colour, text colour, font, text size and note size. An empty note stays on the canvas (an empty text box still disappears). Notes are named after their first words ("Note: ...").
+- **A number box beside every slider.** Type an exact value - Corners 15, Strength 35% - instead of nudging the slider. The box and the slider follow each other both ways; values outside the slider's range are pulled back inside it. This covers every Inspector slider, the headshot Zoom and the export Quality.
+- Projects: the new settings are checked when a project is opened (known edge kind, yes/no sides, sizes in range, a valid colour); older projects open unchanged.
+
 ## 1.24.4 - 2026-10-30 - Paste is back on the splash
 
 - **Paste** returns to the splash, with the clipboard icon, in place of **Screenshot** (from 1.24.2). It pastes the picture on the clipboard (`pasteFromButton`, the same as the top bar's Paste). The Screenshot button's own function (`screenshotFromClipboard`) went with it; **Make it a screenshot** is still in the top bar (Ctrl+Shift+X).

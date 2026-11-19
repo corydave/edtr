@@ -197,7 +197,15 @@ svg.icon { width: 20px; height: 20px; flex: none; stroke: currentColor;
 .field input[type="range"] { width: 100%; accent-color: var(--brand); }
 .field .range-wrap { display: flex; align-items: center; gap: 8px; }
 .field .range-wrap output { min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; font-size: 12px; color: var(--text-muted); }
+/* The small number box beside every slider (1.25.0): type an exact value. */
+.field .range-wrap .range-num-wrap { display: flex; align-items: center; gap: 3px; flex: none; }
+.field .range-wrap input.range-num { width: 58px; height: 28px; padding: 0 4px 0 6px; text-align: right;
+  font-variant-numeric: tabular-nums; font-size: 12px; }
+.field .range-wrap .range-unit { font-size: 12px; color: var(--text-muted); min-width: 10px; }
 .field input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--brand); }
+.field.field-wide { grid-template-columns: 1fr; gap: 4px; }
+.field.field-wide .seg { width: 100%; }
+.field.field-wide .seg button { flex: 1; }
 .xywh { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 8px; }
 .xywh label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
 .xywh input { width: 100%; height: 28px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); }
@@ -1089,6 +1097,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <button class="icon-btn" id="shapesBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="shapesPop"
       aria-pressed="false" aria-label="Shapes" data-tip="Shapes" data-keys="U"><span class="shape-icon"></span></button>
     <button class="icon-btn" data-tool="text"        title="Text (T)"       aria-label="Text tool"><span data-icon="type"></span></button>
+    <button class="icon-btn" data-tool="sticky"      title="Sticky note (O)" aria-label="Sticky note tool"><span data-icon="sticky"></span></button>
     <hr aria-hidden="true">
     <button class="icon-btn" data-tool="pen"         title="Pen (P)"        aria-label="Pen tool"><span data-icon="pen"></span></button>
     <button class="icon-btn" data-tool="highlighter" title="Highlighter (H)" aria-label="Highlighter tool"><span data-icon="highlighter"></span></button>
@@ -1254,7 +1263,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <div class="field" id="expLoopRow" hidden><label for="expLoop">Plays</label>
         <select id="expLoop"><option value="0">Forever</option><option value="1">Once</option><option value="2">2 times</option><option value="3">3 times</option><option value="5">5 times</option></select></div>
       <div class="field" id="expQualityRow"><label for="expQuality">Quality</label>
-        <div class="range-wrap"><input type="range" id="expQuality" min="40" max="100" value="90"><output id="expQualityOut">90</output></div></div>
+        <div class="range-wrap"><input type="range" id="expQuality" min="40" max="100" value="90"><span id="expQualityOut"></span></div></div>
       <div class="field"><label for="expScale">Scale</label>
         <select id="expScale"><option value="0.5">0.5x</option><option value="1" selected>1x (actual size)</option><option value="2">2x</option></select></div>
       <p class="note" id="expSize"></p>
@@ -1452,7 +1461,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.24.4';
+const APP_VERSION = '1.25.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1507,6 +1516,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.25.0', date: '2026-11-19', notes: [
+    'Torn edges: in the Inspector, a picture\'s new Edges setting can rip any sides you pick (Top, Right, Bottom, Left) like paper torn from a page, with a thin paper strip along the rip. Choose the rip size and paper colour, or press New tear for a different rip.',
+    'Stamp edges: the same Edges setting turns a picture into a postage stamp, with a paper border and scalloped, perforated sides. Choose the bite size, the border and the paper colour. The drop shadow follows both kinds of edge.',
+    'Sticky notes: a new tool (O) sticks a square note on the canvas with its corner turned up. Type on it, resize it with the handles, and pick its colour with the colour picker or the classic note colours.',
+    'Every slider now has a small number box beside it, so you can type an exact value (say Corners 15) instead of nudging the slider.'
+  ] },
   { version: '1.24.4', date: '2026-10-30', notes: [
     'Paste is back on the splash, with the clipboard icon, in place of Screenshot (Dave changed his mind). It pastes the picture on the clipboard, like the top bar\'s Paste button. Make it a screenshot is still one click away in the top bar (Ctrl+Shift+X).'
   ] },
@@ -1891,6 +1906,8 @@ const ICONS = {
   clipboard: '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   folder: '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
   headshot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 18.7a6 6 0 0 1 10 0"/>',
+  // A note with its bottom-right corner turned up (1.25.0).
+  sticky: '<path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-3.5a1.5 1.5 0 0 1 1.5-1.5H20"/><path d="M8 9h8M8 12.5h5"/>',
   play: '<path d="M7 4.5v15l12.5-7.5z"/>',
   pause: '<rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/>',
   filePlus: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/>',
@@ -2087,7 +2104,11 @@ const toolDefaults = {
   // action: 'erase', 'fill' (paint bucket) or 'recolor' (keeps the shading). color: for Fill / Recolor.
   wand:        { action: 'erase', mode: 'erase', tolerance: 20, contiguous: true, softEdge: 1, color: null },
   text:        { color: null, font: 'sans', fontSize: 36, bold: true, italic: false, align: 'left',
-                 bgOn: false, bgColor: '#ffffff', padding: 10, opacity: 1 }
+                 bgOn: false, bgColor: '#ffffff', padding: 10, opacity: 1 },
+  // Sticky notes (1.25.0) are text layers with sticky: true. bgColor is the paper's color;
+  // size is how big a new note is (a square, in canvas pixels).
+  sticky:      { color: '#1f2937', font: 'marker', fontSize: 26, bold: false, italic: false, align: 'left',
+                 bgColor: '#fde68a', padding: 22, size: 240, opacity: 1 }
 };
 /** The default style for a type, with "null" colors replaced by the user's annotation color. */
 function defaultsFor(type) {
@@ -2532,7 +2553,8 @@ function drawLayer(ctx, layer, pxScale = 1) {
       break;
     }
     case 'text': {
-      if (layer.bgOn) {
+      if (layer.sticky) drawStickyPaper(ctx, layer, pxScale);      // the note itself (section 19)
+      else if (layer.bgOn) {
         ctx.fillStyle = layer.bgColor;
         roundRectPath(ctx, layer.x, layer.y, layer.w, layer.h, Math.min(12, layer.padding));
         ctx.fill();
@@ -3054,8 +3076,31 @@ function makeTextLayer(x, y) {
   return layer;
 }
 
+/**
+ * Make a new sticky note (1.25.0) centred on (cx, cy). A sticky note is a
+ * text layer with sticky: true and a fixed square box, so its words wrap
+ * inside the note. Its look comes from the sticky defaults.
+ */
+function makeStickyLayer(cx, cy) {
+  const d = toolDefaults.sticky, size = d.size;
+  const layer = makeLayer('text', { x: cx - size / 2, y: cy - size / 2, w: size, h: size, text: '',
+    color: d.color, font: d.font, fontSize: d.fontSize, bold: d.bold, italic: d.italic, align: d.align,
+    bgOn: true, bgColor: d.bgColor, padding: d.padding, opacity: d.opacity,
+    boxW: size, boxH: size, sticky: true, name: nextName('sticky', 'Sticky note'), autoName: true });
+  measureText(layer);
+  return layer;
+}
+/** Put a new sticky note on the canvas and start typing in it. */
+function placeSticky(cx, cy) {
+  const layer = makeStickyLayer(cx, cy);
+  doc.layers.push(layer);
+  selectLayer(layer.id);
+  startTextEdit(layer.id);
+  announce('Sticky note added. Type your note, then press Escape.');
+}
+
 const TOOL_NAMES = { select: 'Select', arrow: 'Arrow', line: 'Line', rect: 'Rectangle', ellipse: 'Ellipse', shape: 'Shape',
-  text: 'Text', pen: 'Pen', highlighter: 'Highlighter', crop: 'Crop', eraser: 'Eraser', wand: 'Magic wand',
+  text: 'Text', sticky: 'Sticky note', pen: 'Pen', highlighter: 'Highlighter', crop: 'Crop', eraser: 'Eraser', wand: 'Magic wand',
   step: 'Step marker', cursor: 'Cursor stamp', spotlight: 'Spotlight', redact: 'Redact', magnifier: 'Magnifier' };
 
 /** Switch the active tool. */
@@ -3105,6 +3150,9 @@ function insertDefaultLayer(tool) {
     doc.layers.push(layer);
     selectLayer(layer.id);
     startTextEdit(layer.id);
+    return;
+  } else if (tool === 'sticky') {
+    placeSticky(c.x, c.y);
     return;
   } else if (tool === 'redact') {
     layer = makeLayer('redact', { x: c.x - size, y: c.y - size / 4, w: size * 2, h: size / 2 });
@@ -3274,6 +3322,15 @@ stage.addEventListener('pointerdown', (e) => {
     selectLayer(layer.id);
     startTextEdit(layer.id);
     e.preventDefault();          // keep focus in the text box we just opened
+    return;
+  }
+
+  // --- Sticky note tool: click a note to edit it, or click anywhere else to add one there.
+  if (tool === 'sticky') {
+    const hit = layerAt(p.x, p.y);
+    if (hit && hit.type === 'text' && hit.sticky) { selectLayer(hit.id); startTextEdit(hit.id); return; }
+    placeSticky(p.x, p.y);
+    e.preventDefault();          // keep focus in the note we just opened
     return;
   }
 
@@ -3751,7 +3808,7 @@ function positionTextEditor() {
     whiteSpace: L.boxW ? 'pre-wrap' : 'pre',
     overflowWrap: L.boxW ? 'anywhere' : 'normal',
     background: L.bgOn ? L.bgColor : 'transparent',
-    borderRadius: (L.bgOn ? Math.min(12, L.padding) * z : 0) + 'px',
+    borderRadius: (L.bgOn && !L.sticky ? Math.min(12, L.padding) * z : 0) + 'px',
     transform: 'rotate(' + (L.rotation || 0) + 'deg)',
     opacity: L.opacity
   });
@@ -3785,15 +3842,17 @@ function finishTextEdit() {
   const L = getLayer(id);
   if (L) {
     L.text = textEditor.value.replace(/\s+$/, '');
-    if (!L.text.trim()) {
-      // Empty text box: quietly remove it.
+    if (!L.text.trim() && !L.sticky) {
+      // Empty text box: quietly remove it. (An empty sticky note stays: it may be on purpose.)
       doc.layers = doc.layers.filter((l) => l.id !== id);
       if (state.selectedId === id) state.selectedId = null;
     } else {
       measureText(L);
       // Name the layer after its first words, e.g. "Text: Click here".
-      if (/^Text \d+$/.test(L.name) || L.autoName) { L.name = 'Text: ' + L.text.split('\n')[0].slice(0, 30); L.autoName = true; }
-      if (!settings.stayInTool && state.tool === 'text') setTool('select');
+      if ((/^Text \d+$/.test(L.name) || L.autoName) && L.text.trim()) {
+        L.name = (L.sticky ? 'Note: ' : 'Text: ') + L.text.split('\n')[0].slice(0, 30); L.autoName = true;
+      }
+      if (!settings.stayInTool && (state.tool === 'text' || state.tool === 'sticky')) setTool('select');
     }
   }
   commit();
@@ -3843,9 +3902,11 @@ function setProp(target, key, value, isLayer) {
     // Remember this style for the next layer of the same type.
     // (A sign with its own colors - the red no sign - does not change the style of the next shape.)
     const isPresetSign = target.type === 'shape' && SHAPE_BY_KEY[target.kind] && SHAPE_BY_KEY[target.kind].preset;
-    if (STYLE_KEYS.includes(key) && toolDefaults[target.type] && !isPresetSign) toolDefaults[target.type][key] = value;
+    // (A sticky note's style goes to the next sticky note, not to plain text.)
+    const styleOf = target.sticky ? toolDefaults.sticky : toolDefaults[target.type];
+    if (STYLE_KEYS.includes(key) && styleOf && !isPresetSign && (!target.sticky || key in styleOf)) styleOf[key] = value;
     if (target.type === 'text') { measureText(target, true); positionTextEditor(); }
-    if (['tiltX', 'tiltY', 'brightness', 'contrast', 'saturation'].includes(key)) setTimeout(() => { if (!document.activeElement || document.activeElement.type !== 'range') renderProps(); }, 0);
+    if (['tiltX', 'tiltY', 'brightness', 'contrast', 'saturation'].includes(key)) setTimeout(() => { const a = document.activeElement; if (!a || (a.type !== 'range' && !a.classList.contains('range-num'))) renderProps(); }, 0);
     commit('prop:' + target.id + ':' + key);
     renderLayers();
   }
@@ -3869,11 +3930,52 @@ function colorField(label, target, key, isLayer) {
 }
 function rangeField(label, target, key, isLayer, min, max, step = 1, scale = 1, unit = '') {
   const id = fid();
-  const shown = (v) => Math.round(v * scale * 10) / 10 + unit;
   const input = el('input', { type: 'range', id, min, max, step, value: target[key] * scale });
-  const out = el('output', { for: id, text: shown(target[key]) });
-  input.addEventListener('input', () => { const v = Number(input.value) / scale; out.textContent = shown(v); setProp(target, key, v, isLayer); });
-  return el('div', { class: 'field' }, el('label', { for: id, text: label }), el('div', { class: 'range-wrap' }, input, out));
+  input.addEventListener('input', () => setProp(target, key, Number(input.value) / scale, isLayer));
+  return el('div', { class: 'field' }, el('label', { for: id, text: label }),
+    el('div', { class: 'range-wrap' }, input, sliderNumber(input, label, unit)));
+}
+/**
+ * The small number box beside a slider (1.25.0), so people can type an
+ * exact value (Corners 15) instead of nudging the slider to it.
+ *   slider - the <input type="range"> it belongs to
+ *   label  - what the slider is for (the box's name for screen readers)
+ *   unit   - shown after the box ("%", "x"), or ''
+ * The box and the slider stay in step both ways. Typing does not talk to
+ * the layer directly: it moves the slider and sends the slider's own
+ * "input" event, so every slider keeps its one place where the value is
+ * saved. Values outside the slider's range are pulled back inside it.
+ */
+function sliderNumber(slider, label, unit = '') {
+  const min = Number(slider.min), max = Number(slider.max);
+  const step = slider.step && slider.step !== 'any' ? Number(slider.step) : 1;
+  const tidy = (v) => Math.round(v * 100) / 100;          // 12.300000001 -> 12.3
+  const box = el('input', { type: 'number', class: 'range-num', min, max, step, inputmode: 'decimal',
+    value: tidy(Number(slider.value)), 'aria-label': label + (unit ? ' (' + unit + ')' : '') });
+  // Push a typed number into the slider and let the slider do the rest.
+  const send = (v) => {
+    slider.value = String(clamp(v, min, max));
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  box.addEventListener('input', () => {
+    const v = Number(box.value);
+    // Half-typed ("", "-", "1.") or out of range: wait until the box is left.
+    if (box.value === '' || !Number.isFinite(v) || v < min || v > max) return;
+    send(v);
+  });
+  box.addEventListener('change', () => {           // Enter, Tab away, or the touch number panel
+    const v = Number(box.value);
+    if (box.value !== '' && Number.isFinite(v)) send(v);
+    box.value = tidy(Number(slider.value));         // show what the slider really took
+  });
+  // Slider dragged (or changed some other way): show its value in the box,
+  // unless the person is typing in the box right now.
+  const show = () => { if (document.activeElement !== box) box.value = tidy(Number(slider.value)); };
+  slider.addEventListener('input', show);
+  slider.addEventListener('sync', show);
+  const wrap = el('span', { class: 'range-num-wrap' }, box);
+  if (unit) wrap.append(el('span', { class: 'range-unit', text: unit, 'aria-hidden': 'true' }));
+  return wrap;
 }
 function checkField(label, target, key, isLayer, onAfter) {
   const id = fid();
@@ -3888,6 +3990,23 @@ function selectField(label, target, key, isLayer, options) {
   sel.value = target[key];
   sel.addEventListener('change', () => setProp(target, key, sel.value, isLayer));
   return el('div', { class: 'field' }, el('label', { for: id, text: label }), sel);
+}
+/**
+ * The paper color of a sticky note (1.25.0): the color picker button, then
+ * the classic sticky-note colors as one-click swatches. Same as colorField,
+ * with note colors instead of the annotation colors.
+ */
+function stickyColorField(target, isLayer) {
+  const id = fid();
+  const pickBtn = colorButton('Note color', () => target.bgColor, (hex) => { setProp(target, 'bgColor', hex, isLayer); mark(); });
+  pickBtn.id = id;
+  const swatches = STICKY_COLORS.map(([c, name]) => el('button', {
+    type: 'button', class: 'swatch', style: 'background:' + c, 'aria-label': 'Note color ' + name, title: name,
+    onclick: () => { setProp(target, 'bgColor', c, isLayer); mark(); pickBtn.refresh(); }
+  }));
+  function mark() { swatches.forEach((b, i) => b.setAttribute('aria-pressed', String(STICKY_COLORS[i][0] === (target.bgColor || '').toLowerCase()))); }
+  mark();
+  return el('div', { class: 'field' }, el('label', { for: id, text: 'Note color' }), el('div', { class: 'color-row' }, pickBtn, ...swatches));
 }
 /** A row of toggle buttons. multi=false: pick one value. multi=true: each button toggles its own key. */
 function segField(label, target, buttons, isLayer) {
@@ -3979,9 +4098,20 @@ function styleFields(type, t, isLayer) {
       { key: 'align', value: 'left', text: 'Left', aria: 'Align left' },
       { key: 'align', value: 'center', text: 'Center', aria: 'Align center' },
       { key: 'align', value: 'right', text: 'Right', aria: 'Align right' }], isLayer));
-    rows.push(checkField('Background', t, 'bgOn', isLayer));
-    rows.push(colorField('Box color', t, 'bgColor', isLayer));
+    if (t.sticky) {                          // a sticky note always has its paper
+      rows.push(stickyColorField(t, isLayer));
+    } else {
+      rows.push(checkField('Background', t, 'bgOn', isLayer));
+      rows.push(colorField('Box color', t, 'bgColor', isLayer));
+    }
     rows.push(rangeField('Padding', t, 'padding', isLayer, 0, 60));
+  }
+  if (type === 'sticky') {                   // the style of the NEXT sticky note
+    rows.push(stickyColorField(t, false));
+    rows.push(colorField('Text color', t, 'color', false));
+    rows.push(selectField('Font', t, 'font', false, Object.entries(FONTS).map(([k, f]) => [k, f.label])));
+    rows.push(rangeField('Text size', t, 'fontSize', false, 8, 120));
+    rows.push(sizeField('Note size', t, false, 80, 800));
   }
   if (type === 'step') {
     rows.push(sizeField('Size', t, isLayer, 18, 200));
@@ -4064,10 +4194,8 @@ function sizeField(label, t, isLayer, min, max) {
   const id = fid();
   const get = () => (isLayer ? t.w : t.size);
   const input = el('input', { type: 'range', id, min, max, value: get() });
-  const out = el('output', { for: id, text: Math.round(get()) });
   input.addEventListener('input', () => {
     const v = Number(input.value);
-    out.textContent = v;
     if (isLayer) {
       const c = centerOf(t); t.w = t.h = v; t.x = c.x - v / 2; t.y = c.y - v / 2;
       if (toolDefaults[t.type]) toolDefaults[t.type].size = v;
@@ -4075,7 +4203,7 @@ function sizeField(label, t, isLayer, min, max) {
     } else t.size = v;
     requestRender();
   });
-  return el('div', { class: 'field' }, el('label', { for: id, text: label }), el('div', { class: 'range-wrap' }, input, out));
+  return el('div', { class: 'field' }, el('label', { for: id, text: label }), el('div', { class: 'range-wrap' }, input, sliderNumber(input, label)));
 }
 
 /** The look of a spotlight: dim color and strength, blur, feather. */
@@ -4200,7 +4328,7 @@ function renderProps() {
 
   if (L) {
     if (L.type === 'image') ensureImageStyle(L);
-    title.textContent = KIND_LABELS[L.type] + ' properties';
+    title.textContent = (L.sticky ? 'Sticky note' : KIND_LABELS[L.type]) + ' properties';
     // --- Position, size, rotation
     if (L.type === 'spotlight') {
       spotlightFields(L).forEach((r) => propsBody.append(r));
@@ -4271,6 +4399,7 @@ function renderProps() {
     styleFields(state.tool, t, false).forEach((r) => propsBody.append(r));
     const TOOL_HINTS = {
       text: 'Click the canvas to add text. Press Enter on the canvas to add it in the middle.',
+      sticky: 'Click the canvas to stick a note there, then type. Press Enter on the canvas to add one in the middle. Drag a corner handle to resize it.',
       step: 'Click to place the next number. Steps renumber themselves when one is deleted.',
       cursor: 'Click where the cursor should point. Its tip lands exactly on your click.',
       spotlight: 'Drag to cut a hole in the spotlight. More holes join the same spotlight, so you can light up several people or things at once.',
@@ -4641,7 +4770,8 @@ function imageFields(L) {
         onclick: () => { fitCropToShape(L); commit(); renderProps(); requestRender(); announce('Crop fitted to the shape'); } })));
     rows.push(el('p', { class: 'hint', text: 'Use Crop image to choose which part of the picture shows inside the shape. The border and shadow follow the shape.' }));
   } else {
-    rows.push(rangeField('Corners', L, 'radius', true, 0, 200));
+    if (!edgeOf(L)) rows.push(rangeField('Corners', L, 'radius', true, 0, 200));
+    rows.push(...edgeFields(L));             // torn or stamp edges (1.25.0)
   }
   rows.push(el('div', { class: 'subhead', text: 'Adjust' }));
   rows.push(rangeField('Brightness', L, 'brightness', true, -100, 100));
@@ -4654,9 +4784,11 @@ function imageFields(L) {
   rows.push(rangeField('Up/down', L, 'tiltY', true, -60, 60));
   if (isTilted(L)) rows.push(el('div', { class: 'btn-row', style: 'margin-bottom:8px' },
     el('button', { type: 'button', class: 'btn', text: 'Reset tilt', onclick: () => { L.tiltX = 0; L.tiltY = 0; commit(); renderProps(); requestRender(); } })));
-  rows.push(el('div', { class: 'subhead', text: 'Border' }));
-  rows.push(rangeField('Thickness', L, 'borderWidth', true, 0, 40));
-  rows.push(colorField('Color', L, 'borderColor', true));
+  if (!edgeOf(L)) {                          // a torn or stamp edge is its own border
+    rows.push(el('div', { class: 'subhead', text: 'Border' }));
+    rows.push(rangeField('Thickness', L, 'borderWidth', true, 0, 40));
+    rows.push(colorField('Color', L, 'borderColor', true));
+  }
   rows.push(el('div', { class: 'subhead', text: 'Shadow' }));
   rows.push(checkField('Drop shadow', L, 'shadowOn', true));
   rows.push(rangeField('Softness', L, 'shadowBlur', true, 0, 100));
@@ -4670,6 +4802,58 @@ function imageFields(L) {
   }
   return rows;
 }
+/**
+ * The Edges controls for a rectangle picture (1.25.0): None, Torn or Stamp,
+ * then the settings for the one picked. See "Edges" (section 18) for how
+ * they are drawn. Picking a kind rebuilds the panel, then puts the focus
+ * back on the button that was pressed.
+ */
+function edgeFields(L) {
+  const rows = [el('div', { class: 'subhead', text: 'Edges' })];
+  const kind = EDGE_KINDS.includes(L.edge) ? L.edge : 'none';
+  const group = el('div', { class: 'seg', role: 'group', 'aria-label': 'Edges' });
+  for (const [value, text, full] of [['none', 'None', 'Plain straight edges'],
+    ['torn', 'Torn', 'Torn paper: pick which sides are ripped'],
+    ['stamp', 'Stamp', 'Postage stamp: a paper border with scalloped edges']]) {
+    group.append(el('button', { type: 'button', text, title: full, 'aria-label': full, 'data-edge': value,
+      'aria-pressed': String(kind === value), disabled: L.locked,
+      onclick: () => {
+        L.edge = value;
+        // Torn with no side chosen would look like nothing happened: start with the bottom.
+        if (value === 'torn' && !TEAR_SIDES.some((k) => L[k])) L.tearBottom = true;
+        commit(); renderProps(); requestRender();
+        const again = propsBody.querySelector('[data-edge="' + value + '"]'); if (again) again.focus();
+        announce(value === 'none' ? 'Plain edges' : value === 'torn' ? 'Torn edges' : 'Stamp edges');
+      } }));
+  }
+  rows.push(el('div', { class: 'field' }, el('span', { class: 'label', text: 'Style' }), group));
+  if (kind === 'torn') {
+    // Each side is its own on/off button (segField toggles a key when no value is given).
+    const sides = segField('Torn sides', L, [
+      { key: 'tearTop', text: 'Top', aria: 'Tear the top' },
+      { key: 'tearRight', text: 'Right', aria: 'Tear the right side' },
+      { key: 'tearBottom', text: 'Bottom', aria: 'Tear the bottom' },
+      { key: 'tearLeft', text: 'Left', aria: 'Tear the left side' }], true);
+    sides.classList.add('field-wide');       // four words need the whole width: label above, buttons below
+    rows.push(sides);
+    rows.push(rangeField('Rip size', L, 'tearSize', true, 4, 80));
+    rows.push(checkField('Paper strip', L, 'tearPaper', true));
+    rows.push(colorField('Paper', L, 'edgeColor', true));
+    rows.push(el('div', { class: 'btn-row', style: 'margin-bottom:8px' },
+      el('button', { type: 'button', class: 'btn', text: 'New tear', title: 'Rip it a different way',
+        onclick: () => {
+          L.tearSeed = 1 + Math.floor(Math.random() * 999998);   // a new seed = a new rip (see seededRandom)
+          commit(); requestRender(); announce('Torn a different way');
+        } })));
+  } else if (kind === 'stamp') {
+    rows.push(rangeField('Bite size', L, 'stampHole', true, 2, 30));
+    rows.push(rangeField('Paper border', L, 'stampMargin', true, 0, 60));
+    rows.push(colorField('Paper', L, 'edgeColor', true));
+  }
+  if (kind !== 'none') rows.push(el('p', { class: 'hint', text: 'Tip: turn on the Drop shadow below so the paper lifts off the page.' }));
+  return rows;
+}
+
 /**
  * The image's Shape: a drop-down of Rectangle plus every shape an image can
  * be cut to, grouped as in the Shapes panel. Picking a shape also crops the
@@ -5143,7 +5327,7 @@ function layerRow(L, inGroup) {
   const nameBtn = el('button', { type: 'button', class: 'layer-name', 'aria-current': isSel ? 'true' : null,
     title: 'Click to select, Shift+click for a range, Ctrl/Cmd+click to add. Drag to reorder. Double-click or F2 to rename.',
     onclick: (e) => rowClick(e, key), ondblclick: () => beginRename(key), onkeydown: (e) => rowKeyDown(e, key) });
-  nameBtn.innerHTML = iconSVG(KIND_ICONS[L.type]);
+  nameBtn.innerHTML = iconSVG(L.sticky ? 'sticky' : KIND_ICONS[L.type]);     // a sticky note is a text layer with its own icon
   nameBtn.append(el('span', { text: L.name }));
   nameBtn.setAttribute('aria-label', L.name + ', ' + KIND_LABELS[L.type] + (inGroup ? ', in ' + getGroup(L.groupId).name : '') +
     (L.visible ? '' : ', hidden') + (L.locked ? ', locked' : '') + (isSel ? ', selected' : ''));
@@ -5604,7 +5788,7 @@ function updateExportInfo() {
   }
   $('expGifNote').hidden = !gif;
   $('expJpegNote').hidden = !(fmt === 'image/jpeg' && hasTransparency());
-  $('expQualityOut').textContent = $('expQuality').value;
+  $('expQuality').dispatchEvent(new Event('sync'));       // its number box shows the value
   const sc = doc.showcase && doc.showcase.on;
   const size = sc ? showcaseSize(scale) : { w: Math.round(doc.width * scale), h: Math.round(doc.height * scale) };
   $('expSize').textContent = 'Size: ' + size.w + ' x ' + size.h + ' pixels' + (sc ? ' (with showcase)' : '') +
@@ -5716,7 +5900,10 @@ $('btnHeadshot').addEventListener('click', () => headshotFromCanvas());
 // Style settings every image layer has (older layers get these filled in).
 const IMAGE_STYLE_DEFAULTS = { radius: 0, borderWidth: 0, borderColor: '#d1d5db', shadowOn: false,
   shadowBlur: 24, shadowY: 8, shadowOpacity: 0.35, shadowColor: '#000000', flipX: false, flipY: false, tiltX: 0, tiltY: 0,
-  brightness: 0, contrast: 0, saturation: 0 };
+  brightness: 0, contrast: 0, saturation: 0,
+  // Torn or stamp edges (1.25.0, see "Edges" below).
+  edge: 'none', tearTop: false, tearRight: false, tearBottom: true, tearLeft: false,
+  tearSize: 16, tearSeed: 1, tearPaper: true, stampHole: 7, stampMargin: 10, edgeColor: '#ffffff' };
 function ensureImageStyle(layer) {
   for (const [k, v] of Object.entries(IMAGE_STYLE_DEFAULTS)) if (layer[k] === undefined) layer[k] = v;
 }
@@ -5836,12 +6023,13 @@ function imageDrawSource(layer) {
   const adjust = hasAdjust(layer);
   const painted = paintSig(layer);                // colour changes from the magic wand (Fill / Recolor)
   const shape = maskShapeOf(layer);              // cut to a shape (a star, a shield...)? see "Image shapes"
-  if (!mask && radiusSrc < 0.5 && !adjust && !painted && !shape) return { img: src, sx: cr.x, sy: cr.y, sw: cr.w, sh: cr.h };
+  const edge = edgeOf(layer);                    // torn or stamp edges? see "Edges"
+  if (!mask && radiusSrc < 0.5 && !adjust && !painted && !shape && !edge) return { img: src, sx: cr.x, sy: cr.y, sw: cr.w, sh: cr.h };
   const base = painted ? paintedSource(layer) : src;   // the recoloured copy, when there is one
 
   const key = [layer.imageId, cr.x, cr.y, cr.w, cr.h, eraseSig(layer), painted, Math.round(radiusSrc),
     layer.brightness || 0, layer.contrast || 0, layer.saturation || 0,
-    shape ? shape + (layer.flipX ? 'x' : '') + (layer.flipY ? 'y' : '') : ''].join('|');
+    shape ? shape + (layer.flipX ? 'x' : '') + (layer.flipY ? 'y' : '') : '', edgeSig(layer)].join('|');
   let s = styledCache.get(layer.id);
   if (!s || s.key !== key) {
     const c = document.createElement('canvas');
@@ -5860,6 +6048,8 @@ function imageDrawSource(layer) {
       ctx.globalCompositeOperation = 'destination-in';
       ctx.fillStyle = '#000';
       ctx.fill(maskPath(shape, 0, 0, c.width, c.height, layer.flipX, layer.flipY));
+    } else if (edge) {         // torn or stamp edges (they replace the rounded corners)
+      applyEdge(ctx, c, layer, edge);
     } else if (radiusSrc >= 0.5) {    // keep only the inside of a rounded rectangle
       ctx.globalCompositeOperation = 'destination-in';
       roundRectPath(ctx, 0, 0, c.width, c.height, radiusSrc);
@@ -5907,6 +6097,7 @@ function drawImageLayer(ctx, layer, pxScale = 1) {
  */
 function drawImageBorder(ctx, L, x, y, w, h, s) {
   if (!(L.borderWidth > 0)) return;
+  if (edgeOf(L)) return;                 // a torn or stamp edge is its own border (see "Edges")
   ctx.strokeStyle = L.borderColor;
   const shape = maskShapeOf(L);
   if (shape) {
@@ -5921,6 +6112,177 @@ function drawImageBorder(ctx, L, x, y, w, h, s) {
   const b = L.borderWidth * s / 2;
   roundRectPath(ctx, x + b, y + b, w - b * 2, h - b * 2, Math.max(0, ((L.radius || 0) - L.borderWidth / 2) * s));
   ctx.lineWidth = L.borderWidth * s; ctx.stroke();
+}
+
+/* ---- Edges: torn paper and postage stamp (1.25.0) ----
+   A picture that is a plain rectangle (Shape = Rectangle) can have
+     L.edge = 'torn'  - the sides you pick (tearTop, tearRight, tearBottom,
+                        tearLeft) look ripped out of a page, with a thin
+                        strip of paper along the rip (tearPaper, edgeColor)
+     L.edge = 'stamp' - a postage stamp: a paper border (stampMargin,
+                        edgeColor) with round bites along every side
+                        (perforations, stampHole = the size of each bite)
+   Sizes are in canvas pixels, so a rip or a bite looks the same size on a
+   big picture and a small one. Nothing is baked into the pixels: the edge
+   is redrawn from these few settings, so it can be changed or removed at
+   any time. The rip's wiggles come from a "seed" number (tearSeed): the
+   same seed always gives the same rip, and New tear picks another seed.
+   The edge is cut in imageDrawSource, so the drop shadow, tilt and export
+   all follow it for free.                                                   */
+const EDGE_KINDS = ['none', 'torn', 'stamp'];
+const TEAR_SIDES = ['tearTop', 'tearRight', 'tearBottom', 'tearLeft'];
+
+/** 'torn', 'stamp' or null. Only rectangles get edges; a torn edge needs at least one side. */
+function edgeOf(L) {
+  if (L.type !== 'image' || maskShapeOf(L)) return null;
+  if (L.edge === 'stamp') return 'stamp';
+  if (L.edge === 'torn' && TEAR_SIDES.some((k) => L[k])) return 'torn';
+  return null;
+}
+
+/** Everything the edge depends on, as text (part of the styledCache key). '' = no edge. */
+function edgeSig(L) {
+  const edge = edgeOf(L);
+  if (!edge) return '';
+  const common = [edge, Math.round(L.w), Math.round(L.h), L.edgeColor, L.flipX ? 'x' : '', L.flipY ? 'y' : ''];
+  if (edge === 'stamp') return common.concat(L.stampHole, L.stampMargin).join(':');
+  return common.concat(TEAR_SIDES.map((k) => (L[k] ? 1 : 0)).join(''), L.tearSize, L.tearSeed, L.tearPaper ? 1 : 0).join(':');
+}
+
+/**
+ * A tiny random number maker that always gives the same numbers for the
+ * same seed (Math.random cannot do that). This is the well-known
+ * "mulberry32" recipe. Returns a function; each call gives 0 <= n < 1.
+ */
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * The wiggly line of one torn side, as a list of [along, depth] points:
+ * "along" runs from 0 to len (the side's length), "depth" is how far the
+ * rip bites into the picture (0 = the original edge, at most "size").
+ * Two lines come from the same seed: the outer one (the edge of the
+ * paper) and the inner one (where the picture starts), which is always a
+ * little deeper, so a thin strip of paper shows between them.
+ */
+function tearProfile(len, size, seed, inner) {
+  const rnd = seededRandom(seed);
+  const fine = seededRandom(seed + 7919);           // extra small wiggles for the inner line
+  const pts = [];
+  let depth = size * (0.3 + rnd() * 0.4);
+  let along = 0;
+  for (;;) {
+    let d = depth;
+    if (inner) d = Math.min(size * 1.25, depth + size * (0.16 + fine() * 0.22));
+    pts.push([Math.min(along, len), d]);
+    if (along >= len) break;
+    along += size * (0.22 + rnd() * 0.5);           // the next point: unevenly spaced, like real paper
+    depth += (rnd() - 0.5) * size * 0.85;           // wander in and out
+    if (rnd() < 0.15) depth += (rnd() - 0.5) * size * 0.9;   // now and then a bigger nick
+    depth = clamp(depth, size * 0.06, size);
+  }
+  return pts;
+}
+
+/**
+ * The outline of a picture with torn sides, in layer pixels (0..W, 0..H),
+ * walking clockwise from the top-left corner. Sides that are not torn
+ * stay straight. "flipX/flipY": the layer is mirrored AFTER this outline
+ * is used (when drawn), so the sides are swapped here first - that way
+ * "Left" is always the side you see on the left.
+ */
+function tornPath(L, W, H, inner) {
+  const size = Math.max(2, Math.min(L.tearSize, W / 3, H / 3));
+  // Which side of the stored picture shows where (seed numbers follow what you see).
+  const shows = {
+    top: L.flipY ? 'tearBottom' : 'tearTop', bottom: L.flipY ? 'tearTop' : 'tearBottom',
+    left: L.flipX ? 'tearRight' : 'tearLeft', right: L.flipX ? 'tearLeft' : 'tearRight' };
+  const seedFor = { tearTop: 11, tearRight: 23, tearBottom: 37, tearLeft: 53 };
+  const side = (name, len) => {
+    const key = shows[name];
+    return L[key] ? tearProfile(len, size, L.tearSeed * 101 + seedFor[key], inner) : [[0, 0], [len, 0]];
+  };
+  const pts = [];
+  for (const [t, d] of side('top', W)) pts.push([t, d]);              // left to right
+  for (const [t, d] of side('right', H)) pts.push([W - d, t]);        // top to bottom
+  for (const [t, d] of side('bottom', W)) pts.push([W - t, H - d]);   // right to left
+  for (const [t, d] of side('left', H)) pts.push([d, H - t]);         // bottom to top
+  const p = new Path2D();
+  pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y)));
+  p.closePath();
+  return p;
+}
+
+/**
+ * Cut a torn or stamp edge into the prepared copy of a picture.
+ *   ctx, c - the copy's canvas (in picture pixels, which may be bigger or
+ *            smaller than layer pixels; kx, ky convert between the two)
+ */
+function applyEdge(ctx, c, L, edge) {
+  const kx = c.width / Math.max(1, L.w), ky = c.height / Math.max(1, L.h);
+  const toCopy = new DOMMatrix([kx, 0, 0, ky, 0, 0]);   // layer pixels -> copy pixels
+  if (edge === 'torn') {
+    const inner = new Path2D(), outer = new Path2D();
+    inner.addPath(tornPath(L, L.w, L.h, true), toCopy);
+    outer.addPath(tornPath(L, L.w, L.h, false), toCopy);
+    ctx.globalCompositeOperation = 'destination-in';     // keep the picture inside the inner rip
+    ctx.fillStyle = '#000'; ctx.fill(inner);
+    if (L.tearPaper) {
+      // The strip of paper between the two rips. It is drawn on its own
+      // canvas first (outer shape minus inner shape), so erased holes in
+      // the middle of the picture stay see-through.
+      const strip = document.createElement('canvas');
+      strip.width = c.width; strip.height = c.height;
+      const sx = strip.getContext('2d');
+      sx.fillStyle = L.edgeColor || '#ffffff'; sx.fill(outer);
+      sx.globalCompositeOperation = 'destination-out'; sx.fill(inner);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(strip, 0, 0);
+    }
+    return;
+  }
+  // Stamp: paper all over, the picture inside the paper border, then the bites.
+  const rx = L.stampHole * kx, ry = L.stampHole * ky;          // a bite's size, in copy pixels
+  const px = rx + L.stampMargin * kx, py = ry + L.stampMargin * ky;   // paper from the edge to the picture
+  const pic = document.createElement('canvas');                 // keep the picture for a moment
+  pic.width = c.width; pic.height = c.height;
+  pic.getContext('2d').drawImage(c, 0, 0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = L.edgeColor || '#ffffff';
+  ctx.fillRect(0, 0, c.width, c.height);
+  const iw = Math.max(1, c.width - px * 2), ih = Math.max(1, c.height - py * 2);
+  // The picture fills the window inside the border, trimmed evenly if needed (like "cover").
+  const k = Math.max(iw / c.width, ih / c.height);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(px, py, iw, ih); ctx.clip();
+  ctx.drawImage(pic, px + (iw - c.width * k) / 2, py + (ih - c.height * k) / 2, c.width * k, c.height * k);
+  ctx.restore();
+  // The perforations: round bites centred on each edge, evenly spaced, one in every corner.
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  const across = Math.max(2, Math.round(c.width / (rx * 2.7)));   // how many gaps along the top
+  const down = Math.max(2, Math.round(c.height / (ry * 2.7)));    // ... and down the sides
+  for (let i = 0; i <= across; i++) {
+    const x = (i * c.width) / across;
+    ctx.moveTo(x + rx, 0); ctx.ellipse(x, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.moveTo(x + rx, c.height); ctx.ellipse(x, c.height, rx, ry, 0, 0, Math.PI * 2);
+  }
+  for (let i = 1; i < down; i++) {
+    const y = (i * c.height) / down;
+    ctx.moveTo(rx, y); ctx.ellipse(0, y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.moveTo(c.width + rx, y); ctx.ellipse(c.width, y, rx, ry, 0, 0, Math.PI * 2);
+  }
+  ctx.fill();
 }
 
 /** Draw the WHOLE original picture into a rectangle, mirrored if the layer is flipped. */
@@ -6970,9 +7332,81 @@ $('cropH').addEventListener('change', cropSizeTyped);
      19d. Spotlight (dim and/or blur everything except some "holes")
      19e. Redact (solid box or coarse pixelation)
      19f. Magnifier (a round zoom bubble)
+     19g. Sticky notes (1.25.0)
    Spotlight, redact and magnifier need to SEE the layers below them, so
    they redraw those layers themselves (into a spare canvas, or zoomed in).
    ----------------------------------------------------------------------- */
+
+/* ---------- 19g. Sticky notes ----------
+   A sticky note is a text layer with sticky: true (see makeStickyLayer).
+   Its words are drawn by the normal text code; this draws the paper under
+   them: a square note with a soft shadow, a slightly darker band at the
+   top (where the glue is) and its bottom-right corner turned up.         */
+
+// The classic sticky-note colors, offered as swatches: [color, name].
+const STICKY_COLORS = [['#fde68a', 'Yellow'], ['#fdba74', 'Orange'], ['#f9a8d4', 'Pink'],
+  ['#c4b5fd', 'Purple'], ['#93c5fd', 'Blue'], ['#86efac', 'Green'], ['#ffffff', 'White']];
+
+/** A color made lighter (amount > 0) or darker (amount < 0), -1..1. "#fde68a", -0.2 -> a deeper yellow. */
+function shadeHex(hex, amount) {
+  const n = parseInt(String(hex).replace('#', ''), 16) || 0;
+  const mix = (v) => Math.round(amount < 0 ? v * (1 + amount) : v + (255 - v) * amount);
+  return 'rgb(' + mix((n >> 16) & 255) + ',' + mix((n >> 8) & 255) + ',' + mix(n & 255) + ')';
+}
+
+function drawStickyPaper(ctx, L, pxScale) {
+  const { x, y, w, h } = L;
+  const right = x + w, bottom = y + h;
+  const c = Math.min(w, h) * 0.16;            // how far the turned-up corner reaches
+  const paper = L.bgColor || STICKY_COLORS[0][0];
+
+  // 1. The note, with its corner folded away (a gentle curve, like real paper).
+  const body = new Path2D();
+  body.moveTo(x, y);
+  body.lineTo(right, y);
+  body.lineTo(right, bottom - c);
+  body.quadraticCurveTo(right - c * 0.4, bottom - c * 0.4, right - c, bottom);
+  body.lineTo(x, bottom);
+  body.closePath();
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.24)';       // it sits on the page, lifted a little
+  ctx.shadowBlur = 14 * pxScale;
+  ctx.shadowOffsetY = 5 * pxScale;
+  ctx.fillStyle = paper;
+  ctx.fill(body);
+  ctx.restore();
+
+  // 2. A faint darker band along the top, where a real note is glued down.
+  ctx.save();
+  ctx.clip(body);
+  const glue = ctx.createLinearGradient(0, y, 0, y + h * 0.22);
+  glue.addColorStop(0, 'rgba(0,0,0,0.07)');
+  glue.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glue;
+  ctx.fillRect(x, y, w, h * 0.22);
+  ctx.restore();
+
+  // 3. The turned-up corner: the back of the paper, curling up toward the
+  //    middle of the note, shaded from darker (the fold) to lighter (the tip).
+  const tipX = right - c * 0.86, tipY = bottom - c * 0.86;
+  const flap = new Path2D();
+  flap.moveTo(right, bottom - c);
+  flap.quadraticCurveTo(right - c * 0.4, bottom - c * 0.4, right - c, bottom);     // the fold (same curve as the note)
+  flap.quadraticCurveTo(right - c * 1.02, bottom - c * 0.55, tipX, tipY);           // one curled edge
+  flap.quadraticCurveTo(right - c * 0.55, bottom - c * 1.02, right, bottom - c);    // the other
+  flap.closePath();
+  const shade = ctx.createLinearGradient(right - c * 0.5, bottom - c * 0.5, tipX, tipY);
+  shade.addColorStop(0, shadeHex(paper, -0.16));
+  shade.addColorStop(1, shadeHex(paper, 0.35));
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.22)';       // the lifted corner casts a small shadow on the note
+  ctx.shadowBlur = 6 * pxScale;
+  ctx.shadowOffsetX = -2 * pxScale;
+  ctx.shadowOffsetY = -1 * pxScale;
+  ctx.fillStyle = shade;
+  ctx.fill(flap);
+  ctx.restore();
+}
 
 /* ---------- 19a. Helpers ---------- */
 
@@ -8157,7 +8591,7 @@ function drawTiltedImage(ctx, L, pxScale) {
   // Work at the picture's own detail level, but never bigger than TILT_MAX_PX.
   const res = Math.min(cr.w / L.w, TILT_MAX_PX / Math.max(L.w, L.h));
   const key = [imageDrawSource(L).img === imageStore.get(L.imageId) ? 'raw' : styledCache.get(L.id)?.key,
-    L.w, L.h, L.tiltX, L.tiltY, L.flipX, L.flipY, L.borderWidth, L.borderColor, L.radius, L.maskShape || '', res.toFixed(4)].join('|');
+    L.w, L.h, L.tiltX, L.tiltY, L.flipX, L.flipY, L.borderWidth, L.borderColor, L.radius, L.maskShape || '', edgeSig(L), res.toFixed(4)].join('|');
   let t = tiltCache.get(L.id);
   if (!t || t.key !== key) {
     const flat = flatForTilt(L, res);
@@ -8494,7 +8928,7 @@ function cleanValue(v, depth = 0) {
   throw new Error('unexpected value');
 }
 const HEX = /^#[0-9a-f]{6}$/i;
-const COLOR_KEYS = ['stroke', 'fill', 'color', 'bgColor', 'borderColor', 'shadowColor', 'textColor', 'outlineColor', 'dimColor', 'color1', 'color2'];
+const COLOR_KEYS = ['stroke', 'fill', 'color', 'bgColor', 'borderColor', 'shadowColor', 'textColor', 'outlineColor', 'dimColor', 'color1', 'color2', 'edgeColor'];
 const num = (v) => typeof v === 'number' && Number.isFinite(v);
 
 /** Check a whole project. Returns a clean copy, or throws with a friendly message. */
@@ -8553,8 +8987,17 @@ function validateProject(data) {
     if (L.type === 'text' && !FONTS[L.font]) L.font = 'sans';
     // An image cut to a shape (1.21.0): a known shape key, or nothing.
     if (L.type === 'image' && L.maskShape != null && !MASK_SHAPES.includes(L.maskShape)) L.maskShape = null;
+    // Torn and stamp edges (1.25.0): a known kind, yes/no sides, sizes in a sensible range.
+    if (L.type === 'image') {
+      if (L.edge !== undefined && !EDGE_KINDS.includes(L.edge)) L.edge = 'none';
+      for (const k of TEAR_SIDES.concat('tearPaper')) if (L[k] !== undefined) L[k] = L[k] === true;
+      const fit = (k, lo, hi, dflt) => { if (L[k] !== undefined) L[k] = num(L[k]) ? clamp(L[k], lo, hi) : dflt; };
+      fit('tearSize', 2, 200, 16); fit('stampHole', 1, 100, 7); fit('stampMargin', 0, 300, 10);
+      if (L.tearSeed !== undefined) L.tearSeed = Number.isInteger(L.tearSeed) ? clamp(L.tearSeed, 1, 999999) : 1;
+    }
     // A sized text box (1.18.0): a positive number, or nothing (the box hugs the words).
     if (L.type === 'text') for (const k of ['boxW', 'boxH']) L[k] = num(L[k]) && L[k] > 0 ? Math.min(L[k], 100000) : null;
+    if (L.type === 'text' && L.sticky !== undefined) L.sticky = L.sticky === true;    // sticky note (1.25.0)
     if (L.type === 'redact') L.block = Math.max(REDACT_MIN_BLOCK, num(L.block) ? L.block : 16);
     // A shape must be one we know how to draw (and not rect/ellipse, which are their own types).
     if (L.type === 'shape' && (!SHAPE_BY_KEY[L.kind] || SHAPE_BY_KEY[L.kind].tool)) L.kind = 'star';
@@ -8944,10 +9387,9 @@ function headshotPanel(title) {
     'On the canvas, the arrow keys move it and + and - zoom.' }));
   const zin = el('input', { type: 'range', id: 'hsZoom', min: 100, max: HEADSHOT_ZOOM_MAX * 100, step: 1,
     value: Math.round(headshotZoom(L) * 100) });
-  const zout = el('output', { for: 'hsZoom', text: zin.value + '%' });
-  zin.addEventListener('input', () => { setHeadshotZoom(Number(zin.value) / 100); zout.textContent = zin.value + '%'; });
-  zin.addEventListener('sync', () => { zout.textContent = zin.value + '%'; });     // zoomed some other way
-  propsBody.append(el('div', { class: 'field' }, el('label', { for: 'hsZoom', text: 'Zoom' }), el('div', { class: 'range-wrap' }, zin, zout)));
+  zin.addEventListener('input', () => setHeadshotZoom(Number(zin.value) / 100));
+  // The number box follows the slider, also when zoomed some other way (a "sync" event).
+  propsBody.append(el('div', { class: 'field' }, el('label', { for: 'hsZoom', text: 'Zoom' }), el('div', { class: 'range-wrap' }, zin, sliderNumber(zin, 'Zoom', '%'))));
   propsBody.append(el('div', { class: 'btn-row' },
     el('button', { type: 'button', class: 'btn', text: 'Choose a different photo', onclick: startHeadshot })));
 
@@ -10088,6 +10530,7 @@ const SHORTCUTS = [
   { id: 'tool-ellipse', keys: 'E', label: 'Ellipse tool', test: (e) => plain(e, 'e') && !e.shiftKey, run: () => setTool('ellipse') },
   { id: 'tool-shapes', keys: 'U', label: 'Open the Shapes panel', test: (e) => plain(e, 'u'), run: () => openShapesPanel() },
   { id: 'tool-text', keys: 'T', label: 'Text tool', test: (e) => plain(e, 't'), run: () => setTool('text') },
+  { id: 'tool-sticky', keys: 'O', label: 'Sticky note tool', test: (e) => plain(e, 'o'), run: () => setTool('sticky') },
   { id: 'tool-pen', keys: 'P', label: 'Pen tool', test: (e) => plain(e, 'p'), run: () => setTool('pen') },
   { id: 'tool-highlighter', keys: 'H', label: 'Highlighter tool', test: (e) => plain(e, 'h'), run: () => setTool('highlighter') },
   { id: 'tool-step', keys: 'N', label: 'Step marker tool', test: (e) => plain(e, 'n'), run: () => setTool('step') },
@@ -10278,6 +10721,8 @@ $('dlgNew').addEventListener('close', () => {
 
 /* ---- Export dialog ---- */
 ['expFormat', 'expScale', 'expQuality'].forEach((id) => $(id).addEventListener('input', updateExportInfo));
+// The Quality slider gets a number box too (1.25.0), like the sliders in the Inspector.
+$('expQualityOut').replaceWith(sliderNumber($('expQuality'), 'Quality', '%'));
 // The GIF's play count is the animation's own Loop setting (section 24).
 $('expLoop').addEventListener('change', () => { if (isAnimated()) { doc.loop = Number($('expLoop').value); commit(); } });
 $('dlgExport').addEventListener('close', () => { if ($('dlgExport').returnValue === 'ok') doExport(); });
