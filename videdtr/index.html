@@ -1967,7 +1967,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
      --suite-accent  the app's own colour, for the main button (it must
                      carry white text at 7:1 - every app colour does)
    Everything else is worked out from those (and from currentColor). */
-.suite-splash, .suite-backup-dlg {
+/* (.suite-samples, the Samples chooser, shares the splash's dialog look.) */
+.suite-splash, .suite-backup-dlg, .suite-samples {
   background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 14px; padding: 22px 24px 16px; margin: auto;
@@ -1977,7 +1978,15 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
   max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
 .suite-backup-dlg { width: min(440px, 92vw); }
-.suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+/* The Samples chooser: one sample per row, its picture, name and a line about it. */
+.suite-samples { width: min(520px, 94vw); max-width: 94vw; max-height: 92vh; overflow: auto; }
+.suite-samples h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
+.suite-samples-intro { margin: 6px 0 14px; opacity: .8; }
+.suite-samples-list { display: grid; gap: 10px; }
+.suite-samples-choice { flex-direction: row; align-items: center; gap: 14px; min-height: 64px; border-radius: 14px; }
+.suite-samples-choice .suite-splash-choice-icon { width: 34px; height: 34px; flex: none; }
+.suite-samples-choice .suite-splash-choice-words { display: flex; flex-direction: column; gap: 2px; }
+.suite-splash::backdrop, .suite-backup-dlg::backdrop, .suite-samples::backdrop { background: rgba(10, 14, 22, .55); }
 .suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
 .suite-backup-dlg h2 { font-size: 17px; letter-spacing: 0; margin-bottom: 8px; }
 .suite-backup-dlg p { margin: 0 0 10px; }
@@ -2734,6 +2743,9 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
         <div id="media-list" class="media-tree"></div>
         <p class="empty-note" id="media-empty">
           Nothing imported yet.<br>Your files never leave this device.
+          <!-- 3.37: a way into the samples while the pool is empty. -->
+          <br><button type="button" id="btn-pool-samples" style="margin-top:10px;padding:4px 10px;font-size:12px"
+                  title="Open a ready-made example project">Or open a sample&hellip;</button>
         </p>
       </div>
     </aside>
@@ -3308,6 +3320,11 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
      - that is enforced by the browser, not just promised by the code.
     </div>
 <h3 style="font-size:13px;margin:16px 0 6px">Getting started</h3>
+    <!-- 3.37: the samples, here too, so they can be found after the splash. -->
+    <p style="font-size:12.5px;line-height:1.6;color:var(--text-dim);margin:0 0 10px">
+      <button type="button" id="btn-help-samples" style="padding:4px 10px;font-size:12px">Open a sample&hellip;</button>
+      Ready-made example projects (a course welcome video, a quick tip for a phone) to play, pull apart and export.
+    </p>
     <ol style="font-size:12.5px;line-height:1.7;color:var(--text-dim);padding-left:20px;margin:0">
       <li><strong>Start a new project</strong> on the opening screen asks
           for its shape: Widescreen 16:9, Vertical 9:16, Square 1:1,
@@ -15174,6 +15191,9 @@ function showStartScreen() {
         run: () => $("#project-input").click() },
       { icon: "new", label: "Start a new project", detail: "Pick its shape: widescreen, vertical, square and more",
         run: openNewProjectDialog },
+      // 3.37: ready-made examples, made by the app itself (see SAMPLES).
+      { icon: "sample", label: "Samples", detail: "Open a ready-made example project to play with",
+        run: openSamples },
     ],
     resume: backup ? {
       detail: detail + ", from " + suiteWhen(savedAt) + ". You will be asked to point at the media files again.",
@@ -19732,6 +19752,842 @@ function startNewProject() {
   }
 }
 
+/* =========================================================================
+ * SAMPLES (3.37)
+ * -------------------------------------------------------------------------
+ * Ready-made example projects, offered on the opening screen ("Samples"),
+ * in Help > Getting started, and in the empty Media Pool.
+ *
+ * NOTHING IS DOWNLOADED. Every picture and every note of music in a sample is
+ * MADE right here, in this file, the moment you pick it:
+ *
+ *   pictures   drawn on a hidden <canvas> (shapes, gradients, a few words),
+ *              saved as a PNG in memory and handed to importFile - exactly as
+ *              if you had dropped a .png on the Media Pool
+ *   music      worked out sample by sample from sine waves (a few chords and
+ *              a plucked pattern), written as a WAV with sfxToWav, and
+ *              imported the same way
+ *   sounds     the app's own built-in sound effects (ding, pop, whoosh...)
+ *   the rest   ordinary VIDEDTR clips: text, color cards, effects, motion
+ *              and transitions, laid out on tracks in code
+ *
+ * So a sample works offline, and once it is open it is just a project: play
+ * it, change anything, export it, or save it as a .videdtr (the pictures and
+ * music go inside the file like any other media).
+ *
+ * Opening a sample REPLACES the timeline, so - exactly like "Start a new
+ * project" - it asks first when there are clips on the timeline now.
+ * ====================================================================== */
+
+/* Little 24x24 drawings for the chooser. Fixed text only, never data. */
+const SAMPLE_ICON_WIDE =
+  '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z"/>';
+const SAMPLE_ICON_TALL =
+  '<rect x="7" y="2" width="10" height="20" rx="2"/><circle cx="12" cy="11" r="3"/><path d="M12 11V9.4"/><path d="M10 17h4"/>';
+
+/** The samples, in the order the chooser lists them. */
+const VIDEDTR_SAMPLES = [
+  {
+    key: "welcome",
+    name: "Course welcome video",
+    detail: "Widescreen, 20 seconds: a title card and three slides with transitions, a lower-third caption, confetti and a music bed",
+    icon: SAMPLE_ICON_WIDE,
+    width: 1920, height: 1080,
+    build: buildWelcomeSample,
+  },
+  {
+    key: "tip",
+    name: "Quick tip clip",
+    detail: "Vertical 9:16, 12 seconds: an animated timer diagram, captions that change, a spotlight and sound effects",
+    icon: SAMPLE_ICON_TALL,
+    width: 1080, height: 1920,
+    build: buildTipSample,
+  },
+];
+
+/** The chooser (the shared suiteSamplesOpen dialog from the SUITE block). */
+function openSamples() {
+  suiteSamplesOpen({
+    appId: "videdtr",
+    samples: VIDEDTR_SAMPLES.map((sample) => ({
+      name: sample.name,
+      detail: sample.detail,
+      icon: sample.icon,
+      run: () => openSample(sample),
+    })),
+  });
+}
+
+/* True while a sample is being made, so a double click cannot start two. */
+let sampleBusy = false;
+
+/**
+ * Replace the project with a fresh one and let the sample fill it in.
+ * Follows startNewProject: ask first if there is work on the timeline.
+ */
+async function openSample(sample) {
+  if (sampleBusy) return;
+  if (state.exporting) {
+    toast("An export is running. Open the sample once it has finished.", "warn");
+    return;
+  }
+  if (allClips().length && !confirm("Open the “" + sample.name + "” sample? What is on the "
+      + "timeline now will be replaced. Save it first if you want to keep it.")) return;
+
+  sampleBusy = true;
+  suiteSplashClose();                  // picked from the opening screen: close it
+  if (state.playing) pause();
+
+  // A brand-new, empty project the shape the sample wants. No tracks yet:
+  // the sample adds exactly the ones it uses, front to back.
+  releaseAllClipElements();
+  const fresh = makeEmptyProject();
+  fresh.name = sample.name + " (sample)";
+  fresh.width = sample.width;
+  fresh.height = sample.height;
+  fresh.fps = 30;
+  fresh.tracks = [];
+  state.project = fresh;
+  state.selectedClipId = null;
+  state.selectedMediaId = null;
+  state.selectedFolderId = null;
+  state.activeTrackId = null;
+  state.playhead = 0;
+  history.past.length = 0;             // nothing to undo back to: it is new
+  history.future.length = 0;
+  projectShapeChosen = true;           // the pictures must not reshape it
+
+  toast("Making the “" + sample.name + "” sample…", "good", 3000);
+  let ok = true;
+  try {
+    await sample.build();
+  } catch (err) {
+    ok = false;
+    console.warn("Sample failed", sample.key, err);
+  } finally {
+    sampleBusy = false;
+  }
+
+  const tracks = state.project.tracks;
+  state.activeTrackId = tracks.length ? tracks[0].id : null;
+  syncProjectDialog();
+  renderAll();
+  zoomToFit();
+  if (ok) {
+    toast("“" + sample.name + "” is ready. Press Space to play it - then change anything. "
+          + "It is a new project, so nothing is saved until you save it.", "good", 9000);
+    announce(sample.name + " sample opened, " + allClips().length + " clips on "
+             + tracks.length + " tracks. Press Space to play.");
+  } else {
+    toast("Could not finish making that sample in this browser.", "bad", 7000);
+  }
+}
+
+/* --- Small building blocks the samples share --------------------------- */
+
+/** Add a track at the BACK of the stack (the samples add front to back). */
+function sampleTrack(kind, name, extra) {
+  const track = { id: uid("trk"), kind: kind, name: name, muted: false, hidden: false, clips: [] };
+  if (extra) Object.assign(track, extra);
+  state.project.tracks.push(track);
+  return track;
+}
+
+/**
+ * Put a clip on a track. `settings` is copied over makeClip's defaults, so
+ * a sample says only what is different: { label, fadeIn, text: {...} }.
+ */
+function sampleClip(track, media, kind, start, duration, settings) {
+  const clip = makeClip(media, kind, start, duration, 0);
+  for (const key of Object.keys(settings || {})) {
+    const value = settings[key];
+    // Objects that makeClip already filled in (text, transform...) are
+    // merged, so a sample can set just the text's content and size.
+    if (value && typeof value === "object" && !Array.isArray(value)
+        && clip[key] && typeof clip[key] === "object") {
+      Object.assign(clip[key], value);
+    } else {
+      clip[key] = value;
+    }
+  }
+  track.clips.push(clip);
+  return clip;
+}
+
+/** A motion block: the clip glides from one pose to another (see makeMotion). */
+function sampleMotion(startAt, endAt, from, to, easing) {
+  const pose = (p) => ({ x: p.x || 0, y: p.y || 0,
+                         scale: p.scale === undefined ? 1 : p.scale, rotation: p.rotation || 0 });
+  return { enabled: true, startAt: startAt, endAt: endAt, from: pose(from), to: pose(to),
+           easing: easing || "ease" };
+}
+
+/** A transition setting, in the shape the timeline stores (see TRANSITIONS). */
+function sampleTransition(type, seconds, direction) {
+  const t = { type: type, duration: seconds };
+  if (TRANSITION_TYPES[type] && TRANSITION_TYPES[type].directions) t.direction = direction || "left";
+  return t;
+}
+
+/** An effect clip (Add > Effects) with the app's usual starting settings. */
+function sampleEffect(track, type, start, duration, settings) {
+  const clip = makeClip(null, "fx", start, duration, 0);
+  clip.fx = defaultEffect(type);
+  applyEffectDefaults(clip);
+  if (settings) Object.assign(clip.fx, settings);
+  track.clips.push(clip);
+  return clip;
+}
+
+/** The "Sample media" folder in the Media Pool, made once per project. */
+function sampleFolder() {
+  const found = projectFolders().find((folder) => folder.name === "Sample media" && !folder.parent);
+  return found || makeFolder("Sample media", null, true);
+}
+
+/**
+ * Media made by a sample. Opening the same sample twice reuses what it made
+ * the first time (found by `sampleKey`) instead of piling up copies.
+ * `makeFile` is only called when there is nothing to reuse.
+ */
+async function sampleMedia(key, makeFile) {
+  const folder = sampleFolder();
+  for (const media of state.media.values()) {
+    if (media.sampleKey === key) {
+      if (folder) setMediaFolder(media.id, folder.id);
+      return media;
+    }
+  }
+  const file = await makeFile();
+  const media = await importFile(file, { quiet: true, folderId: folder ? folder.id : null });
+  if (!media) throw new Error("could not import " + file.name);
+  media.sampleKey = key;
+  return media;
+}
+
+/**
+ * A picture the size of the project frame, drawn by `draw(ctx, w, h)` onto a
+ * transparent canvas and turned into a PNG file. Full-frame on purpose: the
+ * picture then sits exactly where it was drawn, and it turns (rotation) or
+ * grows (scale) around the middle of the frame.
+ */
+function samplePicture(key, fileName, draw) {
+  return sampleMedia(key, async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = state.project.width;
+    canvas.height = state.project.height;
+    const ctx = canvas.getContext("2d");
+    draw(ctx, canvas.width, canvas.height);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("the browser could not make a PNG");
+    return new File([blob], fileName, { type: "image/png" });
+  });
+}
+
+/** A built-in sound effect (see SOUND EFFECTS), filed with the others. */
+async function sampleSound(key) {
+  const media = await builtinSoundMedia(key);
+  if (!media) throw new Error("could not make the " + key + " sound");
+  return media;
+}
+
+/** A rounded rectangle path. (Written out, so older browsers draw it too.) */
+function samplePathRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/** A four-pointed twinkle, the kind drawn round something new and shiny. */
+function sampleSparkle(ctx, x, y, size, color) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x, y - size);
+  ctx.quadraticCurveTo(x, y, x + size, y);
+  ctx.quadraticCurveTo(x, y, x, y + size);
+  ctx.quadraticCurveTo(x, y, x - size, y);
+  ctx.quadraticCurveTo(x, y, x, y - size);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * A short piece of background music, made from scratch.
+ *
+ * It is a loop of chords, each held for `bar` seconds, played three ways at
+ * once: a soft PAD (the chord's notes, swelling in and out), a BASS note, and
+ * a plucked ARPEGGIO (the chord's notes one at a time, high up, bouncing
+ * left and right). Every note is a sine wave or two, shaped by an envelope -
+ * how it gets louder and quieter over its life.
+ *
+ *   style = { chords: [[midi notes], ...], bar: seconds, steps: plucks per chord }
+ *
+ * Returns { left, right } sample arrays at SFX_RATE, ready for sfxToWav.
+ */
+function sampleMusic(seconds, style) {
+  const rate = SFX_RATE;
+  const total = Math.round(seconds * rate);
+  const out = { left: new Float32Array(total), right: new Float32Array(total) };
+  // MIDI note numbers to frequencies: 69 is the A above middle C, 440 Hz,
+  // and each step up is one semitone (twelve to an octave).
+  const hz = (midi) => 440 * Math.pow(2, (midi - 69) / 12);
+
+  // Add one note. `pan` runs from -1 (left) to 1 (right).
+  function note(at, length, midi, gain, pan, kind) {
+    const freq = hz(midi);
+    const first = Math.floor(at * rate);
+    const count = Math.floor(length * rate);
+    const leftGain = gain * (1 - pan) / 2;
+    const rightGain = gain * (1 + pan) / 2;
+    for (let i = 0; i < count && first + i < total; i++) {
+      const t = i / rate;
+      let envelope;
+      if (kind === "pad") {
+        // Swell in over 0.5 s, fade out over the last 0.7 s.
+        envelope = Math.min(1, t / 0.5) * Math.max(0, Math.min(1, (length - t) / 0.7));
+      } else {
+        // A pluck: a near-instant start, then dies away.
+        envelope = Math.min(1, t / 0.004) * Math.exp(-t * (kind === "bass" ? 2.2 : 5));
+      }
+      const phase = 2 * Math.PI * freq * t;
+      // A touch of a higher harmonic makes it less "pure test tone".
+      const wave = Math.sin(phase) + (kind === "pluck" ? 0.3 * Math.sin(2 * phase) : 0.15 * Math.sin(3 * phase));
+      const v = wave * envelope;
+      out.left[first + i] += v * leftGain;
+      out.right[first + i] += v * rightGain;
+    }
+  }
+
+  const bars = Math.ceil(seconds / style.bar);
+  for (let b = 0; b < bars; b++) {
+    const chord = style.chords[b % style.chords.length];
+    const t0 = b * style.bar;
+    for (const midi of chord) note(t0, style.bar + 0.35, midi, 0.07, 0, "pad");
+    note(t0, style.bar, chord[0] - 12, 0.22, 0, "bass");
+    for (let k = 0; k < style.steps; k++) {
+      // Up the chord and back down: 0 1 2 1 0 1 2 1 ...
+      const pattern = [0, 1, 2, 1];
+      const midi = chord[pattern[k % 4]] + 12;
+      note(t0 + k * style.bar / style.steps, 0.7, midi, 0.1, k % 2 ? 0.35 : -0.35, "pluck");
+    }
+  }
+
+  // Turn the whole thing up or down so its loudest moment is a comfortable
+  // 0.6 - loud enough to hear, quiet enough to sit under a voice.
+  let peak = 0;
+  for (let i = 0; i < total; i++) peak = Math.max(peak, Math.abs(out.left[i]), Math.abs(out.right[i]));
+  const gain = peak > 0 ? 0.6 / peak : 1;
+  for (let i = 0; i < total; i++) { out.left[i] *= gain; out.right[i] *= gain; }
+  return out;
+}
+
+/** Music as a media item: made once, written as a WAV, imported. */
+function sampleMusicMedia(key, fileName, seconds, style) {
+  return sampleMedia(key, async () =>
+    new File([sfxToWav(sampleMusic(seconds, style))], fileName, { type: "audio/wav" }));
+}
+
+/* --- Sample 1: Course welcome video (16:9, 20 seconds) ------------------ */
+
+/*
+ * The tracks, front to back (the top of the timeline is the front):
+ *   Effects 1     confetti over the title card
+ *   Headings      one heading per slide, dissolving into each other
+ *   Slide text    the subtitle, then each slide's words
+ *   Lower third   the caption's words...
+ *   Lower third bar  ...and the white bar under them, sliding in
+ *   Vignette      a soft darkening at the edges - under the words, so they stay crisp
+ *   Slide art     a drawing per slide: dissolve, push, wipe, dissolve
+ *   Backgrounds   a color card per slide, dissolving from one to the next
+ *   Music         the music bed, faded in and out
+ *   Sound effects a sparkle, a whoosh and a ding
+ */
+async function buildWelcomeSample() {
+  /* Make the media first: four drawings, the caption bar, the music. */
+  const art1 = await samplePicture("welcome-art-1", "Welcome - book.png", (ctx, w, h) => {
+    // An open book, centered low, with a soft glow and a few twinkles.
+    const cx = w / 2, cy = h * 0.66;
+    const glow = ctx.createRadialGradient(cx, cy, 20, cx, cy, 420);
+    glow.addColorStop(0, "rgba(255, 209, 102, 0.35)");
+    glow.addColorStop(1, "rgba(255, 209, 102, 0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(cx - 440, cy - 440, 880, 880);
+    // Two pages, each a curved sheet meeting at the spine.
+    for (const side of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 110);
+      ctx.quadraticCurveTo(cx + side * 140, cy - 160, cx + side * 300, cy - 130);
+      ctx.lineTo(cx + side * 300, cy + 130);
+      ctx.quadraticCurveTo(cx + side * 140, cy + 100, cx, cy + 150);
+      ctx.closePath();
+      ctx.fillStyle = "#fdfaf2";
+      ctx.fill();
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "#d9cfb6";
+      ctx.stroke();
+      // Lines of "writing" on the page.
+      ctx.strokeStyle = "#b9c3d6";
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      for (let row = 0; row < 5; row++) {
+        const y = cy - 70 + row * 42;
+        ctx.beginPath();
+        ctx.moveTo(cx + side * 50, y + 6);
+        ctx.lineTo(cx + side * (row === 4 ? 170 : 250), y - 4);
+        ctx.stroke();
+      }
+    }
+    // The spine.
+    ctx.strokeStyle = "#c9a227";
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 110);
+    ctx.lineTo(cx, cy + 150);
+    ctx.stroke();
+    sampleSparkle(ctx, cx - 360, cy - 170, 34, "#ffd166");
+    sampleSparkle(ctx, cx + 380, cy - 120, 26, "#ffffff");
+    sampleSparkle(ctx, cx + 330, cy + 180, 20, "#ffd166");
+    sampleSparkle(ctx, cx - 300, cy + 200, 16, "#ffffff");
+  });
+
+  const art2 = await samplePicture("welcome-art-2", "Week 1 - calendar.png", (ctx, w, h) => {
+    // A desk calendar page on the right, tilted a little.
+    ctx.save();
+    ctx.translate(w * 0.74, h * 0.5);
+    ctx.rotate(0.06);
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 16;
+    samplePathRoundRect(ctx, -220, -230, 440, 460, 36);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    samplePathRoundRect(ctx, -220, -230, 440, 130, 36);
+    ctx.fillStyle = "#ef476f";
+    ctx.fill();
+    ctx.fillRect(-220, -140, 440, 40);           // squares off the band's bottom
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 56px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("WEEK", 0, -160);
+    ctx.fillStyle = "#14213d";
+    ctx.font = "800 250px sans-serif";
+    ctx.fillText("1", 0, 75);
+    // The two rings the page hangs from.
+    ctx.fillStyle = "#3a3a3a";
+    for (const x of [-120, 120]) {
+      samplePathRoundRect(ctx, x - 14, -262, 28, 70, 14);
+      ctx.fill();
+    }
+    ctx.restore();
+  });
+
+  const art3 = await samplePicture("welcome-art-3", "Learn - light bulb.png", (ctx, w, h) => {
+    // A light bulb with rays: "ideas".
+    const cx = w * 0.75, cy = h * 0.45;
+    ctx.strokeStyle = "#ffd166";
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    for (let i = 0; i < 9; i++) {
+      const a = Math.PI + (i / 8) * Math.PI;       // a fan over the top
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * 230, cy + Math.sin(a) * 230);
+      ctx.lineTo(cx + Math.cos(a) * 300, cy + Math.sin(a) * 300);
+      ctx.stroke();
+    }
+    const glass = ctx.createRadialGradient(cx - 50, cy - 60, 20, cx, cy, 190);
+    glass.addColorStop(0, "#fffbe6");
+    glass.addColorStop(1, "#ffd166");
+    ctx.fillStyle = glass;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 175, Math.PI * 0.8, Math.PI * 0.2);   // the round top
+    ctx.lineTo(cx + 85, cy + 230);
+    ctx.lineTo(cx - 85, cy + 230);
+    ctx.closePath();
+    ctx.fill();
+    // The screw base: three grey bands.
+    ctx.fillStyle = "#9aa5b1";
+    for (let i = 0; i < 3; i++) {
+      samplePathRoundRect(ctx, cx - 90, cy + 240 + i * 40, 180, 30, 12);
+      ctx.fill();
+    }
+    // The glowing filament.
+    ctx.strokeStyle = "#f4a261";
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(cx - 50, cy + 60);
+    ctx.lineTo(cx - 25, cy - 10);
+    ctx.lineTo(cx, cy + 40);
+    ctx.lineTo(cx + 25, cy - 10);
+    ctx.lineTo(cx + 50, cy + 60);
+    ctx.stroke();
+  });
+
+  const art4 = await samplePicture("welcome-art-4", "Help - speech bubbles.png", (ctx, w, h) => {
+    // Two speech bubbles: a question, and an answer on its way.
+    function bubble(x, y, bw, bh, color, tailLeft) {
+      samplePathRoundRect(ctx, x, y, bw, bh, 50);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.beginPath();
+      const tx = tailLeft ? x + 70 : x + bw - 70;
+      ctx.moveTo(tx - 30, y + bh - 2);
+      ctx.lineTo(tx + (tailLeft ? -40 : 40), y + bh + 70);
+      ctx.lineTo(tx + 30, y + bh - 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.shadowColor = "rgba(0,0,0,0.3)";
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 12;
+    bubble(w * 0.6, h * 0.2, 420, 280, "#ffffff", true);
+    bubble(w * 0.7, h * 0.52, 380, 230, "#06d6a0", false);
+    ctx.shadowColor = "transparent";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#4a2c6b";
+    ctx.font = "800 200px sans-serif";
+    ctx.fillText("?", w * 0.6 + 210, h * 0.2 + 150);
+    // "..." - someone is typing an answer.
+    ctx.fillStyle = "#ffffff";
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.arc(w * 0.7 + 190 + i * 80, h * 0.52 + 115, 26, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  const bar = await samplePicture("welcome-lower-third", "Lower third bar.png", (ctx, w, h) => {
+    // A white bar in the bottom-left corner with a gold stripe at its start.
+    // The words go on a Text track on top, so they stay editable.
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 8;
+    samplePathRoundRect(ctx, w * 0.04, h * 0.795, w * 0.44, h * 0.13, 18);
+    ctx.fillStyle = "rgba(255,255,255,0.96)";
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = "#ffd166";
+    ctx.fillRect(w * 0.04, h * 0.795 + 18, 14, h * 0.13 - 36);
+  });
+
+  const music = await sampleMusicMedia("welcome-music", "Music bed - welcome.wav", 20, {
+    // C, A minor, F, G: about the friendliest four chords there are.
+    chords: [[60, 64, 67], [57, 60, 64], [53, 57, 60], [55, 59, 62]],
+    bar: 2.5, steps: 8,
+  });
+  const sparkle = await sampleSound("sparkle");
+  const whoosh = await sampleSound("whoosh");
+  const ding = await sampleSound("ding");
+
+  /* Now the tracks, front to back. */
+  const fxFront = sampleTrack("fx", "Effects 1");
+  const headings = sampleTrack("text", "Headings");
+  const body = sampleTrack("text", "Slide text");
+  const lowerText = sampleTrack("text", "Lower third");
+  const lowerBar = sampleTrack("video", "Lower third bar");
+  const fxBack = sampleTrack("fx", "Vignette");
+  const slides = sampleTrack("video", "Slide art");
+  const backs = sampleTrack("color", "Backgrounds");
+  const musicTrack = sampleTrack("audio", "Music");
+  const sfxTrack = sampleTrack("audio", "Sound effects 1", { sfx: true });
+
+  // Text on the left of a slide: left-aligned, starting 140 px in. A text
+  // clip's x is a fraction of the frame width away from the middle.
+  const LEFT = (140 - 960) / 1920;
+  const fade = (seconds) => sampleTransition("dissolve", seconds);
+
+  // Backgrounds: one color card per slide, each dissolving into the next,
+  // with a fade up from black at the start and down to black at the end.
+  const colors = ["#14213d", "#0f4c5c", "#4a2c6b", "#1f4d3a"];
+  colors.forEach((color, i) => {
+    sampleClip(backs, null, "solid", i * 5, 5, {
+      solid: { color: color },
+      transitionIn: i === 0 ? sampleTransition("dipBlack", 1) : fade(1),
+      transitionOut: i === 3 ? sampleTransition("dipBlack", 1.5) : undefined,
+    });
+  });
+
+  // Slide art: a slow push-in on each drawing (a "Ken Burns" move), and a
+  // different transition at each cut to show a few off.
+  const arts = [art1, art2, art3, art4];
+  const ins = [fade(1), sampleTransition("push", 0.8, "right"), sampleTransition("wipe", 0.8, "left"), fade(0.8)];
+  arts.forEach((media, i) => {
+    sampleClip(slides, media, "image", i * 5, 5, {
+      label: ["Title art", "Week 1 art", "Learn art", "Help art"][i],
+      motion: sampleMotion(0, 5, { scale: 1 }, { scale: 1.06 }, "linear"),
+      transitionIn: ins[i],
+      transitionOut: i === 3 ? fade(1.5) : undefined,
+    });
+  });
+
+  // A gentle vignette over the pictures, under the words.
+  sampleEffect(fxBack, "vignette", 0, 20, { amount: 0.45 });
+
+  // Headings, dissolving from one slide's to the next.
+  const headingText = [
+    { content: "Earth Science 101", size: 10, x: 0, y: -0.3, align: "center" },
+    { content: "Welcome to week 1", size: 8, x: LEFT, y: -0.22, align: "left" },
+    { content: "What you'll learn", size: 8, x: LEFT, y: -0.22, align: "left" },
+    { content: "Where to find help", size: 8, x: LEFT, y: -0.22, align: "left" },
+  ];
+  headingText.forEach((t, i) => {
+    const start = i === 0 ? 0.4 : i * 5;
+    sampleClip(headings, null, "text", start, (i + 1) * 5 - start, {
+      label: t.content,
+      text: { content: t.content, size: t.size, align: t.align, color: "#ffffff" },
+      transform: { x: t.x, y: t.y },
+      // The slide headings slide in a little from the left as they appear.
+      motion: i === 0 ? null : sampleMotion(0, 0.7, { x: t.x - 0.04, y: t.y }, { x: t.x, y: t.y }, "out"),
+      transitionIn: fade(i === 0 ? 0.8 : 0.6),
+      transitionOut: i === 3 ? fade(1.5) : undefined,
+    });
+  });
+
+  // The words under each heading. Gaps between them, so each fades in alone.
+  const bodyText = [
+    { start: 1.0, content: "Welcome! Here is how the course works.", size: 4.2, color: "#ffd166",
+      x: 0, y: -0.17, align: "center" },
+    { start: 5.6, content: "Start with the syllabus,\nthen say hello on the\ndiscussion board.", size: 4.6 },
+    { start: 10.6, content: "•  How rocks and minerals form\n•  Why the ground moves\n•  How to read a landscape", size: 4.6 },
+    { start: 15.6, content: "•  Office hours: Tuesday and Thursday\n•  The class discussion board\n•  The Tutoring Center", size: 4.6 },
+  ];
+  bodyText.forEach((t, i) => {
+    sampleClip(body, null, "text", t.start, (i + 1) * 5 - t.start, {
+      label: i === 0 ? "Subtitle" : "Slide " + (i + 1) + " words",
+      text: { content: t.content, size: t.size, align: t.align || "left", color: t.color || "#ffffff" },
+      transform: { x: t.x === undefined ? LEFT : t.x, y: t.y === undefined ? 0.05 : t.y },
+      transitionIn: fade(0.5),
+      transitionOut: i === 3 ? fade(1.5) : undefined,
+    });
+  });
+
+  // The lower third: the bar slides in from the left, the words fade in on it.
+  sampleClip(lowerBar, bar, "image", 6.2, 3.6, {
+    label: "Lower third bar",
+    motion: sampleMotion(0, 0.6, { x: -0.5 }, { x: 0 }, "out"),
+    transitionOut: fade(0.4),
+  });
+  sampleClip(lowerText, null, "text", 6.7, 3.1, {
+    label: "Lower third words",
+    text: { content: "Your instructor\nEarth Science 101 - Section 02", size: 3.6, align: "left",
+            color: "#14213d", shadow: false },
+    transform: { x: (124 - 960) / 1920, y: 0.36 },
+    transitionIn: fade(0.4),
+    transitionOut: fade(0.4),
+  });
+
+  // Confetti over the title card.
+  sampleEffect(fxFront, "confetti", 0.6, 4);
+
+  // Sound: the music bed, faded in and out, and three little cues.
+  sampleClip(musicTrack, music, "audio", 0, 20, {
+    label: "Music bed", volume: 0.7, fadeIn: 1.5, fadeOut: 2.5,
+  });
+  sampleClip(sfxTrack, sparkle, "audio", 0.6, sparkle.duration, { volume: 0.6 });
+  sampleClip(sfxTrack, whoosh, "audio", 4.5, whoosh.duration, { volume: 0.5 });
+  sampleClip(sfxTrack, ding, "audio", 6.3, ding.duration, { volume: 0.5 });
+}
+
+/* --- Sample 2: Quick tip clip (9:16, 12 seconds) ------------------------ */
+
+/*
+ * A study tip for a phone screen: a timer whose hand sweeps round a 25 + 5
+ * minute dial, with captions that change as it goes.
+ *
+ * The tracks, front to back:
+ *   Effects 1      confetti at the end
+ *   Title          "QUICK TIP" dropping in
+ *   Tip name       the tip's name, fading in under it
+ *   Captions       three captions, dissolving from one to the next
+ *   Spotlight      lights up the break slice of the dial while it is talked about
+ *   Timer hand     the hand: TWO clips, so it can sweep the focus slice, then the break
+ *   Timer dial     the dial, popping in
+ *   Background     one color card
+ *   Music          a short loop
+ *   Sound effects  pop, ding, whoosh, sparkle
+ */
+async function buildTipSample() {
+  // The dial is drawn at the middle of the frame, so the hand (a full-frame
+  // picture) turns around the dial's center when the clip rotates.
+  const RADIUS = 300;
+  const dial = await samplePicture("tip-dial", "Timer dial.png", (ctx, w, h) => {
+    const cx = w / 2, cy = h / 2;
+    // The face.
+    ctx.fillStyle = "#24305e";
+    ctx.beginPath();
+    ctx.arc(cx, cy, RADIUS + 60, 0, Math.PI * 2);
+    ctx.fill();
+    // The ring: 25 minutes of focus (red) and 5 of break (green), out of 30.
+    // Angles start at the top (-90 degrees) and go clockwise.
+    const top = -Math.PI / 2;
+    const split = top + (25 / 30) * Math.PI * 2;
+    ctx.lineWidth = 70;
+    ctx.lineCap = "butt";
+    ctx.strokeStyle = "#ef476f";
+    ctx.beginPath();
+    ctx.arc(cx, cy, RADIUS, top + 0.03, split - 0.03);
+    ctx.stroke();
+    ctx.strokeStyle = "#06d6a0";
+    ctx.beginPath();
+    ctx.arc(cx, cy, RADIUS, split + 0.03, top + Math.PI * 2 - 0.03);
+    ctx.stroke();
+    // Tick marks every 5 minutes.
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 8;
+    ctx.lineCap = "round";
+    for (let m = 0; m < 30; m += 5) {
+      const a = top + (m / 30) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * (RADIUS - 70), cy + Math.sin(a) * (RADIUS - 70));
+      ctx.lineTo(cx + Math.cos(a) * (RADIUS - 50), cy + Math.sin(a) * (RADIUS - 50));
+      ctx.stroke();
+    }
+    // Labels inside the face.
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ef476f";
+    ctx.font = "800 64px sans-serif";
+    ctx.fillText("25 min", cx + 10, cy + 150);
+    ctx.font = "700 36px sans-serif";
+    ctx.fillText("FOCUS", cx + 10, cy + 205);
+    ctx.fillStyle = "#06d6a0";
+    ctx.font = "800 44px sans-serif";
+    ctx.fillText("5 min", cx - 120, cy - 150);
+    ctx.font = "700 28px sans-serif";
+    ctx.fillText("BREAK", cx - 120, cy - 110);
+  });
+
+  const hand = await samplePicture("tip-hand", "Timer hand.png", (ctx, w, h) => {
+    const cx = w / 2, cy = h / 2;
+    // A tapered hand pointing straight up (12 o'clock) and a round hub.
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.4)";
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.moveTo(cx - 16, cy);
+    ctx.lineTo(cx - 4, cy - RADIUS + 40);
+    ctx.lineTo(cx + 4, cy - RADIUS + 40);
+    ctx.lineTo(cx + 16, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = "#ffd166";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  const music = await sampleMusicMedia("tip-music", "Music - quick tip.wav", 12, {
+    // F, G, E minor, A minor, played a little faster.
+    chords: [[53, 57, 60], [55, 59, 62], [52, 55, 59], [57, 60, 64]],
+    bar: 2, steps: 8,
+  });
+  const pop = await sampleSound("pop");
+  const ding = await sampleSound("ding");
+  const whoosh = await sampleSound("whoosh");
+  const sparkle = await sampleSound("sparkle");
+
+  const fxFront = sampleTrack("fx", "Effects 1");
+  const title = sampleTrack("text", "Title");
+  const tipName = sampleTrack("text", "Tip name");
+  const captions = sampleTrack("text", "Captions");
+  const spot = sampleTrack("fx", "Spotlight");
+  const handTrack = sampleTrack("video", "Timer hand");
+  const dialTrack = sampleTrack("video", "Timer dial");
+  const back = sampleTrack("color", "Background");
+  const musicTrack = sampleTrack("audio", "Music");
+  const sfxTrack = sampleTrack("audio", "Sound effects 1", { sfx: true });
+  const fade = (seconds) => sampleTransition("dissolve", seconds);
+
+  sampleClip(back, null, "solid", 0, 12, { solid: { color: "#1b2a4a" }, fadeOut: 0.8 });
+
+  // The dial pops in (grows from 70% with an "out" ease), then sits still.
+  sampleClip(dialTrack, dial, "image", 0, 12, {
+    label: "Dial",
+    motion: sampleMotion(0, 0.5, { scale: 0.7 }, { scale: 1 }, "out"),
+    fadeIn: 0.3, fadeOut: 0.8,
+  });
+
+  // The hand, in two clips: the first sweeps through the 25 focus minutes
+  // (0 to 300 degrees), the second through the 5 break minutes (300 to 360).
+  sampleClip(handTrack, hand, "image", 0.6, 3.4, {
+    label: "Hand - focus",
+    motion: sampleMotion(0.2, 3.2, { rotation: 0 }, { rotation: 300 }, "linear"),
+    fadeIn: 0.2,
+  });
+  sampleClip(handTrack, hand, "image", 4, 8, {
+    label: "Hand - break",
+    motion: sampleMotion(0.3, 3.5, { rotation: 300 }, { rotation: 360 }, "ease"),
+    transform: { rotation: 300 },
+    fadeOut: 0.8,
+  });
+
+  // The spotlight: dims everything except the green break slice, while the
+  // caption says "take a break". Its region is measured from the frame's
+  // middle, as fractions of the frame (the slice is up and to the left).
+  const sliceAngle = -Math.PI / 2 - (2.5 / 30) * Math.PI * 2;  // middle of the break slice
+  const spotClip = sampleEffect(spot, "spotlight", 4.2, 3.6, { amount: 0.65, softness: 0.4 });
+  spotClip.region = {
+    x: (Math.cos(sliceAngle) * RADIUS) / 1080,
+    y: (Math.sin(sliceAngle) * RADIUS) / 1920,
+    w: 0.44, h: 0.44 * 1080 / 1920,             // a circle: the same size in pixels both ways
+    radius: 1,
+  };
+
+  // "QUICK TIP" drops in from above; the tip's name fades in under it.
+  sampleClip(title, null, "text", 0, 12, {
+    label: "Quick tip",
+    text: { content: "QUICK TIP", size: 4.4, color: "#ffd166" },
+    transform: { x: 0, y: -0.36 },
+    motion: sampleMotion(0, 0.6, { x: 0, y: -0.48 }, { x: 0, y: -0.36 }, "out"),
+    fadeOut: 0.8,
+  });
+
+  sampleClip(tipName, null, "text", 0.5, 11.5, {
+    label: "Tip name",
+    text: { content: "The 25 + 5 study rhythm", size: 2.8, color: "#ffffff" },
+    transform: { x: 0, y: -0.3 },
+    transitionIn: fade(0.6),
+    transitionOut: fade(0.8),
+  });
+
+  // Captions, dissolving into each other.
+  const lines = [
+    { start: 0.6, end: 4, content: "Focus for\n25 minutes" },
+    { start: 4, end: 8, content: "Then take a\n5-minute break" },
+    { start: 8, end: 12, content: "After four rounds,\nrest a little longer" },
+  ];
+  lines.forEach((line, i) => {
+    sampleClip(captions, null, "text", line.start, line.end - line.start, {
+      label: "Caption " + (i + 1),
+      text: { content: line.content, size: 3.6, color: "#ffffff" },
+      transform: { x: 0, y: 0.3 },
+      transitionIn: fade(i === 0 ? 0.4 : 0.5),
+      transitionOut: i === 2 ? fade(0.8) : undefined,
+    });
+  });
+  // Confetti when the rhythm is complete.
+  sampleEffect(fxFront, "confetti", 8.2, 3.8);
+
+  sampleClip(musicTrack, music, "audio", 0, 12, {
+    label: "Music", volume: 0.45, fadeIn: 0.5, fadeOut: 1.5,
+  });
+  sampleClip(sfxTrack, pop, "audio", 0.05, pop.duration, { volume: 0.7 });
+  sampleClip(sfxTrack, ding, "audio", 4, ding.duration, { volume: 0.5 });
+  sampleClip(sfxTrack, whoosh, "audio", 7.6, whoosh.duration, { volume: 0.4 });
+  sampleClip(sfxTrack, sparkle, "audio", 8.8, sparkle.duration, { volume: 0.6 });
+}
+
 function syncProjectDialog() {
   const status = $("#backup-status");
   if (status) {
@@ -20271,6 +21127,8 @@ function suiteWhen(ms) {
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+     (samples: an app offers its ready-made examples as one more action,
+      { icon: 'sample', label: 'Samples', run: ... } opening suiteSamplesOpen)
      look:    'classic' - optional: the older plain white splash. Leave it
               out for the family's look since 2026-10-30, IMGEDTR's: no white
               box, splashes of paint in the app's colours, and three panels
@@ -21242,6 +22100,65 @@ function suiteFeaturesOpen(features, appId) {
   return dlg;
 }
 
+/* ---- Samples: ready-made examples to open (added 2026-11-20) ----------
+   A small chooser, styled like the splash, listing the app's samples. Each
+   sample is made by the app itself, in its own code (no downloads), and
+   opens as a new, unsaved file the person can change freely.
+
+   suiteSamplesOpen({
+     appId:   'pdfedtr',
+     samples: [ { name, detail, icon, run } ... ]   // icon: a SUITE_ACTION_ICONS name or the app's own 24x24 drawing
+   })
+
+   An app usually offers it on its splash ({ icon: 'sample', label: 'Samples',
+   run: openSamples }) and somewhere it can be found later (Help, a menu).
+   Escape, the X or a click on the dimmed backdrop closes it, and focus goes
+   back to where it was. */
+function suiteSamplesOpen(opts) {
+  const app = SUITE_APPS.find((a) => a.id === opts.appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-samples');
+  const h = suiteEl('h2', '', 'Samples');
+  h.id = 'suite-samples-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the samples');
+  const intro = suiteEl('p', 'suite-samples-intro',
+    'Open a ready-made example to see what ' + app.name + ' can do. Each one opens as a new file: change anything, nothing is saved until you say so.');
+  const list = suiteEl('div', 'suite-samples-list');
+  function finish() {
+    if (dlg.open) dlg.close();
+    dlg.remove();
+  }
+  for (const s of opts.samples) {
+    const b = suiteEl('button', 'suite-splash-choice suite-samples-choice');
+    b.type = 'button';
+    const art = SUITE_ACTION_ICONS[s.icon || 'sample'] || s.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (never data)
+      b.append(icon);
+    }
+    const words = suiteEl('span', 'suite-splash-choice-words');
+    words.append(suiteEl('span', 'suite-splash-choice-label', s.name));
+    if (s.detail) words.append(suiteEl('span', 'suite-splash-choice-detail', s.detail));
+    b.append(words);
+    b.addEventListener('click', () => { finish(); s.run(); });
+    list.append(b);
+  }
+  close.addEventListener('click', () => { finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { finish(); if (back && back.isConnected && back.focus) back.focus(); } });
+  dlg.append(close, h, intro, list);
+  document.body.append(dlg);
+  dlg.showModal();
+  const first = list.querySelector('button');
+  if (first) first.focus();
+  return dlg;
+}
+
 /* A wide card - "See what PDFEDTR can do" - that opens the tour. */
 function suiteFeaturesCard(features, appId) {
   const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
@@ -21753,6 +22670,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: "3.37", date: "2026-11-20", notes: [
+    "Samples: two ready-made example projects to play with - a \"Course welcome video\" (a title card and three slides with transitions, a sliding lower-third caption, confetti and a music bed) and a \"Quick tip clip\" for a phone screen (a timer whose hand sweeps round a dial, changing captions, a spotlight and sound effects). VIDEDTR makes every picture and note of music itself, so nothing is downloaded and they work offline.",
+    "Find them under Samples on the opening screen, in Help > Getting started, or in the empty Media Pool. Each opens as a new, unsaved project - play it, change anything, export it. If there is already work on the timeline, you are asked first."
+  ] },
   { version: "3.36", date: "2026-10-30", notes: [
     "A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way."
   ] },
@@ -22543,6 +23464,14 @@ function setupUI() {
     $("#file-input").click();
   });
   $("#btn-import-files").addEventListener("click", () => $("#file-input").click());
+  // 3.37: the samples, from the empty Media Pool and from Help. From Help,
+  // the help panel closes first so the sample opens in plain view.
+  $("#btn-pool-samples").addEventListener("click", openSamples);
+  $("#btn-help-samples").addEventListener("click", () => {
+    const help = $("#dlg-help");
+    if (help && help.open) help.close();
+    openSamples();
+  });
   $("#btn-import-folder").addEventListener("click", () => $("#folder-input").click());
   $("#btn-new-folder").addEventListener("click", createFolderFromButton);
   ["dragenter", "dragover"].forEach((name) => {
@@ -22976,7 +23905,7 @@ function init() {
 /* The single source of truth for the version. The header, the help dialog and
    every saved project file read it from here, so there is exactly one line to
    change at release and no way for them to disagree. */
-const APP_VERSION = "3.36";
+const APP_VERSION = "3.37";
 const APP_BUILT = "2026-09-26";
 
 /* ===========================================================================

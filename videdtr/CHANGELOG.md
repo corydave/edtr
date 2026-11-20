@@ -12,6 +12,12 @@ refreshes the page inside it, and Check for updates compares the server's
 Releases before 3.4 went out without notes. Rather than guess at them, this
 file starts at 3.4.
 
+## 3.37 - 2026-11-20 - Samples
+
+- Samples: two ready-made example projects to play with - a "Course welcome video" (a title card and three slides with transitions, a sliding lower-third caption, confetti and a music bed) and a "Quick tip clip" for a phone screen (a timer whose hand sweeps round a dial, changing captions, a spotlight and sound effects). VIDEDTR makes every picture and note of music itself, so nothing is downloaded and they work offline.
+- Find them under Samples on the opening screen, in Help > Getting started, or in the empty Media Pool. Each opens as a new, unsaved project - play it, change anything, export it. If there is already work on the timeline, you are asked first.
+- Under the hood: the pictures are drawn on a canvas and imported as PNGs, the music is built from sine waves and imported as a WAV (`sfxToWav`), and the clips are ordinary text, color, image, effect and audio clips laid out in code (`VIDEDTR_SAMPLES` and `openSample()`). Opening a sample again reuses the media it made the first time.
+
 ## 3.36 - 2026-10-30 - A painted splash
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.
