@@ -303,6 +303,9 @@ body.layer-dragging, body.layer-dragging * { cursor: grabbing !important; user-s
 .start-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .start-actions .btn { height: auto; flex-direction: column; padding: 16px 8px; gap: 8px; }
 .start-actions .btn svg { width: 26px; height: 26px; }
+/* Samples (1.26.0): a slim button across the whole row, under the four big ones. */
+.start-actions .btn.start-wide { grid-column: 1 / -1; flex-direction: row; padding: 10px 8px; }
+.start-actions .btn.start-wide svg { width: 20px; height: 20px; }
 .start-card kbd, .kbd { font: 12px ui-monospace, monospace; border: 1px solid var(--border); border-bottom-width: 2px;
   border-radius: 4px; padding: 1px 5px; background: var(--surface-2); }
 .drop-overlay {
@@ -611,7 +614,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
      --suite-accent  the app's own colour, for the main button (it must
                      carry white text at 7:1 - every app colour does)
    Everything else is worked out from those (and from currentColor). */
-.suite-splash, .suite-backup-dlg {
+/* (.suite-samples, the Samples chooser, shares the splash's dialog look.) */
+.suite-splash, .suite-backup-dlg, .suite-samples {
   background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 14px; padding: 22px 24px 16px; margin: auto;
@@ -621,7 +625,15 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
   max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
 .suite-backup-dlg { width: min(440px, 92vw); }
-.suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+/* The Samples chooser: one sample per row, its picture, name and a line about it. */
+.suite-samples { width: min(520px, 94vw); max-width: 94vw; max-height: 92vh; overflow: auto; }
+.suite-samples h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
+.suite-samples-intro { margin: 6px 0 14px; opacity: .8; }
+.suite-samples-list { display: grid; gap: 10px; }
+.suite-samples-choice { flex-direction: row; align-items: center; gap: 14px; min-height: 64px; border-radius: 14px; }
+.suite-samples-choice .suite-splash-choice-icon { width: 34px; height: 34px; flex: none; }
+.suite-samples-choice .suite-splash-choice-words { display: flex; flex-direction: column; gap: 2px; }
+.suite-splash::backdrop, .suite-backup-dlg::backdrop, .suite-samples::backdrop { background: rgba(10, 14, 22, .55); }
 .suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
 .suite-backup-dlg h2 { font-size: 17px; letter-spacing: 0; margin-bottom: 8px; }
 .suite-backup-dlg p { margin: 0 0 10px; }
@@ -1097,7 +1109,6 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <button class="icon-btn" id="shapesBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="shapesPop"
       aria-pressed="false" aria-label="Shapes" data-tip="Shapes" data-keys="U"><span class="shape-icon"></span></button>
     <button class="icon-btn" data-tool="text"        title="Text (T)"       aria-label="Text tool"><span data-icon="type"></span></button>
-    <button class="icon-btn" data-tool="sticky"      title="Sticky note (O)" aria-label="Sticky note tool"><span data-icon="sticky"></span></button>
     <hr aria-hidden="true">
     <button class="icon-btn" data-tool="pen"         title="Pen (P)"        aria-label="Pen tool"><span data-icon="pen"></span></button>
     <button class="icon-btn" data-tool="highlighter" title="Highlighter (H)" aria-label="Highlighter tool"><span data-icon="highlighter"></span></button>
@@ -1105,6 +1116,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <button class="icon-btn" data-tool="wand"        title="Magic wand: erase, fill or recolor (W)" aria-label="Magic wand tool"><span data-icon="wand"></span></button>
     <hr aria-hidden="true">
     <button class="icon-btn" data-tool="step"        title="Step marker (N)" aria-label="Step marker tool"><span data-icon="step"></span></button>
+    <button class="icon-btn" data-tool="sticky"      title="Sticky note (O)" aria-label="Sticky note tool"><span data-icon="sticky"></span></button>
     <button class="icon-btn" data-tool="cursor"      title="Cursor stamp (C)" aria-label="Cursor stamp tool"><span data-icon="cursorClick"></span></button>
     <button class="icon-btn" data-tool="spotlight"   title="Spotlight (S)" aria-label="Spotlight tool"><span data-icon="spotlight"></span></button>
     <button class="icon-btn" data-tool="redact"      title="Redact (X)" aria-label="Redact tool"><span data-icon="redact"></span></button>
@@ -1128,6 +1140,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
           <button class="btn" id="startOpen"><span data-icon="folder"></span>Open image<span class="hint">or drop a file</span></button>
           <button class="btn" id="startNew"><span data-icon="filePlus"></span>Blank canvas<span class="hint">pick a size</span></button>
           <button class="btn" id="startHeadshot"><span data-icon="headshot"></span>Headshot<span class="hint">round or square</span></button>
+          <!-- Samples (1.26.0): ready-made examples, made by the app itself (section 25). -->
+          <button class="btn start-wide" id="startSamples"><span data-icon="sample"></span>Samples<span class="hint">try a ready-made example</span></button>
         </div>
         <p class="hint" style="margin:16px 0 0">PNG, JPEG, WebP, animated GIFs, BMP, SVG, AVIF and iPhone HEIC photos - or an .imgedtr project.</p>
       </div>
@@ -1392,6 +1406,9 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   </div>
   <div class="dlg-body">
     <div role="tabpanel" id="paneFeatures" aria-labelledby="tabFeatures">
+      <!-- Samples (1.26.0): open a ready-made example (section 25). -->
+      <p style="margin:0 0 12px"><button type="button" class="btn" id="helpSamples"><span data-icon="sample"></span>Open a sample</button>
+        <span class="hint">A ready-made picture with arrows, steps and more on it.</span></p>
       <!-- The animated tour: APP_FEATURES, drawn by renderSuiteFeatures (shared SUITE block). -->
       <div id="suiteFeatures"></div>
     </div>
@@ -1461,7 +1478,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.25.0';
+const APP_VERSION = '1.26.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1516,6 +1533,15 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.26.0', date: '2026-11-20', notes: [
+    'Samples: three ready-made examples to open and play with - an annotated screenshot of a course page (steps, an arrow, a spotlight, a cursor and a hidden email address), a bar chart for a slide (a highlight box, a callout and an arrow) and a lake photo to tidy up (a title, a magnifier, a pixelated phone number and a sticky note).',
+    'IMGEDTR paints each sample itself, so they work offline. Every mark is an ordinary layer you can move, change or delete, and nothing is saved until you export or save it.',
+    'Find them on the splash (Samples), on the start screen and in Help > Features. Opening a sample over your own picture can be undone with Undo.'
+  ] },
+  { version: '1.25.1', date: '2026-11-20', notes: [
+    'The Sticky note tool moved down the tool rail to sit with the other teaching tools, under the Step marker.',
+    'Headshots: the photo no longer runs right to the edge of the canvas. There is always a small gap all round (10 px on an 800 px headshot, 5 px at 400, 13 px at 1024), so a circle keeps its smooth edge. With a shadow, the gap is as wide as the shadow needs, as before.'
+  ] },
   { version: '1.25.0', date: '2026-11-19', notes: [
     'Torn edges: in the Inspector, a picture\'s new Edges setting can rip any sides you pick (Top, Right, Bottom, Left) like paper torn from a page, with a thin paper strip along the rip. Choose the rip size and paper colour, or press New tear for a different rip.',
     'Stamp edges: the same Edges setting turns a picture into a postage stamp, with a paper border and scalloped, perforated sides. Choose the bite size, the border and the paper colour. The drop shadow follows both kinds of edge.',
@@ -1905,6 +1931,8 @@ const ICONS = {
   copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   clipboard: '<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   folder: '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+  // An open book: Samples (1.26.0), the same drawing as the splash's Samples button.
+  sample: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
   headshot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 18.7a6 6 0 0 1 10 0"/>',
   // A note with its bottom-right corner turned up (1.25.0).
   sticky: '<path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-3.5a1.5 1.5 0 0 1 1.5-1.5H20"/><path d="M8 9h8M8 12.5h5"/>',
@@ -9103,8 +9131,10 @@ async function openProject(file) {
      - the document background is the background (null = see-through)
    So undo, Save project and "Open in full editor" all just work.
 
-   The shadow is never cut off: the photo is shrunk by a margin worked out
-   from the shadow's size, so the whole blur fits inside the canvas.
+   The photo never touches the canvas edge (1.25.1): there is always a
+   small gap all round (HEADSHOT_GAP, 1.25% of the size: 10 px on an 800
+   px headshot), so a circle's smooth edge is never clipped flat. With a
+   shadow, the gap grows to fit the whole blur, so it is never cut off.
 
    state.headshot = { layerId, name, style, shownSize } while this mode is on.
    "style" holds the panel's choices (the same shape as settings.headshot).
@@ -9115,6 +9145,7 @@ const HEADSHOT_SHORTCUTS = ['undo', 'redo', 'zoom-in', 'zoom-out', 'zoom-fit', '
   'save-project', 'copy-image', 'help'];
 const HEADSHOT_ZOOM_MAX = 5;           // zoom into the photo up to 500%
 const HEADSHOT_SHADOW_OPACITY = 0.35;  // how dark the shadow is (the same as an image layer's default)
+const HEADSHOT_GAP = 0.0125;           // the empty edge round the photo, as a part of the size (5 / 10 / 13 px)
 
 /** The headshot's image layer, or null when we are not making a headshot. */
 function headshotLayer() {
@@ -9312,7 +9343,9 @@ function layoutHeadshot() {
   doc.width = doc.height = s.size;
   doc.background = s.bg === 'none' ? null : s.bg === 'white' ? '#ffffff' : s.bgColor;
   const drop = Math.round(s.softness / 3);                     // how far the shadow falls
-  const margin = s.shadowOn ? Math.ceil(s.softness * 1.5 + drop) + 1 : 0;
+  // The gap round the photo: always a little (HEADSHOT_GAP), and more with a shadow, so its blur fits.
+  const gap = Math.max(4, Math.round(s.size * HEADSHOT_GAP));
+  const margin = Math.max(gap, s.shadowOn ? Math.ceil(s.softness * 1.5 + drop) + 1 : 0);
   L.x = L.y = margin;
   L.w = L.h = s.size - margin * 2;
   L.rotation = 0;
@@ -11261,6 +11294,8 @@ function suiteWhen(ms) {
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+     (samples: an app offers its ready-made examples as one more action,
+      { icon: 'sample', label: 'Samples', run: ... } opening suiteSamplesOpen)
      look:    'classic' - optional: the older plain white splash. Leave it
               out for the family's look since 2026-10-30, IMGEDTR's: no white
               box, splashes of paint in the app's colours, and three panels
@@ -12232,6 +12267,65 @@ function suiteFeaturesOpen(features, appId) {
   return dlg;
 }
 
+/* ---- Samples: ready-made examples to open (added 2026-11-20) ----------
+   A small chooser, styled like the splash, listing the app's samples. Each
+   sample is made by the app itself, in its own code (no downloads), and
+   opens as a new, unsaved file the person can change freely.
+
+   suiteSamplesOpen({
+     appId:   'pdfedtr',
+     samples: [ { name, detail, icon, run } ... ]   // icon: a SUITE_ACTION_ICONS name or the app's own 24x24 drawing
+   })
+
+   An app usually offers it on its splash ({ icon: 'sample', label: 'Samples',
+   run: openSamples }) and somewhere it can be found later (Help, a menu).
+   Escape, the X or a click on the dimmed backdrop closes it, and focus goes
+   back to where it was. */
+function suiteSamplesOpen(opts) {
+  const app = SUITE_APPS.find((a) => a.id === opts.appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-samples');
+  const h = suiteEl('h2', '', 'Samples');
+  h.id = 'suite-samples-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the samples');
+  const intro = suiteEl('p', 'suite-samples-intro',
+    'Open a ready-made example to see what ' + app.name + ' can do. Each one opens as a new file: change anything, nothing is saved until you say so.');
+  const list = suiteEl('div', 'suite-samples-list');
+  function finish() {
+    if (dlg.open) dlg.close();
+    dlg.remove();
+  }
+  for (const s of opts.samples) {
+    const b = suiteEl('button', 'suite-splash-choice suite-samples-choice');
+    b.type = 'button';
+    const art = SUITE_ACTION_ICONS[s.icon || 'sample'] || s.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (never data)
+      b.append(icon);
+    }
+    const words = suiteEl('span', 'suite-splash-choice-words');
+    words.append(suiteEl('span', 'suite-splash-choice-label', s.name));
+    if (s.detail) words.append(suiteEl('span', 'suite-splash-choice-detail', s.detail));
+    b.append(words);
+    b.addEventListener('click', () => { finish(); s.run(); });
+    list.append(b);
+  }
+  close.addEventListener('click', () => { finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { finish(); if (back && back.isConnected && back.focus) back.focus(); } });
+  dlg.append(close, h, intro, list);
+  document.body.append(dlg);
+  dlg.showModal();
+  const first = list.querySelector('button');
+  if (first) first.focus();
+  return dlg;
+}
+
 /* A wide card - "See what PDFEDTR can do" - that opens the tour. */
 function suiteFeaturesCard(features, appId) {
   const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
@@ -13168,6 +13262,344 @@ async function restoreBackup(found) {
   }
 }
 
+/* -----------------------------------------------------------------------
+   25. SAMPLES (1.26.0)
+   Ready-made examples that show what IMGEDTR does. Nothing is downloaded:
+   each sample PAINTS its own picture on a canvas in code below, turns that
+   canvas into a PNG, and opens it through the same decoder as any other
+   image (decodeImage). Then it adds ordinary IMGEDTR layers on top - an
+   arrow, step markers, a spotlight, text, a cursor, a pixelated box, a
+   magnifier, a sticky note - so every mark can be moved, changed or deleted.
+
+   A sample opens as a NEW, unsaved document. If a picture is already open,
+   the sample replaces it the same way a Blank canvas does (newDocument):
+   as one undo step, so Undo brings the old picture straight back.
+
+   The pictures are made up: a fictional course page, made-up quiz scores
+   and a painted lake. No real people, logos or brands, and every word on
+   them is fixed text written here (never anything from a file or a person).
+
+   Each sample is { name, detail, icon, file, paint, annotate }:
+     paint()          draws the picture; returns { canvas, marks }, where
+                      "marks" remembers where things were drawn (buttons,
+                      bars, a sign) so the layers can be placed on them
+     annotate(marks)  adds the layers to the (new) doc
+   ----------------------------------------------------------------------- */
+
+/** A blank canvas of a given size, plus its 2D drawing context. */
+function sampleCanvas(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return { c, g: c.getContext('2d') };
+}
+
+/** Fill a rounded rectangle (and outline it, if a stroke colour is given). */
+function sampleBox(g, x, y, w, h, r, fill, stroke = null, lineWidth = 2) {
+  g.beginPath();
+  g.roundRect(x, y, w, h, r);
+  if (fill) { g.fillStyle = fill; g.fill(); }
+  if (stroke) { g.strokeStyle = stroke; g.lineWidth = lineWidth; g.stroke(); }
+}
+
+/** Write one line of text. size in pixels; weight 400 = normal, 700 = bold. */
+function sampleText(g, text, x, y, size, color, weight = 400, align = 'left') {
+  g.font = weight + ' ' + size + 'px ' + FONTS.sans.css;
+  g.fillStyle = color;
+  g.textAlign = align;
+  g.textBaseline = 'alphabetic';
+  g.fillText(text, x, y);
+}
+
+/** A few grey bars standing in for lines of text ("lorem ipsum" without words). */
+function sampleLines(g, x, y, widths, gap = 22, color = '#d1d5db') {
+  widths.forEach((w, i) => sampleBox(g, x, y + i * gap, w, 10, 5, color));
+}
+
+/* ---- Sample 1: an annotated screenshot of a (made-up) course page ---- */
+function paintCoursePage() {
+  const W = 1280, H = 800;
+  const { c, g } = sampleCanvas(W, H);
+  const marks = {};
+  // The desktop behind the window.
+  g.fillStyle = '#dbe2ea'; g.fillRect(0, 0, W, H);
+  // The browser window, with a soft shadow.
+  g.save();
+  g.shadowColor = 'rgba(15, 23, 42, .25)'; g.shadowBlur = 30; g.shadowOffsetY = 10;
+  sampleBox(g, 40, 30, 1200, 740, 14, '#ffffff');
+  g.restore();
+  // Title bar: three window dots and an address bar.
+  g.save();
+  g.beginPath(); g.roundRect(40, 30, 1200, 740, 14); g.clip();          // keep everything inside the window
+  g.fillStyle = '#eef1f5'; g.fillRect(40, 30, 1200, 44);
+  [['#f87171', 66], ['#fbbf24', 88], ['#4ade80', 110]].forEach(([col, x]) => {
+    g.beginPath(); g.arc(x, 52, 7, 0, Math.PI * 2); g.fillStyle = col; g.fill();
+  });
+  sampleBox(g, 300, 40, 680, 24, 12, '#ffffff', '#d7dce3', 1);
+  sampleText(g, 'learn.example.edu/bio101/module-3', 320, 57, 14, '#6b7280');
+  // The course banner, with the signed-in person's email at the right (the private bit).
+  g.fillStyle = '#1e3a5f'; g.fillRect(40, 74, 1200, 60);
+  sampleText(g, 'BIO 101  -  Introduction to Biology', 70, 112, 24, '#ffffff', 700);
+  sampleBox(g, 900, 88, 320, 32, 16, '#2c5282');
+  g.beginPath(); g.arc(918, 104, 10, 0, Math.PI * 2); g.fillStyle = '#93c5fd'; g.fill();
+  sampleText(g, 'student.name@example.edu', 938, 110, 16, '#e5edf7');
+  marks.email = { x: 932, y: 90, w: 282, h: 28 };
+  // Sidebar menu. "Assignments" is the page we are on.
+  g.fillStyle = '#f6f8fb'; g.fillRect(40, 134, 230, 636);
+  const menu = ['Home', 'Announcements', 'Modules', 'Assignments', 'Grades', 'Discussions', 'Calendar'];
+  menu.forEach((item, i) => {
+    const y = 160 + i * 52;
+    if (item === 'Assignments') {
+      sampleBox(g, 52, y - 4, 206, 42, 8, '#dbeafe');
+      g.fillStyle = '#1d4ed8'; g.fillRect(52, y - 4, 5, 42);
+      marks.menu = { x: 52, y: y - 4, w: 206, h: 42 };
+    }
+    sampleBox(g, 70, y + 9, 16, 16, 4, item === 'Assignments' ? '#1d4ed8' : '#9ca3af');
+    sampleText(g, item, 98, y + 23, 18, item === 'Assignments' ? '#1d4ed8' : '#374151', item === 'Assignments' ? 700 : 400);
+  });
+  // The page itself: a heading and a few lines of "text".
+  sampleText(g, 'Module 3: Cells and Microscopes', 310, 190, 32, '#111827', 700);
+  sampleLines(g, 310, 220, [560, 600, 520, 380]);
+  // The assignment card.
+  const card = { x: 310, y: 330, w: 620, h: 250 };
+  sampleBox(g, card.x, card.y, card.w, card.h, 12, '#ffffff', '#d7dce3', 2);
+  sampleText(g, 'Lab Report 2: Onion Cell Sketch', card.x + 28, card.y + 50, 24, '#111827', 700);
+  sampleText(g, 'Due Friday at 11:59 PM  -  20 points', card.x + 28, card.y + 82, 17, '#b45309', 700);
+  sampleLines(g, card.x + 28, card.y + 106, [540, 480], 20);
+  // An attached file "chip".
+  sampleBox(g, card.x + 28, card.y + 150, 250, 34, 8, '#f3f4f6', '#d1d5db', 1);
+  sampleBox(g, card.x + 40, card.y + 158, 14, 18, 2, '#60a5fa');
+  sampleText(g, 'onion-cells.png', card.x + 64, card.y + 173, 15, '#374151');
+  marks.card = card;
+  // The Submit button.
+  const btn = { x: card.x + 28, y: card.y + 196, w: 230, h: 42 };
+  sampleBox(g, btn.x, btn.y, btn.w, btn.h, 8, '#1d4ed8');
+  sampleText(g, 'Submit assignment', btn.x + btn.w / 2, btn.y + 28, 18, '#ffffff', 700, 'center');
+  marks.button = btn;
+  // A right-hand "Upcoming" panel.
+  sampleBox(g, 960, 160, 250, 300, 12, '#f9fafb', '#e5e7eb', 2);
+  sampleText(g, 'Upcoming', 980, 196, 20, '#111827', 700);
+  ['Quiz 3', 'Discussion post', 'Lab Report 2'].forEach((t, i) => {
+    sampleText(g, t, 980, 240 + i * 64, 17, '#374151', 700);
+    sampleLines(g, 980, 252 + i * 64, [170], 20, '#e5e7eb');
+  });
+  g.restore();
+  return { canvas: c, marks };
+}
+function annotateCoursePage(m) {
+  // A spotlight that dims the page except the assignment card.
+  const spot = makeSpotlight();
+  spot.dimColor = '#0f172a'; spot.dimOpacity = 0.5; spot.blur = 0; spot.feather = 18;
+  spot.holes.push({ shape: 'rect', x: m.card.x - 16, y: m.card.y - 16, w: m.card.w + 32, h: m.card.h + 32, radius: 16 });
+  insertSpotlight(spot);
+  // A second hole for the menu item, so step 1 is lit up too.
+  spot.holes.push({ shape: 'rect', x: m.menu.x - 6, y: m.menu.y - 6, w: m.menu.w + 12, h: m.menu.h + 12, radius: 12 });
+  // Hide the email address with pixelation (the Redact tool).
+  const hide = makeLayer('redact', { ...m.email, mode: 'pixelate', block: 10 });
+  // Numbered steps: 1 the menu, 2 the card, 3 the button.
+  const s1 = makeStep(m.menu.x + m.menu.w - 4, m.menu.y + m.menu.h / 2); doc.layers.push(s1);
+  const s2 = makeStep(m.card.x + m.card.w - 6, m.card.y + 6); doc.layers.push(s2);
+  const s3 = makeStep(m.button.x + m.button.w + 32, m.button.y + m.button.h / 2); doc.layers.push(s3);
+  [s1, s2, s3].forEach((s) => { s.fill = '#e11d48'; s.outline = false; s.textColor = '#ffffff'; });
+  // A callout and an arrow pointing at the Submit button.
+  const note = makeTextLayer(700, 650);
+  Object.assign(note, { text: 'Attach your file, then click Submit', font: 'sans', fontSize: 28, bold: true,
+    color: '#111827', bgOn: true, bgColor: '#fef3c7', padding: 14, name: 'Text: Attach your file', autoName: true });
+  measureText(note);
+  const arrow = makeLayer('arrow', { x1: 760, y1: 645, x2: m.button.x + m.button.w + 64, y2: m.button.y + m.button.h / 2 + 6,
+    stroke: '#e11d48', strokeWidth: 8 });
+  // A mouse pointer resting on the button.
+  const cur = makeCursor(m.button.x + m.button.w * 0.86, m.button.y + m.button.h * 0.72);
+  doc.layers.push(hide, note, arrow, cur);
+}
+
+/* ---- Sample 2: a bar chart, ready for a slide ---- */
+function paintChart() {
+  const W = 1280, H = 720;
+  const { c, g } = sampleCanvas(W, H);
+  const marks = { bars: [] };
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+  sampleText(g, 'Average quiz score by unit', 80, 92, 44, '#111827', 700);
+  sampleText(g, 'Fall term, all sections (made-up numbers for this sample)', 80, 130, 20, '#6b7280');
+  // The plot area and its 0-100 grid.
+  const left = 150, right = 1180, top = 180, bottom = 620;
+  const yOf = (v) => bottom - (v / 100) * (bottom - top);
+  for (let v = 0; v <= 100; v += 20) {
+    g.strokeStyle = v ? '#e5e7eb' : '#9ca3af'; g.lineWidth = v ? 1 : 2;
+    g.beginPath(); g.moveTo(left, yOf(v)); g.lineTo(right, yOf(v)); g.stroke();
+    sampleText(g, String(v), left - 16, yOf(v) + 6, 16, '#6b7280', 400, 'right');
+  }
+  // The bars. Unit 4 is where the scores jump.
+  const scores = [62, 66, 64, 81, 84, 88];
+  const slot = (right - left) / scores.length, bw = slot * 0.56;
+  scores.forEach((v, i) => {
+    const x = left + i * slot + (slot - bw) / 2, y = yOf(v);
+    sampleBox(g, x, y, bw, bottom - y, 6, i >= 3 ? '#2563eb' : '#94a3b8');
+    g.fillStyle = i >= 3 ? '#2563eb' : '#94a3b8'; g.fillRect(x, bottom - 8, bw, 8);   // square bottoms
+    sampleText(g, v + '%', x + bw / 2, y - 12, 20, '#111827', 700, 'center');
+    sampleText(g, 'Unit ' + (i + 1), x + bw / 2, bottom + 34, 18, '#374151', 400, 'center');
+    marks.bars.push({ x, y, w: bw, h: bottom - y });
+  });
+  return { canvas: c, marks };
+}
+function annotateChart(m) {
+  const b = m.bars[3];                       // Unit 4
+  // A highlight box around the Unit 4 bar (and its label above it).
+  const box = makeLayer('rect', { x: b.x - 14, y: b.y - 46, w: b.w + 28, h: b.h + 90,
+    stroke: '#e11d48', strokeWidth: 6, fillOn: false, radius: 12 });
+  // A callout, and an arrow from it to the box.
+  const note = makeTextLayer(560, 158);
+  Object.assign(note, { text: 'Weekly review sessions\nstarted in Unit 4: +17 points', font: 'sans', fontSize: 26, bold: true,
+    color: '#111827', bgOn: true, bgColor: '#fef3c7', padding: 14, name: 'Text: Weekly review sessions', autoName: true });
+  measureText(note);
+  note.x = b.x - note.w - 70; note.y = 150;
+  const arrow = makeLayer('arrow', { x1: note.x + note.w - 20, y1: note.y + note.h + 4, x2: b.x - 18, y2: b.y + 30,
+    stroke: '#e11d48', strokeWidth: 7 });
+  doc.layers.push(box, note, arrow);
+}
+
+/* ---- Sample 3: a painted lake photo to tidy up ---- */
+function paintLake() {
+  const W = 1280, H = 800;
+  const { c, g } = sampleCanvas(W, H);
+  const marks = {};
+  const horizon = 470;
+  // Sky: a gradient from blue to a warm haze near the hills.
+  const sky = g.createLinearGradient(0, 0, 0, horizon);
+  sky.addColorStop(0, '#5aa9e6'); sky.addColorStop(0.7, '#a7d3f2'); sky.addColorStop(1, '#fbe3b0');
+  g.fillStyle = sky; g.fillRect(0, 0, W, horizon);
+  // The sun and a couple of soft clouds.
+  g.beginPath(); g.arc(1020, 150, 46, 0, Math.PI * 2); g.fillStyle = '#fff3c4'; g.fill();
+  g.fillStyle = 'rgba(255,255,255,.8)';
+  [[220, 120, 60], [280, 105, 48], [330, 125, 40], [620, 80, 36], [665, 70, 30]].forEach(([x, y, r]) => {
+    g.beginPath(); g.ellipse(x, y, r * 1.4, r * 0.6, 0, 0, Math.PI * 2); g.fill();
+  });
+  // Rolling hills, far (pale) to near (dark). Each is a wave across the width.
+  const hill = (base, amp, wave, phase, color) => {
+    g.beginPath(); g.moveTo(0, H);
+    for (let x = 0; x <= W; x += 10) g.lineTo(x, base - amp * Math.sin(x / wave + phase));
+    g.lineTo(W, H); g.closePath(); g.fillStyle = color; g.fill();
+  };
+  hill(430, 40, 210, 0.5, '#8fb3a0');
+  hill(455, 34, 160, 2.1, '#6a9a78');
+  hill(470, 26, 120, 4.0, '#4e7d5c');
+  // Vineyard rows on the near hill: dark stripes that follow the hill's curve.
+  g.strokeStyle = 'rgba(40, 70, 40, .5)'; g.lineWidth = 3;
+  for (let k = 0; k < 4; k++) {
+    g.beginPath();
+    for (let x = 40; x <= 400; x += 10) {
+      const y = 470 - 26 * Math.sin(x / 120 + 4.0) + 8 + k * 8;     // just under the near hill's top edge
+      if (x === 40) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.stroke();
+  }
+  // The lake, with a few bright streaks for reflections.
+  const lake = g.createLinearGradient(0, horizon, 0, H);
+  lake.addColorStop(0, '#6fa8c9'); lake.addColorStop(1, '#245b7d');
+  g.fillStyle = lake; g.fillRect(0, horizon, W, H - horizon);
+  g.fillStyle = 'rgba(255, 245, 210, .45)';
+  for (let i = 0; i < 14; i++) g.fillRect(960 + Math.sin(i * 1.7) * 60, horizon + 14 + i * 16, 90 - i * 4, 3);
+  // A small sailboat out on the water (the magnifier looks at it).
+  const bx = 700, by = 585;
+  g.fillStyle = '#ffffff';
+  g.beginPath(); g.moveTo(bx, by - 52); g.lineTo(bx, by - 4); g.lineTo(bx + 30, by - 4); g.closePath(); g.fill();
+  g.fillStyle = '#f97316';
+  g.beginPath(); g.moveTo(bx - 3, by - 44); g.lineTo(bx - 3, by - 6); g.lineTo(bx - 22, by - 6); g.closePath(); g.fill();
+  g.fillStyle = '#7c2d12';
+  g.beginPath(); g.moveTo(bx - 28, by - 2); g.lineTo(bx + 36, by - 2); g.lineTo(bx + 26, by + 8); g.lineTo(bx - 20, by + 8); g.closePath(); g.fill();
+  marks.boat = { x: bx + 4, y: by - 20 };
+  // A wooden dock at the bottom left, with a rental sign and a (made-up) phone number.
+  g.fillStyle = '#8b5e3c'; g.fillRect(0, 690, 420, 26);
+  for (let x = 20; x < 420; x += 70) { g.fillStyle = '#5c3b22'; g.fillRect(x, 716, 12, 84); }
+  g.fillStyle = '#5c3b22'; g.fillRect(150, 560, 10, 130); g.fillRect(330, 560, 10, 130);
+  sampleBox(g, 110, 540, 270, 104, 8, '#fdf6e3', '#5c3b22', 5);
+  sampleText(g, 'BOAT RENTAL', 245, 580, 26, '#7c2d12', 700, 'center');
+  sampleText(g, 'Call 555-0142', 245, 620, 24, '#1f2937', 700, 'center');
+  marks.sign = { x: 152, y: 597, w: 186, h: 32 };
+  // A few trees along the far shore.
+  for (let i = 0; i < 9; i++) {
+    const x = 470 + i * 34, y = 462 + (i % 3) * 3;
+    g.fillStyle = '#2f5a3a'; g.beginPath(); g.ellipse(x, y, 14, 22, 0, 0, Math.PI * 2); g.fill();
+  }
+  return { canvas: c, marks };
+}
+function annotateLake(m) {
+  // A title in the sky.
+  const title = makeTextLayer(60, 40);
+  Object.assign(title, { text: 'Finger Lakes field trip', font: 'sans', fontSize: 48, bold: true,
+    color: '#ffffff', bgOn: true, bgColor: '#1e3a5f', padding: 16, name: 'Text: Finger Lakes field trip', autoName: true });
+  measureText(title);
+  // Pixelate the phone number on the sign before sharing.
+  const hide = makeLayer('redact', { ...m.sign, mode: 'pixelate', block: 12 });
+  // A magnifier: a round bubble in the sky showing the little sailboat up close.
+  const mag = makeMagnifier(m.boat.x, m.boat.y);
+  Object.assign(mag, { shape: 'circle', w: 220, h: 220, zoom: 3, x: 760, y: 220, borderColor: '#ffffff', borderWidth: 5, leader: true });
+  // A sticky note with a tip about cropping.
+  const note = makeStickyLayer(1110, 640);
+  note.text = 'Try Crop to make this a 16:9 slide';
+  note.name = 'Note: Try Crop'; note.autoName = true;
+  measureText(note);
+  doc.layers.push(title, hide, mag, note);
+}
+
+/* The list the chooser shows. "icon" is a SUITE_ACTION_ICONS name or a fixed 24x24 drawing. */
+const SAMPLES = [
+  { name: 'Annotated screenshot', detail: 'A course page with steps, an arrow, a spotlight and a hidden email address',
+    icon: 'screen', file: 'Sample - course page', paint: paintCoursePage, annotate: annotateCoursePage },
+  { name: 'Chart for a slide', detail: 'A bar chart with a highlight box, a callout and an arrow',
+    icon: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+    file: 'Sample - quiz chart', paint: paintChart, annotate: annotateChart },
+  { name: 'Photo to tidy up', detail: 'A lake picture with a title, a magnifier, a blurred phone number and a sticky note',
+    icon: 'media', file: 'Sample - lake photo', paint: paintLake, annotate: annotateLake }
+];
+
+/** Show the Samples chooser (from the splash, the start screen or Help > Features). */
+function openSamples() {
+  suiteSamplesOpen({ appId: 'imgedtr', samples: SAMPLES.map((s) => ({
+    name: s.name, detail: s.detail, icon: s.icon, run: () => openSample(s) })) });
+}
+
+/** Make one sample and open it as a new, unsaved document. */
+async function openSample(sample) {
+  suiteSplashClose();
+  finishTextEdit();
+  cancelCrop();
+  stopPlaying();                                   // an animated GIF that was playing stops
+  setBusy(true, 'Making the sample...');
+  try {
+    // 1. Paint the picture, then turn it into a PNG and open it like any other image file.
+    const { canvas: painted, marks } = sample.paint();
+    const blob = await new Promise((res, rej) => painted.toBlob((b) => (b ? res(b) : rej(new Error('no image'))), 'image/png'));
+    const { canvas } = await decodeImage(blob, sample.file + '.png');
+    // 2. The new document: one image layer, the size of the picture.
+    const hadDoc = !!doc;
+    const imageId = uid();
+    imageStore.set(imageId, canvas);               // old pictures stay in the store, so Undo can bring them back
+    const image = { id: uid(), type: 'image', name: sample.file, visible: true, locked: false, opacity: 1, rotation: 0,
+      imageId, x: 0, y: 0, w: canvas.width, h: canvas.height };
+    ensureImageStyle(image);
+    doc = { width: canvas.width, height: canvas.height, background: null, layers: [image] };
+    state.selectedId = null;
+    state.frame = 0; state.frameSel = []; state.framePanel = false;
+    // 3. The marks on top: ordinary layers, so each one can be edited.
+    sample.annotate(marks);
+    // 4. Replacing a picture is one undo step (like Blank canvas); a first picture starts a fresh history.
+    if (hadDoc) commit(); else resetHistory();
+    onDocumentShapeChanged();
+    fitView();
+    toast(hadDoc ? 'Sample opened. Press Undo to get your picture back.' : 'Sample opened. Click any mark to change it.');
+    announce(sample.name + ' sample opened, ' + doc.layers.length + ' layers. Nothing is saved until you export or save it.');
+    stage.focus({ preventScroll: true });
+  } catch (err) {
+    toast('That sample could not be made in this browser.', 5000);
+  } finally {
+    setBusy(false);
+  }
+}
+
+// The start screen's Samples button and the one in Help > Features.
+$('startSamples').addEventListener('click', openSamples);
+$('helpSamples').addEventListener('click', () => { $('dlgInfo').close(); openSamples(); });
+
 /* The splash, plus the backup icon when an earlier session left work behind. */
 async function startUp() {
   const leftovers = await SuiteBackup.findLeftovers('imgedtr');
@@ -13188,7 +13620,9 @@ async function startUp() {
       // Paste: the picture on the clipboard (the same as the top bar's Paste button).
       { icon: 'paste', label: 'Paste', run: pasteFromButton },
       { icon: 'size', label: 'Blank canvas', run: openNew },
-      { icon: 'headshot', label: 'Make a headshot', run: startHeadshot }
+      { icon: 'headshot', label: 'Make a headshot', run: startHeadshot },
+      // Samples (1.26.0): ready-made examples to open (section 25).
+      { icon: 'sample', label: 'Samples', run: openSamples }
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
     hint: 'You can also drop or paste an image anywhere in this window.'

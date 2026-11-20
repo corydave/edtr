@@ -2,6 +2,22 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.26.0 - 2026-11-20 - Samples
+
+- **Samples.** Three ready-made examples to open and play with, so you can see what IMGEDTR does before you have a picture of your own:
+  - **Annotated screenshot** - a made-up course page (BIO 101) with numbered steps 1-2-3, an arrow and a callout pointing at the Submit button, a spotlight on the assignment card and the menu item, a mouse pointer, and the signed-in email address pixelated.
+  - **Chart for a slide** - a bar chart of (made-up) quiz scores by unit, with a highlight box round Unit 4, a callout and an arrow.
+  - **Photo to tidy up** - a painted Finger Lakes-style scene (hills, vineyard, lake, sailboat, dock) with a title, a magnifier on the boat, the phone number on the rental sign pixelated, and a sticky note suggesting a crop.
+- IMGEDTR **paints each sample itself** in code, then opens it like any other image, so samples work offline and straight off a disk. No downloads, no real people, logos or brands.
+- Every mark is an **ordinary layer** (spotlight, steps, arrow, text, cursor, redact, rectangle, magnifier, sticky note): move it, change it or delete it. Nothing is saved until you export or save it.
+- **Where to find them:** the **Samples** button on the splash, a **Samples** button on the start screen, and **Open a sample** at the top of **Help > Features**.
+- Opening a sample when a picture is already open replaces it the same way **Blank canvas** does: as one step you can **Undo** to get your picture back.
+
+## 1.25.1 - 2026-11-20 - Sticky notes with the teaching tools; a gap round headshots
+
+- The **Sticky note** button moved down the tool rail, from under Text to **under the Step marker**, with the other teaching tools. Its shortcut is still **O**.
+- **Headshots have a gap all round.** The photo used to fill the canvas edge to edge when the shadow was off, so a circle's smooth edge was clipped flat where it met the sides. Now there is always a small empty edge: **1.25% of the size** - 5 px at 400, **10 px at 800** (the default), 13 px at 1024 - so it looks the same at every size (`HEADSHOT_GAP`, never less than 4 px). With the shadow on, the gap is the larger of that and the room the shadow's blur needs, as before. The empty edge is see-through, white or your colour, following the Background choice.
+
 ## 1.25.0 - 2026-11-19 - Torn and stamp edges, sticky notes, exact slider values
 
 - **Torn edges.** A picture that is a rectangle (Shape = Rectangle) has a new **Edges** setting in the Inspector: **None**, **Torn** or **Stamp**.
