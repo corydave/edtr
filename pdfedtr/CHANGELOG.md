@@ -17,6 +17,12 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.26 - 2026-11-20 - Samples to practise on
+
+- Samples: three ready-made PDFs to practise on - a field trip permission form to fill in and sign, a three-page course syllabus (with two pages out of order, to fix) and a certificate of completion to type a name on, sign and stamp. Find them on the start screen (the new Samples button) and in Help > Features (Open a sample).
+- PDFEDTR makes each sample itself, in code, with pdf-lib (`buildPermissionFormSample()`, `buildSyllabusSample()`, `buildCertificateSample()`), then opens it through `loadPdf()` like any other file, named "<sample> (sample).pdf". Nothing is downloaded, so they work offline and straight off a disk. The chooser is the shared `suiteSamplesOpen()`.
+- Opening a sample over a PDF with changes asks first, the same as New PDF.
+
 ## 1.25 - 2026-10-30 - A painted splash
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.

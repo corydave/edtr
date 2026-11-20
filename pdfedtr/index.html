@@ -376,7 +376,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
      --suite-accent  the app's own colour, for the main button (it must
                      carry white text at 7:1 - every app colour does)
    Everything else is worked out from those (and from currentColor). */
-.suite-splash, .suite-backup-dlg {
+/* (.suite-samples, the Samples chooser, shares the splash's dialog look.) */
+.suite-splash, .suite-backup-dlg, .suite-samples {
   background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 14px; padding: 22px 24px 16px; margin: auto;
@@ -386,7 +387,15 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
   max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
 .suite-backup-dlg { width: min(440px, 92vw); }
-.suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+/* The Samples chooser: one sample per row, its picture, name and a line about it. */
+.suite-samples { width: min(520px, 94vw); max-width: 94vw; max-height: 92vh; overflow: auto; }
+.suite-samples h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
+.suite-samples-intro { margin: 6px 0 14px; opacity: .8; }
+.suite-samples-list { display: grid; gap: 10px; }
+.suite-samples-choice { flex-direction: row; align-items: center; gap: 14px; min-height: 64px; border-radius: 14px; }
+.suite-samples-choice .suite-splash-choice-icon { width: 34px; height: 34px; flex: none; }
+.suite-samples-choice .suite-splash-choice-words { display: flex; flex-direction: column; gap: 2px; }
+.suite-splash::backdrop, .suite-backup-dlg::backdrop, .suite-samples::backdrop { background: rgba(10, 14, 22, .55); }
 .suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
 .suite-backup-dlg h2 { font-size: 17px; letter-spacing: 0; margin-bottom: 8px; }
 .suite-backup-dlg p { margin: 0 0 10px; }
@@ -2434,6 +2443,10 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   <div class="help-pane" role="tabpanel" id="hpane-features" aria-labelledby="htab-features">
     <!-- The animated tour: APP_FEATURES, drawn by renderSuiteFeatures (shared SUITE block). -->
     <div id="suite-features"></div>
+    <!-- Samples (1.26): the same chooser as the splash's Samples button. -->
+    <p class="help-note">Want something to practise on?
+      <button class="btn" type="button" id="btn-help-samples">Open a sample</button>
+      - a permission form, a course syllabus or a certificate, made right here in your browser.</p>
   </div>
   <div class="help-pane" role="tabpanel" id="hpane-keys" aria-labelledby="htab-keys" hidden>
     <table class="help-keys">
@@ -8510,6 +8523,451 @@ async function createBlankPdf(sizeKey, orient, count) {
   document.getElementById('btn-new').addEventListener('click', openNewPdfDialog);
 })();
 
+/* ══════════════════════════════════════════
+   SAMPLES (1.26)
+   ─────────────────────────────────────────
+   Three ready-made PDFs to practise on. PDFEDTR draws each one itself,
+   right here in code, with pdf-lib - the same library that writes your
+   edited PDFs - at the moment you pick it. Nothing is downloaded, so the
+   samples work offline and straight off a disk.
+
+   Each sample then opens through loadPdf(), the same door every PDF you
+   open goes through, so it behaves exactly like a file you picked. It is
+   named "<sample> (sample).pdf" and starts as a new, unsaved document.
+
+     Field trip permission form  - Fill and Sign: real fillable boxes, a
+                                   choice, a dropdown and a checkbox, then
+                                   blank lines to sign and date.
+     Course syllabus             - 3 pages, two of them in the wrong order:
+                                   rearrange pages, highlight, add notes.
+     Certificate of completion   - landscape: type a name, sign it, stamp it.
+
+   pdf-lib measures pages in points (72 to an inch) from the BOTTOM-left
+   corner. People think about a page from the top, so samplePen() below
+   lets the drawing code say "this far down from the top" instead.
+   All the words are fixed text written here - nothing typed by anyone -
+   and they stick to plain characters the built-in PDF fonts can draw.
+══════════════════════════════════════════ */
+
+/* The sample colours, as pdf-lib colours (each part from 0 to 1). */
+const SAMPLE_INK   = PDFLib.rgb(0.13, 0.15, 0.20);   // near-black body text
+const SAMPLE_MUTE  = PDFLib.rgb(0.42, 0.45, 0.50);   // grey small print
+const SAMPLE_RULE  = PDFLib.rgb(0.70, 0.73, 0.78);   // light grey lines
+const SAMPLE_BLUE  = PDFLib.rgb(0.11, 0.30, 0.54);   // headings and bands
+const SAMPLE_TINT  = PDFLib.rgb(0.93, 0.96, 1.00);   // pale blue boxes
+const SAMPLE_WHITE = PDFLib.rgb(1, 1, 1);
+
+/**
+ * Break a sentence into lines no wider than maxWidth points, in this font
+ * and size. It fills each line with as many whole words as fit.
+ */
+function sampleWrap(font, size, text, maxWidth) {
+  const lines = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const longer = line ? line + ' ' + word : word;
+    // Keep adding words while they fit (a single very long word gets a line of its own).
+    if (!line || font.widthOfTextAtSize(longer, size) <= maxWidth) line = longer;
+    else { lines.push(line); line = word; }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/**
+ * A little drawing kit for one page that measures DOWN FROM THE TOP.
+ * "top" is how far the text's baseline (or a box's top edge) sits below
+ * the top of the page, in points.
+ */
+function samplePen(page, fonts) {
+  const W = page.getWidth();
+  const H = page.getHeight();
+  const pen = {
+    W, H,
+    /** One line of text. opts: size, font, color. */
+    text(str, x, top, opts = {}) {
+      page.drawText(str, { x, y: H - top, size: opts.size || 11,
+                           font: opts.font || fonts.body, color: opts.color || SAMPLE_INK });
+    },
+    /** One line of text centred across the page. */
+    center(str, top, opts = {}) {
+      const font = opts.font || fonts.body;
+      const size = opts.size || 11;
+      pen.text(str, (W - font.widthOfTextAtSize(str, size)) / 2, top, opts);
+    },
+    /** A wrapped paragraph. Returns how far down the page it finished. */
+    para(str, x, top, width, opts = {}) {
+      const font = opts.font || fonts.body;
+      const size = opts.size || 11;
+      const lead = size * 1.4;                          // space from one line to the next
+      sampleWrap(font, size, str, width).forEach((ln, i) => pen.text(ln, x, top + i * lead, opts));
+      return top + sampleWrap(font, size, str, width).length * lead;
+    },
+    /** A straight line across, from x1 to x2, "top" points down. */
+    rule(x1, x2, top, opts = {}) {
+      page.drawLine({ start: { x: x1, y: H - top }, end: { x: x2, y: H - top },
+                      thickness: opts.thickness || 0.8, color: opts.color || SAMPLE_RULE });
+    },
+    /** A box whose top-left corner is (x, top). opts: fill, border, borderWidth. */
+    box(x, top, w, h, opts = {}) {
+      const o = { x, y: H - top - h, width: w, height: h };
+      if (opts.fill)   o.color = opts.fill;
+      if (opts.border) { o.borderColor = opts.border; o.borderWidth = opts.borderWidth || 1; }
+      page.drawRectangle(o);
+    },
+    /** A section heading with a thin rule under it. */
+    heading(str, x, top, width) {
+      pen.text(str, x, top, { font: fonts.bold, size: 13, color: SAMPLE_BLUE });
+      pen.rule(x, x + width, top + 6, { color: SAMPLE_BLUE, thickness: 0.6 });
+    },
+    /**
+     * Where pdf-lib wants a form field: its bottom-left corner, measured
+     * from the bottom. (Fields are boxes too, just clickable ones.)
+     */
+    field(x, top, w, h) { return { x, y: H - top - h, width: w, height: h }; },
+  };
+  return pen;
+}
+
+/** Embed the handful of built-in fonts the samples use (nothing to download). */
+async function sampleFonts(doc) {
+  const F = PDFLib.StandardFonts;
+  return {
+    body:   await doc.embedFont(F.Helvetica),
+    bold:   await doc.embedFont(F.HelveticaBold),
+    italic: await doc.embedFont(F.HelveticaOblique),
+    serifB: await doc.embedFont(F.TimesRomanBold),
+    serifI: await doc.embedFont(F.TimesRomanItalic),
+  };
+}
+
+/** Fill in the PDF's own title and author details, then turn it into bytes. */
+async function sampleFinish(doc, title) {
+  doc.setTitle(title + ' (sample)');
+  doc.setCreator('PDFEDTR');
+  doc.setProducer('PDFEDTR sample');
+  return doc.save();
+}
+
+/* ---- Sample 1: Field trip permission form (1 page, Letter) ----------- */
+async function buildPermissionFormSample() {
+  const doc   = await PDFLib.PDFDocument.create();
+  const fonts = await sampleFonts(doc);
+  const page  = doc.addPage([612, 792]);               // US Letter, portrait
+  const pen   = samplePen(page, fonts);
+  const form  = doc.getForm();
+  const L = 48, R = 564, WIDTH = R - L;                 // the left and right margins
+
+  // A blue band across the top with the title in white.
+  pen.box(0, 0, pen.W, 84, { fill: SAMPLE_BLUE });
+  pen.text('Field Trip Permission Form', L, 42, { font: fonts.bold, size: 24, color: SAMPLE_WHITE });
+  pen.text('Environmental Science 110  |  Department of Science and Technology', L, 64,
+           { size: 11, color: SAMPLE_WHITE });
+
+  // The trip: a bold label on the left, the details beside it.
+  pen.heading('The trip', L, 116, WIDTH);
+  const details = [
+    ['Where', 'The Keuka Lake Outlet Trail. We walk about three miles, look at old mill sites and test the water in the stream.'],
+    ['When',  'Saturday, October 17, 8:30 AM to 3:00 PM. We meet in Parking Lot C.'],
+    ['Bring', 'Water, a packed lunch, sturdy shoes and a rain jacket. We go rain or shine.'],
+    ['Cost',  'Free. The college van seats 12, and carpools are welcome.'],
+  ];
+  let top = 140;
+  for (const [label, words] of details) {
+    pen.text(label, L, top, { font: fonts.bold });
+    top = pen.para(words, L + 56, top, WIDTH - 56) + 4;
+  }
+
+  // About you: real, fillable text boxes (pdf-lib form fields), so the
+  // sample can be filled in straight away.
+  pen.heading('About you', L, 246, WIDTH);
+  const boxes = [
+    // [field name,             label,                         x,       top, width]
+    ['Student name',            'Student name',                L,       268, 300],
+    ['Student ID',              'Student ID',                  L + 318, 268, 198],
+    ['Phone',                   'Phone',                       L,       312, 250],
+    ['Email',                   'Email',                       L + 268, 312, 248],
+    ['Emergency contact',       'Emergency contact (name)',    L,       356, 300],
+    ['Emergency contact phone', 'Their phone',                 L + 318, 356, 198],
+  ];
+  for (const [name, label, x, t, w] of boxes) {
+    pen.text(label, x, t, { size: 9, color: SAMPLE_MUTE });
+    const tf = form.createTextField(name);
+    tf.addToPage(page, { ...pen.field(x, t + 5, w, 20), borderColor: SAMPLE_RULE, borderWidth: 1,
+                         backgroundColor: SAMPLE_TINT });
+    tf.setFontSize(11);
+  }
+
+  // Getting there: pick one of two (radio buttons) and a lunch dropdown.
+  pen.heading('Getting there and lunch', L, 410, WIDTH);
+  const ride = form.createRadioGroup('Getting there');
+  ride.addOptionToPage('College van', page, { ...pen.field(L, 422, 12, 12), borderColor: SAMPLE_BLUE });
+  pen.text('I will ride in the college van', L + 20, 432);
+  ride.addOptionToPage('Driving myself', page, { ...pen.field(L, 444, 12, 12), borderColor: SAMPLE_BLUE });
+  pen.text('I will drive myself and follow the van', L + 20, 454);
+
+  pen.text('Lunch', L + 300, 424, { size: 9, color: SAMPLE_MUTE });
+  const lunch = form.createDropdown('Lunch');
+  lunch.addOptions(['I will bring my own', 'Please order me a boxed lunch', 'I have a food allergy (see below)']);
+  lunch.select('I will bring my own');
+  lunch.addToPage(page, { ...pen.field(L + 300, 429, 216, 20), borderColor: SAMPLE_RULE, borderWidth: 1,
+                          backgroundColor: SAMPLE_TINT });
+  lunch.setFontSize(10);                                // the same size as the text around it
+
+  // One checkbox to tick.
+  const ok = form.createCheckBox('Read the safety guidelines');
+  ok.addToPage(page, { ...pen.field(L, 470, 12, 12), borderColor: SAMPLE_BLUE });
+  pen.text('I have read the trip safety guidelines and will stay with the group.', L + 20, 480);
+
+  // A plain empty box (NOT a field): draw a box over it to make it a
+  // field, or just type in it with the Text tool.
+  pen.text('Medical notes, allergies or anything else we should know', L, 512, { size: 9, color: SAMPLE_MUTE });
+  pen.box(L, 518, WIDTH, 60, { border: SAMPLE_RULE });
+
+  // Signatures: blank lines for the Sign tool and today's date.
+  pen.heading('Signatures', L, 612, WIDTH);
+  pen.para('By signing, I agree to take part in this trip and to follow the instructor\'s directions. ' +
+           'Students under 18 also need a parent or guardian to sign.', L, 634, WIDTH, { size: 10 });
+  const lines = [
+    [692, 'Student signature'],
+    [742, 'Parent or guardian signature (only if under 18)'],
+  ];
+  for (const [t, label] of lines) {
+    pen.rule(L, L + 300, t, { color: SAMPLE_INK });
+    pen.text(label, L, t + 12, { size: 9, color: SAMPLE_MUTE });
+    pen.rule(L + 330, R, t, { color: SAMPLE_INK });
+    pen.text('Date', L + 330, t + 12, { size: 9, color: SAMPLE_MUTE });
+  }
+
+  // Small print at the very bottom: what to try.
+  pen.text('A PDFEDTR sample. Try it: type in the boxes, pick a choice, sign with the Sign tool and press D for today\'s date.',
+           L, 780, { font: fonts.italic, size: 8.5, color: SAMPLE_MUTE });
+  return sampleFinish(doc, 'Field trip permission form');
+}
+
+/* ---- Sample 2: Course syllabus (3 pages, Letter) ---------------------
+   On purpose, the schedule (page 2 of 3) comes LAST, so there is
+   something to fix by dragging pages in the filmstrip. */
+async function buildSyllabusSample() {
+  const doc   = await PDFLib.PDFDocument.create();
+  const fonts = await sampleFonts(doc);
+  const L = 54, R = 558, WIDTH = R - L;
+
+  /** A fresh page with the course band at the top and "Page n of 3" at the bottom. */
+  function newPage(subtitle, pageNo) {
+    const page = doc.addPage([612, 792]);
+    const pen  = samplePen(page, fonts);
+    pen.box(0, 0, pen.W, 68, { fill: SAMPLE_BLUE });
+    pen.text('CSC 101: Computing Fundamentals', L, 36, { font: fonts.bold, size: 20, color: SAMPLE_WHITE });
+    pen.text(subtitle, L, 56, { size: 11, color: SAMPLE_WHITE });
+    pen.rule(L, R, 756);
+    pen.text('CSC 101 syllabus  |  Page ' + pageNo + ' of 3', L, 770, { size: 9, color: SAMPLE_MUTE });
+    const right = 'A PDFEDTR sample';
+    pen.text(right, R - fonts.italic.widthOfTextAtSize(right, 9), 770, { font: fonts.italic, size: 9, color: SAMPLE_MUTE });
+    return pen;
+  }
+
+  // ---- Page 1 of 3: the course at a glance ----
+  let pen = newPage('Course syllabus  |  Fall term  |  3 credits', 1);
+  pen.box(L, 90, WIDTH, 92, { fill: SAMPLE_TINT });
+  const glance = [
+    ['Instructor',  'Your instructor\'s name goes here'],
+    ['Email',       'instructor@example.edu (I answer within one school day)'],
+    ['Office',      'Room B-214, Tuesdays and Thursdays 1:00 to 3:00 PM, or online by appointment'],
+    ['Class meets', 'Mondays and Wednesdays, 10:00 to 11:15 AM, Room C-110'],
+  ];
+  glance.forEach(([label, words], i) => {
+    pen.text(label, L + 12, 110 + i * 20, { font: fonts.bold, size: 10 });
+    pen.text(words, L + 92, 110 + i * 20, { size: 10 });
+  });
+
+  pen.heading('About this course', L, 214, WIDTH);
+  let top = pen.para('How do computers, the web and the apps we use every day actually work? In this course you will find out by ' +
+    'taking things apart and building your own. No experience is needed - just curiosity and a willingness to try, get ' +
+    'stuck and try again. We write small programs in Python, build a web page, use spreadsheets as a data tool, and talk ' +
+    'honestly about privacy, security and AI.', L, 236, WIDTH);
+
+  pen.heading('What you will be able to do', L, top + 22, WIDTH);
+  top += 44;
+  const outcomes = [
+    'Explain, in plain words, how hardware, software and networks work together.',
+    'Write short programs that use variables, decisions, loops and lists.',
+    'Build and publish a simple, accessible web page.',
+    'Make careful choices about your data, your privacy and the AI tools you use.',
+  ];
+  outcomes.forEach((words, i) => {
+    pen.text((i + 1) + '.', L + 4, top);
+    top = pen.para(words, L + 22, top, WIDTH - 22) + 4;
+  });
+
+  pen.heading('What you need', L, top + 18, WIDTH);
+  top = pen.para('No textbook to buy. Every reading is free and linked in the course site. Bring a laptop if you have one, ' +
+    'or use one of the campus computer labs (the library lends laptops too).', L, top + 40, WIDTH);
+
+  // A tip box: what to try in this sample.
+  pen.box(L, 600, WIDTH, 96, { fill: PDFLib.rgb(1, 0.97, 0.82), border: PDFLib.rgb(0.93, 0.79, 0.33) });
+  pen.text('Try this sample', L + 14, 622, { font: fonts.bold, size: 12 });
+  pen.para('Pages 2 and 3 are in the wrong order - look at the page numbers at the bottom. Drag the last page in front of ' +
+    'the middle one in the strip of pages. Then highlight the due dates on the schedule, leave a sticky note with a ' +
+    'question, and use the Text tool to put your instructor\'s name at the top of this page.', L + 14, 642, WIDTH - 28, { size: 10.5 });
+
+  // ---- Page 3 of 3 (comes second on purpose): grading and policies ----
+  pen = newPage('Grading and course policies', 3);
+  pen.heading('How your grade adds up', L, 100, WIDTH);
+  const grading = [
+    ['Labs (ten short weekly labs)', '30%'],
+    ['Projects (three)', '30%'],
+    ['Midterm exam', '15%'],
+    ['Final project and presentation', '15%'],
+    ['Participation and check-ins', '10%'],
+  ];
+  pen.box(L, 114, 320, 22, { fill: SAMPLE_BLUE });
+  pen.text('What', L + 10, 129, { font: fonts.bold, size: 10, color: SAMPLE_WHITE });
+  pen.text('Share', L + 260, 129, { font: fonts.bold, size: 10, color: SAMPLE_WHITE });
+  grading.forEach(([what, share], i) => {
+    const t = 136 + i * 22;
+    if (i % 2) pen.box(L, t, 320, 22, { fill: SAMPLE_TINT });   // every other row shaded
+    pen.text(what, L + 10, t + 15, { size: 10 });
+    pen.text(share, L + 260, t + 15, { size: 10 });
+  });
+  pen.text('Grade scale', L + 344, 129, { font: fonts.bold, size: 10 });
+  ['A 93-100     A- 90-92', 'B+ 87-89     B 83-86', 'B- 80-82     C+ 77-79', 'C 70-76      D 60-69', 'F below 60']
+    .forEach((ln, i) => pen.text(ln, L + 344, 151 + i * 22, { size: 10 }));
+
+  top = 284;
+  const policies = [
+    ['Late work', 'Life happens. Each lab can be up to three days late with no penalty, no reason needed. For anything ' +
+      'longer, talk to me before the due date and we will make a plan together.'],
+    ['Using AI tools', 'You may use AI to brainstorm, to explain an error message or to check your understanding. Say so in ' +
+      'a short note when you hand the work in. The thinking, and the final words and code, must be your own.'],
+    ['Accessibility', 'If you have a disability and need an accommodation, please contact the Accessibility Services ' +
+      'office as early as you can. I am glad to work with you and with them.'],
+    ['Academic honesty', 'Work together, learn from each other, and give credit when you use someone else\'s idea or code. ' +
+      'Handing in someone else\'s work as your own is never OK.'],
+    ['Where to get help', 'The Tutoring Center (free, drop in or book online), the library\'s research help desk, and my ' +
+      'office hours. Asking early is a sign of a strong student, not a weak one.'],
+  ];
+  for (const [title, words] of policies) {
+    pen.heading(title, L, top, WIDTH);
+    top = pen.para(words, L, top + 22, WIDTH, { size: 10.5 }) + 18;
+  }
+
+  // ---- Page 2 of 3 (comes last on purpose): the weekly schedule ----
+  pen = newPage('Weekly schedule', 2);
+  const weeks = [
+    ['Welcome; how a computer works',        'Intro survey'],
+    ['Files, folders and the cloud',         'Lab 1'],
+    ['Thinking like a programmer',           'Lab 2'],
+    ['Variables and decisions',              'Lab 3'],
+    ['Loops and patterns',                   'Lab 4, Project 1'],
+    ['Lists and data',                       'Lab 5'],
+    ['Review and midterm',                   'Midterm exam (Wednesday)'],
+    ['Spreadsheets as a data tool',          'Lab 6'],
+    ['How web pages work',                   'Lab 7, Project 2'],
+    ['Building an accessible web page',      'Lab 8'],
+    ['Networks and staying safe online',     'Lab 9'],
+    ['AI: what it is, and what it is not',   'Lab 10'],
+    ['Data, privacy and ethics',             'Project 3'],
+    ['Final project work time',              'Draft check-in'],
+    ['Presentations and celebration',        'Final project'],
+  ];
+  pen.box(L, 92, WIDTH, 24, { fill: SAMPLE_BLUE });
+  pen.text('Week', L + 10, 108, { font: fonts.bold, size: 10, color: SAMPLE_WHITE });
+  pen.text('Topic', L + 60, 108, { font: fonts.bold, size: 10, color: SAMPLE_WHITE });
+  pen.text('Due', L + 330, 108, { font: fonts.bold, size: 10, color: SAMPLE_WHITE });
+  weeks.forEach(([topic, due], i) => {
+    const t = 116 + i * 30;
+    if (i % 2) pen.box(L, t, WIDTH, 30, { fill: SAMPLE_TINT });
+    pen.text(String(i + 1), L + 10, t + 19, { size: 10.5 });
+    pen.text(topic, L + 60, t + 19, { size: 10.5 });
+    pen.text(due, L + 330, t + 19, { size: 10.5, font: /project|exam/i.test(due) ? fonts.bold : fonts.body });
+  });
+  pen.para('Labs are due Sundays at 11:59 PM. Projects are due the Friday of their week. The schedule may shift a little; ' +
+    'any change will be posted in the course site at least a week ahead.', L, 590, WIDTH, { size: 10, color: SAMPLE_MUTE });
+
+  return sampleFinish(doc, 'Course syllabus');
+}
+
+/* ---- Sample 3: Certificate of completion (1 page, Letter landscape) -- */
+async function buildCertificateSample() {
+  const doc   = await PDFLib.PDFDocument.create();
+  const fonts = await sampleFonts(doc);
+  const page  = doc.addPage([792, 612]);               // Letter turned sideways
+  const pen   = samplePen(page, fonts);
+  const GREEN = PDFLib.rgb(0.13, 0.36, 0.27);
+  const GOLD  = PDFLib.rgb(0.78, 0.60, 0.20);
+
+  // A warm paper colour and a double border.
+  pen.box(0, 0, pen.W, pen.H, { fill: PDFLib.rgb(0.99, 0.97, 0.92) });
+  pen.box(24, 24, pen.W - 48, pen.H - 48, { border: GREEN, borderWidth: 4 });
+  pen.box(36, 36, pen.W - 72, pen.H - 72, { border: GOLD, borderWidth: 1.2 });
+
+  pen.center('CERTIFICATE OF COMPLETION', 132, { font: fonts.serifB, size: 36, color: GREEN });
+  pen.center('This certifies that', 190, { font: fonts.serifI, size: 17 });
+  pen.rule(196, 596, 252, { color: GOLD, thickness: 1 });   // the name goes on this line
+  pen.center('has completed the workshop', 292, { font: fonts.serifI, size: 17 });
+  pen.center('Teaching with AI: A Hands-On Workshop', 334, { font: fonts.serifB, size: 26, color: GREEN });
+  pen.center('Twelve hours of practice, play and discussion  |  Finger Lakes Teaching Circle', 362,
+             { size: 11, color: SAMPLE_MUTE });
+
+  // Two signature lines with a gold seal between them.
+  pen.rule(110, 320, 470, { color: SAMPLE_INK });
+  pen.text('Workshop facilitator', 110, 486, { size: 10, color: SAMPLE_MUTE });
+  pen.rule(472, 682, 470, { color: SAMPLE_INK });
+  pen.text('Date', 472, 486, { size: 10, color: SAMPLE_MUTE });
+  page.drawCircle({ x: 396, y: pen.H - 462, size: 46, color: GOLD });
+  page.drawCircle({ x: 396, y: pen.H - 462, size: 38, borderColor: SAMPLE_WHITE, borderWidth: 1.5 });
+  const seal = (word, t) => pen.text(word, 396 - fonts.bold.widthOfTextAtSize(word, 13) / 2, t,
+                                     { font: fonts.bold, size: 13, color: SAMPLE_WHITE });
+  seal('WELL', 458);
+  seal('DONE', 476);
+
+  pen.center('A PDFEDTR sample. Try it: type a name on the line, sign it, add the date and stamp a star.', 556,
+             { font: fonts.italic, size: 9, color: SAMPLE_MUTE });
+  return sampleFinish(doc, 'Certificate of completion');
+}
+
+/* The list the chooser shows. icon: a SUITE_ACTION_ICONS name, or this
+   app's own 24x24 drawing (fixed markup written here, never data). */
+const PDF_SAMPLES = [
+  { name: 'Field trip permission form', icon: ICONS.signature, build: buildPermissionFormSample,
+    detail: 'One page to fill in and sign: boxes to type in, a choice, a dropdown and lines to sign and date' },
+  { name: 'Course syllabus', icon: 'sample', build: buildSyllabusSample,
+    detail: 'Three pages, two of them out of order: rearrange pages, highlight, add notes' },
+  { name: 'Certificate of completion', icon: 'pen', build: buildCertificateSample,
+    detail: 'A landscape certificate to type a name on, sign and stamp' },
+];
+
+/** Show the Samples chooser (from the splash, or Help > Features). */
+function openSamples() {
+  suiteSamplesOpen({
+    appId: 'pdfedtr',
+    samples: PDF_SAMPLES.map((s) => ({ name: s.name, detail: s.detail, icon: s.icon, run: () => openSample(s) })),
+  });
+}
+
+/**
+ * Make one sample and open it. Like New PDF, it first asks before
+ * replacing a PDF that has changes not yet downloaded or saved.
+ */
+async function openSample(sample) {
+  if (state.pdfLibDoc && (state.overlays.length || history.past.length) &&
+      !(await confirmDialog('Open a sample?', 'Anything you have not downloaded or saved from this PDF will be lost.', 'Open the sample'))) return;
+  let bytes;
+  setLoading(true, 'MAKING THE SAMPLE…');
+  try { bytes = await sample.build(); }
+  catch (e) { console.error(e); toast('That sample could not be made.', 'err'); return; }
+  finally { setLoading(false); }
+  // Opened the normal way, as if it were a file someone picked.
+  await loadPdf(new File([bytes], sample.name + ' (sample).pdf', { type: 'application/pdf' }));
+}
+
+// Help > Features has an "Open a sample" button too, for later.
+document.getElementById('btn-help-samples').addEventListener('click', () => {
+  document.getElementById('help-dlg').close();
+  openSamples();
+});
+
 /* ── Add pages (1.15): the + and Insert a PDF buttons at the left of the filmstrip ──
    Both add after the page showing (pick the last page first to add at the end). */
 // With no PDF open yet (1.17): + starts a new PDF, and Insert opens one.
@@ -9393,6 +9851,8 @@ function suiteWhen(ms) {
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+     (samples: an app offers its ready-made examples as one more action,
+      { icon: 'sample', label: 'Samples', run: ... } opening suiteSamplesOpen)
      look:    'classic' - optional: the older plain white splash. Leave it
               out for the family's look since 2026-10-30, IMGEDTR's: no white
               box, splashes of paint in the app's colours, and three panels
@@ -10364,6 +10824,65 @@ function suiteFeaturesOpen(features, appId) {
   return dlg;
 }
 
+/* ---- Samples: ready-made examples to open (added 2026-11-20) ----------
+   A small chooser, styled like the splash, listing the app's samples. Each
+   sample is made by the app itself, in its own code (no downloads), and
+   opens as a new, unsaved file the person can change freely.
+
+   suiteSamplesOpen({
+     appId:   'pdfedtr',
+     samples: [ { name, detail, icon, run } ... ]   // icon: a SUITE_ACTION_ICONS name or the app's own 24x24 drawing
+   })
+
+   An app usually offers it on its splash ({ icon: 'sample', label: 'Samples',
+   run: openSamples }) and somewhere it can be found later (Help, a menu).
+   Escape, the X or a click on the dimmed backdrop closes it, and focus goes
+   back to where it was. */
+function suiteSamplesOpen(opts) {
+  const app = SUITE_APPS.find((a) => a.id === opts.appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-samples');
+  const h = suiteEl('h2', '', 'Samples');
+  h.id = 'suite-samples-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the samples');
+  const intro = suiteEl('p', 'suite-samples-intro',
+    'Open a ready-made example to see what ' + app.name + ' can do. Each one opens as a new file: change anything, nothing is saved until you say so.');
+  const list = suiteEl('div', 'suite-samples-list');
+  function finish() {
+    if (dlg.open) dlg.close();
+    dlg.remove();
+  }
+  for (const s of opts.samples) {
+    const b = suiteEl('button', 'suite-splash-choice suite-samples-choice');
+    b.type = 'button';
+    const art = SUITE_ACTION_ICONS[s.icon || 'sample'] || s.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (never data)
+      b.append(icon);
+    }
+    const words = suiteEl('span', 'suite-splash-choice-words');
+    words.append(suiteEl('span', 'suite-splash-choice-label', s.name));
+    if (s.detail) words.append(suiteEl('span', 'suite-splash-choice-detail', s.detail));
+    b.append(words);
+    b.addEventListener('click', () => { finish(); s.run(); });
+    list.append(b);
+  }
+  close.addEventListener('click', () => { finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { finish(); if (back && back.isConnected && back.focus) back.focus(); } });
+  dlg.append(close, h, intro, list);
+  document.body.append(dlg);
+  dlg.showModal();
+  const first = list.querySelector('button');
+  if (first) first.focus();
+  return dlg;
+}
+
 /* A wide card - "See what PDFEDTR can do" - that opens the tour. */
 function suiteFeaturesCard(features, appId) {
   const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
@@ -10781,7 +11300,7 @@ if (suiteInStudio()) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.25';
+const APP_VERSION = '1.26';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -10852,6 +11371,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.26', date: '2026-11-20', notes: [
+    'Samples: three ready-made PDFs to practise on - a field trip permission form to fill in and sign, a three-page course syllabus (with two pages out of order, to fix) and a certificate of completion to type a name on, sign and stamp. Find them on the start screen and in Help > Features. PDFEDTR makes each one itself, right in your browser, so they work offline too, and each opens as a new, unsaved PDF.'
+  ] },
   { version: '1.25', date: '2026-10-30', notes: [
     'A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app\'s colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button\'s tooltip); and the family of apps underneath. The screenshot across the top made way.'
   ] },
@@ -11333,6 +11855,9 @@ async function startUp() {
       // its own way in (1.14): pick the PDF, and the signature panel opens.
       { icon: ICONS.signature, label: 'Sign a PDF', detail: 'Open a PDF and add your signature: draw it or type it',
         run: () => openPdfPicker('sign') },
+      // Samples (1.26): ready-made PDFs to practise on, made by the app itself.
+      { icon: 'sample', label: 'Samples', detail: 'A permission form, a syllabus and a certificate to practise on',
+        run: openSamples },
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
     hint: 'You can also drop a PDF anywhere in this window.'
