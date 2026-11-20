@@ -1117,6 +1117,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <hr aria-hidden="true">
     <button class="icon-btn" data-tool="step"        title="Step marker (N)" aria-label="Step marker tool"><span data-icon="step"></span></button>
     <button class="icon-btn" data-tool="sticky"      title="Sticky note (O)" aria-label="Sticky note tool"><span data-icon="sticky"></span></button>
+    <button class="icon-btn" data-tool="ring"        title="Circle it: draw round something and it becomes a smooth marker circle (I)" aria-label="Circle it tool"><span data-icon="ring"></span></button>
     <button class="icon-btn" data-tool="cursor"      title="Cursor stamp (C)" aria-label="Cursor stamp tool"><span data-icon="cursorClick"></span></button>
     <button class="icon-btn" data-tool="spotlight"   title="Spotlight (S)" aria-label="Spotlight tool"><span data-icon="spotlight"></span></button>
     <button class="icon-btn" data-tool="redact"      title="Redact (X)" aria-label="Redact tool"><span data-icon="redact"></span></button>
@@ -1478,7 +1479,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.26.0';
+const APP_VERSION = '1.27.0';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1533,6 +1534,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.27.0', date: '2026-11-20', notes: [
+    'Circle it: a new tool (I) under the Sticky note. Draw a loop round anything, as wobbly as you like, and when you let go it turns into a smooth marker oval - see-through red to start, any colour you like. It leans the way you drew it (unless it was nearly level), and its end runs a little past the start, like a circle drawn with a marker. Turn off Hand-drawn end for a plain closed oval.'
+  ] },
   { version: '1.26.0', date: '2026-11-20', notes: [
     'Samples: three ready-made examples to open and play with - an annotated screenshot of a course page (steps, an arrow, a spotlight, a cursor and a hidden email address), a bar chart for a slide (a highlight box, a callout and an arrow) and a lake photo to tidy up (a title, a magnifier, a pixelated phone number and a sticky note).',
     'IMGEDTR paints each sample itself, so they work offline. Every mark is an ordinary layer you can move, change or delete, and nothing is saved until you export or save it.',
@@ -1863,7 +1867,8 @@ function loadWebFont(key) {
 const KIND_LABELS = {
   image: 'Image', rect: 'Rectangle', ellipse: 'Ellipse', shape: 'Shape', line: 'Line', arrow: 'Arrow',
   text: 'Text', pen: 'Pen', highlighter: 'Highlight',
-  step: 'Step marker', cursor: 'Cursor', spotlight: 'Spotlight', redact: 'Redact', magnifier: 'Magnifier'
+  step: 'Step marker', cursor: 'Cursor', spotlight: 'Spotlight', redact: 'Redact', magnifier: 'Magnifier',
+  ring: 'Circle'
 };
 
 // Shortcut: find one element by id.
@@ -1934,6 +1939,8 @@ const ICONS = {
   // An open book: Samples (1.26.0), the same drawing as the splash's Samples button.
   sample: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
   headshot: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 18.7a6 6 0 0 1 10 0"/>',
+  // A hand-drawn loop whose end runs past its start (1.26.0, the Circle it tool).
+  ring: '<path d="M7.5 18.5C3.8 16.7 2.6 12.4 4.6 8.8 6.9 4.7 12.6 3.2 17 5.2c3.9 1.8 4.9 6 2.6 9.4-2.3 3.4-7.6 5.2-12.3 3.6"/><path d="M7.3 18.1c1.6.4 3.3.5 4.9.3"/>',
   // A note with its bottom-right corner turned up (1.25.0).
   sticky: '<path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-3.5a1.5 1.5 0 0 1 1.5-1.5H20"/><path d="M8 9h8M8 12.5h5"/>',
   play: '<path d="M7 4.5v15l12.5-7.5z"/>',
@@ -1990,7 +1997,7 @@ const ICONS = {
 // Which icon to show for each layer type in the layer list.
 const KIND_ICONS = { image: 'image', rect: 'square', ellipse: 'circle', shape: 'shapes', line: 'line', arrow: 'arrow',
   text: 'type', pen: 'pen', highlighter: 'highlighter',
-  step: 'step', cursor: 'cursorClick', spotlight: 'spotlight', redact: 'redact', magnifier: 'magnifier' };
+  step: 'step', cursor: 'cursorClick', spotlight: 'spotlight', redact: 'redact', magnifier: 'magnifier', ring: 'ring' };
 
 /** Build an <svg> element for an icon name. aria-hidden because the button has its own label. */
 function iconSVG(name) {
@@ -2133,6 +2140,9 @@ const toolDefaults = {
   wand:        { action: 'erase', mode: 'erase', tolerance: 20, contiguous: true, softEdge: 1, color: null },
   text:        { color: null, font: 'sans', fontSize: 36, bold: true, italic: false, align: 'left',
                  bgOn: false, bgColor: '#ffffff', padding: 10, opacity: 1 },
+  // Circle it (1.26.0): a marker loop around something. A see-through red by
+  // default; tail = the hand-drawn finish, where the end runs a little past the start.
+  ring:        { stroke: '#dc2626', strokeWidth: 10, opacity: 0.8, tail: true },
   // Sticky notes (1.25.0) are text layers with sticky: true. bgColor is the paper's color;
   // size is how big a new note is (a square, in canvas pixels).
   sticky:      { color: '#1f2937', font: 'marker', fontSize: 26, bold: false, italic: false, align: 'left',
@@ -2299,7 +2309,7 @@ function hitLayer(layer, px, py, tol) {
   if (layer.type === 'rect' && !layer.fillOn) {
     return p.x <= edge || p.y <= edge || p.x >= layer.w - edge || p.y >= layer.h - edge;
   }
-  if (layer.type === 'ellipse' && !layer.fillOn) {
+  if ((layer.type === 'ellipse' && !layer.fillOn) || layer.type === 'ring') {
     const rx = layer.w / 2, ry = layer.h / 2;
     const nx = (p.x - rx) / rx, ny = (p.y - ry) / ry;
     const d = Math.abs(Math.sqrt(nx * nx + ny * ny) - 1) * Math.min(rx, ry);
@@ -2540,6 +2550,7 @@ function drawLayer(ctx, layer, pxScale = 1) {
       if (layer.strokeWidth > 0) { ctx.strokeStyle = layer.stroke; ctx.lineWidth = layer.strokeWidth; ctx.lineJoin = 'round'; ctx.stroke(); }
       break;
     }
+    case 'ring': drawRing(ctx, layer); break;        // Circle it (section 19h)
     case 'ellipse': {
       const s = layer.strokeWidth / 2;
       ctx.beginPath();
@@ -3129,7 +3140,8 @@ function placeSticky(cx, cy) {
 
 const TOOL_NAMES = { select: 'Select', arrow: 'Arrow', line: 'Line', rect: 'Rectangle', ellipse: 'Ellipse', shape: 'Shape',
   text: 'Text', sticky: 'Sticky note', pen: 'Pen', highlighter: 'Highlighter', crop: 'Crop', eraser: 'Eraser', wand: 'Magic wand',
-  step: 'Step marker', cursor: 'Cursor stamp', spotlight: 'Spotlight', redact: 'Redact', magnifier: 'Magnifier' };
+  step: 'Step marker', cursor: 'Cursor stamp', spotlight: 'Spotlight', redact: 'Redact', magnifier: 'Magnifier',
+  ring: 'Circle it' };
 
 /** Switch the active tool. */
 function setTool(tool) {
@@ -3184,6 +3196,8 @@ function insertDefaultLayer(tool) {
     return;
   } else if (tool === 'redact') {
     layer = makeLayer('redact', { x: c.x - size, y: c.y - size / 4, w: size * 2, h: size / 2 });
+  } else if (tool === 'ring') {
+    layer = makeLayer('ring', { x: c.x - size * 0.7, y: c.y - size * 0.45, w: size * 1.4, h: size * 0.9 });
   } else if (tool === 'step') {
     layer = makeStep(c.x, c.y);
   } else if (tool === 'cursor') {
@@ -3397,6 +3411,8 @@ stage.addEventListener('pointerdown', (e) => {
   else if (tool === 'shape') layer = makeShape(toolDefaults.shape.kind, { x: p.x, y: p.y, w: 0, h: 0 });
   else if (tool === 'arrow' || tool === 'line') layer = makeLayer(tool, { x1: p.x, y1: p.y, x2: p.x, y2: p.y });
   else if (tool === 'pen' || tool === 'highlighter') layer = makeLayer(tool, { x: p.x, y: p.y, w: 1, h: 1, points: [[0, 0]] });
+  // Circle it: drawn freehand first (the "draft"), then smoothed into an oval when you let go.
+  else if (tool === 'ring') layer = makeLayer('ring', { x: p.x, y: p.y, w: 1, h: 1, draft: [[p.x, p.y]] });
   if (!layer) return;
   doc.layers.push(layer);
   state.selectedId = layer.id;
@@ -3683,7 +3699,7 @@ function resizeFromHandle(d, p, shift, e = {}) {
   //   corner handle        = keep the current proportions,
   //   side / top / bottom  = stretch freely (squash or skew),
   //   Shift (any handle)   = snap to the regular shape (square, circle, even hexagon).
-  const isShape = L.type === 'rect' || L.type === 'ellipse' || L.type === 'shape';
+  const isShape = L.type === 'rect' || L.type === 'ellipse' || L.type === 'shape' || L.type === 'ring';
   if (isShape) keepAspect = corner;
   if (evenly) keepAspect = true;                 // Ctrl+Shift: every side together, same proportions
   if (isShape && shift && !evenly) {
@@ -3753,6 +3769,12 @@ function updateCreate(d, p, shift) {
   } else if (isLineType(L)) {
     const q = shift ? snap45(s, p) : p;
     L.x2 = q.x; L.y2 = q.y;
+  } else if (L.type === 'ring') {
+    // While drawing, the wobbly line follows the pointer exactly (finishCreate smooths it).
+    const last = d.raw[d.raw.length - 1];
+    if (Math.hypot(p.x - last[0], p.y - last[1]) * state.view.zoom < 1.5) return;
+    d.raw.push([p.x, p.y]);
+    L.draft = d.raw;
   } else if (L.type === 'pen' || L.type === 'highlighter') {
     const last = d.raw[d.raw.length - 1];
     // Skip points that are almost on top of the previous one (keeps strokes light).
@@ -3792,6 +3814,7 @@ function finishCreate(d) {
     L.x1 = s.x - 140; L.y1 = s.y + 90; L.x2 = s.x; L.y2 = s.y;
   }
   if (L.type === 'pen' || L.type === 'highlighter') setStrokePoints(L, d.raw);
+  if (L.type === 'ring') placeRing(L, d.raw, s);     // the wobbly loop becomes a smooth oval (section 19h)
   commit();
   afterDraw(L);
   announce(KIND_LABELS[L.type] + ' added');
@@ -3916,7 +3939,7 @@ const fid = () => 'f' + (++fieldCounter);
 /** Style keys copied into the tool defaults when you restyle a layer. */
 const STYLE_KEYS = ['stroke', 'strokeWidth', 'fill', 'fillOn', 'radius', 'opacity', 'startCap', 'endCap',
   'borderWidth', 'borderColor', 'shadowOn', 'shadowBlur', 'shadowY', 'shadowOpacity',
-  'color', 'font', 'fontSize', 'bold', 'italic', 'align', 'bgOn', 'bgColor', 'padding'];
+  'color', 'font', 'fontSize', 'bold', 'italic', 'align', 'bgOn', 'bgColor', 'padding', 'tail'];
 
 /**
  * Change one property of a layer (or of the tool defaults) and redraw.
@@ -4106,6 +4129,12 @@ function styleFields(type, t, isLayer) {
     rows.push(rangeField('Thickness', t, 'strokeWidth', isLayer, 1, 40));
     rows.push(capField('Start', t, 'start', isLayer));
     rows.push(capField('End', t, 'end', isLayer));
+  }
+  if (type === 'ring') {                     // Circle it (1.26.0)
+    rows.push(colorField('Color', t, 'stroke', isLayer));
+    rows.push(rangeField('Thickness', t, 'strokeWidth', isLayer, 2, 40));
+    rows.push(checkField('Hand-drawn end', t, 'tail', isLayer));
+    if (isLayer) rows.push(el('p', { class: 'hint', text: 'Make it more or less see-through with the % button above. Drag the round handle to tilt it.' }));
   }
   if (type === 'pen' || type === 'highlighter') {
     rows.push(colorField('Color', t, 'stroke', isLayer));
@@ -4427,6 +4456,7 @@ function renderProps() {
     styleFields(state.tool, t, false).forEach((r) => propsBody.append(r));
     const TOOL_HINTS = {
       text: 'Click the canvas to add text. Press Enter on the canvas to add it in the middle.',
+      ring: 'Draw a loop round anything - it does not need to be neat. When you let go it turns into a smooth marker oval. A click drops one.',
       sticky: 'Click the canvas to stick a note there, then type. Press Enter on the canvas to add one in the middle. Drag a corner handle to resize it.',
       step: 'Click to place the next number. Steps renumber themselves when one is deleted.',
       cursor: 'Click where the cursor should point. Its tip lands exactly on your click.',
@@ -7361,9 +7391,124 @@ $('cropH').addEventListener('change', cropSizeTyped);
      19e. Redact (solid box or coarse pixelation)
      19f. Magnifier (a round zoom bubble)
      19g. Sticky notes (1.25.0)
+     19h. Circle it (1.26.0)
    Spotlight, redact and magnifier need to SEE the layers below them, so
    they redraw those layers themselves (into a spare canvas, or zoomed in).
    ----------------------------------------------------------------------- */
+
+/* ---------- 19h. Circle it ----------
+   Draw a loop round something, as wobbly as you like. While you draw, the
+   real line follows the pointer (layer.draft). When you let go, placeRing()
+   works out the oval that best matches it - where its middle is, how wide
+   and tall it is, and how much it leans - and the layer becomes that smooth
+   oval: an ordinary box layer (x, y, w, h, rotation) that moves, resizes
+   and turns like a shape. drawRing() then draws it like a marker:
+     tail on  - starting low on the left, once round, and on a little past the
+                start, curling just inside it (like the circle a teacher draws).
+     tail off - a plain, closed oval.                                       */
+
+/** How far the hand-drawn loop reaches outside its oval (it starts 3.5% out and ends 3.5% in). */
+const RING_WOBBLE = 0.035;
+
+/**
+ * Find the oval that best fits a wobbly loop of points [[x, y], ...].
+ * Returns { cx, cy, a, b, angle }: the middle, the half-width and
+ * half-height, and the lean in degrees. How it works:
+ *   1. the middle starts as the average of the points;
+ *   2. the lean comes from how the points spread out (the direction they
+ *      spread the most - "principal component" in statistics);
+ *   3. the points are measured along that lean and across it; the oval's
+ *      size uses the 3rd and 97th percentile, so a stray scribble or the
+ *      overlapping end of the loop does not stretch it.
+ */
+function fitOval(pts) {
+  const n = pts.length;
+  let mx = 0, my = 0;
+  for (const [x, y] of pts) { mx += x; my += y; }
+  mx /= n; my /= n;
+  let sxx = 0, syy = 0, sxy = 0;
+  for (const [x, y] of pts) { const dx = x - mx, dy = y - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+  let ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);          // the direction of the most spread
+  const measure = (t) => {                                  // the points' spread along direction t
+    const c = Math.cos(t), s = Math.sin(t);
+    const u = pts.map(([x, y]) => (x - mx) * c + (y - my) * s).sort((p, q) => p - q);
+    const v = pts.map(([x, y]) => -(x - mx) * s + (y - my) * c).sort((p, q) => p - q);
+    const pick = (arr, f) => arr[Math.min(arr.length - 1, Math.max(0, Math.round(f * (arr.length - 1))))];
+    return { u0: pick(u, 0.03), u1: pick(u, 0.97), v0: pick(v, 0.03), v1: pick(v, 0.97) };
+  };
+  // Nearly level (or nearly upright)? Then make it exactly level: it looks tidier.
+  const deg = ang * 180 / Math.PI;
+  if (Math.abs(deg) < 12) ang = 0;
+  else if (Math.abs(Math.abs(deg) - 90) < 12) ang = 0;     // upright: level, and the tall side is the height
+  const m = measure(ang);
+  const c = Math.cos(ang), s = Math.sin(ang);
+  const uc = (m.u0 + m.u1) / 2, vc = (m.v0 + m.v1) / 2;     // nudge the middle to the middle of that spread
+  return { cx: mx + uc * c - vc * s, cy: my + uc * s + vc * c,
+    a: (m.u1 - m.u0) / 2, b: (m.v1 - m.v0) / 2, angle: ang * 180 / Math.PI };
+}
+
+/**
+ * Turn a just-drawn loop into its smooth oval. "raw" is the wobbly line,
+ * "start" where the pointer went down. A click (or a tiny scribble) drops
+ * a ready-made oval centred on the spot instead.
+ */
+function placeRing(L, raw, start) {
+  delete L.draft;
+  const xs = raw.map((q) => q[0]), ys = raw.map((q) => q[1]);
+  const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+  if (raw.length < 5 || span * state.view.zoom < 12) {
+    L.w = 220; L.h = 140; L.x = start.x - 110; L.y = start.y - 70; L.rotation = 0;
+    return;
+  }
+  const f = fitOval(raw);
+  // The box holds the oval plus half the line on each side, plus room for the hand-drawn wobble.
+  const grow = 1 + RING_WOBBLE;
+  L.w = Math.max(8, f.a * 2 * grow + L.strokeWidth);
+  L.h = Math.max(8, f.b * 2 * grow + L.strokeWidth);
+  L.x = f.cx - L.w / 2; L.y = f.cy - L.h / 2;
+  L.rotation = Math.round(f.angle * 10) / 10;
+}
+
+function drawRing(ctx, L) {
+  ctx.strokeStyle = L.stroke;
+  ctx.lineWidth = L.strokeWidth;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // Still drawing: show the line exactly as drawn.
+  if (L.draft) {
+    ctx.beginPath();
+    L.draft.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.stroke();
+    return;
+  }
+  const cx = L.x + L.w / 2, cy = L.y + L.h / 2;
+  const half = L.strokeWidth / 2;
+  if (!L.tail) {                                   // a plain, closed oval
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.max(0.5, L.w / 2 - half), Math.max(0.5, L.h / 2 - half), 0, 0, Math.PI * 2);
+    ctx.stroke();
+    return;
+  }
+  // The hand-drawn loop. Its size shrinks a little as it goes round (from
+  // 3.5% outside the oval to 3.5% inside), so the end slides inside the start.
+  const rx = Math.max(0.5, (L.w / 2 - half) / (1 + RING_WOBBLE));
+  const ry = Math.max(0.5, (L.h / 2 - half) / (1 + RING_WOBBLE));
+  const begin = Math.PI * 0.72;                    // low on the left (y points down on a canvas)
+  const extra = 0.6;                               // how far past the start it carries on (radians)
+  const total = Math.PI * 2 + extra;
+  const point = (t) => {
+    const k = 1 + RING_WOBBLE - 2 * RING_WOBBLE * ((t - begin) / total);
+    return [cx + Math.cos(t) * rx * k, cy + Math.sin(t) * ry * k];
+  };
+  // One smooth line, made of many short steps. (One line, not two: a
+  // see-through line drawn twice would leave a darker blob where they join.)
+  const steps = Math.ceil(total * 40);
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const [x, y] = point(begin + total * (i / steps));
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.stroke();
+}
 
 /* ---------- 19g. Sticky notes ----------
    A sticky note is a text layer with sticky: true (see makeStickyLayer).
@@ -8898,7 +9043,7 @@ function usedImageIds() {
 const PROJECT_MAX_BYTES = 400 * 1024 * 1024;
 const isProjectFile = (f) => /\.imgedtr$/i.test((f && f.name) || '');
 const LAYER_TYPES = new Set(['image', 'rect', 'ellipse', 'shape', 'line', 'arrow', 'text', 'pen', 'highlighter',
-  'step', 'cursor', 'spotlight', 'redact', 'magnifier']);
+  'step', 'cursor', 'spotlight', 'redact', 'magnifier', 'ring']);
 
 async function saveProject() {
   if (!doc) return;
@@ -9026,6 +9171,12 @@ function validateProject(data) {
     // A sized text box (1.18.0): a positive number, or nothing (the box hugs the words).
     if (L.type === 'text') for (const k of ['boxW', 'boxH']) L[k] = num(L[k]) && L[k] > 0 ? Math.min(L[k], 100000) : null;
     if (L.type === 'text' && L.sticky !== undefined) L.sticky = L.sticky === true;    // sticky note (1.25.0)
+    if (L.type === 'ring') {                       // Circle it (1.26.0)
+      delete L.draft;                              // only ever there while drawing
+      L.strokeWidth = num(L.strokeWidth) ? clamp(L.strokeWidth, 1, 200) : 10;
+      L.tail = L.tail !== false;
+      if (!HEX.test(L.stroke || '')) L.stroke = '#dc2626';
+    }
     if (L.type === 'redact') L.block = Math.max(REDACT_MIN_BLOCK, num(L.block) ? L.block : 16);
     // A shape must be one we know how to draw (and not rect/ellipse, which are their own types).
     if (L.type === 'shape' && (!SHAPE_BY_KEY[L.kind] || SHAPE_BY_KEY[L.kind].tool)) L.kind = 'star';
@@ -10564,6 +10715,7 @@ const SHORTCUTS = [
   { id: 'tool-shapes', keys: 'U', label: 'Open the Shapes panel', test: (e) => plain(e, 'u'), run: () => openShapesPanel() },
   { id: 'tool-text', keys: 'T', label: 'Text tool', test: (e) => plain(e, 't'), run: () => setTool('text') },
   { id: 'tool-sticky', keys: 'O', label: 'Sticky note tool', test: (e) => plain(e, 'o'), run: () => setTool('sticky') },
+  { id: 'tool-ring', keys: 'I', label: 'Circle it tool', test: (e) => plain(e, 'i'), run: () => setTool('ring') },
   { id: 'tool-pen', keys: 'P', label: 'Pen tool', test: (e) => plain(e, 'p'), run: () => setTool('pen') },
   { id: 'tool-highlighter', keys: 'H', label: 'Highlighter tool', test: (e) => plain(e, 'h'), run: () => setTool('highlighter') },
   { id: 'tool-step', keys: 'N', label: 'Step marker tool', test: (e) => plain(e, 'n'), run: () => setTool('step') },

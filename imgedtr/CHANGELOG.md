@@ -2,6 +2,15 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.27.0 - 2026-11-20 - Circle it
+
+- **Circle it**, a new annotation tool (rail, under the Sticky note; shortcut **I**). Draw a loop round anything - it does not need to be neat - and while you draw, the line follows the pointer exactly. When you let go it **snaps into a smooth oval**:
+  - `fitOval()` finds the oval that best matches the loop: its middle (the average of the points), its lean (the direction the points spread the most) and its size (the 3rd to 97th percentile of the points along and across that lean, so a stray scribble or the overlapping end does not stretch it). A loop that is within 12 degrees of level (or upright) is made exactly level.
+  - It is drawn like a marker: starting low on the left, once round, and a little past the start, curling just inside it (**Hand-drawn end**, on by default). Turn that off for a plain closed oval.
+  - **See-through red** to start (80%): pick any colour, the **Thickness**, and how see-through it is with the layer's % button. The next circle remembers your choices.
+  - Afterwards it is an ordinary layer: move it, resize it (corners keep the shape, sides stretch it) and turn it with the round handle. Only its line can be clicked, so whatever it circles can still be selected. A click drops a ready-made oval; Enter on the canvas adds one in the middle.
+- Projects: a circle's colour, thickness and Hand-drawn end are checked when a project is opened.
+
 ## 1.26.0 - 2026-11-20 - Samples
 
 - **Samples.** Three ready-made examples to open and play with, so you can see what IMGEDTR does before you have a picture of your own:
