@@ -40,9 +40,27 @@
 <meta name="referrer" content="no-referrer">
 
 <title>EDTR Apps</title>
-<meta name="description" content="EDTR Apps: ten free, private editors that run in your browser - text and code, PDFs, images, sound, video, screen recording, vector art, 3D models and page layout. No account, no uploads. Free and open source.">
+<meta name="description" content="EDTR Apps: twelve free, private editors that run in your browser - text and code, PDFs, images, sound, video, screen recording, vector art, 3D models, page layout, animated lessons, a whiteboard and a teleprompter. No account, no uploads. Free and open source.">
 <meta property="og:title" content="EDTR Apps">
 <meta property="og:description" content="Small, private editors for everyday making. Free, open source, and your files stay on your device.">
+<!-- The social preview: what a link to this page shows in a post, a chat or
+     an email (og: is read by most sites; twitter: by X and a few others).
+     The picture is og-image.jpg beside this file, 1200 x 630 pixels. These
+     addresses must be full ones (https://...), because the sites that read
+     them fetch the picture themselves. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EDTR Apps">
+<meta property="og:url" content="https://edtrapps.com/">
+<meta property="og:image" content="https://edtrapps.com/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="EDTR Apps: small, private editors for everyday making. The twelve app icons beside the words Twelve free tools that run in your browser, and edtrapps.com.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="EDTR Apps">
+<meta name="twitter:description" content="Small, private editors for everyday making. Free, open source, and your files stay on your device.">
+<meta name="twitter:image" content="https://edtrapps.com/og-image.jpg">
+<meta name="twitter:image:alt" content="EDTR Apps: small, private editors for everyday making, with the twelve app icons.">
+<link rel="canonical" href="https://edtrapps.com/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect width='8' height='8' rx='2' fill='%23a23108'/%3E%3Crect x='11' width='8' height='8' rx='2' fill='%238a1c5c'/%3E%3Crect x='22' width='8' height='8' rx='2' fill='%23305305'/%3E%3Crect y='11' width='8' height='8' rx='2' fill='%234b5563'/%3E%3Crect x='11' y='11' width='8' height='8' rx='2' fill='%230046ad'/%3E%3Crect x='22' y='11' width='8' height='8' rx='2' fill='%2300565d'/%3E%3Crect y='22' width='8' height='8' rx='2' fill='%235b21b6'/%3E%3Crect x='11' y='22' width='8' height='8' rx='2' fill='%237a4100'/%3E%3Crect x='22' y='22' width='8' height='8' rx='2' fill='%2337c6d0'/%3E%3C/svg%3E">
 
 <style>
@@ -476,8 +494,9 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
   <div class="wrap hero-inner">
     <p class="eyebrow">EDTR Apps</p>
     <h1 id="hero-title">Small, private editors for everyday making.</h1>
-    <p class="lede">Ten free tools that run right in your browser: text and code, PDFs, images, sound, video,
-      screen recording, vector art, 3D models and page layout. No account, no uploads, no installer.
+    <p class="lede">Twelve free tools that run right in your browser: text and code, PDFs, images, sound, video,
+      screen recording, vector art, 3D models, page layout, animated lessons, a whiteboard and a teleprompter.
+      No account, no uploads, no installer.
       Open one and start making.</p>
     <div class="hero-actions">
       <!-- Start creating: into EDTR Studio, every app in one window (edtrapps.com/create/). -->
@@ -550,7 +569,7 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
   </section>
 
   <!-- ==============================================================
-       THE STORY: how a text editor for one class became ten apps.
+       THE STORY: how a text editor for one class became twelve apps.
        ============================================================== -->
   <section class="story" id="story" aria-labelledby="story-title" tabindex="-1">
     <div class="wrap">
@@ -580,6 +599,14 @@ kbd { font: 700 .9em/1 ui-monospace, Menlo, Consolas, monospace; padding: 2px 6p
           <p>Vector art with PowerPoint-style shape merging, 3D models ready for the school's 3D printer, and
             desktop publishing to fill the hole Microsoft Publisher left. Along the way the apps grew a shared
             look, shared help and shared habits, so learning one teaches you the rest.</p>
+        </li>
+        <li>
+          <p class="when">Late October</p>
+          <div class="when-apps"><img src="icons/animedtr.png" alt=""><img src="icons/whtbrdr.png" alt=""><img src="icons/teledtr.png" alt=""></div>
+          <h3>For the front of the room</h3>
+          <p>Then came tools for teaching and presenting: animated lessons students can click through, a
+            whiteboard for marking up worksheets and drawing on slides, and a teleprompter for recording course
+            videos without losing your place.</p>
         </li>
         <li>
           <p class="when">Now</p>
@@ -891,6 +918,29 @@ const APPS = [
     ]
   },
   {
+    // TELEDTR has no domain of its own yet, so it opens on edtrapps.com.
+    // Its sunflower yellow is too light for white text, so the buttons use
+    // its deep amber (8.7:1 with white) and dark mode uses the sunflower.
+    id: 'teledtr', name: 'TELEDTR', url: 'https://edtrapps.com/teledtr/',
+    fill: '#713f12', light: '#713f12', dark: '#facc15',
+    blurb: 'A teleprompter: write a script, see how long it takes, and read it full screen at your own pace - with cue marks, speaker labels and timers.',
+    thumb: 'shots/teledtr-thumb.webp',
+    slides: [
+      { src: 'shots/teledtr-1.webp', title: 'Write it, see how long it takes',
+        text: 'Write your script with headings, bold words and cue marks. Each section shows how long it will take to read at your pace.',
+        alt: 'TELEDTR with a lecture script open: headings such as Welcome to the course and Why this matters, yellow cue marks like SMILE and PAUSE 3s, and a row of five sections along the bottom adding up to 1:58.' },
+      { src: 'shots/teledtr-2.webp', title: 'Read it full screen',
+        text: 'Big, clear text glides up to a reading line near the top of the screen, so your eyes stay close to the camera.',
+        alt: 'The prompter showing an interview script in large white text on black, with HOST labels in yellow, SMILE and LOOK UP cues, and a bar with the section, elapsed time, estimate and time remaining, plus Record and Start buttons.' },
+      { src: 'shots/teledtr-3.webp', title: 'Make it easy to read',
+        text: 'Change the pace, text size, colors and reading line while the script keeps its place. Sliders make it easy on a tablet.',
+        alt: 'The prompter with its Inspector open on the right, listing Pace, Text, Colors, Reading line, Mirror, Timers, Speakers, Camera, Look, Background, Ring light and Screen layout.' },
+      { src: 'shots/teledtr-4.webp', title: 'Two voices and a script check',
+        text: 'Speaker labels give each person their own color, and Script check points out anything that might trip you up. Shown in dark mode.',
+        alt: 'TELEDTR in dark mode with a two-person interview script using HOST and GUEST labels. The Script check tab reads Nothing to fix.' }
+    ]
+  },
+  {
     id: 'txtedtr', name: 'TXTEDTR', url: 'https://txtedtr.app',
     fill: '#b8400c', light: '#a23108', dark: '#f7a57a',
     blurb: 'A clean, fast text and code editor with tabs, syntax highlighting for over ten languages, and a live preview for HTML and Markdown.',
@@ -957,6 +1007,27 @@ const APPS = [
       { src: 'shots/videdtr-5.webp', title: 'Export your video',
         text: 'Choose the resolution, frame rate and quality, then save a standard video file. Everything is made on your own computer.',
         alt: 'The Export video dialog with resolution, frame rate, file name and quality settings, and a Start export button.' }
+    ]
+  },
+  {
+    // WHTBRDR has no domain of its own yet, so it opens on edtrapps.com.
+    id: 'whtbrdr', name: 'WHTBRDR', url: 'https://edtrapps.com/whtbrdr/',
+    fill: '#9f1239', light: '#9f1239', dark: '#fda4af',
+    blurb: 'A whiteboard for teaching: mark up PDFs and pictures, graph on a grid, or draw on pages that work as slides you can present.',
+    thumb: 'shots/whtbrdr-thumb.webp',
+    slides: [
+      { src: 'shots/whtbrdr-1.webp', title: 'Graph it in one tap',
+        text: 'Put a coordinate grid on any page and draw on it: points, a line, labels and a sticky note to explain it.',
+        alt: 'WHTBRDR showing a four-quadrant grid with the line y = 2x - 1 drawn in blue, four labeled red points, a green rise and run triangle, and a yellow sticky note explaining the slope.' },
+      { src: 'shots/whtbrdr-2.webp', title: 'Mark up any PDF',
+        text: 'Open a worksheet and highlight, circle, write in the answers, add checks and stamps, and leave a note.',
+        alt: 'A water cycle worksheet with yellow highlights on key words, a red circle around water vapor, handwritten blue answers with green checks and a star, and a green sticky note saying Great work.' },
+      { src: 'shots/whtbrdr-3.webp', title: 'Present and keep drawing',
+        text: 'Show your pages full screen as slides, with the pens, highlighters and spotlight still at hand.',
+        alt: 'A lesson slide titled Get it ready, shown full screen, with numbered steps 1 and 2, a drawing of a cup labeled soil, and a toolbar of pens, highlighters and slide controls along the bottom.' },
+      { src: 'shots/whtbrdr-4.webp', title: 'Described for everyone',
+        text: 'The Accessibility tab checks the board and sets the reading order, so screen readers and exported PDFs make sense. Shown in dark mode.',
+        alt: 'WHTBRDR in dark mode with the worksheet open and the Accessibility tab showing No problems found and a numbered reading order list.' }
     ]
   }
 ];

@@ -855,7 +855,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
      --suite-accent  the app's own colour, for the main button (it must
                      carry white text at 7:1 - every app colour does)
    Everything else is worked out from those (and from currentColor). */
-.suite-splash, .suite-backup-dlg {
+/* (.suite-samples, the Samples chooser, shares the splash's dialog look.) */
+.suite-splash, .suite-backup-dlg, .suite-samples {
   background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 14px; padding: 22px 24px 16px; margin: auto;
@@ -865,7 +866,15 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
   max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
 .suite-backup-dlg { width: min(440px, 92vw); }
-.suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+/* The Samples chooser: one sample per row, its picture, name and a line about it. */
+.suite-samples { width: min(520px, 94vw); max-width: 94vw; max-height: 92vh; overflow: auto; }
+.suite-samples h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
+.suite-samples-intro { margin: 6px 0 14px; opacity: .8; }
+.suite-samples-list { display: grid; gap: 10px; }
+.suite-samples-choice { flex-direction: row; align-items: center; gap: 14px; min-height: 64px; border-radius: 14px; }
+.suite-samples-choice .suite-splash-choice-icon { width: 34px; height: 34px; flex: none; }
+.suite-samples-choice .suite-splash-choice-words { display: flex; flex-direction: column; gap: 2px; }
+.suite-splash::backdrop, .suite-backup-dlg::backdrop, .suite-samples::backdrop { background: rgba(10, 14, 22, .55); }
 .suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
 .suite-backup-dlg h2 { font-size: 17px; letter-spacing: 0; margin-bottom: 8px; }
 .suite-backup-dlg p { margin: 0 0 10px; }
@@ -5146,6 +5155,8 @@ function suiteWhen(ms) {
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+     (samples: an app offers its ready-made examples as one more action,
+      { icon: 'sample', label: 'Samples', run: ... } opening suiteSamplesOpen)
      look:    'classic' - optional: the older plain white splash. Leave it
               out for the family's look since 2026-10-30, IMGEDTR's: no white
               box, splashes of paint in the app's colours, and three panels
@@ -6113,6 +6124,65 @@ function suiteFeaturesOpen(features, appId) {
   dlg.addEventListener('click', (e) => { if (e.target === dlg) finish(); });  // a click on the dimmed backdrop
   dlg.showModal();
   const first = dlg.querySelector('.suite-feat-step:last-of-type');            // "Next" is the likely first press
+  if (first) first.focus();
+  return dlg;
+}
+
+/* ---- Samples: ready-made examples to open (added 2026-11-20) ----------
+   A small chooser, styled like the splash, listing the app's samples. Each
+   sample is made by the app itself, in its own code (no downloads), and
+   opens as a new, unsaved file the person can change freely.
+
+   suiteSamplesOpen({
+     appId:   'pdfedtr',
+     samples: [ { name, detail, icon, run } ... ]   // icon: a SUITE_ACTION_ICONS name or the app's own 24x24 drawing
+   })
+
+   An app usually offers it on its splash ({ icon: 'sample', label: 'Samples',
+   run: openSamples }) and somewhere it can be found later (Help, a menu).
+   Escape, the X or a click on the dimmed backdrop closes it, and focus goes
+   back to where it was. */
+function suiteSamplesOpen(opts) {
+  const app = SUITE_APPS.find((a) => a.id === opts.appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-samples');
+  const h = suiteEl('h2', '', 'Samples');
+  h.id = 'suite-samples-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the samples');
+  const intro = suiteEl('p', 'suite-samples-intro',
+    'Open a ready-made example to see what ' + app.name + ' can do. Each one opens as a new file: change anything, nothing is saved until you say so.');
+  const list = suiteEl('div', 'suite-samples-list');
+  function finish() {
+    if (dlg.open) dlg.close();
+    dlg.remove();
+  }
+  for (const s of opts.samples) {
+    const b = suiteEl('button', 'suite-splash-choice suite-samples-choice');
+    b.type = 'button';
+    const art = SUITE_ACTION_ICONS[s.icon || 'sample'] || s.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (never data)
+      b.append(icon);
+    }
+    const words = suiteEl('span', 'suite-splash-choice-words');
+    words.append(suiteEl('span', 'suite-splash-choice-label', s.name));
+    if (s.detail) words.append(suiteEl('span', 'suite-splash-choice-detail', s.detail));
+    b.append(words);
+    b.addEventListener('click', () => { finish(); s.run(); });
+    list.append(b);
+  }
+  close.addEventListener('click', () => { finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { finish(); if (back && back.isConnected && back.focus) back.focus(); } });
+  dlg.append(close, h, intro, list);
+  document.body.append(dlg);
+  dlg.showModal();
+  const first = list.querySelector('button');
   if (first) first.focus();
   return dlg;
 }
