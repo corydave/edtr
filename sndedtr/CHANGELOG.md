@@ -5,6 +5,14 @@ All notable changes to SNDEDTR. Newest first.
 The version number lives in two places and both must move together on a
 release: `APP_VERSION` in `index.html` and `CACHE_VERSION` in `sw.js`.
 
+## 0.12.0 - 2026-11-20 - Samples
+
+- Samples to play with: pick **Samples** on the splash screen, or **Open a sample** in Help > Features. Three are on offer:
+  - **Podcast intro** - a music bed with a fade in and out, a volume envelope that dips it from 4.5 to 12.5 s where a voice goes, a mid-range EQ cut, a chime on its own track (with reverb, used twice), and an empty armed "Your voice here" track ready to record on.
+  - **Lesson jingle** - a cheerful 12-second tune with melody (with echo), bass and drums (with a compressor) on separate tracks.
+  - **Sound effects kit** - a whoosh, a ding, clicks and a boing as separate clips to trim, fade and add effects to.
+- Every sound is made in code by the browser (an OfflineAudioContext with oscillators, envelopes and filtered noise) - nothing is downloaded or recorded, and the tunes are original. Each opens as a new, unsaved project; if work is already loaded you are asked first, and Undo brings it back.
+
 ## 0.11.3 - 2026-10-30 - A painted splash
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.

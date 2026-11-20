@@ -138,6 +138,9 @@ h1, h2, h3, .display {
 
 /* Visually hidden, but still read by screen readers. Used for live-region
    announcements and for labels that would be redundant on screen. */
+/* Help > Features: the line that offers the samples. */
+.help-samples { margin: 0 0 10px; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
 .sr-only {
   position: absolute;
   width: 1px; height: 1px;
@@ -865,7 +868,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
      --suite-accent  the app's own colour, for the main button (it must
                      carry white text at 7:1 - every app colour does)
    Everything else is worked out from those (and from currentColor). */
-.suite-splash, .suite-backup-dlg {
+/* (.suite-samples, the Samples chooser, shares the splash's dialog look.) */
+.suite-splash, .suite-backup-dlg, .suite-samples {
   background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 14px; padding: 22px 24px 16px; margin: auto;
@@ -875,7 +879,15 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
   max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
 .suite-backup-dlg { width: min(440px, 92vw); }
-.suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+/* The Samples chooser: one sample per row, its picture, name and a line about it. */
+.suite-samples { width: min(520px, 94vw); max-width: 94vw; max-height: 92vh; overflow: auto; }
+.suite-samples h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
+.suite-samples-intro { margin: 6px 0 14px; opacity: .8; }
+.suite-samples-list { display: grid; gap: 10px; }
+.suite-samples-choice { flex-direction: row; align-items: center; gap: 14px; min-height: 64px; border-radius: 14px; }
+.suite-samples-choice .suite-splash-choice-icon { width: 34px; height: 34px; flex: none; }
+.suite-samples-choice .suite-splash-choice-words { display: flex; flex-direction: column; gap: 2px; }
+.suite-splash::backdrop, .suite-backup-dlg::backdrop, .suite-samples::backdrop { background: rgba(10, 14, 22, .55); }
 .suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
 .suite-backup-dlg h2 { font-size: 17px; letter-spacing: 0; margin-bottom: 8px; }
 .suite-backup-dlg p { margin: 0 0 10px; }
@@ -1699,6 +1711,9 @@ table.shortcuts td:first-child { width: 132px; }
   </div>
   <div class="content" role="tabpanel" id="paneFeatures" aria-labelledby="tabFeatures">
     <!-- The animated tour: APP_FEATURES, drawn by renderSuiteFeatures (shared SUITE block). -->
+    <!-- A way back to the samples after the splash has gone (see openSamples). -->
+    <p class="help-samples">Want something to try things on?
+      <button type="button" id="btnHelpSamples">Open a sample</button></p>
     <div id="suiteFeatures"></div>
   </div>
   <div class="content" role="tabpanel" id="paneShortcuts" aria-labelledby="tabShortcuts" hidden>
@@ -1761,7 +1776,7 @@ table.shortcuts td:first-child { width: 132px; }
    only fetched if you explicitly choose MP3 in the export dialog.
    ========================================================================== */
 
-const APP_VERSION = '0.11.3';
+const APP_VERSION = '0.12.0';
 
 /* Short changelog for the Changelog tab (newest first). The long form lives
    in CHANGELOG.md beside this file - a new release gets added to both. It is
@@ -1818,6 +1833,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.12.0', date: '2026-11-20', notes: [
+    'Samples to play with: pick Samples on the splash screen, or Open a sample in Help > Features. A podcast intro (a music bed that dips for your voice, a chime, fades and a volume envelope), a cheerful lesson jingle (melody, bass and drums on their own tracks) and a sound effects kit (a whoosh, a ding, clicks and a boing). Every sound is made right here in the browser - nothing is downloaded - and each opens as a new, unsaved project.'
+  ] },
   { version: '0.11.3', date: '2026-10-30', notes: [
     'A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app\'s colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button\'s tooltip); and the family of apps underneath. The screenshot across the top made way.'
   ] },
@@ -6913,6 +6931,8 @@ function suiteWhen(ms) {
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+     (samples: an app offers its ready-made examples as one more action,
+      { icon: 'sample', label: 'Samples', run: ... } opening suiteSamplesOpen)
      look:    'classic' - optional: the older plain white splash. Leave it
               out for the family's look since 2026-10-30, IMGEDTR's: no white
               box, splashes of paint in the app's colours, and three panels
@@ -7884,6 +7904,65 @@ function suiteFeaturesOpen(features, appId) {
   return dlg;
 }
 
+/* ---- Samples: ready-made examples to open (added 2026-11-20) ----------
+   A small chooser, styled like the splash, listing the app's samples. Each
+   sample is made by the app itself, in its own code (no downloads), and
+   opens as a new, unsaved file the person can change freely.
+
+   suiteSamplesOpen({
+     appId:   'pdfedtr',
+     samples: [ { name, detail, icon, run } ... ]   // icon: a SUITE_ACTION_ICONS name or the app's own 24x24 drawing
+   })
+
+   An app usually offers it on its splash ({ icon: 'sample', label: 'Samples',
+   run: openSamples }) and somewhere it can be found later (Help, a menu).
+   Escape, the X or a click on the dimmed backdrop closes it, and focus goes
+   back to where it was. */
+function suiteSamplesOpen(opts) {
+  const app = SUITE_APPS.find((a) => a.id === opts.appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-samples');
+  const h = suiteEl('h2', '', 'Samples');
+  h.id = 'suite-samples-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the samples');
+  const intro = suiteEl('p', 'suite-samples-intro',
+    'Open a ready-made example to see what ' + app.name + ' can do. Each one opens as a new file: change anything, nothing is saved until you say so.');
+  const list = suiteEl('div', 'suite-samples-list');
+  function finish() {
+    if (dlg.open) dlg.close();
+    dlg.remove();
+  }
+  for (const s of opts.samples) {
+    const b = suiteEl('button', 'suite-splash-choice suite-samples-choice');
+    b.type = 'button';
+    const art = SUITE_ACTION_ICONS[s.icon || 'sample'] || s.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (never data)
+      b.append(icon);
+    }
+    const words = suiteEl('span', 'suite-splash-choice-words');
+    words.append(suiteEl('span', 'suite-splash-choice-label', s.name));
+    if (s.detail) words.append(suiteEl('span', 'suite-splash-choice-detail', s.detail));
+    b.append(words);
+    b.addEventListener('click', () => { finish(); s.run(); });
+    list.append(b);
+  }
+  close.addEventListener('click', () => { finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { finish(); if (back && back.isConnected && back.focus) back.focus(); } });
+  dlg.append(close, h, intro, list);
+  document.body.append(dlg);
+  dlg.showModal();
+  const first = list.querySelector('button');
+  if (first) first.focus();
+  return dlg;
+}
+
 /* A wide card - "See what PDFEDTR can do" - that opens the tour. */
 function suiteFeaturesCard(features, appId) {
   const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
@@ -8297,6 +8376,453 @@ if (suiteInStudio()) {
 /* SUITE BLOCK v4 - END ================================================== */
 
 
+/* ---- Samples ---------------------------------------------------------------
+   Ready-made projects to explore, offered on the splash ("Samples") and in
+   Help > Features ("Open a sample").
+
+   Nothing here is downloaded or recorded: every sound is made right here, in
+   code, by an OfflineAudioContext - a Web Audio context that renders as fast
+   as it can into a buffer instead of playing to the speakers. The tunes are
+   original and deliberately simple, so there is nothing copyrighted in them.
+
+   Each sample is a recipe. Its build() makes the sounds and describes the
+   tracks; loadSample() then swaps them in the same way Open does - it asks
+   first when there is work on screen, and Undo can bring that work back.
+   -------------------------------------------------------------------------*/
+
+/* Notes are counted in semitones from middle C (C4): 0 is C4, 7 is G4,
+   12 is C5, -12 is C3. A4 (nine semitones up) is 440 Hz, and every
+   semitone multiplies the frequency by the twelfth root of two. */
+const noteHz = (semitones) => 440 * Math.pow(2, (semitones - 9) / 12);
+
+/**
+ * Render a mono sound of the given length.
+ * @param {number} seconds - how long the finished buffer is
+ * @param {number} sampleRate - match the app's context, so nothing is resampled
+ * @param {(ctx: OfflineAudioContext) => void} draw - schedules the sounds
+ * @returns {Promise<AudioBuffer>}
+ */
+async function synthRender(seconds, sampleRate, draw) {
+  const length = Math.ceil(seconds * sampleRate);
+  const ctx = new OfflineAudioContext(1, length, sampleRate);
+  draw(ctx);
+  const buffer = await ctx.startRendering();
+  synthNormalize(buffer, 0.89);          // about -1 dB: loud enough, never clipped
+  return buffer;
+}
+
+/** Scale a buffer so its loudest sample sits at `peak` (0 to 1). */
+function synthNormalize(buffer, peak) {
+  const data = buffer.getChannelData(0);
+  let max = 0;
+  for (let i = 0; i < data.length; i++) max = Math.max(max, Math.abs(data[i]));
+  if (max === 0) return;                 // silence stays silence
+  const scale = peak / max;
+  for (let i = 0; i < data.length; i++) data[i] *= scale;
+}
+
+/** A short buffer of white noise - the raw material for drums and whooshes.
+    Made once per render and shared by every hit in it. */
+function synthNoise(ctx) {
+  const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 1.5), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+/** Play a stretch of noise into `dest`, starting at `at`. Returns the source
+    so callers can stop it. */
+function synthNoiseHit(ctx, noise, dest, at, dur) {
+  const src = ctx.createBufferSource();
+  src.buffer = noise;
+  src.connect(dest);
+  src.start(at);
+  src.stop(at + dur);
+  return src;
+}
+
+/**
+ * One pitched note with a simple envelope: a quick rise (the attack), a hold,
+ * then a fall to silence by the end (the release).
+ * o = { hz, at, dur, type, vol, attack, release, detune }
+ */
+function synthNote(ctx, dest, o) {
+  const osc = ctx.createOscillator();
+  osc.type = o.type || 'sine';
+  osc.frequency.value = o.hz;
+  osc.detune.value = o.detune || 0;        // in cents (100 = one semitone)
+  const amp = ctx.createGain();
+  const vol = o.vol ?? 0.3;
+  const attack = o.attack ?? 0.01;
+  const release = Math.min(o.release ?? 0.1, o.dur);
+  amp.gain.setValueAtTime(0, o.at);
+  amp.gain.linearRampToValueAtTime(vol, o.at + attack);
+  amp.gain.setValueAtTime(vol, o.at + Math.max(attack, o.dur - release));
+  amp.gain.linearRampToValueAtTime(0, o.at + o.dur);
+  osc.connect(amp).connect(dest);
+  osc.start(o.at);
+  osc.stop(o.at + o.dur + 0.02);
+}
+
+/** A bell: a few sine waves at "inharmonic" ratios (the 2.76 and 5.4 are what
+    make it sound like metal rather than a flute), each dying away. */
+function synthBell(ctx, dest, hz, at, vol, decay) {
+  const partials = [[1, 1], [2, 0.5], [2.76, 0.35], [5.4, 0.18]];   // [ratio, loudness]
+  partials.forEach(([ratio, level], k) => {
+    const osc = ctx.createOscillator();
+    osc.frequency.value = hz * ratio;
+    const amp = ctx.createGain();
+    const end = at + decay / (1 + k * 0.6);           // higher partials fade sooner
+    amp.gain.setValueAtTime(0, at);
+    amp.gain.linearRampToValueAtTime(vol * level, at + 0.004);
+    amp.gain.exponentialRampToValueAtTime(0.0001, end);
+    osc.connect(amp).connect(dest);
+    osc.start(at);
+    osc.stop(end + 0.02);
+  });
+}
+
+/** Kick drum: a sine wave whose pitch drops fast - the "thump". */
+function synthKick(ctx, dest, at, vol) {
+  const osc = ctx.createOscillator();
+  osc.frequency.setValueAtTime(150, at);
+  osc.frequency.exponentialRampToValueAtTime(45, at + 0.15);
+  const amp = ctx.createGain();
+  amp.gain.setValueAtTime(0, at);
+  amp.gain.linearRampToValueAtTime(vol, at + 0.003);
+  amp.gain.exponentialRampToValueAtTime(0.001, at + 0.35);
+  osc.connect(amp).connect(dest);
+  osc.start(at);
+  osc.stop(at + 0.4);
+}
+
+/** Snare: a burst of band-passed noise (the rattle) plus a short low tone (the body). */
+function synthSnare(ctx, noise, dest, at, vol) {
+  const band = ctx.createBiquadFilter();
+  band.type = 'bandpass';
+  band.frequency.value = 1800;
+  band.Q.value = 0.8;
+  const amp = ctx.createGain();
+  amp.gain.setValueAtTime(vol, at);
+  amp.gain.exponentialRampToValueAtTime(0.001, at + 0.18);
+  band.connect(amp).connect(dest);
+  synthNoiseHit(ctx, noise, band, at, 0.2);
+  synthNote(ctx, dest, { hz: 190, at, dur: 0.08, type: 'triangle', vol: vol * 0.5, attack: 0.002, release: 0.07 });
+}
+
+/** Hi-hat: a very short tick of high-passed noise. */
+function synthHat(ctx, noise, dest, at, vol) {
+  const high = ctx.createBiquadFilter();
+  high.type = 'highpass';
+  high.frequency.value = 7000;
+  const amp = ctx.createGain();
+  amp.gain.setValueAtTime(vol, at);
+  amp.gain.exponentialRampToValueAtTime(0.001, at + 0.05);
+  high.connect(amp).connect(dest);
+  synthNoiseHit(ctx, noise, high, at, 0.06);
+}
+
+/* ---- The recipes ---------------------------------------------------------
+   build(sampleRate) returns:
+     tracks  - [{ name, gain, pan, armed, fx: { reverb: {...} }, envelope,
+                  clips: [{ buffer, start, name, fadeIn, fadeOut }] }]
+               (an fx entry is switched on, with its settings merged in)
+     select  - which track to select afterwards (its index)
+     message - what to say once it has loaded
+   -------------------------------------------------------------------------*/
+const SAMPLES = [
+  {
+    name: 'Podcast intro',
+    detail: 'A music bed that dips for your voice, a chime, fades and an envelope',
+    // Microphone (Lucide).
+    icon: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+    async build(sr) {
+      /* The music bed: four chords, twice round, then home to C (18 s).
+         Each chord is [bass root, three notes above middle C]. */
+      const C = [-24, [0, 4, 7]], Am = [-27, [-3, 0, 4]], F = [-31, [-7, -3, 0]], G = [-29, [-5, -1, 2]];
+      const chords = [C, Am, F, G, C, Am, F, G, C];
+      const bed = await synthRender(18, sr, (ctx) => {
+        const noise = synthNoise(ctx);
+        // The pad goes through one soft low-pass filter, which rounds off the
+        // buzzy sawtooth waves into something warm.
+        const soften = ctx.createBiquadFilter();
+        soften.type = 'lowpass';
+        soften.frequency.value = 1100;
+        soften.connect(ctx.destination);
+        chords.forEach(([root, notes], i) => {
+          const at = i * 2;
+          const dur = i === chords.length - 1 ? 2 : 2.05;   // a hair of overlap, so no gaps
+          for (const n of notes) {
+            // Two slightly detuned copies of each note make it shimmer (a "chorus").
+            synthNote(ctx, soften, { hz: noteHz(n), at, dur, type: 'sawtooth', vol: 0.05, attack: 0.25, release: 0.4, detune: -7 });
+            synthNote(ctx, soften, { hz: noteHz(n), at, dur, type: 'sawtooth', vol: 0.05, attack: 0.25, release: 0.4, detune: 7 });
+          }
+          synthNote(ctx, ctx.destination, { hz: noteHz(root), at, dur, type: 'sine', vol: 0.3, attack: 0.05, release: 0.3 });
+        });
+        // A soft beat from bar 2 to bar 8: kick on beats 1 and 3, quiet hats on every half beat.
+        for (let beat = 4; beat < 32; beat++) {
+          const at = beat * 0.5;
+          if (beat % 2 === 0) synthKick(ctx, ctx.destination, at, 0.45);
+          synthHat(ctx, noise, ctx.destination, at, 0.06);
+          synthHat(ctx, noise, ctx.destination, at + 0.25, 0.035);
+        }
+      });
+      // The sting: three bells rising C - E - G, high up.
+      const sting = await synthRender(2.6, sr, (ctx) => {
+        [24, 28, 31].forEach((n, i) => synthBell(ctx, ctx.destination, noteHz(n), i * 0.12, 0.25, 2.2));
+      });
+      return {
+        select: 0,
+        message: 'Podcast intro sample: the music dips from 4.5 to 12.5 s, where your voice goes. "Your voice here" is ready to record on - put the playhead at 4.5 s and press Record. Space plays.',
+        tracks: [
+          {
+            name: 'Music bed', gain: 0.8,
+            // A gentle dip in the middle frequencies leaves room for a voice.
+            fx: { eq: { midGain: -4, midFreq: 1400, midQ: 0.9 } },
+            // The volume envelope "ducks" the music under the voice, then brings it back.
+            envelope: [{ t: 0, g: 1 }, { t: 3.5, g: 1 }, { t: 4.5, g: 0.3 }, { t: 12.5, g: 0.3 }, { t: 13.5, g: 1 }],
+            clips: [{ buffer: bed, start: 0, name: 'Music bed', fadeIn: 1.5, fadeOut: 3 }],
+          },
+          {
+            name: 'Sting', gain: 0.7, pan: 0.15,
+            fx: { reverb: { decay: 2.2, mix: 0.3 } },
+            // The same sound used twice: two clips sharing one piece of audio.
+            clips: [
+              { buffer: sting, start: 0.2, name: 'Chime' },
+              { buffer: sting, start: 13.4, name: 'Chime again' },
+            ],
+          },
+          { name: 'Your voice here', armed: true, clips: [] },
+        ],
+      };
+    },
+  },
+  {
+    name: 'Lesson jingle',
+    detail: 'A cheerful 12-second tune: melody, bass and drums on their own tracks',
+    // Music notes (Lucide).
+    icon: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    async build(sr) {
+      const beat = 0.5;                       // 120 beats a minute
+      // The tune: [note, starting beat, length in beats]. An original melody in C.
+      const melody = [
+        [0, 0, 1], [4, 1, 1], [7, 2, 1], [4, 3, 1],
+        [5, 4, 1], [9, 5, 1], [7, 6, 2],
+        [4, 8, 1], [7, 9, 1], [12, 10, 1], [11, 11, 1],
+        [9, 12, 1], [7, 13, 1], [4, 14, 2],
+        [0, 16, 0.5], [2, 16.5, 0.5], [4, 17, 1], [7, 18, 1], [9, 19, 1],
+        [7, 20, 0.5], [4, 20.5, 0.5], [2, 21, 1], [0, 22, 2],
+      ];
+      // The bass: one root note per bar (C F C A F), bouncing root - fifth.
+      const roots = [-24, -19, -24, -15, -19];
+      const lead = await synthRender(13, sr, (ctx) => {
+        for (const [n, at, len] of melody) {
+          synthNote(ctx, ctx.destination, { hz: noteHz(n + 12), at: at * beat, dur: len * beat * 0.9, type: 'square', vol: 0.12, release: 0.08 });
+          synthNote(ctx, ctx.destination, { hz: noteHz(n + 24), at: at * beat, dur: len * beat * 0.9, type: 'sine', vol: 0.06, release: 0.08 });
+        }
+      });
+      const bass = await synthRender(13, sr, (ctx) => {
+        roots.forEach((root, bar) => {
+          [0, 7, 0, 7].forEach((step, i) => {
+            synthNote(ctx, ctx.destination, { hz: noteHz(root + step), at: (bar * 4 + i) * beat, dur: beat * 0.85, type: 'triangle', vol: 0.4, release: 0.1 });
+          });
+        });
+        // The last bar: G, G, then home to a long C.
+        synthNote(ctx, ctx.destination, { hz: noteHz(-17), at: 20 * beat, dur: beat * 0.85, type: 'triangle', vol: 0.4, release: 0.1 });
+        synthNote(ctx, ctx.destination, { hz: noteHz(-17), at: 21 * beat, dur: beat * 0.85, type: 'triangle', vol: 0.4, release: 0.1 });
+        synthNote(ctx, ctx.destination, { hz: noteHz(-24), at: 22 * beat, dur: beat * 2.5, type: 'triangle', vol: 0.4, release: 0.6 });
+      });
+      const drums = await synthRender(13, sr, (ctx) => {
+        const noise = synthNoise(ctx);
+        for (let b = 0; b < 22; b++) {
+          const at = b * beat;
+          if (b % 2 === 0) synthKick(ctx, ctx.destination, at, 0.8);
+          else synthSnare(ctx, noise, ctx.destination, at, 0.5);
+          synthHat(ctx, noise, ctx.destination, at, 0.15);
+          synthHat(ctx, noise, ctx.destination, at + beat / 2, 0.09);
+        }
+        // A little fill at the end of bar 4, and one last hit to finish.
+        synthSnare(ctx, noise, ctx.destination, 15.5 * beat, 0.4);
+        synthKick(ctx, ctx.destination, 22 * beat, 0.8);
+        synthSnare(ctx, noise, ctx.destination, 22 * beat, 0.5);
+      });
+      return {
+        select: 0,
+        message: 'Lesson jingle sample: melody, bass and drums. Try muting (M) or soloing (O) a track, or open the panel to change the melody\'s echo.',
+        tracks: [
+          {
+            name: 'Melody', gain: 0.75, pan: 0.2,
+            fx: { delay: { time: 0.375, feedback: 0.25, mix: 0.2 } },   // a dotted-eighth echo
+            clips: [{ buffer: lead, start: 0, name: 'Melody', fadeOut: 0.8 }],
+          },
+          { name: 'Bass', gain: 0.8, pan: -0.1, clips: [{ buffer: bass, start: 0, name: 'Bass line', fadeOut: 0.8 }] },
+          {
+            name: 'Drums', gain: 0.7,
+            fx: { comp: { threshold: -18, ratio: 3 } },                  // evens out the hits
+            clips: [{ buffer: drums, start: 0, name: 'Drums', fadeIn: 0.05, fadeOut: 0.5 }],
+          },
+        ],
+      };
+    },
+  },
+  {
+    name: 'Sound effects kit',
+    detail: 'A whoosh, a ding, clicks and a boing to trim, fade and add effects to',
+    // Zap (Lucide).
+    icon: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+    async build(sr) {
+      // Whoosh: noise through a filter that sweeps up and back down, swelling in the middle.
+      const whoosh = await synthRender(1.3, sr, (ctx) => {
+        const band = ctx.createBiquadFilter();
+        band.type = 'bandpass';
+        band.Q.value = 1.5;
+        band.frequency.setValueAtTime(300, 0);
+        band.frequency.exponentialRampToValueAtTime(3000, 0.7);
+        band.frequency.exponentialRampToValueAtTime(600, 1.25);
+        const amp = ctx.createGain();
+        amp.gain.setValueAtTime(0, 0);
+        amp.gain.linearRampToValueAtTime(0.8, 0.7);
+        amp.gain.linearRampToValueAtTime(0, 1.25);
+        band.connect(amp).connect(ctx.destination);
+        synthNoiseHit(ctx, synthNoise(ctx), band, 0, 1.3);
+      });
+      // Ding: one bell, high and clear.
+      const ding = await synthRender(1.6, sr, (ctx) => synthBell(ctx, ctx.destination, noteHz(28), 0, 0.4, 1.5));
+      // Clicks: three tiny ticks - noise for the snap, a high tone for the tick.
+      const clicks = await synthRender(0.7, sr, (ctx) => {
+        const noise = synthNoise(ctx);
+        [0, 0.25, 0.5].forEach((at) => {
+          synthHat(ctx, noise, ctx.destination, at, 0.5);
+          synthNote(ctx, ctx.destination, { hz: 2200, at, dur: 0.015, vol: 0.3, attack: 0.001, release: 0.01 });
+        });
+      });
+      // Boing: a rising tone wobbled by a second, slower oscillator (an "LFO")
+      // whose wobble dies away like a spring settling.
+      const boing = await synthRender(0.9, sr, (ctx) => {
+        const osc = ctx.createOscillator();
+        osc.frequency.setValueAtTime(160, 0);
+        osc.frequency.exponentialRampToValueAtTime(330, 0.15);
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 14;                // wobbles a second
+        const depth = ctx.createGain();
+        depth.gain.setValueAtTime(70, 0);
+        depth.gain.linearRampToValueAtTime(0, 0.85);
+        lfo.connect(depth).connect(osc.frequency);
+        const amp = ctx.createGain();
+        amp.gain.setValueAtTime(0, 0);
+        amp.gain.linearRampToValueAtTime(0.5, 0.01);
+        amp.gain.exponentialRampToValueAtTime(0.001, 0.88);
+        osc.connect(amp).connect(ctx.destination);
+        osc.start(0); lfo.start(0);
+        osc.stop(0.9); lfo.stop(0.9);
+      });
+      return {
+        select: 1,
+        message: 'Sound effects kit sample: each sound is its own clip. Drag a clip\'s edges to trim it, or press [ and ] over a selection to fade.',
+        tracks: [
+          {
+            name: 'Whooshes', gain: 0.9,
+            fx: { reverb: { decay: 1.2, mix: 0.2 } },
+            clips: [
+              { buffer: whoosh, start: 0.5, name: 'Whoosh' },
+              { buffer: whoosh, start: 6.5, name: 'Whoosh 2' },
+            ],
+          },
+          {
+            name: 'Blips', gain: 0.9,
+            clips: [
+              { buffer: ding, start: 2.2, name: 'Ding', fadeOut: 0.4 },
+              { buffer: clicks, start: 4.2, name: 'Clicks' },
+              { buffer: boing, start: 5.3, name: 'Boing' },
+            ],
+          },
+        ],
+      };
+    },
+  },
+];
+
+/** Show the samples chooser (the shared dialog from the SUITE block). */
+function openSamples() {
+  suiteSamplesOpen({
+    appId: 'sndedtr',
+    samples: SAMPLES.map((recipe) => ({
+      name: recipe.name,
+      detail: recipe.detail,
+      icon: recipe.icon,                     // fixed SVG text written above, never data
+      run: () => loadSample(recipe),
+    })),
+  });
+}
+
+let sampleBusy = false;    // stops a second click starting a second build
+
+/** Make a sample's sounds and load them as a new, unsaved project. */
+async function loadSample(recipe) {
+  if (sampleBusy) return;
+  if (state.isRecording) { say('Stop recording before opening a sample.'); return; }
+  // The same question Open asks, so work on screen is never lost silently.
+  if (state.tracks.some((t) => t.clips.length) &&
+      !confirm('Opening a sample replaces what is loaded now (Undo brings it back). Continue?')) return;
+
+  sampleBusy = true;
+  suiteSplashClose();
+  document.body.setAttribute('aria-busy', 'true');
+  say(`Making the ${recipe.name} sample...`, true);
+  try {
+    const ctx = await ensureContext();
+    const built = await recipe.build(ctx.sampleRate);
+
+    stopPlayback(true);
+    pushUndo('Open sample');
+    engine.chains.clear();                   // the old tracks' effect chains
+
+    state.name = recipe.name + ' (sample)';
+    state.tracks = built.tracks.map((spec, i) => {
+      const track = makeTrack(spec.name);
+      Object.assign(track, {
+        colorIndex: i % TRACK_COLORS.length,
+        gain: spec.gain ?? 1,
+        pan: spec.pan ?? 0,
+        armed: !!spec.armed,
+        envelope: (spec.envelope || []).map((p) => ({ ...p })),
+      });
+      // Switch on each effect the recipe names, with its settings on top of the defaults.
+      for (const [name, settings] of Object.entries(spec.fx || {})) {
+        if (track.fx[name]) Object.assign(track.fx[name], settings, { on: true });
+      }
+      track.clips = (spec.clips || []).map((c) => {
+        const clip = makeClip(c.buffer, c.start, c.name);
+        clip.fadeIn = c.fadeIn || 0;
+        clip.fadeOut = c.fadeOut || 0;
+        return clip;
+      });
+      return track;
+    });
+    // Recording needs somewhere to land: arm the first track if none asked to be.
+    if (!state.tracks.some((t) => t.armed)) state.tracks[0].armed = true;
+
+    const chosen = state.tracks[built.select] || state.tracks[0];
+    state.selectedTrackId = chosen.id;
+    state.selectedClipId = null;
+    state.selection = { start: 0, end: 0, active: false };
+    state.playhead = 0;
+    applyMaster();
+    refreshAllFx();
+    zoomToFit();
+    render();
+    say(built.message);
+  } catch (err) {
+    console.error(err);
+    say('That sample could not be made in this browser.');
+  } finally {
+    sampleBusy = false;
+    document.body.removeAttribute('aria-busy');
+  }
+}
+
+$('#btnHelpSamples').addEventListener('click', () => { $('#helpDialog').close(); openSamples(); });
+
 /* ---- Help panel ----------------------------------------------------------
    One panel, five tabs (Features first). openHelp('tabApps') opens straight on a tab.
    -------------------------------------------------------------------------*/
@@ -8565,7 +9091,8 @@ async function startUp() {
     actions: [
       { icon: 'audio', label: 'Import audio', detail: 'WAV, MP3, M4A, OGG, Opus, FLAC', run: () => $('#fileInput').click(), primary: true },
       { icon: 'record', label: 'Record', detail: 'From your microphone', run: () => $('#btnRecord').click() },
-      { icon: 'open', label: 'Open a project', detail: 'A .sndedtr file you saved', run: () => $('#projectInput').click() }
+      { icon: 'open', label: 'Open a project', detail: 'A .sndedtr file you saved', run: () => $('#projectInput').click() },
+      { icon: 'sample', label: 'Samples', detail: 'A podcast intro, a lesson jingle, sound effects', run: openSamples }
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
     hint: 'You can also drop audio files anywhere in this window.'
