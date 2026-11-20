@@ -4,8 +4,10 @@
 # macOS creates a hidden file called "Icon" (really "Icon" plus an
 # invisible carriage-return character) in any folder that has a
 # custom Finder icon. It's junk as far as the repo is concerned.
-# The "?" stands for that one invisible character.
-Icon?
+# The [[:cntrl:]] class matches that one invisible control character.
+# (Not "Icon?": on a Mac, git ignores letter case, so "Icon?" also
+# matched the folder "icons" and quietly skipped edtrapps-site/icons/.)
+Icon[[:cntrl:]]
 
 # macOS also drops a hidden ".DS_Store" file into folders you open in
 # Finder (it remembers view settings like icon size and sort order).
