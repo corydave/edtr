@@ -2,6 +2,13 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.17.0 - 2026-11-20 - Samples
+
+- Samples: three ready-made drawings to open and pull apart. **Club badge** - a seal, ring, star and ribbon made with Union, Subtract, Combine and Intersect, with text. **Infographic icons** - a book, a lightbulb and a calendar on a 16:9 slide, each icon and card in its own group. **Shapes to merge** - a practice sheet with one pair of loose shapes for each Merge Shapes button, plus a faded example of what each button makes.
+- Every shape has a friendly name ("Seal", "Red top", "Pages with lines"), so the Layers list shows how each drawing was built.
+- Find them on the splash screen (Samples, last), on the empty start screen, and in Help: the Features tab has a Samples button and the Merge Shapes tab opens the practice sheet.
+- The app builds each sample itself in code (`APP_SAMPLES`, using the same merge code as the buttons), so they work offline and off a disk. Opening one over a drawing works like New: Undo brings the old drawing back, and you are asked first if it has unsaved changes.
+
 ## 0.16.4 - 2026-10-30 - A painted splash
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.

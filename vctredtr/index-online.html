@@ -400,9 +400,11 @@ svg.shield-icon path { vector-effect: non-scaling-stroke; stroke-width: 2; }
 }
 .start-card h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: .06em; }
 .start-card p { margin: 0 0 20px; color: var(--text-muted); }
-.start-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.start-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }   /* 2 x 2: New, Size, Open, Samples */
 .start-actions .btn { height: auto; flex-direction: column; padding: 16px 8px; gap: 6px; }
 .start-actions .btn svg { width: 26px; height: 26px; }
+/* Help: the Samples buttons (Features and Merge Shapes tabs) */
+.help-samples { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 14px; }
 .drop-overlay {
   position: absolute; inset: 12px; border: 3px dashed var(--brand); border-radius: 16px;
   background: color-mix(in srgb, var(--brand) 12%, transparent);
@@ -597,7 +599,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
      --suite-accent  the app's own colour, for the main button (it must
                      carry white text at 7:1 - every app colour does)
    Everything else is worked out from those (and from currentColor). */
-.suite-splash, .suite-backup-dlg {
+/* (.suite-samples, the Samples chooser, shares the splash's dialog look.) */
+.suite-splash, .suite-backup-dlg, .suite-samples {
   background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 14px; padding: 22px 24px 16px; margin: auto;
@@ -607,7 +610,15 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
   max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
 .suite-backup-dlg { width: min(440px, 92vw); }
-.suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+/* The Samples chooser: one sample per row, its picture, name and a line about it. */
+.suite-samples { width: min(520px, 94vw); max-width: 94vw; max-height: 92vh; overflow: auto; }
+.suite-samples h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
+.suite-samples-intro { margin: 6px 0 14px; opacity: .8; }
+.suite-samples-list { display: grid; gap: 10px; }
+.suite-samples-choice { flex-direction: row; align-items: center; gap: 14px; min-height: 64px; border-radius: 14px; }
+.suite-samples-choice .suite-splash-choice-icon { width: 34px; height: 34px; flex: none; }
+.suite-samples-choice .suite-splash-choice-words { display: flex; flex-direction: column; gap: 2px; }
+.suite-splash::backdrop, .suite-backup-dlg::backdrop, .suite-samples::backdrop { background: rgba(10, 14, 22, .55); }
 .suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
 .suite-backup-dlg h2 { font-size: 17px; letter-spacing: 0; margin-bottom: 8px; }
 .suite-backup-dlg p { margin: 0 0 10px; }
@@ -1119,6 +1130,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
           <button class="btn" id="startNew"><span data-icon="filePlus"></span>New drawing<span class="hint">16:9, 1920 x 1080</span></button>
           <button class="btn" id="startSize"><span data-icon="scale"></span>Pick a size<span class="hint">slides, square, icon...</span></button>
           <button class="btn" id="startOpen"><span data-icon="folder"></span>Open a file<span class="hint">SVG or .vctredtr</span></button>
+          <button class="btn" id="startSamples"><span data-icon="samples"></span>Samples<span class="hint">ready-made drawings to explore</span></button>
         </div>
       </div>
     </div>
@@ -1326,6 +1338,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   <div class="dlg-body">
     <div role="tabpanel" id="paneFeatures" aria-labelledby="tabFeatures">
       <!-- The animated tour: APP_FEATURES, drawn by renderSuiteFeatures (shared SUITE block). -->
+      <p class="help-samples"><button class="btn" type="button" id="helpSamples"><span data-icon="samples"></span>Samples</button>
+        <span class="hint">Open a ready-made drawing - a club badge, infographic icons or a merge practice sheet - and see how it was built.</span></p>
       <div id="suiteFeatures"></div>
     </div>
     <div role="tabpanel" id="paneShortcuts" aria-labelledby="tabShortcuts" hidden>
@@ -1334,6 +1348,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     </div>
     <div role="tabpanel" id="paneMerge" aria-labelledby="tabMerge" hidden>
       <p style="margin-top:0">Merge Shapes turns two or more overlapping shapes into new shapes, like PowerPoint's feature of the same name.</p>
+      <p class="help-samples"><button class="btn" type="button" id="helpPractice"><span data-icon="mUnion"></span>Open the practice sheet</button>
+        <span class="hint">A sample with one pair of shapes for each button, ready to try.</span></p>
       <ol class="guide-steps">
         <li>Draw two or more shapes so that they overlap.</li>
         <li>Pick them: click the first one, then Shift+click the others (or drag a box around them). On a phone or tablet, turn on <strong>Pick several</strong> (the two-squares button on the tool bar) and tap each one.</li>
@@ -1412,7 +1428,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.16.4';
+const APP_VERSION = '0.17.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1467,6 +1483,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.17.0', date: '2026-11-20', notes: [
+    'Samples: three ready-made drawings to open and pull apart - a Club badge (a seal, ring, star and ribbon made with Union, Subtract, Combine and Intersect), Infographic icons (a book, a lightbulb and a calendar on a 16:9 slide) and Shapes to merge (a practice sheet with one pair of shapes for each Merge Shapes button, plus a faded example of what each makes).',
+    'Find them on the splash screen, on the empty start screen, and in Help (the Features tab, and the Merge Shapes tab for the practice sheet). The app builds each one itself, so they work offline. Opening a sample over your drawing can be undone, and you are asked first if your drawing has unsaved changes.'
+  ] },
   { version: '0.16.4', date: '2026-10-30', notes: [
     'A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app\'s colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button\'s tooltip); and the family of apps underneath. The screenshot across the top made way.'
   ] },
@@ -1913,6 +1933,7 @@ const ICONS = {
   offset: '<rect x="3" y="3" width="18" height="18" rx="5"/><rect x="8" y="8" width="8" height="8" rx="1.5"/>',
   blend: '<circle cx="6" cy="12" r="3.5"/><circle cx="12" cy="12" r="3.5" stroke-opacity=".6"/><circle cx="18" cy="12" r="3.5" stroke-opacity=".35"/>',
   // A symbol: four diamonds (the usual sign for "one design, used many times").
+  samples: '<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
   component: '<path d="M12 3 15 6 12 9 9 6Z"/><path d="M6 9 9 12 6 15 3 12Z"/><path d="M18 9 21 12 18 15 15 12Z"/><path d="M12 15 15 18 12 21 9 18Z"/>'
 };
 
@@ -7988,6 +8009,8 @@ function suiteWhen(ms) {
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+     (samples: an app offers its ready-made examples as one more action,
+      { icon: 'sample', label: 'Samples', run: ... } opening suiteSamplesOpen)
      look:    'classic' - optional: the older plain white splash. Leave it
               out for the family's look since 2026-10-30, IMGEDTR's: no white
               box, splashes of paint in the app's colours, and three panels
@@ -8959,6 +8982,65 @@ function suiteFeaturesOpen(features, appId) {
   return dlg;
 }
 
+/* ---- Samples: ready-made examples to open (added 2026-11-20) ----------
+   A small chooser, styled like the splash, listing the app's samples. Each
+   sample is made by the app itself, in its own code (no downloads), and
+   opens as a new, unsaved file the person can change freely.
+
+   suiteSamplesOpen({
+     appId:   'pdfedtr',
+     samples: [ { name, detail, icon, run } ... ]   // icon: a SUITE_ACTION_ICONS name or the app's own 24x24 drawing
+   })
+
+   An app usually offers it on its splash ({ icon: 'sample', label: 'Samples',
+   run: openSamples }) and somewhere it can be found later (Help, a menu).
+   Escape, the X or a click on the dimmed backdrop closes it, and focus goes
+   back to where it was. */
+function suiteSamplesOpen(opts) {
+  const app = SUITE_APPS.find((a) => a.id === opts.appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-samples');
+  const h = suiteEl('h2', '', 'Samples');
+  h.id = 'suite-samples-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the samples');
+  const intro = suiteEl('p', 'suite-samples-intro',
+    'Open a ready-made example to see what ' + app.name + ' can do. Each one opens as a new file: change anything, nothing is saved until you say so.');
+  const list = suiteEl('div', 'suite-samples-list');
+  function finish() {
+    if (dlg.open) dlg.close();
+    dlg.remove();
+  }
+  for (const s of opts.samples) {
+    const b = suiteEl('button', 'suite-splash-choice suite-samples-choice');
+    b.type = 'button';
+    const art = SUITE_ACTION_ICONS[s.icon || 'sample'] || s.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (never data)
+      b.append(icon);
+    }
+    const words = suiteEl('span', 'suite-splash-choice-words');
+    words.append(suiteEl('span', 'suite-splash-choice-label', s.name));
+    if (s.detail) words.append(suiteEl('span', 'suite-splash-choice-detail', s.detail));
+    b.append(words);
+    b.addEventListener('click', () => { finish(); s.run(); });
+    list.append(b);
+  }
+  close.addEventListener('click', () => { finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { finish(); if (back && back.isConnected && back.focus) back.focus(); } });
+  dlg.append(close, h, intro, list);
+  document.body.append(dlg);
+  dlg.showModal();
+  const first = list.querySelector('button');
+  if (first) first.focus();
+  return dlg;
+}
+
 /* A wide card - "See what PDFEDTR can do" - that opens the tour. */
 function suiteFeaturesCard(features, appId) {
   const app = SUITE_APPS.find((a) => a.id === appId) || { name: 'this app' };
@@ -9533,6 +9615,9 @@ INFO_TABS.forEach((t, i) => {
   });
 });
 $('infoClose').addEventListener('click', () => $('dlgInfo').close());
+// Help's Samples buttons: close Help first, then open the chooser (or the practice sheet itself).
+$('helpSamples').addEventListener('click', () => { $('dlgInfo').close(); openSamples(); });
+$('helpPractice').addEventListener('click', () => { $('dlgInfo').close(); openSample(APP_SAMPLES[2]); });
 function renderShortcutRows() {
   const body = $('shortcutRows');
   body.replaceChildren();
@@ -9695,6 +9780,7 @@ $('btnNew').addEventListener('click', openNew);
 $('startNew').addEventListener('click', quickNew);
 $('startSize').addEventListener('click', openNew);
 $('startOpen').addEventListener('click', openPicker);
+$('startSamples').addEventListener('click', openSamples);
 $('btnOpen').addEventListener('click', openPicker);
 $('btnSaveProject').addEventListener('click', saveProject);
 $('btnUndo').addEventListener('click', undo);
@@ -9961,6 +10047,250 @@ $('panelToggle').addEventListener('click', () => setSheetOpen(!sheetOpen()));
   SHEET_PHONE.addEventListener('change', applySheet);
 })();
 
+/* -----------------------------------------------------------------------
+   SAMPLES (added 0.17.0)
+   Ready-made drawings to open and pull apart. Each one is BUILT RIGHT HERE
+   in code, out of the same Paper.js shapes the drawing tools make, and the
+   same merge code the Merge Shapes buttons use (chainOp, fragmentShapes).
+   Nothing is downloaded, so samples work offline and off a disk.
+
+   A sample opens as a new drawing. If a drawing is already open, opening a
+   sample works like New: Undo brings the old drawing back. If that drawing
+   has changes that are not saved or exported, we ask first.
+
+   Every shape gets a friendly name ("Seal", "Book pages"), so the Layers
+   list reads like a recipe of how the picture was made.
+   ----------------------------------------------------------------------- */
+
+/** A style for a sample shape: the app's defaults, plus whatever we change. */
+const sampleLook = (over) => ({ ...defaults, fillType: 'solid', fillOn: true, strokeOn: false, opacity: 1, curve: 0, tracking: 0, ...over });
+
+/**
+ * Finish one sample shape: give it its look, its kind (which picks its
+ * icon in the Layers list) and a friendly name. It is NOT added to the
+ * drawing here: the caller adds it (or puts it in a group).
+ */
+function sampleShape(item, kind, name, look) {
+  applyStyle(item, sampleLook(look), ['fill', 'stroke', 'opacity']);
+  tagItem(item, kind);
+  if (name) item.name = name;
+  return item;
+}
+/** Merge sample shapes with one of the Merge Shapes operations (union, combine, intersect, subtract). */
+const sampleMerge = (op, shapes) => chainOp(op, shapes);
+
+/** A line of text for a sample (centred on `x` unless `align` says otherwise). */
+function sampleText(content, x, y, look) {
+  const t = new P.PointText({ point: [x, y], content, insert: false });
+  applyStyle(t, sampleLook({ align: 'center', ...look }), ['fill', 'stroke', 'opacity', 'text']);
+  tagItem(t, 'text');
+  t.name = 'Text: ' + content.slice(0, 30);
+  return t;
+}
+/** Put items in a named group (a folder in the Layers list). */
+function sampleGroup(name, items) {
+  const g = new P.Group({ children: items, insert: false });
+  tagItem(g, 'group');
+  g.name = name;
+  return g;
+}
+/* Small helpers that make plain Paper.js shapes, not yet in the drawing. */
+const sCircle = (x, y, r) => new P.Path.Circle({ center: [x, y], radius: r, insert: false });
+const sRect = (x, y, w, h, r = 0) => new P.Path.Rectangle({ rectangle: new P.Rectangle(x, y, w, h), radius: r, insert: false });
+const sStar = (x, y, points, outer, inner) => new P.Path.Star({ center: [x, y], points, radius1: outer, radius2: inner, insert: false });
+const sPoly = (pts) => new P.Path({ segments: pts, closed: true, insert: false });
+
+/* ---- Sample 1: Club badge ----
+   Union: the circle + a 24-point burst make the scalloped seal.
+   Subtract: a small hole for a lanyard, and the V notches in the ribbon tails.
+   Intersect: the big star is trimmed to the inner circle.
+   Combine: the thin ring is two circles, the inner one cut away.         */
+function buildBadgeSample() {
+  const cx = 540, cy = 500;
+  // The ribbon's two tails sit behind everything. Each is a slanted band
+  // with a V cut out of its outer end (Subtract).
+  const tail = (side) => {
+    const s = side;                                     // -1 = left, 1 = right
+    const band = sPoly([[cx + s * 250, 700], [cx + s * 470, 740], [cx + s * 470, 880], [cx + s * 250, 840]]);
+    const notch = sPoly([[cx + s * 480, 730], [cx + s * 410, 810], [cx + s * 480, 890]]);
+    return sampleShape(sampleMerge('subtract', [band, notch]), 'subtract', side < 0 ? 'Left tail' : 'Right tail', { fill: '#9a3412' });
+  };
+  // The seal: a circle joined with a 24-point burst (Union), then a hole
+  // for a lanyard cut out near the top (Subtract).
+  const seal = sampleMerge('union', [sCircle(cx, cy, 360), sStar(cx, cy, 24, 400, 352)]);
+  const sealWithHole = sampleShape(sampleMerge('subtract', [seal, sCircle(cx, cy - 345, 22)]), 'subtract', 'Seal',
+    { fillType: 'linear', fill: '#1e3a8a', fill2: '#2563eb', gradAngle: 90 });
+  // A thin gold ring (Combine: the smaller circle becomes a hole).
+  const ring = sampleShape(sampleMerge('combine', [sCircle(cx, cy, 318), sCircle(cx, cy, 300)]), 'combine', 'Gold ring', { fill: '#facc15' });
+  const disc = sampleShape(sCircle(cx, cy, 285), 'ellipse', 'Inner disc', { fill: '#0f172a' });
+  // The big star, trimmed where it pokes past a circle (Intersect).
+  const star = sampleShape(sampleMerge('intersect', [sStar(cx, cy - 30, 5, 215, 90), sCircle(cx, cy - 30, 178)]), 'intersect', 'Trimmed star',
+    { fillType: 'radial', fill: '#fde68a', fill2: '#f59e0b' });
+  const year = sampleText('EST. 2026', cx, cy + 165,   // just above the ribbon
+    { font: 'montserrat', fontSize: 34, bold: true, fill: '#facc15', tracking: 12 });
+  // The front of the ribbon, with the club's name on it.
+  const banner = sampleShape(sPoly([[cx - 300, 690], [cx + 300, 690], [cx + 320, 830], [cx - 320, 830]]), 'pen', 'Banner', { fill: '#ea580c' });
+  const name = sampleText('CODE CLUB', cx, 788, { font: 'anton', fontSize: 92, bold: false, fill: '#ffffff', tracking: 6 });
+  artLayer.addChildren([
+    sampleGroup('Ribbon tails', [tail(-1), tail(1)]),
+    sampleGroup('Seal', [sealWithHole, ring, disc]),
+    star, year,
+    sampleGroup('Ribbon', [banner, name])
+  ]);
+}
+
+/* ---- Sample 2: Infographic icons ----
+   Three simple icons on cards, each built from a few plain shapes.
+   Book: two pages joined (Union), with the lines cut out (Combine).
+   Lightbulb: a circle and a neck joined (Union); the base has its grooves
+   cut (Subtract). Calendar: the red top is the body clipped to a band
+   (Intersect), and the day squares are cut from the body (Subtract).     */
+function buildIconsSample() {
+  const ink = '#1f2937';
+  const title = sampleText('Study smarter', 960, 170, { font: 'poppins', fontSize: 84, bold: true, fill: ink });
+  const sub = sampleText('Three icons, each made by merging a few simple shapes', 960, 235, { font: 'atkinson', fontSize: 34, bold: false, fill: '#4b5563' });
+  // Each card: a soft rounded panel with the icon and a label.
+  const card = (x, tint, label, iconItems, words) => sampleGroup(label + ' card', [
+    sampleShape(sRect(x - 240, 320, 480, 600, 40), 'rect', 'Card', { fill: tint }),
+    sampleGroup(label + ' icon', iconItems),
+    sampleText(label, x, 820, { font: 'poppins', fontSize: 56, bold: true, fill: ink }),
+    sampleText(words, x, 875, { font: 'atkinson', fontSize: 30, bold: false, fill: '#4b5563' })
+  ]);
+
+  // Book (centre x = 400).
+  const bx = 400, by = 560;
+  const cover = sampleShape(sRect(bx - 175, by - 105, 350, 230, 22), 'rect', 'Cover', { fill: '#1d4ed8' });
+  let pages = sampleMerge('union', [sRect(bx - 160, by - 120, 155, 210, 14), sRect(bx + 5, by - 120, 155, 210, 14)]);
+  const lines = [];
+  for (let i = 0; i < 4; i++) {
+    lines.push(sRect(bx - 135, by - 85 + i * 40, 105, 12, 6), sRect(bx + 30, by - 85 + i * 40, 105, 12, 6));
+  }
+  pages = sampleShape(sampleMerge('combine', [pages, ...lines]), 'combine', 'Pages with lines', { fill: '#ffffff' });
+
+  // Lightbulb (centre x = 960).
+  const lx = 960, ly = 540;
+  const glass = sampleShape(sampleMerge('union', [sCircle(lx, ly, 105), sRect(lx - 55, ly + 50, 110, 95, 18)]), 'union', 'Bulb', { fill: '#facc15' });
+  const base = sampleShape(sampleMerge('subtract', [sRect(lx - 55, ly + 150, 110, 70, 16), sRect(lx - 70, ly + 168, 140, 9), sRect(lx - 70, ly + 192, 140, 9)]),
+    'subtract', 'Base', { fill: '#6b7280' });
+  const rays = [];
+  for (const a of [-150, -120, -90, -60, -30]) {
+    const ray = sRect(lx - 9, ly - 200, 18, 50, 9);
+    ray.rotate(a + 90, new P.Point(lx, ly));            // spin each ray around the bulb's middle
+    rays.push(sampleShape(ray, 'rect', 'Ray', { fill: '#f59e0b' }));
+  }
+
+  // Calendar (centre x = 1520).
+  const kx = 1520, ky = 560;
+  const bodyShape = () => sRect(kx - 160, ky - 130, 320, 290, 28);
+  const header = sampleShape(sampleMerge('intersect', [bodyShape(), sRect(kx - 170, ky - 140, 340, 85)]), 'intersect', 'Red top', { fill: '#dc2626' });
+  const days = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) days.push(sRect(kx - 130 + c * 68, ky - 30 + r * 58, 46, 40, 8));
+  const body = sampleShape(sampleMerge('subtract', [sRect(kx - 160, ky - 55, 320, 215, 0), ...days]), 'subtract', 'Days', { fill: '#ffffff', strokeOn: false });
+  // The body's rounded bottom corners: intersect the square-cornered grid with the rounded outline.
+  const rounded = sampleShape(sampleMerge('intersect', [body, bodyShape()]), 'intersect', 'Day grid', { fill: '#ffffff' });
+  const rings = [sampleShape(sRect(kx - 95, ky - 160, 26, 70, 13), 'rect', 'Ring', { fill: ink }),
+                 sampleShape(sRect(kx + 69, ky - 160, 26, 70, 13), 'rect', 'Ring', { fill: ink })];
+
+  artLayer.addChildren([
+    title, sub,
+    card(bx, '#dbeafe', 'Read', [cover, pages], 'a page a day'),
+    card(lx, '#fef3c7', 'Ideas', [...rays, glass, base], 'jot them down'),
+    card(kx, '#fee2e2', 'Plan', [rounded, header, ...rings], 'set a due date')
+  ]);
+}
+
+/* ---- Sample 3: Shapes to merge (a practice sheet) ----
+   Five pairs of overlapping shapes, one for each Merge Shapes button, left
+   loose so you can pick them and try. Underneath each pair, a faded
+   example (in a group) shows what that button will make.                 */
+function buildPracticeSample() {
+  const ink = '#1f2937';
+  const out = [
+    sampleText('Shapes to merge', 960, 110, { font: 'poppins', fontSize: 64, bold: true, fill: ink }),
+    sampleText('Click the first shape, Shift+click the second, then press that Merge button in the Inspector.', 960, 165,
+      { font: 'atkinson', fontSize: 30, bold: false, fill: '#4b5563' })
+  ];
+  const blue = '#2563eb', orange = '#f97316';
+  // Each column: [button name, how to make its two shapes at centre (x, y)].
+  const pairs = [
+    // (The third item names the two shapes' kinds, for their icons in the Layers list.)
+    ['Union', (x, y) => [sCircle(x - 50, y, 95), sCircle(x + 50, y, 95)], ['ellipse', 'ellipse']],
+    ['Combine', (x, y) => [sRect(x - 135, y - 85, 170, 170, 20), sCircle(x + 45, y, 95)], ['rect', 'ellipse']],
+    ['Fragment', (x, y) => [sCircle(x - 50, y + 20, 95), sStar(x + 50, y - 10, 5, 115, 50)], ['ellipse', 'star']],
+    ['Intersect', (x, y) => [sCircle(x - 45, y, 100), sRect(x - 40, y - 100, 175, 200, 24)], ['ellipse', 'rect']],
+    ['Subtract', (x, y) => [sRect(x - 130, y - 95, 260, 190, 28), sCircle(x + 85, y - 60, 75)], ['rect', 'ellipse']]
+  ];
+  pairs.forEach(([label, make, kinds], i) => {
+    const x = 192 + i * 384;
+    // The two shapes to try it on: loose (not grouped), so they can be merged.
+    const [a, b] = make(x, 400);
+    out.push(sampleShape(a, kinds[0], label + ' - first shape', { fill: blue }));
+    out.push(sampleShape(b, kinds[1], label + ' - second shape', { fill: orange, opacity: 0.85 }));
+    out.push(sampleText('Try ' + label, x, 590, { font: 'poppins', fontSize: 40, bold: true, fill: ink }));
+    // The faded example of what you will get.
+    const [ea, eb] = make(x, 800);
+    const op = label.toLowerCase();
+    let pieces = op === 'fragment' ? fragmentShapes([ea, eb]).filter(hasArea) : [sampleMerge(op, [ea, eb])];
+    const tints = [blue, '#7c3aed', orange, '#0891b2'];
+    pieces = pieces.map((p, n) => sampleShape(p, op, label + ' result' + (pieces.length > 1 ? ' ' + (n + 1) : ''),
+      { fill: op === 'fragment' ? tints[n % tints.length] : blue, opacity: 0.45, strokeOn: op === 'fragment', stroke: '#ffffff', strokeWidth: 4 }));
+    out.push(sampleGroup(label + ' example (what you get)', pieces));
+  });
+  out.push(sampleText('Faded: what each button makes. Undo (Ctrl+Z) puts the shapes back.', 960, 1030,
+    { font: 'atkinson', fontSize: 28, bold: false, fill: '#6b7280' }));
+  artLayer.addChildren(out);
+}
+
+/* The list the chooser shows. Icons: small fixed 24 x 24 drawings. */
+const APP_SAMPLES = [
+  { name: 'Club badge', detail: 'A seal, ring, star and ribbon made with Union, Subtract, Combine and Intersect', file: 'club-badge',
+    w: 1080, h: 1080, bg: '#fff7ed', build: buildBadgeSample,
+    icon: '<circle cx="12" cy="10" r="7"/><path d="m12 6.5 1.1 2.2 2.4.3-1.8 1.7.4 2.4-2.1-1.1-2.1 1.1.4-2.4-1.8-1.7 2.4-.3z"/><path d="m8 16-2 6 3-1.5 2 1.5 1-4"/><path d="m16 16 2 6-3-1.5-2 1.5-1-4"/>' },
+  { name: 'Infographic icons', detail: 'A book, a lightbulb and a calendar on a 16:9 slide, each in its own group', file: 'infographic-icons',
+    w: 1920, h: 1080, bg: '#ffffff', build: buildIconsSample,
+    icon: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 14v-3a2 2 0 0 1 4 0v3"/><circle cx="16" cy="11" r="2"/><path d="M6 17h12"/>' },
+  { name: 'Shapes to merge', detail: 'A practice sheet: one pair of shapes for each Merge Shapes button', file: 'shapes-to-merge',
+    w: 1920, h: 1080, bg: '#ffffff', build: buildPracticeSample,
+    icon: '<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>' }
+];
+
+/** Open one sample as a new drawing (see the note at the top of this section). */
+async function openSample(sample) {
+  if (!ENGINE_OK) { toast('The drawing engine has not loaded yet.'); return; }
+  if (hasUnsavedWork() && !(await confirmDialog('Open the sample?',
+      'This replaces the drawing that is open now. Undo can bring it back, but changes you have not saved or exported are lost when you close the page.',
+      'Open sample'))) return;
+  const replacing = doc && topItems().length;
+  const before = replacing ? history.current : null;   // the old drawing, kept for Undo
+  newDocument(sample.w, sample.h, sample.bg, !replacing);
+  try {
+    sample.build();
+  } catch (err) {
+    // Should never happen, but if it does, go back to what was there.
+    if (before) restore(before); else artLayer.removeChildren();
+    toast('That sample could not be made. Sorry!', 5000);
+    return;
+  }
+  doc.title = sample.name;
+  state.sel = [];
+  if (replacing) { history.undo.push(before); history.current = snapshot(); history.redo = []; updateUndoButtons(); }
+  else resetHistory();
+  exportedSnapshot = history.current;    // nothing new to lose yet: no "unsaved work" nag
+  $('expName').value = sample.file;
+  onDocumentShapeChanged();
+  fitView();
+  suiteSplashClose();
+  toast('Opened the ' + sample.name + ' sample. The Layers list shows how it was built.' + (replacing ? ' Undo brings back your drawing.' : ''), 5000);
+  announce(sample.name + ' sample opened.');
+}
+/** The Samples chooser (shared SUITE block). */
+function openSamples() {
+  suiteSamplesOpen({
+    appId: 'vctredtr',
+    samples: APP_SAMPLES.map((s) => ({ name: s.name, detail: s.detail, icon: s.icon, run: () => openSample(s) }))
+  });
+}
+
 /* ---- Crash backups (see SuiteBackup in the SUITE BLOCK) ----
    What is saved: the same thing a project file holds. Restoring builds a
    project in memory and opens it through openProject(), so a backup gets
@@ -10010,7 +10340,8 @@ async function startUp() {
     actions: [
       { icon: 'pen', label: 'New drawing', detail: '16:9 artboard, 1920 × 1080, see-through', run: quickNew, primary: true },
       { icon: 'size', label: 'Pick a size', detail: 'Slides, square, app icon, social post...', run: openNew },
-      { icon: 'open', label: 'Open a file', detail: 'An SVG, or a .vctredtr project', run: openPicker }
+      { icon: 'open', label: 'Open a file', detail: 'An SVG, or a .vctredtr project', run: openPicker },
+      { icon: 'sample', label: 'Samples', detail: 'A club badge, infographic icons, a merge practice sheet', run: openSamples }
     ],
     resume: found ? { detail: found.detail + ' - from ' + suiteWhen(found.savedAt), run: () => { suiteBackupBadgeRemove(); restoreBackup(found); } } : null,
     hint: 'You can also drop an SVG anywhere in this window, or paste SVG code.',
