@@ -919,7 +919,8 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
      --suite-accent  the app's own colour, for the main button (it must
                      carry white text at 7:1 - every app colour does)
    Everything else is worked out from those (and from currentColor). */
-.suite-splash, .suite-backup-dlg {
+/* (.suite-samples, the Samples chooser, shares the splash's dialog look.) */
+.suite-splash, .suite-backup-dlg, .suite-samples {
   background: var(--suite-bg, Canvas); color: var(--suite-fg, CanvasText);
   border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
   border-radius: 14px; padding: 22px 24px 16px; margin: auto;
@@ -929,7 +930,15 @@ a.suite-card:focus-visible { outline: 3px solid #0046ad; outline-offset: 2px; }
 .suite-splash { width: min(660px, 94vw); max-height: 92vh; overflow: auto;
   max-width: 94vw; }   /* its own cap: some apps give every dialog a narrower max-width (SNDEDTR and VIDEDTR: 560px), which wrapped the row of apps */
 .suite-backup-dlg { width: min(440px, 92vw); }
-.suite-splash::backdrop, .suite-backup-dlg::backdrop { background: rgba(10, 14, 22, .55); }
+/* The Samples chooser: one sample per row, its picture, name and a line about it. */
+.suite-samples { width: min(520px, 94vw); max-width: 94vw; max-height: 92vh; overflow: auto; }
+.suite-samples h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
+.suite-samples-intro { margin: 6px 0 14px; opacity: .8; }
+.suite-samples-list { display: grid; gap: 10px; }
+.suite-samples-choice { flex-direction: row; align-items: center; gap: 14px; min-height: 64px; border-radius: 14px; }
+.suite-samples-choice .suite-splash-choice-icon { width: 34px; height: 34px; flex: none; }
+.suite-samples-choice .suite-splash-choice-words { display: flex; flex-direction: column; gap: 2px; }
+.suite-splash::backdrop, .suite-backup-dlg::backdrop, .suite-samples::backdrop { background: rgba(10, 14, 22, .55); }
 .suite-splash h2, .suite-backup-dlg h2 { margin: 0; font-size: 20px; letter-spacing: .05em; }
 .suite-backup-dlg h2 { font-size: 17px; letter-spacing: 0; margin-bottom: 8px; }
 .suite-backup-dlg p { margin: 0 0 10px; }
@@ -1388,6 +1397,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <button class="icon-btn" id="btnNew" type="button" title="New script (Ctrl+N)" aria-label="New script"><span data-icon="filePlus"></span></button>
       <button class="icon-btn" id="btnOpen" type="button" title="Open a .teledtr script or a text file (Ctrl+O)" aria-label="Open a script"><span data-icon="folder"></span></button>
       <button class="icon-btn" id="btnPaste" type="button" title="Paste a script from the clipboard" aria-label="Paste a script"><span data-icon="clipboard"></span></button>
+      <!-- Samples (0.7.0): opens the chooser of ready-made scripts. -->
+      <button class="icon-btn" id="btnSamples" type="button" title="Samples: ready-made scripts to try" aria-label="Open a sample script"><span data-icon="sample"></span></button>
       <button class="icon-btn" id="btnSave" type="button" title="Save as a .teledtr script (Ctrl+S)" aria-label="Save the script as a .teledtr file"><span data-icon="save"></span></button>
     </div>
     <div class="bar-sep" aria-hidden="true"></div>
@@ -1690,6 +1701,9 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       <table class="shortcut-table"><tbody id="shortcutRows"></tbody></table>
     </div>
     <div role="tabpanel" id="paneStart" aria-labelledby="tabStart" hidden>
+      <h3>Samples</h3>
+      <p>Not sure where to begin? Open a ready-made script - a short welcome, a two-person interview, or a two-minute lecture opener - and press Prompt to see it move. The book button in the top bar opens them too.</p>
+      <p><button class="btn" id="helpSamples" type="button"><span data-icon="sample"></span> Open the samples</button></p>
       <h3>Write</h3>
       <p>Start a line with <kbd># </kbd> for a section heading (<kbd>## </kbd> for a smaller one), or use the heading tool at the top of the rail. Put <kbd>**bold**</kbd> and <kbd>*italic*</kbd> around words to stress while you read (or the B and I tools).</p>
       <h3>Cue marks</h3>
@@ -1744,7 +1758,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ========================================================================= */
 
 // The version. Keep this line in exactly this form: the update check reads it.
-const APP_VERSION = '0.6.0';
+const APP_VERSION = '0.7.0';
 
 // The storage key for this app's own UI preferences (theme, Inspector height,
 // which Inspector sections are open). Every key starts with the app's name,
@@ -1825,7 +1839,7 @@ const CUE_MENU = [
   { text: '[NOTE: ]', name: 'Note to yourself', help: 'Shown muted and never read aloud' }
 ];
 
-// The sample script, shown by "Try the sample" on the splash.
+// The first sample script ("Welcome"), one of the Samples (see SAMPLES below).
 const SAMPLE_SCRIPT = `# Welcome
 
 Hello, and welcome to **Introduction to Information Security**. I'm glad you're here. [PAUSE]
@@ -1850,6 +1864,106 @@ When a threat finds a vulnerability, you have a risk. [LOOK UP]
 
 Thanks for watching. See you in the next video.
 `;
+
+// The second sample: a two-person interview. It shows SPEAKER: labels (each
+// speaker gets a colour in the prompter), sections, and cue marks such as
+// [PAUSE], [LOOK UP] and [SLIDE 2].
+const INTERVIEW_SCRIPT = `# Cold open
+
+HOST: Welcome back to **Campus Conversations**, the show about learning at a community college. [SMILE]
+
+HOST: Today our guest runs the tutoring center. We are talking about asking for help. [LOOK UP]
+
+# Getting started
+
+HOST: So, what is the first thing a new student should know about tutoring?
+
+GUEST: That it is **free**, and it is for everyone. Not just students who are struggling. [PAUSE]
+
+GUEST: Some of our busiest visitors are students with a perfect grade who want to keep it. [SMILE]
+
+HOST: I did not expect that. [PAUSE]
+
+[NOTE: Let the guest finish before the next question.]
+
+# What a visit looks like
+
+HOST: Walk us through a first visit. [SLIDE 2]
+
+GUEST: You bring your notes, or even just a question. A tutor sits with you for half an hour. [PAUSE]
+
+GUEST: We do not do the work *for* you. We do it *with* you, one step at a time.
+
+HOST: And students can come back as often as they like?
+
+GUEST: As often as they like. Some come every week, all semester. [LOOK UP]
+
+# Wrapping up
+
+HOST: One last question. What would you say to a student who feels nervous about walking in? [PAUSE]
+
+GUEST: Everyone feels that way the first time. *Come anyway.* We are glad you are here. [SMILE]
+
+HOST: Thank you for joining us. [SLIDE 3]
+
+HOST: And thank you for watching. See you next week. [LOOK UP]
+`;
+
+// The third sample: a lecture opener for a course video, about two minutes
+// long. It shows several sections, [PAUSE 3s] timed pauses (they add to the
+// time), **bold** for stress, slide cues and a [NOTE: ...] to yourself.
+const LECTURE_SCRIPT = `# Welcome to the course
+
+[NOTE: Record this in front of the lake view, before the light changes.]
+
+Hello, and welcome to **Environmental Science**. I am so glad you are here. [SMILE]
+
+This course is about the world right outside our windows: the lakes, the vineyards, the forests and the farms of the Finger Lakes. [PAUSE 3s]
+
+# Why this matters
+
+Every glass of water you drink has a story. It fell as rain, ran down a hillside, and passed through soil, streams and a lake before it reached your tap. [SLIDE 2]
+
+In this course you will learn to read that story. You will ask **where** the water comes from, **what** it picks up along the way, and **who** is responsible for keeping it clean. [PAUSE]
+
+These are not questions for scientists alone. They are questions for farmers, for town boards, for families, and for *you*. [LOOK UP]
+
+# How the course works
+
+Each week has three parts. [SLIDE 3]
+
+First, a short video like this one. Second, a reading. Third, a hands-on activity, often outside. [PAUSE]
+
+You do not need special equipment. A notebook, a phone camera and a pair of shoes that can get muddy will do. [SMILE]
+
+Assignments are due **Sunday at midnight**, and you can always find them in the weekly module. [PAUSE 3s]
+
+# Our first activity
+
+This week, I would like you to find the nearest stream to where you live. [SLIDE 4]
+
+Visit it once. Take one photo, and write three sentences about what you notice. [PAUSE]
+
+There is no wrong answer. I just want you to *look*. [LOOK UP]
+
+# See you soon
+
+If you have a question, post it in the course forum, or come to my office hours. [PAUSE]
+
+I am looking forward to learning alongside you this semester. **Let's get outside.** [SMILE] [PAUSE 3s]
+`;
+
+// Every sample, in the order the Samples chooser lists them. Each one has
+// its text, the title it opens with, and a short line about what it shows.
+// "Welcome" (the original sample) stays first.
+const SAMPLES = [
+  { name: 'Welcome', title: 'Welcome', text: SAMPLE_SCRIPT,
+    detail: 'A short welcome script with cue marks, to see how it works' },
+  { name: 'Two-person interview', title: 'Campus Conversations', text: INTERVIEW_SCRIPT,
+    detail: 'A host and a guest, each with their own speaker colour, plus [PAUSE] and [LOOK UP] cues' },
+  { name: 'Lecture opener', title: 'Welcome to Environmental Science', text: LECTURE_SCRIPT,
+    detail: 'A two-minute course video with timed [PAUSE 3s] holds, bold stress and a note to yourself' }
+];
 
 // The icons used on the buttons: Lucide-style drawings, 24 x 24, 2px strokes.
 // They are fixed text written here in the app, never anything from a file.
@@ -1892,6 +2006,10 @@ const ICONS = {
 
 // The changelog, newest first. Each release is added at the top.
 const CHANGELOG = [
+  { version: '0.7.0', date: '2026-11-20', notes: [
+    'Samples: three ready-made scripts to try - the short Welcome, a two-person interview (HOST: and GUEST:, with cue marks) and a two-minute lecture opener (timed pauses, bold stress and a note to yourself).',
+    'Open them from Samples on the splash, the new book button in the top bar, or Help > Getting started. If your script has unsaved changes, TELEDTR asks before replacing it.'
+  ] },
   { version: '0.6.0', date: '2026-10-31', notes: [
     'Prompt and Record are one: the prompter records. Record (or R) counts down, then films you while the text moves; Stop (or R) ends the take, and the script\'s end stops it by itself.',
     'The Takes window keeps every take of this visit: watch one, save the video and its captions, record again from the start, or delete it.',
@@ -2562,6 +2680,8 @@ function suiteWhen(ms) {
      features: APP_FEATURES,                            // optional: adds a "See what it can do" card (the tour)
      version: APP_VERSION,                              // shown at the foot, with the update check
      checkUpdate: optional - an app's own update check (see suiteSplashFoot)
+     (samples: an app offers its ready-made examples as one more action,
+      { icon: 'sample', label: 'Samples', run: ... } opening suiteSamplesOpen)
      look:    'classic' - optional: the older plain white splash. Leave it
               out for the family's look since 2026-10-30, IMGEDTR's: no white
               box, splashes of paint in the app's colours, and three panels
@@ -3529,6 +3649,65 @@ function suiteFeaturesOpen(features, appId) {
   dlg.addEventListener('click', (e) => { if (e.target === dlg) finish(); });  // a click on the dimmed backdrop
   dlg.showModal();
   const first = dlg.querySelector('.suite-feat-step:last-of-type');            // "Next" is the likely first press
+  if (first) first.focus();
+  return dlg;
+}
+
+/* ---- Samples: ready-made examples to open (added 2026-11-20) ----------
+   A small chooser, styled like the splash, listing the app's samples. Each
+   sample is made by the app itself, in its own code (no downloads), and
+   opens as a new, unsaved file the person can change freely.
+
+   suiteSamplesOpen({
+     appId:   'pdfedtr',
+     samples: [ { name, detail, icon, run } ... ]   // icon: a SUITE_ACTION_ICONS name or the app's own 24x24 drawing
+   })
+
+   An app usually offers it on its splash ({ icon: 'sample', label: 'Samples',
+   run: openSamples }) and somewhere it can be found later (Help, a menu).
+   Escape, the X or a click on the dimmed backdrop closes it, and focus goes
+   back to where it was. */
+function suiteSamplesOpen(opts) {
+  const app = SUITE_APPS.find((a) => a.id === opts.appId) || { name: '' };
+  const back = document.activeElement;
+  const dlg = suiteEl('dialog', 'suite-samples');
+  const h = suiteEl('h2', '', 'Samples');
+  h.id = 'suite-samples-title';
+  dlg.setAttribute('aria-labelledby', h.id);
+  const close = suiteEl('button', 'suite-splash-x', '×');
+  close.type = 'button';
+  close.setAttribute('aria-label', 'Close the samples');
+  const intro = suiteEl('p', 'suite-samples-intro',
+    'Open a ready-made example to see what ' + app.name + ' can do. Each one opens as a new file: change anything, nothing is saved until you say so.');
+  const list = suiteEl('div', 'suite-samples-list');
+  function finish() {
+    if (dlg.open) dlg.close();
+    dlg.remove();
+  }
+  for (const s of opts.samples) {
+    const b = suiteEl('button', 'suite-splash-choice suite-samples-choice');
+    b.type = 'button';
+    const art = SUITE_ACTION_ICONS[s.icon || 'sample'] || s.icon;
+    if (art) {
+      const icon = suiteFeatButton('', '', '').querySelector('svg');   // the shared icon maker
+      icon.classList.add('suite-splash-choice-icon');
+      icon.innerHTML = art;                                           // fixed drawings only (never data)
+      b.append(icon);
+    }
+    const words = suiteEl('span', 'suite-splash-choice-words');
+    words.append(suiteEl('span', 'suite-splash-choice-label', s.name));
+    if (s.detail) words.append(suiteEl('span', 'suite-splash-choice-detail', s.detail));
+    b.append(words);
+    b.addEventListener('click', () => { finish(); s.run(); });
+    list.append(b);
+  }
+  close.addEventListener('click', () => { finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(); if (back && back.isConnected && back.focus) back.focus(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { finish(); if (back && back.isConnected && back.focus) back.focus(); } });
+  dlg.append(close, h, intro, list);
+  document.body.append(dlg);
+  dlg.showModal();
+  const first = list.querySelector('button');
   if (first) first.focus();
   return dlg;
 }
@@ -7883,9 +8062,30 @@ function newScript() {
   editor.focus();
 }
 
-function loadSample() {
-  loadScript({ text: SAMPLE_SCRIPT, title: 'Welcome' });
-  editor.focus();
+// Load one sample into the editor. If unsaved work is in the editor, ask
+// first (confirmFirst), the same way New and Open do - work is never lost
+// silently. The sample opens unsaved, like a new script.
+function loadSample(sample) {
+  const s = sample || SAMPLES[0];                  // no sample given: the original "Welcome"
+  confirmFirst('Opening the "' + s.name + '" sample will replace the script in the editor. Continue?', () => {
+    loadScript({ text: s.text, title: s.title });
+    editor.focus();
+  });
+}
+
+// The Samples chooser (the family's suiteSamplesOpen, from the SUITE block).
+// Opened from the splash, the Samples button in the top bar, and Help >
+// Getting started. Every sample uses the family's open-book icon.
+function openSamples() {
+  suiteSamplesOpen({
+    appId: 'teledtr',
+    samples: SAMPLES.map((s) => ({
+      name: s.name,
+      detail: s.detail,
+      icon: 'sample',
+      run: () => loadSample(s)
+    }))
+  });
 }
 
 // Open the file picker. The chosen file is checked, then loaded (after a confirm if needed).
@@ -7977,7 +8177,7 @@ async function startUp() {
       { icon: 'new', label: 'New script', detail: 'Start with a blank page and a first heading', run: newScript, primary: true },
       { icon: 'open', label: 'Open a script', detail: 'A .teledtr script, or a plain text or Markdown file', run: openPicker },
       { icon: 'paste', label: 'Paste a script', detail: 'From the clipboard, with its formatting cleaned up', run: openPasteDialog },
-      { icon: 'sample', label: 'Try the sample', detail: 'A short welcome script with cue marks, to see how it works', run: loadSample }
+      { icon: 'sample', label: 'Samples', detail: 'Ready-made scripts to try: a welcome, an interview and a lecture opener', run: openSamples }
     ],
     resume: found ? {
       detail: found.detail + ' - from ' + suiteWhen(found.savedAt),
@@ -8070,6 +8270,12 @@ editor.addEventListener('blur', () => { document.getElementById('stSel').hidden 
 document.getElementById('btnNew').addEventListener('click', () => confirmFirst('Start a new script? The current one will be replaced.', newScript));
 document.getElementById('btnOpen').addEventListener('click', openPicker);
 document.getElementById('btnPaste').addEventListener('click', openPasteDialog);
+document.getElementById('btnSamples').addEventListener('click', openSamples);
+// Help > Getting started has its own Samples button: close Help, then open the chooser.
+document.getElementById('helpSamples').addEventListener('click', () => {
+  document.getElementById('dlgHelp').close();
+  openSamples();
+});
 document.getElementById('btnSave').addEventListener('click', saveProject);
 document.getElementById('btnUndo').addEventListener('click', undo);
 document.getElementById('btnRedo').addEventListener('click', redo);

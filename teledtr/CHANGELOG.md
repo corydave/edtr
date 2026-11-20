@@ -2,6 +2,16 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.7.0 - 2026-11-20 - Samples
+
+"Try the sample" grew into a proper Samples chooser (the family's suiteSamplesOpen), with two new scripts beside the original Welcome.
+
+- **Welcome** - the original short sample: sections, bold and italic, and a handful of cue marks.
+- **Two-person interview** ("Campus Conversations") - a HOST: and a GUEST: talking about a campus tutoring center, so each speaker gets their own colour; four sections and [PAUSE], [LOOK UP], [SMILE] and [SLIDE 2] cues, plus a [NOTE: ...].
+- **Lecture opener** ("Welcome to Environmental Science") - about two minutes, five sections, Finger Lakes flavour, with [PAUSE 3s] timed holds, **bold** stress, slide cues and a [NOTE: ...] to yourself.
+- **Where to find them:** Samples on the splash (where "Try the sample" was), a new book button in the top bar beside Paste, and a button in Help > Getting started.
+- **Your work is safe:** if the editor has unsaved changes, opening a sample asks first, the same way New and Open do. A sample opens unsaved, like a new script.
+
 ## 0.6.0 - 2026-10-31 - Prompt and Record are one
 
 Dave: "the Prompt and Record feature should be rolled into one; they are both prompting - it's just that the recording has more options." The camera lab's features now live in the prompter, and the top bar's Record button (which opened the lab in a new tab) is gone.
