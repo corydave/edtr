@@ -2,6 +2,12 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.27.1 - 2026-11-22 - Circles start where you started
+
+- **Circle it:** the smooth circle now opens and closes **about where you started your loop**, and goes round **the same way you drew it** (clockwise or anticlockwise), instead of always starting low on the left and going clockwise.
+  - When you let go, `placeRing()` turns the loop's first point into an angle round the fitted oval (`ringStart`, before the oval's lean is applied) and works out which way you went from the "shoelace" sum of the points (`ringDir`: 1 clockwise, -1 anticlockwise on screen). `drawRing()` starts there and goes that way.
+  - Circles from 1.27.0, and ones dropped with a click or Enter, keep the old start (low on the left, clockwise). Both values are checked when a project is opened.
+
 ## 1.27.0 - 2026-11-20 - Circle it
 
 - **Circle it**, a new annotation tool (rail, under the Sticky note; shortcut **I**). Draw a loop round anything - it does not need to be neat - and while you draw, the line follows the pointer exactly. When you let go it **snaps into a smooth oval**:

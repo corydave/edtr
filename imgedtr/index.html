@@ -1479,7 +1479,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
    ----------------------------------------------------------------------- */
 
 // Bump this for every release. The service worker uses it to refresh its cache.
-const APP_VERSION = '1.27.0';
+const APP_VERSION = '1.27.1';
 
 // Short changelog shown in the Info panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1534,6 +1534,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.27.1', date: '2026-11-22', notes: [
+    'Circle it: the smooth circle now starts and ends about where you started your loop, and goes round the same way you drew it, instead of always opening low on the left.'
+  ] },
   { version: '1.27.0', date: '2026-11-20', notes: [
     'Circle it: a new tool (I) under the Sticky note. Draw a loop round anything, as wobbly as you like, and when you let go it turns into a smooth marker oval - see-through red to start, any colour you like. It leans the way you drew it (unless it was nearly level), and its end runs a little past the start, like a circle drawn with a marker. Turn off Hand-drawn end for a plain closed oval.'
   ] },
@@ -7403,8 +7406,12 @@ $('cropH').addEventListener('change', cropSizeTyped);
    and tall it is, and how much it leans - and the layer becomes that smooth
    oval: an ordinary box layer (x, y, w, h, rotation) that moves, resizes
    and turns like a shape. drawRing() then draws it like a marker:
-     tail on  - starting low on the left, once round, and on a little past the
-                start, curling just inside it (like the circle a teacher draws).
+     tail on  - starting where YOUR loop started and going round the same way
+                you went (1.27.1), once round, and on a little past the start,
+                curling just inside it (like the circle a teacher draws).
+                layer.ringStart = where it starts, as an angle round the oval
+                (radians, measured before the oval's lean); layer.ringDir =
+                1 for clockwise on screen, -1 for anticlockwise.
      tail off - a plain, closed oval.                                       */
 
 /** How far the hand-drawn loop reaches outside its oval (it starts 3.5% out and ends 3.5% in). */
@@ -7461,6 +7468,19 @@ function placeRing(L, raw, start) {
     return;
   }
   const f = fitOval(raw);
+  // Where did the loop start? Turn the first point into an angle round the
+  // fitted oval: undo the oval's lean, then squash the oval into a circle
+  // (divide by the half-width and half-height) so atan2 gives a fair angle.
+  const lean = f.angle * Math.PI / 180;
+  const dx = raw[0][0] - f.cx, dy = raw[0][1] - f.cy;
+  const u = dx * Math.cos(lean) + dy * Math.sin(lean);
+  const v = -dx * Math.sin(lean) + dy * Math.cos(lean);
+  L.ringStart = Math.round(Math.atan2(v / Math.max(1, f.b), u / Math.max(1, f.a)) * 1000) / 1000;
+  // Which way round did it go? The "shoelace" sum of the loop's points is
+  // positive for clockwise on screen (y points down) and negative for anticlockwise.
+  let turn = 0;
+  for (let i = 1; i < raw.length; i++) turn += raw[i - 1][0] * raw[i][1] - raw[i][0] * raw[i - 1][1];
+  L.ringDir = turn < 0 ? -1 : 1;
   // The box holds the oval plus half the line on each side, plus room for the hand-drawn wobble.
   const grow = 1 + RING_WOBBLE;
   L.w = Math.max(8, f.a * 2 * grow + L.strokeWidth);
@@ -7492,19 +7512,23 @@ function drawRing(ctx, L) {
   // 3.5% outside the oval to 3.5% inside), so the end slides inside the start.
   const rx = Math.max(0.5, (L.w / 2 - half) / (1 + RING_WOBBLE));
   const ry = Math.max(0.5, (L.h / 2 - half) / (1 + RING_WOBBLE));
-  const begin = Math.PI * 0.72;                    // low on the left (y points down on a canvas)
+  // Start where the loop was started and go the same way round. (Older
+  // circles, and ones dropped with a click, start low on the left, clockwise.)
+  const begin = Number.isFinite(L.ringStart) ? L.ringStart : Math.PI * 0.72;
+  const dir = L.ringDir === -1 ? -1 : 1;
   const extra = 0.6;                               // how far past the start it carries on (radians)
   const total = Math.PI * 2 + extra;
-  const point = (t) => {
-    const k = 1 + RING_WOBBLE - 2 * RING_WOBBLE * ((t - begin) / total);
-    return [cx + Math.cos(t) * rx * k, cy + Math.sin(t) * ry * k];
+  const point = (t) => {                           // t = how far round so far (0 .. total)
+    const k = 1 + RING_WOBBLE - 2 * RING_WOBBLE * (t / total);
+    const a = begin + dir * t;
+    return [cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k];
   };
   // One smooth line, made of many short steps. (One line, not two: a
   // see-through line drawn twice would leave a darker blob where they join.)
   const steps = Math.ceil(total * 40);
   ctx.beginPath();
   for (let i = 0; i <= steps; i++) {
-    const [x, y] = point(begin + total * (i / steps));
+    const [x, y] = point(total * (i / steps));
     i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
   }
   ctx.stroke();
@@ -9175,6 +9199,9 @@ function validateProject(data) {
       delete L.draft;                              // only ever there while drawing
       L.strokeWidth = num(L.strokeWidth) ? clamp(L.strokeWidth, 1, 200) : 10;
       L.tail = L.tail !== false;
+      // Where the hand-drawn loop starts and which way it goes (1.27.1); anything odd: the old default.
+      if (L.ringStart !== undefined && !(num(L.ringStart) && Math.abs(L.ringStart) <= 7)) delete L.ringStart;
+      if (L.ringDir !== undefined && L.ringDir !== 1 && L.ringDir !== -1) delete L.ringDir;
       if (!HEX.test(L.stroke || '')) L.stroke = '#dc2626';
     }
     if (L.type === 'redact') L.block = Math.max(REDACT_MIN_BLOCK, num(L.block) ? L.block : 16);
