@@ -17,6 +17,15 @@ build puts inside it live in `vendor/`.
 Releases before 1.4 went out without notes. Rather than guess at them, this
 file starts at 1.4.
 
+## 1.27 - 2026-11-22 - Double-click a tool to keep it on
+
+- Double-click (or double-tap) a tool and it stays on for as many as you like - a little padlock shows in the corner of its button, and its tooltip says "(locked - Esc to stop)". Works for Text, Red X, Checkmark, Shapes, Form fields, Highlight, Sticky note, Today's date, Cursor, Spotlight, Magnifier and Redact.
+- From the keyboard: press a tool's letter twice quickly (T, S, D, C, M), or Shift+its letter, or Enter/Space twice on a focused tool button. In the Shapes, Form field and Highlight menus, Shift+click an item (or Enter twice from the rail button) to pick it and keep it on. Double-clicking Shapes, Form field or Highlight keeps the one shown on the button (the last one used).
+- Esc, Select, or any other tool ends the lock and goes back to Select. One more click on the locked tool also unlocks it and goes back to Select.
+- One click still uses a tool once and goes back to Select, the same as before - nothing changes for single clicks. Settings > Keep tool after placing still works as it did; the lock is just for now and is not remembered.
+- Left out on purpose: Select, Picture (opens a file chooser), Signature (opens a panel) and Step number (already always stays on).
+- The same "double-click to lock" rule is coming to every app in the family. Code: `lockTool()`, `unlockTool()`, `syncToolLock()` and a capture-phase click watcher on the rail, next to `setActiveTool()`.
+
 ## 1.26 - 2026-11-20 - Samples to practise on
 
 - Samples: three ready-made PDFs to practise on - a field trip permission form to fill in and sign, a three-page course syllabus (with two pages out of order, to fix) and a certificate of completion to type a name on, sign and stamp. Find them on the start screen (the new Samples button) and in Help > Features (Open a sample).

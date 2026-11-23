@@ -1626,6 +1626,29 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     }
     .rail .tb-btn.active:hover, .rail .tb-btn[aria-pressed="true"]:hover { background: var(--amber); filter: brightness(1.12); }
     .rail .tb-btn:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+    /* Locked tools (1.27): double-click (or double-tap) a tool and it stays on.
+       A double tap must not zoom the page, so the rail buttons skip the
+       browser's double-tap zoom. */
+    .rail .tb-btn { touch-action: manipulation; }
+    /* The lock badge: a tiny padlock in the top-right corner of the locked
+       button. It sits on a round chip in the panel colour with an app-colour
+       ring, so it shows on the filled (pressed) button in light and dark mode,
+       and its shape (not just its colour) says "locked". */
+    .rail .tb-btn.locked::after {
+      content: ''; position: absolute; top: -4px; right: -4px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background-color: var(--panel); border: 1.5px solid var(--amber);
+      box-sizing: border-box; pointer-events: none;
+      /* The padlock itself is drawn with a small picture, in the app colour. */
+      background-image: var(--lock-badge);
+      background-repeat: no-repeat; background-position: center; background-size: 10px 10px;
+    }
+    /* The padlock picture, once per theme so it is always the app colour. */
+    :root { --lock-badge: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a1c5c' stroke-width='3' stroke-linecap='round'%3E%3Crect x='4' y='11' width='16' height='11' rx='2' fill='%238a1c5c'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E"); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --lock-badge: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f4b3d8' stroke-width='3' stroke-linecap='round'%3E%3Crect x='4' y='11' width='16' height='11' rx='2' fill='%23f4b3d8'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E"); }
+    }
+    :root[data-theme="dark"] { --lock-badge: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f4b3d8' stroke-width='3' stroke-linecap='round'%3E%3Crect x='4' y='11' width='16' height='11' rx='2' fill='%23f4b3d8'/%3E%3Cpath d='M8 11V7a4 4 0 0 1 8 0v4'/%3E%3C/svg%3E"); }
     /* The two grading marks keep their red and green, so they are easy to
        tell apart at a glance - except when chosen, when they turn white
        (or dark, in dark mode) on the app colour like every other tool. */
@@ -2391,7 +2414,9 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
         <tr><td><kbd>C</kbd></td><td>Cursor stamp</td></tr>
         <tr><td><kbd>M</kbd></td><td>Magnifier</td></tr>
         <tr><td>Scroll over the page thumbnails</td><td>Next / previous page (scrolling past the bottom of a page does too - see Settings)</td></tr>
-        <tr><td><kbd>Enter</kbd></td><td>With a tool picked, place it in the middle of the page (no mouse needed)</td></tr>
+        <tr><td>Double-click a tool (or press its key twice, or <kbd>Shift</kbd>+its key)</td><td>Keep the tool on for as many as you like - a padlock shows on it. <kbd>Esc</kbd>, or one more click on it, goes back to the pointer. One click uses a tool once</td></tr>
+        <tr><td><kbd>Shift</kbd>+click a shape, field or colour</td><td>Pick it from its menu and keep it on</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>With a tool picked, place it in the middle of the page (no mouse needed). <kbd>Enter</kbd> twice quickly on a tool button keeps it on</td></tr>
         <tr><td><kbd>Esc</kbd></td><td>Step back one level: stop editing, then deselect, then back to the Select tool</td></tr>
         <tr><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd> <kbd>&uarr;</kbd> <kbd>&darr;</kbd></td><td>Something selected: nudge it 1 pt (hold <kbd>Shift</kbd> for 10 pt). Nothing selected: previous / next page</td></tr>
         <tr><td><kbd>Delete</kbd></td><td>Remove the selected element</td></tr>
@@ -2489,7 +2514,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
         <label for="set-keep">Keep tool after placing</label>
         <input type="checkbox" id="set-keep" aria-describedby="set-keep-hint">
       </div>
-      <p class="hint" id="set-keep-hint">On: after you place a red X, a checkmark, a highlight, a shape or a form field, the same tool stays ready for the next one - handy for marking a whole page. Off: PDFEDTR goes back to Select, so you can adjust what you just placed. Step numbers always stay ready, since they usually come several in a row.</p>
+      <p class="hint" id="set-keep-hint">On: after you place a red X, a checkmark, a highlight, a shape or a form field, the same tool stays ready for the next one - handy for marking a whole page. Off: PDFEDTR goes back to Select, so you can adjust what you just placed. Step numbers always stay ready, since they usually come several in a row. Just for now, without changing this: double-click any tool to keep it on.</p>
     </div>
     <div class="dlg-foot"><button class="btn btn-primary" value="ok">Done</button></div>
   </form>
@@ -6390,6 +6415,7 @@ function beginPlacement(type, extra = {}) {
       (type === 'shape' && shapeName ? ' (<kbd>Shift</kbd> keeps its shape)' : '') + '. ' +
       `<kbd>Enter</kbd> centres it · <kbd>Esc</kbd> cancels`;
   dom.placementHint.hidden = false;
+  addLockHint();                 // locked tools (1.27) say so
 }
 
 /** Disarm the current tool and put everything back to normal. */
@@ -6522,10 +6548,18 @@ function handlePlacementPointerDown(e) {
     // in a row), whatever the setting: Esc, Select or another tool ends it.
     // Text, notes, dates and pictures always go back to Select, because the
     // next thing you want to do is type in them or adjust them.
-    const again = keepsTool(type) ? { type, extra, tool: state.activeTool } : null;
+    // A locked tool (1.27) also stays armed. (If Esc was pressed mid-drag,
+    // nothing is armed any more, so the lock has already ended.)
+    const lockedId = state.pendingPlacement ? state.lockedTool : null;
+    const again = (keepsTool(type) || lockedId)
+      ? { type, extra: (state.pendingPlacement || {}).extra || extra, tool: state.activeTool } : null;
     cancelPlacement();
     createOverlay(type, extra, rect);
-    if (again) { setActiveTool(again.tool); beginPlacement(again.type, again.extra); }
+    if (again) {
+      if (lockedId) state.lockedTool = lockedId;   // cancelPlacement ended it; put it back
+      setActiveTool(again.tool);
+      beginPlacement(again.type, again.extra);
+    }
   };
 
   document.addEventListener('pointermove', onMove);
@@ -6541,9 +6575,13 @@ function keepsTool(type) {
 function placePendingAtCenter() {
   if (!state.pendingPlacement) return;
   const { type, extra } = state.pendingPlacement, tool = state.activeTool;
+  const lockedId = state.lockedTool;               // locked tools (1.27) stay armed too
   cancelPlacement();
   addOverlayAtCenter(type, extra);
-  if (keepsTool(type)) { setActiveTool(tool); beginPlacement(type, extra); }
+  if (keepsTool(type) || lockedId) {
+    if (lockedId) state.lockedTool = lockedId;
+    setActiveTool(tool); beginPlacement(type, extra);
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -8315,6 +8353,155 @@ function setActiveTool(id) {
     b.classList.toggle('active', b.id === id);
     b.setAttribute('aria-pressed', String(b.id === id));
   });
+  // Locked tools (1.27): picking any other tool (or going back to Select)
+  // ends the lock. Picking the locked tool itself again keeps it.
+  if (state.lockedTool && state.lockedTool !== id) state.lockedTool = null;
+  syncToolLock();
+}
+
+/* ══════════════════════════════════════════
+   LOCKED TOOLS (1.27) - "double-click a tool to keep it on"
+   ──────────────────────────────────────────
+   The same rule across the EDTR family (the PowerPoint / Publisher way):
+     • One click on a tool: use it ONCE, then back to Select. (PDFEDTR
+       already worked this way, so single clicks are unchanged.)
+     • Double-click (or double-tap, or its key twice, or Shift+its key, or
+       Enter/Space twice on the focused button): LOCK it - it stays on for
+       as many as you like. A padlock badge shows on the button.
+     • Esc, Select, or another tool: the lock ends, back to Select.
+       One more click on the locked tool also unlocks it and goes back to
+       Select.
+   Only the tools that make one thing each can lock. Left out on purpose:
+     Select (it IS the pointer), Picture (opens a file chooser), Signature
+     (opens a panel), and Step number (it already always stays on).
+   Nothing is remembered: a lock is for now only.
+══════════════════════════════════════════ */
+
+/** The tools that can be locked, with the name used in messages. */
+const LOCKABLE_TOOLS = {
+  'tool-text':      'Text',
+  'tool-highlight': 'Highlighter',
+  'tool-shape':     'Shape',            // replaced by the shape's own name below
+  'tool-sticky':    'Sticky note',
+  'tool-xmark':     'Red X',
+  'tool-check':     'Checkmark',
+  'tool-date':      "Today's date",
+  'tool-cursor':    'Cursor stamp',
+  'tool-spotlight': 'Spotlight',
+  'tool-magnifier': 'Magnifier',
+  'tool-redact':    'Redact',
+  'tool-field':     'Form field',
+};
+/** How quickly the second click or key press must come to count as a double (ms). */
+const LOCK_DOUBLE_MS = 400;
+let lastToolTap = null;      // { id, t }: the last rail button pressed, and when
+let lockBypass = false;      // true while lockTool() presses a button itself
+
+/** The friendly name of a lockable tool ("Rectangle", "Text", ...). */
+function lockToolName(id) {
+  if (id === 'tool-shape') {
+    const def = SHAPE_BY_KEY[state.currentShapeType];
+    if (def) return def.label.replace(/ \(.*\)$/, '');
+  }
+  return LOCKABLE_TOOLS[id] || 'Tool';
+}
+
+/** Show the lock on the rail: the badge, plus "(locked - Esc to stop)" in the button's label and tooltip. */
+function syncToolLock() {
+  document.querySelectorAll('.rail .tb-btn').forEach(b => {
+    const locked = b.id === state.lockedTool;
+    b.classList.toggle('locked', locked);
+    if (locked && b.dataset.unlockedLabel === undefined) {
+      // Keep the normal words, to put back when the lock ends.
+      b.dataset.unlockedLabel = b.getAttribute('aria-label') || '';
+      b.dataset.unlockedTip = b.dataset.tip || '';
+      const words = lockToolName(b.id) + ' (locked - Esc to stop)';
+      b.setAttribute('aria-label', words);
+      b.dataset.tip = words;
+    } else if (!locked && b.dataset.unlockedLabel !== undefined) {
+      b.setAttribute('aria-label', b.dataset.unlockedLabel);
+      b.dataset.tip = b.dataset.unlockedTip;
+      delete b.dataset.unlockedLabel;
+      delete b.dataset.unlockedTip;
+    }
+  });
+}
+
+/** Add "Locked" to the placement hint while a locked tool is armed. */
+function addLockHint() {
+  if (!state.lockedTool || !state.pendingPlacement) return;
+  // Built from fixed words only, never from the PDF.
+  dom.placementHint.innerHTML += ' · <strong>Locked</strong>: it stays on for the next one - <kbd>Esc</kbd> goes back to Select';
+}
+
+/** Lock a tool: arm it (if it is not armed already) and keep it on after each use. */
+function lockTool(id) {
+  if (!LOCKABLE_TOOLS[id]) return;
+  if (!state.pdfJsDoc) { toast('Load a PDF first.', 'err'); return; }
+  closeAllMenus();
+  // The three tools with a menu lock what they last used: the current
+  // shape, form field kind or highlight colour (the one shown on the button).
+  if (id === 'tool-shape' || id === 'tool-field' || id === 'tool-highlight') {
+    setActiveTool(id);
+    if (id === 'tool-shape') beginPlacement('shape', { shapeType: state.currentShapeType });
+    if (id === 'tool-field') beginPlacement('field', { fieldType: state.currentFieldType });
+    if (id === 'tool-highlight') beginPlacement('highlight', { color: state.currentHighlightColor });
+  } else if (!(state.pendingPlacement && state.activeTool === id)) {
+    // Not armed yet (say, Shift+T): press the button the ordinary way first.
+    lockBypass = true;
+    document.getElementById(id).click();
+    lockBypass = false;
+  }
+  if (!state.pendingPlacement || state.activeTool !== id) return;   // it did not arm
+  state.lockedTool = id;
+  syncToolLock();
+  addLockHint();
+  // The toast is a polite live region, so screen readers hear this too.
+  toast(lockToolName(id) + ' locked. Press Esc to go back to the pointer.');
+}
+
+/** End a lock and go back to Select. */
+function unlockTool() {
+  const name = lockToolName(state.lockedTool);
+  closeAllMenus();
+  cancelPlacement();             // back to Select, which also ends the lock
+  toast(name + ' unlocked - back to Select.');
+}
+
+/* Watch every press on the rail BEFORE the button's own click code runs
+   (capture), to spot doubles: two presses of the same tool within
+   LOCK_DOUBLE_MS. Mouse double-clicks, double-taps, Enter/Space twice and
+   a shortcut key twice (they all press the button) end up here. */
+document.querySelector('.toolbar.rail').addEventListener('click', e => {
+  if (lockBypass) return;
+  const btn = e.target.closest('.tb-btn');
+  if (!btn || !LOCKABLE_TOOLS[btn.id]) { lastToolTap = null; return; }
+  const now = performance.now();
+  const quick = lastToolTap && lastToolTap.id === btn.id && now - lastToolTap.t < LOCK_DOUBLE_MS;
+  if (quick) {
+    // The second press: lock, instead of running the click again (which,
+    // for Shapes, Form field and Highlight, would close their menu again).
+    e.preventDefault(); e.stopImmediatePropagation();
+    lastToolTap = null;
+    lockTool(btn.id);
+    return;
+  }
+  lastToolTap = { id: btn.id, t: now };
+  if (state.lockedTool === btn.id) {
+    // One more click on the locked tool: unlock, back to Select.
+    // (A quick second click straight after locks it again.)
+    e.preventDefault(); e.stopImmediatePropagation();
+    unlockTool();
+  }
+}, true);
+
+/** For the menus (Shapes, Form field, Highlight): does picking this item lock it?
+    Yes with Shift held, or when the keyboard picked it straight after opening
+    the menu (Enter twice on the rail button). */
+function menuPickLocks(e, railId) {
+  if (e.shiftKey) return true;
+  return e.detail === 0 && !!lastToolTap && lastToolTap.id === railId &&
+         performance.now() - lastToolTap.t < LOCK_DOUBLE_MS;
 }
 
 /** Update the shape button's icon to reflect the current shape type */
@@ -9013,7 +9200,10 @@ function buildShapesPanel() {
     b.setAttribute('aria-label', sh.label);
     b.setAttribute('aria-pressed', String(sh.key === state.currentShapeType));
     b.innerHTML = shapeIconSvg(sh.key);        // a fixed drawing from SHAPES, never outside data
-    b.addEventListener('click', () => pickShape(sh.key));
+    b.addEventListener('click', e => {
+      pickShape(sh.key);
+      if (menuPickLocks(e, 'tool-shape')) lockTool('tool-shape');   // 1.27
+    });
     grid.append(b);
   }
 }
@@ -9107,6 +9297,8 @@ dom.fieldMenu.querySelectorAll('.fm-item').forEach(item => {
     setActiveTool('tool-field');
     beginPlacement('field', { fieldType: state.currentFieldType });
   });
+  // Locked tools (1.27): Shift+pick, or Enter twice from the rail, locks it.
+  item.addEventListener('click', e => { if (menuPickLocks(e, 'tool-field')) lockTool('tool-field'); });
 });
 
 /* ── Highlight tool: click opens colour picker ── */
@@ -9130,6 +9322,8 @@ dom.highlightMenu.querySelectorAll('.hl-swatch').forEach(swatch => {
     setActiveTool('tool-highlight');
     beginPlacement('highlight', { color });
   });
+  // Locked tools (1.27): Shift+pick, or Enter twice from the rail, locks it.
+  swatch.addEventListener('click', e => { if (menuPickLocks(e, 'tool-highlight')) lockTool('tool-highlight'); });
 });
 
 /* ── Sticky note tool ── */
@@ -11228,7 +11422,7 @@ if (suiteInStudio()) {
    VERSION, CHANGELOG AND THE HELP PANEL
 ══════════════════════════════════════════ */
 // Bump this for every release. It is shown beside the wordmark and in Help.
-const APP_VERSION = '1.26';
+const APP_VERSION = '1.27';
 
 /* Short changelog for the Changelog tab, newest first. The long form is
    CHANGELOG.md beside this file - add each release to both. Releases before
@@ -11299,6 +11493,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '1.27', date: '2026-11-22', notes: [
+    'Double-click a tool to keep it on: double-click (or double-tap) Text, a red X, a checkmark, a shape, a form field, a highlight, a sticky note, today\'s date, a cursor, a spotlight, a magnifier or a redaction, and it stays on for as many as you like - a little padlock shows on the button. Press its key twice (or Shift+its key) to do the same. Esc, or one more click on it, goes back to Select. One click still uses a tool once, the same as before. The same in every app in the family.'
+  ] },
   { version: '1.26', date: '2026-11-20', notes: [
     'Samples: three ready-made PDFs to practise on - a field trip permission form to fill in and sign, a three-page course syllabus (with two pages out of order, to fix) and a certificate of completion to type a name on, sign and stamp. Find them on the start screen and in Help > Features. PDFEDTR makes each one itself, right in your browser, so they work offline too, and each opens as a new, unsaved PDF.'
   ] },
@@ -12123,6 +12320,7 @@ document.addEventListener('keydown', e => {
    *   live editing → styling bar → name panel (if that's what was open) → nothing selected.
    */
   if (e.key === 'Escape') {
+    if (state.pendingPlacement && state.lockedTool) { e.preventDefault(); unlockTool(); return; }   // 1.27
     if (state.pendingPlacement) { e.preventDefault(); cancelPlacement(); toast('Placement cancelled.'); return; }
     if (state.selectedId && state.editingLive) { e.preventDefault(); stopEditingLive(); return; }
     if (state.selectedId && state.selectMode === 'object') {
@@ -12141,11 +12339,26 @@ document.addEventListener('keydown', e => {
 
   /* While a tool is armed, Enter drops it in the middle of the page.
      This is the keyboard-only route to placing an element. */
+  // Locked tools (1.27): Enter twice quickly on the focused rail button
+  // locks it, rather than dropping the first one in the middle of the page.
+  const focusedTool = document.activeElement && document.activeElement.closest &&
+                      document.activeElement.closest('.rail .tb-btn');
+  if (e.key === 'Enter' && focusedTool && LOCKABLE_TOOLS[focusedTool.id] && lastToolTap &&
+      lastToolTap.id === focusedTool.id && performance.now() - lastToolTap.t < LOCK_DOUBLE_MS) {
+    e.preventDefault(); lastToolTap = null; lockTool(focusedTool.id); return;
+  }
   if (state.pendingPlacement && e.key === 'Enter') { e.preventDefault(); placePendingAtCenter(); return; }
 
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (state.selectedId) { removeOverlay(state.selectedId); }
   }
+  // Locked tools (1.27): Shift + a tool's letter locks that tool straight away.
+  // (Pressing the letter twice quickly locks it too - see the rail's click watcher.)
+  if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat && state.pdfJsDoc) {
+    const lockId = { T: 'tool-text', S: 'tool-sticky', D: 'tool-date', C: 'tool-cursor', M: 'tool-magnifier' }[e.key.toUpperCase()];
+    if (lockId) { e.preventDefault(); lockTool(lockId); return; }
+  }
+  if (e.repeat && /^[tsdncm]$/i.test(e.key)) return;   // holding a letter down is not "twice"
   if (e.key === 't' || e.key === 'T') { if (state.pdfJsDoc) dom.toolText.click(); }
   if (e.key === 's' || e.key === 'S') { if (state.pdfJsDoc) dom.toolSticky.click(); }
   if (e.key === 'd' || e.key === 'D') { if (state.pdfJsDoc) dom.toolDate.click(); }
