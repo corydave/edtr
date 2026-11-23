@@ -1,5 +1,12 @@
 # DSKEDTR changelog
 
+## 0.49.0 - 2026-11-22 - Double-click a tool to lock it
+
+- **Double-click a tool to lock it**, the same as the rest of the EDTR suite. One click on Text box, Line, Picture, Table or a shape still makes one thing and goes back to the pointer. Double-click (or double-tap) the tool, press its key twice quickly, or Shift + its key, and it stays on so you can make as many as you like in a row. A small padlock shows on its button. Escape, or clicking the tool again, goes back to the pointer; picking another tool ends the lock.
+- **In the Shapes gallery**, double-click a shape (or Shift + click it, or press Enter twice) to lock it. R, O and P work twice too.
+- With Text box or Table locked, a click away from the one you are typing in makes the next one there. Escape while typing still just stops typing (and ends the lock).
+- Select and Reading order already stay on, so a double-click does nothing extra for them. A lock is never remembered for next time.
+
 ## 0.48.1 - 2026-11-17
 
 - **Adding points is easier to find.** While a polygon's points are being changed, a small round + sits halfway along each edge (click or tap it, or anywhere on the edge, for a new point there), the pointer becomes an arrow with a + over an edge and a move pointer over a point, and the floating pill has **Add point** (after the picked point, halfway to the next), beside Delete point and Done.

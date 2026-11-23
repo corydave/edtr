@@ -257,6 +257,18 @@ input[type="number"].num-active { outline: 3px solid var(--accent); outline-offs
 .rail .has-flyout { position: relative; }
 .rail .has-flyout::after { content: ""; position: absolute; right: 4px; bottom: 4px; width: 0; height: 0;
   border-style: solid; border-width: 0 0 5px 5px; border-color: transparent transparent currentColor transparent; opacity: .75; }
+/* A LOCKED tool (0.49.0: double-click a tool, or press its key twice, to keep it on).
+   The button looks pressed as usual, plus a tiny padlock in its top-right corner:
+   a round badge in the panel colour with an accent outline and an accent padlock,
+   so it shows on the teal pressed button in light AND dark mode (and it is a
+   shape, not just a colour). The span is added by showToolLock() and hidden
+   from screen readers - they hear "(locked - Esc to stop)" in the button's name. */
+.rail .icon-btn { position: relative; touch-action: manipulation; }   /* manipulation: a double-tap never zooms the page */
+.shape-choice { touch-action: manipulation; }
+.rail .lock-badge { display: none; position: absolute; top: -4px; right: -4px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--panel); border: 1.5px solid var(--accent-text); color: var(--accent-text); place-items: center; pointer-events: none; }
+.rail .icon-btn.tool-locked .lock-badge { display: grid; }
+.rail .lock-badge svg { width: 10px; height: 10px; stroke-width: 2.6; }
 
 /* The scrolling desk with the page on it. */
 .desk { overflow: auto; position: relative; outline: none; grid-column: 2; grid-row: 3; }
@@ -2626,7 +2638,7 @@ var paper=function(u,j){var T=(u=u||require("./node/self.js")).window,_=u.docume
 /* ======================================================================
    1. BASICS
    ====================================================================== */
-const APP_VERSION = '0.48.1';
+const APP_VERSION = '0.49.0';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const PX_PER_PT = 96 / 72;          // CSS pixels in one printer's point
 const PT_PER_IN = 72;               // points in an inch
@@ -8441,7 +8453,7 @@ function createObject(type, r) {
     announce('New table: 3 rows and 3 columns, the first row a header row. Type in the first cell; Tab goes to the next cell. Rows and columns are in the Inspector\'s Table section.');
   } else {
     selectObjects([id]);
-    setTool('select');
+    toolDone();                                      // back to the pointer, unless the tool is locked (0.49.0)
     relayoutAndRender();
     announce(o.name + ' added. It is decoration until you give it alt text.');
   }
@@ -10163,7 +10175,7 @@ async function addPictureFiles(files, target) {
     }
   }
   reindex();
-  setTool('select');
+  toolDone();                                        // back to the pointer, unless the Picture tool is locked (0.49.0)
   selectObjects(added.map((o) => o.id));
   relayoutAndRender();
   updateInspector();
@@ -10873,7 +10885,7 @@ function createShape(key, r) {
   o.x = r.x; o.y = r.y; o.w = Math.max(r.w, 1); o.h = Math.max(r.h, 1);
   pageObjs().push(o);
   reindex();
-  setTool('select');
+  toolDone();                                        // back to the pointer, unless the tool is locked (0.49.0)
   selectObjects([o.id]);
   relayoutAndRender();
   updateInspector();
@@ -10898,8 +10910,9 @@ function createShapeLine(key, seg) {
 function showShapeButton() {
   const b = $('shapeToolBtn');
   const drawing = (tool === 'rect' || tool === 'ellipse' || tool === 'polygon' || tool === 'shape') ? galleryDef(galleryChoice()).label : '';
-  b.setAttribute('aria-label', drawing ? 'Shapes: drawing ' + drawing : 'Shapes');
-  b.title = (drawing ? 'Shapes: drawing ' + drawing + '. ' : 'Shapes: ') + 'Click for all shapes (U)';
+  const locked = drawing && SHAPE_TOOLS.includes(lockedTool) ? ' (locked - Esc to stop)' : '';   // (0.49.0)
+  b.setAttribute('aria-label', drawing ? 'Shapes: drawing ' + drawing + locked : 'Shapes');
+  b.title = (drawing ? 'Shapes: drawing ' + drawing + locked + '. ' : 'Shapes: ') + 'Click for all shapes (U)';
 }
 /* ======================================================================
    POLYGONS (0.48.0)
@@ -11026,7 +11039,7 @@ function finishPolygon(closed) {
   setPolyPoints(o, d.pts);
   pageObjs().push(o);
   reindex();
-  setTool('select');
+  toolDone();                                        // back to the pointer, unless the Polygon tool is locked (0.49.0)
   selectObjects([o.id]);
   relayoutAndRender();
   announce(o.name + ' added, ' + d.pts.length + ' corners, ' + (closed ? 'closed' : 'open (it still fills)') + '. Double-click it or press Enter to change its points. It is decoration until you give it alt text.');
@@ -11291,7 +11304,7 @@ function shapeButton(key) {
   const say = () => setText('shapeName', def.label);
   b.addEventListener('focus', say);
   b.addEventListener('mouseenter', say);
-  b.addEventListener('click', () => {
+  b.addEventListener('click', (e) => {
     if (galleryFor === 'frame') {                     // picking a picture frame's shape (Picture section)
       const o = selectedIds.length === 1 ? obj(selectedIds[0]) : null;
       $('shapePop').hidePopover();
@@ -11300,9 +11313,15 @@ function shapeButton(key) {
       return;
     }
     $('shapePop').hidePopover();
+    // Locking (0.49.0): a new pick ends any lock. Shift + click locks this shape straight
+    // away; a second click or tap right after (where the gallery was), or Enter twice, locks it too.
+    if (lockedTool) unlockTool(false);
+    const picked = GALLERY_TOOLS[key] ? key : 'shape';
+    shapePick = { t: picked, at: performance.now(), x: e.detail ? e.clientX : null, y: e.detail ? e.clientY : null };
     if (GALLERY_TOOLS[key]) {                         // Rectangle or Ellipse: their own tools
       setTool(key);
       $('shapeToolBtn').focus();
+      if (e.shiftKey) { shapePick = null; lockTool(key); }
       return;                                         // setTool has said what to do next
     }
     currentShape = key;
@@ -11310,6 +11329,7 @@ function shapeButton(key) {
     setTool('shape');
     $('shapeToolBtn').focus();
     announce(def.label + ': drag on the page to draw it' + (def.line ? '' : ' (Shift keeps it in proportion)') + ', or press Enter on the page for one in the middle.');
+    if (e.shiftKey) { shapePick = null; lockTool('shape'); }
   });
   return b;
 }
@@ -11401,12 +11421,33 @@ function wireShapes() {
   let wasOpen = false;
   $('shapeToolBtn').addEventListener('pointerdown', () => { wasOpen = pop.matches(':popover-open') && galleryFor === 'tool'; });
   $('shapeToolBtn').addEventListener('click', (e) => {
+    // Enter (or Space) again right after picking a shape with Enter: lock that shape (0.49.0).
+    if (shapePick && performance.now() - shapePick.at < DOUBLE_MS) { const t = shapePick.t; shapePick = null; lockTool(t); return; }
     const open = e.detail ? wasOpen : pop.matches(':popover-open') && galleryFor === 'tool';  // e.detail is 0 for Enter or Space
     wasOpen = false;
     if (open) { if (pop.matches(':popover-open')) pop.hidePopover(); return; }
     openShapeGallery('tool', null);
   });
   showShapeButton();
+  // The second half of a double-click (or double-tap) on a gallery shape (0.49.0).
+  // The first click picked the shape and closed the gallery, so the second lands on
+  // whatever was under it - usually the page, where it would draw a shape. Caught
+  // here first (capture phase): near the first click and soon after, it locks the
+  // shape instead, and its click and dblclick are eaten so nothing else happens.
+  document.addEventListener('pointerdown', (e) => {
+    if (!shapePick || shapePick.x === null) return;
+    const soon = performance.now() - shapePick.at < DOUBLE_MS;
+    const near = Math.hypot(e.clientX - shapePick.x, e.clientY - shapePick.y) < 30;
+    if (!soon || !near) { shapePick = null; return; }
+    const t = shapePick.t;
+    shapePick = null;
+    e.preventDefault(); e.stopPropagation();
+    swallowUntil = performance.now() + 600;
+    lockTool(t);
+  }, true);
+  for (const type of ['click', 'dblclick']) {
+    document.addEventListener(type, (e) => { if (performance.now() < swallowUntil) { e.preventDefault(); e.stopPropagation(); if (type === 'dblclick') swallowUntil = 0; } }, true);
+  }
 }
 
 /* ======================================================================
@@ -11651,8 +11692,104 @@ function renderOverlay() {
    ====================================================================== */
 let tool = 'select';                 // select, text, rect, ellipse, line, order
 
+/* ---------- Locking a tool (0.49.0) ----------
+   Dave: "double-click a tool to lock it" - the Publisher / PowerPoint way,
+   the same across the EDTR suite.
+     - ONE click on a tool (or its key once): make one thing, then you are
+       back on the pointer (Select). DSKEDTR's tools already worked that way.
+     - DOUBLE-click (double-tap, the key twice quickly, Shift + the key, or
+       Enter / Space twice on the focused button): the tool is LOCKED and stays
+       on, so you can make as many as you like in a row.
+     - Escape, clicking the locked tool again, or picking another tool ends it.
+   Only tools that make ONE thing can lock. Select and Reading order already
+   stay on, so a double-click does nothing extra for them.
+   A lock is never remembered: it is for now only. */
+const LOCKABLE_TOOLS = ['text', 'line', 'picture', 'table', 'rect', 'ellipse', 'shape', 'polygon'];
+const SHAPE_TOOLS = ['rect', 'ellipse', 'shape', 'polygon'];   // these four live behind the Shapes button
+const DOUBLE_MS = 400;               // two clicks (or key presses) closer than this are a double
+let lockedTool = null;               // the locked tool, or null when nothing is locked
+let lastPick = { t: null, at: 0 };   // the last tool picked by a click or key, and when
+let shapePick = null;                // a shape just picked in the gallery: { t, at, x, y } (for its double-click)
+let swallowUntil = 0;                // the rest of that double-click is eaten until this time
+
+/** The tool's name, as it is read out ("Line", "Rectangle", "Star"...). */
+function lockToolName(t) {
+  if (SHAPE_TOOLS.includes(t)) return galleryDef(galleryChoice()).label.split(':')[0];   // ("Polygon: click each corner" -> "Polygon")
+  return { text: 'Text box', line: 'Line', picture: 'Picture', table: 'Table' }[t] || t;
+}
+/** The rail button that shows a tool (every shape tool shares the Shapes button). */
+function lockButtonFor(t) {
+  return SHAPE_TOOLS.includes(t) ? $('shapeToolBtn') : document.querySelector('.rail [data-tool="' + t + '"]');
+}
+/** Show which tool is locked: the padlock badge, the pressed look, and the button's name and tooltip. */
+function showToolLock() {
+  const buttons = [...document.querySelectorAll('.rail [data-tool]')].filter((b) => LOCKABLE_TOOLS.includes(b.dataset.tool));
+  buttons.push($('shapeToolBtn'));
+  const lockedBtn = lockedTool ? lockButtonFor(lockedTool) : null;
+  for (const b of buttons) {
+    // The badge: made once per button (a tiny padlock: a shackle and a body).
+    if (!b.querySelector('.lock-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'lock-badge';
+      badge.setAttribute('aria-hidden', 'true');
+      badge.innerHTML = '<svg viewBox="0 0 24 24" focusable="false"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><rect x="4.5" y="11" width="15" height="10" rx="2"/></svg>';
+      b.appendChild(badge);
+    }
+    const on = b === lockedBtn;
+    b.classList.toggle('tool-locked', on);
+    if (on) b.setAttribute('aria-pressed', 'true');   // (a locked Table stays pressed while you type in its cells)
+    if (b.id === 'shapeToolBtn') continue;           // its name is written by showShapeButton()
+    // The plain name and tooltip are kept the first time, so the lock words can come and go.
+    if (!b.dataset.baseLabel) { b.dataset.baseLabel = b.getAttribute('aria-label'); b.dataset.baseTitle = b.title; }
+    b.setAttribute('aria-label', b.dataset.baseLabel + (on ? ' (locked - Esc to stop)' : ''));
+    b.title = on ? b.dataset.baseLabel + ' (locked - Esc to stop)' : b.dataset.baseTitle;
+  }
+  showShapeButton();
+}
+/** Lock tool t: it stays on after each thing it makes. */
+function lockTool(t) {
+  if (!LOCKABLE_TOOLS.includes(t)) return;
+  if (tool !== t) setTool(t);
+  lockedTool = t;
+  lastPick = { t: null, at: 0 };                     // so a third quick click is a fresh click (it unlocks)
+  showToolLock();
+  announce(lockToolName(t) + ' locked. Press Esc to go back to the pointer.');
+}
+/** End the lock. toPointer: go back to Select as well. say: tell screen readers. */
+function unlockTool(toPointer, say) {
+  if (!lockedTool) return;
+  const name = lockToolName(lockedTool);
+  lockedTool = null;
+  showToolLock();
+  if (toPointer) setTool('select');
+  if (say) announce(name + ' unlocked. Back to the pointer.');
+}
+/** After a tool has made its one thing: back to the pointer, unless the tool is locked. */
+function toolDone() {
+  if (lockedTool) { if (tool !== lockedTool) setTool(lockedTool); return; }
+  setTool('select');
+}
+/**
+ * A tool picked by the person: a rail button (mouse, touch, Enter or Space) or a
+ * tool key. Two picks of the same tool within DOUBLE_MS lock it; Shift + its key
+ * locks it straight away. The first click has already picked the tool, so the
+ * second one only adds the lock (nothing is done twice).
+ */
+function pickToolFromUser(t, shiftLock) {
+  const now = performance.now();
+  const quick = lastPick.t === t && now - lastPick.at < DOUBLE_MS;
+  lastPick = { t, at: now };
+  if (!LOCKABLE_TOOLS.includes(t)) { if (lockedTool) unlockTool(false); setTool(t); return; }   // Select, Reading order: as before
+  if (shiftLock || quick) { lockTool(t); return; }
+  if (lockedTool === t) { unlockTool(true, true); return; }   // clicking the locked tool once more: unlocked, back to the pointer
+  if (lockedTool) unlockTool(false);                // another tool: the old lock ends, the new tool is one-shot
+  setTool(t);
+}
+
 function setTool(t) {
   if (pageView === 'grid') setPageView(lastPageView);  // a tool works on a page: show it
+  // Any other tool ends a lock (a locked Table switches to typing in its cells, which keeps it).
+  if (lockedTool && t !== lockedTool && !(lockedTool === 'table' && t === 'text')) { lockedTool = null; showToolLock(); }
   if (tool === t) return;
   if (printPreview) setPrintPreview(false);           // picking a tool means you want to edit again
   // Leaving the Polygon tool in the middle of one: three corners or more make it (open); fewer are dropped.
@@ -11664,7 +11801,7 @@ function setTool(t) {
   cancelLinkPick();
   for (const b of document.querySelectorAll('[data-tool]')) b.setAttribute('aria-pressed', String(b.dataset.tool === t));
   $('shapeToolBtn').setAttribute('aria-pressed', String(t === 'shape' || t === 'rect' || t === 'ellipse' || t === 'polygon'));
-  showShapeButton();
+  showToolLock();                                     // (also calls showShapeButton)
   svg.style.cursor = t === 'text' ? 'text' : (t === 'select' || t === 'order') ? '' : 'crosshair';
   if (t === 'order') {
     if (focusedStoryId) inputs[focusedStoryId].blur();
@@ -11997,7 +12134,9 @@ function wirePointer() {
       const was = focusedStoryId || activeStoryId;
       if (focusedStoryId) inputs[focusedStoryId].blur();
       activeStoryId = null;
-      setTool('select');
+      // Locked Text box or Table (0.49.0): stay on it, and this click goes on to make the next one.
+      if (lockedTool === 'text' || lockedTool === 'table') { if (tool !== lockedTool) setTool(lockedTool); }
+      else setTool('select');
       dropFreshBox(was);
     }
 
@@ -12968,7 +13107,7 @@ function finishCreate(d) {
     const o = makePictureObject(r, null, 'rect');
     pageObjs().push(o);
     reindex();
-    setTool('select');
+    toolDone();                                      // back to the pointer, unless the Picture tool is locked (0.49.0)
     selectObjects([o.id]);
     relayoutAndRender();
     announce('Picture frame drawn. Choose a picture for it, or leave it empty as a placeholder.');
@@ -16128,7 +16267,8 @@ function wireChrome() {
   $('zoomIn').addEventListener('click', () => zoomBy(1.25));
   $('zoomOut').addEventListener('click', () => zoomBy(1 / 1.25));
   $('zoomFit').addEventListener('click', zoomToFit);
-  for (const b of document.querySelectorAll('[data-tool]')) b.addEventListener('click', () => setTool(b.dataset.tool));
+  // A rail tool: one click uses it once; two quick clicks (or Enter / Space twice) lock it (0.49.0).
+  for (const b of document.querySelectorAll('[data-tool]')) b.addEventListener('click', () => pickToolFromUser(b.dataset.tool, false));
 
   // Theme: remembered in this browser only (a convenience; failing is fine).
   const root = document.documentElement;
@@ -16199,7 +16339,8 @@ function wireChrome() {
     ['Changing a polygon\u2019s points (double-click it, or Enter)', 'Drag a point; click an edge to add one; Tab / Shift + Tab from point to point, arrow keys move it, Insert adds one, Delete takes it away; Enter or Escape when done'],
     ['E', 'Add an equation: build it, type LaTeX, or write chemistry. Enter or double-click changes a picked one; ' + mod + ' + Enter adds it from anywhere in the dialog'],
     ['Tab, Shift + Tab in a table', 'The next or the cell before, row by row (after the last cell: on to the next story). Escape picks the whole table'],
-    ['Escape', 'Stop typing and pick the box; or drop the selection'],
+    ['Double-click a tool (or press its key twice, or Shift + its key)', 'Keep the tool on, to make several in a row: a small padlock shows on its button. Escape, or clicking the tool again, goes back to the pointer. In the Shapes gallery: double-click a shape, Shift + click it, or press Enter twice. Otherwise a tool makes one thing and goes back to the pointer'],
+    ['Escape', 'Stop typing and pick the box; unlock a locked tool; or drop the selection'],
     ['Double-click a text box', 'Type in it (a table: in the cell clicked)'],
     ['Out-port (the round chain-link tab below a text box’s bottom-right corner)', 'Click or tap it, then an empty box: the text continues there. The Link button in the floating pill does the same'],
     ['Alt + F10', 'Jump to the floating pill of quick actions for what is picked: link, crop, group, arrange, duplicate, copy, paste, delete; while typing in a table, its rows and columns (Left and Right move along it, Escape goes back)'],
@@ -16310,7 +16451,8 @@ function wireChrome() {
     if (mod2 || e.altKey) return;
 
     if (e.key === '?') { e.preventDefault(); openHelp('tabFeatures'); return; }
-    if (TOOL_KEYS[k] && !e.shiftKey) { setTool(TOOL_KEYS[k]); return; }
+    // A tool key: once uses the tool once; twice quickly, or with Shift, locks it (0.49.0). (A held key's repeats are ignored.)
+    if (TOOL_KEYS[k]) { if (!e.repeat) pickToolFromUser(TOOL_KEYS[k], e.shiftKey); return; }
     if (k === 'w' && !e.shiftKey) { setPrintPreview(true); return; }
     if (k === 'u' && !e.shiftKey) { openShapeGallery('tool', null); return; }   // U: the Shapes gallery
     if (k === 'k' && !e.shiftKey) { openBlocks(); return; }                       // K: building blocks
@@ -16320,6 +16462,7 @@ function wireChrome() {
     if (e.key === 'Escape') {
       if (cropId) { endCrop(); return; }
       if (linkFrom) { cancelLinkPick(); announce('Linking cancelled.'); }
+      else if (lockedTool && !drag) unlockTool(true, true);   // a locked tool: unlock, back to the pointer (0.49.0)
       else if (tool === 'order' || tool === 'polygon') setTool('select');
       else if (selectedIds.length) { selectObjects([]); announce('Nothing picked'); }
       return;
@@ -24424,6 +24567,12 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = /*CHANGELOG*/[
+  { version: "0.49.0", date: "2026-11-22", title: "", notes: [
+    "Double-click a tool to lock it, the same as the rest of the EDTR suite. One click on Text box, Line, Picture, Table or a shape still makes one thing and goes back to the pointer. Double-click (or double-tap) the tool, press its key twice quickly, or Shift + its key, and it stays on so you can make as many as you like in a row. A small padlock shows on its button. Escape, or clicking the tool again, goes back to the pointer; picking another tool ends the lock.",
+    "In the Shapes gallery, double-click a shape (or Shift + click it, or press Enter twice) to lock it. R, O and P work twice too.",
+    "With Text box or Table locked, a click away from the one you are typing in makes the next one there. Escape while typing still just stops typing (and ends the lock).",
+    "Select and Reading order already stay on, so a double-click does nothing extra for them. A lock is never remembered for next time."
+  ] },
   { version: "0.48.1", date: "2026-11-17", title: "", notes: [
     "Adding points is easier to find. While a polygon's points are being changed, a small round + sits halfway along each edge (click or tap it, or anywhere on the edge, for a new point there), the pointer becomes an arrow with a + over an edge and a move pointer over a point, and the floating pill has Add point (after the picked point, halfway to the next), beside Delete point and Done.",
     "On an open polygon, adding a point after the last one (Insert, or Add point) puts it halfway along the last edge instead of saying no."
