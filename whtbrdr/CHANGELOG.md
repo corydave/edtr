@@ -1,5 +1,15 @@
 # WHTBRDR - changelog
 
+## 0.9.0 - 2026-11-22 - Double-click a tool to lock it
+
+- **Shape tools now go back to the pointer after one shape; double-click a tool to keep it.** The arrow, line, rectangle, ellipse, text, sticky note, stamp and step number tools are now "one-shot" (the suite's shared lock-tool spec, the Publisher and PowerPoint way): make one, and Select comes back with the new one picked. Before, they stayed on (the old "Stay in this tool" default).
+- **Locking:** double-click (or double-tap) a tool's rail button, press Enter or Space twice on it, press its key twice within 400 ms (A, L, R, O, T, G, N), or Shift and its key, and the tool stays on for as many uses as you like. Its button stays pressed and gets a small padlock badge in the app's rose; its name and tooltip say "(locked - Esc to stop)", the status bar adds "(locked)", and screen readers hear "Rectangle locked. Press Esc to go back to the pointer."
+- **Unlocking:** Escape (after its usual steps: dropping a stroke, putting back a move, letting go of what is picked) unlocks and goes back to Select. Picking another tool ends the lock. One more click on the locked tool unlocks it and goes back to Select.
+- N twice quickly locks the Step tool instead of dropping a second step. J still drops a sticky note in the middle (it starts typing at once, so J can't be pressed twice): double-click the Sticky note button to lock it.
+- The pen, highlighter, eraser and Select stay on as before; double-clicking them does nothing extra. Present mode's tools are unchanged.
+- The Inspector's "Stay in this tool" box made way for a hint about the double-click (`settings.stayInTool` is still read from old settings but no longer used). A lock is never saved.
+- All in the app's own code (section 9: `pickTool`, `lockTool`, `unlockTool`, `backAfterOneUse`, `showLock`). The shared WHTBRDR BAR and SUITE blocks are unchanged, so the extension and SCRNCSTR are untouched.
+
 ## 0.8.1 - 2026-10-30 - A painted splash
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.

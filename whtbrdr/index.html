@@ -495,6 +495,17 @@ body.presenting .toast { bottom: 84px; }                         /* (above the f
 .quick-bar .wb-btn { width: 38px; height: 38px; }
 @media (pointer: coarse) { .quick-bar .wb-btn { width: 44px; height: 44px; } }
 
+/* A LOCKED tool (double-click a tool to keep it on: section 9): the button
+   stays pressed and gets a small padlock badge in its top-right corner. The
+   padlock's shape says "locked", so it isn't shown by color alone. */
+.tool-lock-badge { position: absolute; top: 1px; right: 1px; width: 15px; height: 15px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%; pointer-events: none;
+  background: var(--brand); color: var(--brand-contrast); border: 1.5px solid var(--surface); }
+.tool-lock-badge svg { width: 9px; height: 9px; }
+@media (forced-colors: active) { .tool-lock-badge { forced-color-adjust: none; background: CanvasText; color: Canvas; border-color: Canvas; } }
+/* A quick double-tap on a rail button is a double-click, never a page zoom. */
+#toolRail .wb-btn:not(.wb-grip) { touch-action: manipulation; }
+
 /* A short message over the board (it repeats what screen readers hear). */
 .toast { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 4; margin: 0;
   max-width: calc(100% - 32px); padding: 8px 14px; border-radius: 999px; text-align: center;
@@ -4972,7 +4983,7 @@ function wbMarkAt(items, point, types, slack) {
 
 // The version. Keep this line in exactly this form: the update check
 // (in the shared block and in sw.js) reads it out of the page.
-const APP_VERSION = '0.8.1';
+const APP_VERSION = '0.9.0';
 const APP_ID = 'whtbrdr';
 
 /* =====================================================================
@@ -5185,7 +5196,7 @@ function loadSettings() {
     stepRing: raw.stepRing !== false,
     eraserMode: raw.eraserMode === 'part' ? 'part' : 'whole',                    // whole strokes, or part of a stroke
     keepShape: raw.keepShape !== false,                                          // Inspector: width and height change together
-    stayInTool: raw.stayInTool !== false,
+    stayInTool: raw.stayInTool !== false,         // (no longer used since 0.9.0: double-click a tool to keep it on)
     snap: raw.snap !== false,                                                    // moving and drawing snap to the page and other marks (section 8g)
     alignTo: raw.alignTo === 'page' ? 'page' : 'selection',                      // Line up: to each other, or to the page                                        // after making a shape, text or note, keep the tool (the extension's way)
     font: WB_FONTS.some((f) => f.id === raw.font) ? raw.font : WB_FONTS[0].id,   // for new text: Atkinson Hyperlegible first
@@ -5748,8 +5759,9 @@ function wireBoardPointers() {
     // Typing in a text or note? The first press only finishes the typing
     // (with the Text or Sticky note tool it does nothing else, as in the extension).
     if (editing) {
+      const typedWith = tool;                        // (finishing can send a one-shot tool back to Select)
       finishEdit();
-      if (tool === 'text' || tool === 'jot') { e.preventDefault(); return; }
+      if (typedWith === 'text' || typedWith === 'jot') { e.preventDefault(); return; }
     }
     // (The board takes focus by itself on a press, so keys like Escape reach it.)
     lastBoardPointer = { type: e.pointerType, at: performance.now() };   // (for the right-click menu)
@@ -7156,15 +7168,15 @@ function addItem(it, label) {
   commit(label);
   afterCreate(it);
 }
-/** After making something: stay in the tool (the extension's way, the default), or pick it and go back to Select. */
+/** After making something: back to Select with it picked (one use), or, if the tool is locked, stay in the tool (section 9). */
 function afterCreate(it, pick) {
-  if (pick || !settings.stayInTool) {
-    if (!settings.stayInTool) setTool('select', false);
+  const back = backAfterOneUse();                  // (false while the tool is locked)
+  if (pick || back) {
     setSelection([it.id], false);
   } else {
     renderStatus(); describeBoard();
   }
-  announce(itemWords(it) + ' added' + (pick || !settings.stayInTool ? ', and picked' : ''));
+  announce(itemWords(it) + ' added' + (pick || back ? ', and picked' : ''));
 }
 /** The middle of what the board shows, kept on the page (where the keyboard puts new things). */
 function viewMiddle() {
@@ -7214,6 +7226,7 @@ function newNote(x, y) {
   renderPage();
   commit('sticky note');
   startEdit(it, false);
+  editing.newNote = true;                          // (when its typing is done, a one-shot tool goes back to Select)
 }
 /** The top text (or note) under a page point, or null. */
 function wordsAt(x, y, type) {
@@ -7315,6 +7328,8 @@ function finishEdit() {
   renderPage();
   if (ed.isNew) { commit('text'); afterCreate(it); return; }
   if (it.text !== ed.before || ed.styled) commit(it.type === 'note' ? 'sticky note words' : 'editing text');
+  // A new sticky note was one use of the Sticky note tool: back to Select (unless it is locked), with the note picked.
+  if (ed.newNote && tool === 'jot' && backAfterOneUse()) { setSelection([it.id], false); return; }
   selectionChanged();
 }
 function wireEditor() {
@@ -10720,7 +10735,7 @@ function resizeStep(it, w) {
 /* ---- The Step tool's own buttons: its color in the pill ---- */
 let stepBtn = null, stepColors = null;
 function buildStepTool() {
-  stepBtn = wbButton('Step number (N) - click to put one down; they count on across pages', iconSvg('step'), () => setTool('step'));
+  stepBtn = wbButton('Step number (N) - click to put one down; they count on across pages', iconSvg('step'), () => pickTool('step'));
   stepBtn.setAttribute('aria-label', 'Step number');
   stepBtn.setAttribute('aria-pressed', 'false');
   stepBtn.dataset.tool = 'step';
@@ -14052,6 +14067,8 @@ function refreshRippleButtons() {
    pen, 6-9 a highlighter, [ and ] the size.
    ===================================================================== */
 let tool = settings.tool;
+// The tool that is LOCKED (double-clicked, so it stays on), or null. Never saved: a lock is for now only.
+let lockedTool = null;
 // The tools this version has (the rest of the shared bar's arrive in the next versions).
 const TOOLS_HERE = ['select', 'pen', 'highlighter', 'arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'eraser', 'stamp', 'step'];
 const TOOL_NAMES = { select: 'Select', pen: 'Pen', highlighter: 'Highlighter', arrow: 'Arrow', line: 'Line', rect: 'Rectangle',
@@ -14067,7 +14084,7 @@ function buildBar() {
   // look and move with the arrow keys like the rest.
   const picBtn = wbButton('Picture (I) - from a file; you can also paste one or drop it on the board', iconSvg('image'), choosePictures, 'rail-picture');
   picBtn.setAttribute('aria-label', 'Add a picture');
-  stampBtn = wbButton('Stamp (G) - a check, an X, a star or a question mark', iconSvg('stamp'), () => setTool('stamp'));
+  stampBtn = wbButton('Stamp (G) - a check, an X, a star or a question mark', iconSvg('stamp'), () => pickTool('stamp'));
   stampBtn.setAttribute('aria-label', 'Stamp');
   stampBtn.setAttribute('aria-pressed', 'false');
   stampBtn.dataset.tool = 'stamp';
@@ -14091,7 +14108,7 @@ function buildBar() {
     penColors: settings.pens.map((p) => p.color),
     highlighterColors: settings.highlighters.map((h) => h.color),
     onPick: (kind, value) => {
-      if (kind === 'tool') setTool(value);
+      if (kind === 'tool') pickTool(value);          // (pickTool: a double-click locks the tool)
       else if (kind === 'pen') setPreset('pen', value);
       else if (kind === 'highlighter') setPreset('highlighter', value);
       else if (kind === 'size') setSize(value);
@@ -14123,6 +14140,7 @@ function refreshBar() {
   // The floating bar while presenting (section 8i): the same choices, on its dark background.
   if (presentBar) presentBar.refresh({ tool, pen: settings.penIndex, highlighter: settings.hlIndex, size: settings.size,
     font: settings.font, penColors: settings.pens.map((p) => p.color), highlighterColors: settings.highlighters.map((h) => h.color), dark: true });
+  showLock();                                      // the padlock on a locked tool (section 9)
 }
 
 /** Everything that shows the tool or its preset, redrawn after a change. */
@@ -14138,6 +14156,7 @@ function setTool(next, say = true) {
   if (!(presenting ? PRESENT_TOOLS : TOOLS_HERE).includes(next)) return;   // (Present mode has its own few: section 8i)
   if (live) cancelStroke();
   if (editing && next !== 'text' && next !== 'jot') finishEdit();
+  if (next !== lockedTool) lockedTool = null;     // another tool: the old lock ends
   tool = next;
   settings.tool = tool;
   $('board').dataset.tool = tool;                 // (the CSS picks the board's pointer shape from this)
@@ -14147,6 +14166,96 @@ function setTool(next, say = true) {
   else if (tool === 'eraser') announce('Eraser: ' + eraserWords());
   else if (presenting && tool === 'select') announce('Pointer: click the page for the next one');
   else announce(TOOL_NAMES[tool]);
+}
+/* ---- Locking a tool: double-click it to keep it on ----
+   The suite's shared way (Dave, 2026-11-22), the way Publisher and
+   PowerPoint work:
+   - The tools that make ONE thing (the four shapes, text, sticky notes,
+     stamps and step numbers) are "one-shot": make one, and Select comes
+     back by itself (with the new thing picked, so you can move it).
+   - Double-click (or double-tap) a tool's button, press Enter or Space
+     twice on it, press its key twice quickly, or Shift + its key, and the
+     tool is LOCKED: it stays on for as many as you like. Its button stays
+     pressed and shows a small padlock.
+   - Escape (when nothing is being drawn or picked) unlocks and goes back
+     to Select. Another tool ends the lock. One more click on the locked
+     tool unlocks it and goes back to Select.
+   - The pen, highlighter, eraser and Select are continuous: they stay on
+     anyway, so a double-click on them does nothing extra.
+   A lock is never saved: each visit starts unlocked. */
+const ONE_SHOT_TOOLS = ['arrow', 'line', 'rect', 'ellipse', 'text', 'jot', 'stamp', 'step'];
+const LOCK_GAP_MS = 400;                 // two picks of the same tool closer than this = a double-click
+let lastToolPick = { id: null, at: 0 };  // the last one-shot tool picked, and when (performance.now())
+
+/** A tool picked on the rail or by its key: a second pick in quick succession (or lockNow) locks it. */
+function pickTool(id, lockNow = false) {
+  // Continuous tools (pen, highlighter, eraser, Select): just pick them.
+  if (!ONE_SHOT_TOOLS.includes(id)) { lastToolPick = { id: null, at: 0 }; setTool(id); return; }
+  const now = performance.now();
+  const twice = lastToolPick.id === id && now - lastToolPick.at < LOCK_GAP_MS;
+  if (lockNow || twice) { lastToolPick = { id: null, at: 0 }; lockTool(id); return; }
+  lastToolPick = { id, at: now };
+  // One more click on the locked tool: unlock it and go back to Select.
+  if (lockedTool === id) { unlockTool(); return; }
+  setTool(id);                                     // a single click: the tool, for one use
+}
+/** Lock a one-shot tool on (and pick it if it isn't the tool in use). */
+function lockTool(id) {
+  if (tool !== id) setTool(id, false);
+  lockedTool = id;
+  refreshBar(); renderStatus(); renderInspector();   // (the padlock, the status bar, the Inspector's hint)
+  announce(TOOL_NAMES[id] + ' locked. Press Esc to go back to the pointer.');
+}
+/** Unlock, and go back to Select. */
+function unlockTool() {
+  const was = lockedTool;
+  lockedTool = null;
+  setTool('select', false);
+  if (was) announce(TOOL_NAMES[was] + ' unlocked. Back to Select.');
+}
+/** After one use of a one-shot tool that isn't locked: back to Select. Returns true if it went back. */
+function backAfterOneUse() {
+  if (!ONE_SHOT_TOOLS.includes(tool) || lockedTool === tool) return false;
+  setTool('select', false);
+  return true;
+}
+/** A small padlock (for the locked tool's badge), drawn with SVG (no innerHTML). */
+function lockBadge() {
+  const badge = el('span', { class: 'tool-lock-badge', 'aria-hidden': 'true' });
+  const pic = svgEl('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false' });
+  pic.append(svgEl('path', { d: 'M7.5 11V7.5a4.5 4.5 0 0 1 9 0V11', fill: 'none', stroke: 'currentColor', 'stroke-width': 3.2 }));
+  pic.append(svgEl('rect', { x: 4, y: 10.5, width: 16, height: 11.5, rx: 2.5, fill: 'currentColor' }));
+  badge.append(pic);
+  return badge;
+}
+/** Show the lock on the rail: the padlock badge, and "(locked - Esc to stop)" in the button's name and tooltip. */
+function showLock() {
+  const rail = $('toolRail');
+  if (!rail) return;
+  // Every tool button on the rail, and the phone's folded Shapes button (locked with any locked shape).
+  rail.querySelectorAll('.wb-btn[data-tool], .wb-btn.wb-fold').forEach((b) => {
+    const on = !!lockedTool && (b.dataset.tool === lockedTool || (b.classList.contains('wb-fold') && SHAPE_TYPES.includes(lockedTool)));
+    let badge = b.querySelector('.tool-lock-badge');
+    if (on) {
+      if (!badge) b.append(lockBadge());
+      const words = TOOL_NAMES[lockedTool] + ' (locked - Esc to stop)';
+      if (b.dataset.lockWords !== words) {
+        // Keep the usual name and tooltip, to put back when the lock ends.
+        if (b.dataset.lockWords == null) { b.dataset.plainLabel = b.getAttribute('aria-label') || ''; b.dataset.plainTitle = b.title || ''; }
+        b.dataset.lockWords = words;
+        b.setAttribute('aria-label', words);
+        b.title = words;
+      }
+    } else {
+      if (badge) badge.remove();
+      if (b.dataset.lockWords != null) {
+        // Put the usual words back (unless the bar has already written new ones, as the Shapes button does).
+        if (b.getAttribute('aria-label') === b.dataset.lockWords) b.setAttribute('aria-label', b.dataset.plainLabel);
+        if (b.title === b.dataset.lockWords) b.title = b.dataset.plainTitle;
+        delete b.dataset.lockWords; delete b.dataset.plainLabel; delete b.dataset.plainTitle;
+      }
+    }
+  });
 }
 /** Choose pen (kind 'pen') or highlighter ('highlighter') number i, and that tool. */
 function setPreset(kind, i, say = true) {
@@ -14357,11 +14466,12 @@ function fingerField() {
 }
 
 /* ---- The shape, text and sticky note tools ---- */
-/** "Stay in tool": after making something, keep the tool (the default, as in the extension), or pick it and go back to Select. */
+/** How to keep the tool on (it replaced the "Stay in this tool" box in 0.9.0: section 9). */
 function stayField() {
-  const box = el('input', { type: 'checkbox', id: fid(), checked: settings.stayInTool ? true : null });
-  box.addEventListener('change', () => { settings.stayInTool = box.checked; saveSettings(); announce(box.checked ? 'The tool stays picked' : 'Back to Select after each one'); });
-  return el('label', { class: 'check', for: box.id }, box, el('span', { text: 'Stay in this tool (off: each new one is picked, and Select comes back)' }));
+  const words = lockedTool === tool
+    ? 'Locked: it stays on. Escape, or one more click on its button, goes back to Select.'
+    : 'After one, Select comes back (the new one is picked). To keep the tool on, double-click its button, or press its key twice.';
+  return el('p', { class: 'hint', text: words });
 }
 function makingSection() {
   const name = TOOL_NAMES[tool];
@@ -14717,6 +14827,7 @@ function renderStatus() {
   } else {
     $('stTool').textContent = tool === 'eraser' ? 'Eraser: ' + eraserWords() : 'Select';
   }
+  if (lockedTool && lockedTool === tool) $('stTool').textContent += ' (locked)';
   $('stSel').textContent = sel.ids.size ? 'Picked: ' + selectionWords() : '';
 }
 
@@ -14794,6 +14905,7 @@ const HELP_KEYS = [
   ['Layers list: H, L, Alt+Up / Alt+Down', 'Hide or show; lock or unlock; move it up or down'],
   ['Shift while resizing or turning', 'Keep the shape / turn in 15 degree steps'],
   ['A / L / R / O', 'Arrow, line, rectangle, ellipse (Shift while drawing: 45 degree steps, squares, circles)'],
+  ['Double-click a tool, or press its key twice', 'Keep it on (a padlock shows); Shift + its key does too. Shapes, text, notes, stamps and steps otherwise go back to Select after one. Escape goes back to the pointer'],
   ['T', 'Text: click and type; Escape or Ctrl+Enter finishes'],
   ['J', 'A sticky note in the middle of the board, ready to type in ("jot")'],
   ['F', 'Switch the font for text (Atkinson Hyperlegible or Comfortaa)'],
@@ -15118,6 +15230,7 @@ function wireKeys() {
       else if (cancelObjectGesture()) announce('Put back');
       else if (sel.ids.size) setSelection([]);
       else if (groupPath.length) leaveGroups(true);
+      else if (lockedTool) unlockTool();             // a locked tool: unlock, back to Select
       else if (tool !== 'select') setTool('select');
       return;
     }
@@ -15144,15 +15257,23 @@ function wireKeys() {
       if (action.type === 'tool' && action.tool === 'jot') { e.preventDefault(); dropNoteInMiddle(); return; }
       if (action.type === 'tool' && TOOLS_HERE.includes(action.tool)) {
         if (action.tool === 'eraser' && tool === 'eraser') toggleEraserMode();   // E again: the other way of erasing
-        else setTool(action.tool);
+        else pickTool(action.tool, e.shiftKey);      // (twice quickly, or with Shift: locked - section 9)
         return;
       }
     }
     // The app's own tools' keys (not in the shared bar): G stamps, I a picture.
     const letter = e.key.toLowerCase();
-    if (letter === 'g') { setTool('stamp'); return; }
+    if (letter === 'g') { pickTool('stamp', e.shiftKey); return; }   // (G twice, or Shift+G: locked)
     // N: a step number in the middle (picked, so the arrow keys move it), and the Step tool (section 8k).
-    if (letter === 'n') { e.preventDefault(); dropStepInMiddle(); return; }
+    // N twice quickly, or Shift+N, locks the Step tool instead (no second step is dropped).
+    if (letter === 'n') {
+      e.preventDefault();
+      const again = lastToolPick.id === 'step' && performance.now() - lastToolPick.at < LOCK_GAP_MS;
+      if (e.shiftKey || again) { pickTool('step', true); return; }
+      dropStepInMiddle();
+      lastToolPick = { id: 'step', at: performance.now() };
+      return;
+    }
     if (letter === 'i') { e.preventDefault(); choosePictures(); return; }
     // Space + drag slides the board (only with the pointer over it or the board focused,
     // so Space still presses buttons everywhere else).
@@ -15286,6 +15407,11 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.9.0', date: '2026-11-22', notes: [
+    'Shape tools now go back to the pointer after one shape; double-click a tool to keep it. The arrow, line, rectangle, ellipse, text, sticky note, stamp and step number tools make one thing, then Select comes back with it picked (so you can move it straight away).',
+    'Double-click (or double-tap) a tool to lock it on for as many as you like: its button shows a small padlock. Pressing its key twice quickly, or Shift and its key, locks it too, and so does Enter or Space twice on its button. Escape, another tool, or one more click on it goes back to the pointer. The pen, highlighter and eraser stay on as before.',
+    'The Inspector\'s "Stay in this tool" box made way for the double-click.'
+  ] },
   { version: '0.8.1', date: '2026-10-30', notes: [
     'A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app\'s colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button\'s tooltip); and the family of apps underneath. The screenshot across the top made way.'
   ] },
