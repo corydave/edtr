@@ -1,5 +1,13 @@
 # 3DEDTR changelog
 
+## 0.25.0 - 2026-11-22 - Double-click to keep Measure on
+
+- **Measure is now one-shot:** one click on the Measure button (or M) measures one distance, then the app goes back to the tool you were using before (Move, Select, Turn or Resize). The line and its reading stay on screen. This is a change - before, Measure stayed on until you picked another tool.
+- **Double-click to lock it:** double-click (or double-tap) the Measure button, press M twice quickly, press Shift+M, or press Enter/Space twice on the focused button, and Measure stays on for as many measurements as you like. A small padlock shows in the button's corner, its tooltip and name say "locked - Esc to stop", and screen readers hear it.
+- **Escape:** clears a half-made measurement first (as before), then unlocks and goes back to the tool before. Clicking Measure again while locked does the same. Picking another tool ends the lock.
+- Move, Turn, Resize and Select stay on as always (they are modes), and the Add buttons still add a shape straight away, so they have nothing to lock.
+- The lock is for now only: nothing is remembered between visits. Rail buttons no longer zoom the page on a quick double-tap. Keyboard shortcuts list updated.
+
 ## 0.24.1 - 2026-10-30 - A painted splash
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.

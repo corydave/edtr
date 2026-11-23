@@ -227,6 +227,18 @@ kbd, .kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bott
   overflow-y: auto;
 }
 .rail .icon-btn { width: 40px; height: 40px; flex: none; }
+/* Double-click lock (Measure tool): the rail buttons are a positioning box
+   for the padlock badge, and a quick double-tap must not zoom the page. */
+.rail .icon-btn { position: relative; touch-action: manipulation; }
+/* The small padlock in the corner of a locked tool. It has its own little
+   background and border, so it shows on the pressed (brand) button in light
+   and dark mode - and it is a shape, not just a colour. */
+.lock-badge { position: absolute; right: -3px; bottom: -3px; width: 15px; height: 15px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface); color: var(--brand);
+  border: 1.5px solid var(--brand); pointer-events: none; }
+.lock-badge svg { width: 9px; height: 9px; }
+.lock-badge[hidden] { display: none; }
+@media (forced-colors: active) { .lock-badge { border-color: CanvasText; color: CanvasText; background: Canvas; } }
 .rail hr { width: 28px; border: 0; border-top: 1px solid var(--border); margin: 4px 0; flex: none; }
 .rail-label { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin: 2px 0 -2px; }
 
@@ -1257,7 +1269,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <button class="icon-btn" data-tool="translate" title="Move: drag the arrows (W)" aria-label="Move tool"><span data-icon="move"></span></button>
     <button class="icon-btn" data-tool="rotate" title="Turn (rotate): drag the rings (E)" aria-label="Turn tool (rotate)"><span data-icon="rotate"></span></button>
     <button class="icon-btn" data-tool="scale" title="Resize: drag the handles (R)" aria-label="Resize tool"><span data-icon="scale"></span></button>
-    <button class="icon-btn" data-tool="measure" title="Measure: click two points on objects (M)" aria-label="Measure tool"><span data-icon="ruler"></span></button>
+    <button class="icon-btn" data-tool="measure" title="Measure: click two points on objects. Double-click to keep it on (M)" aria-label="Measure tool"><span data-icon="ruler"></span><span class="lock-badge" id="measureLockBadge" hidden aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span></button>
     <hr aria-hidden="true">
     <span class="rail-label" aria-hidden="true">Add</span>
     <!-- The shape buttons are made by JavaScript from the SHAPES table, so
@@ -1748,7 +1760,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.24.1';
+const APP_VERSION = '0.25.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1803,6 +1815,9 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.25.0', date: '2026-11-22', notes: [
+    'The Measure tool now measures one distance and then goes back to the tool you were using (the line and its reading stay on screen). Double-click the Measure button (or press M twice, or Shift+M) to keep it on for as many measurements as you like - a small padlock shows on the button. Escape goes back. The same "double-click a tool to keep it" works across the EDTR apps.'
+  ] },
   { version: '0.24.1', date: '2026-10-30', notes: [
     'A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app\'s colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button\'s tooltip); and the family of apps underneath. The screenshot across the top made way.'
   ] },
@@ -6840,7 +6855,12 @@ function endGizmoDrag() {
   if (selection.length === 1) announce(verb + ' ' + selection[0].name + '. ' + positionWords(selection[0]));
 }
 function setTool(t) {
+  // Double-click lock: remember which tool to go back to after one
+  // measurement, and end any lock when another tool is picked.
+  if (t !== 'measure') measureLocked = false;
+  else if (tool !== 'measure') toolBeforeMeasure = tool;
   tool = t;
+  showMeasureLock();
   // Edit mode: points are moved, never turned or resized one by one.
   if (edit && (t === 'rotate' || t === 'scale')) toast('In Edit mode the Move tool (W) or G moves the picked points. The Select tool (Q) drags a box round them.', 5000);
   $('stage').classList.toggle('measuring', t === 'measure');
@@ -7002,6 +7022,56 @@ let pickRay = null;            // a THREE.Raycaster, made once the engine loads
    corner of the triangle you clicked jumps to that corner, so edge-to-edge
    readings are exact. Escape clears it. (By keyboard: pick two objects, and
    the Inspector's Measure section gives the gaps between them.) */
+/* ---- Double-click to lock the Measure tool ----
+   The suite-wide rule (the Publisher / PowerPoint way):
+   - One click on Measure (or M once): measure ONE distance, then the app
+     goes back to the tool you were using before (Move, Select...).
+     The line and its reading stay on screen.
+   - Double-click (or double-tap, or M twice quickly, or Shift+M, or
+     Enter/Space twice on the focused button): LOCK it, to measure as many
+     distances as you like. A small padlock shows on the button.
+   - Escape clears a half-made measurement first, then unlocks and goes back.
+     Clicking Measure again (or M) while locked unlocks and goes back too.
+   The Move/Turn/Resize/Select tools stay on, as always: they are modes. The
+   Add buttons add a shape straight away, so there is nothing to lock.
+   Nothing about the lock is remembered between visits. */
+let measureLocked = false;          // true: Measure stays on after each measurement
+let toolBeforeMeasure = 'translate'; // where one measurement goes back to
+let measurePressAt = 0;             // when Measure was last pressed (for "twice quickly")
+const TOOL_WORDS = { select: 'Select', translate: 'Move', rotate: 'Turn', scale: 'Resize' };
+/** The Measure button (or M) was pressed. `lock` = Shift+M: lock straight away. */
+function pressMeasure(lock = false) {
+  const now = performance.now();
+  const twice = now - measurePressAt < 400;      // a double-click, a double-tap or M M
+  measurePressAt = now;
+  if (lock || (twice && tool === 'measure' && !measureLocked)) {
+    if (tool !== 'measure') setTool('measure');
+    measureLocked = true;
+    showMeasureLock();
+    announce('Measure locked. Click two points as many times as you like. Press Escape to go back to the ' + TOOL_WORDS[toolBeforeMeasure] + ' tool.');
+    return;
+  }
+  if (measureLocked) { measurePressAt = 0; leaveMeasure(); return; }   // pressed again: unlock
+  if (tool !== 'measure') setTool('measure');
+}
+/** Back from Measure to the tool used before it (ending any lock). */
+function leaveMeasure(extra = '') {
+  const back = toolBeforeMeasure in TOOL_WORDS ? toolBeforeMeasure : 'translate';
+  setTool(back);
+  announce((extra ? extra + ' ' : '') + 'Back to the ' + TOOL_WORDS[back] + ' tool.');
+}
+/** Show the lock: the padlock badge, the tooltip and the button's name. */
+function showMeasureLock() {
+  const btn = document.querySelector('[data-tool="measure"]');
+  const badge = $('measureLockBadge');
+  if (!btn || !badge) return;
+  const on = measureLocked && tool === 'measure';
+  badge.hidden = !on;
+  btn.setAttribute('aria-label', on ? 'Measure tool (locked - Esc to stop)' : 'Measure tool');
+  btn.dataset.tip = on ? 'Measure (locked - Esc to stop): click two points on objects (M)'
+    : 'Measure: click two points on objects. Double-click to keep it on (M)';
+}
+
 let measureGroup = null;       // the dots and the line (in the scene, but not part of the model)
 let measurePts = [];
 function measureClick(clientX, clientY) {
@@ -7025,7 +7095,8 @@ function measureClick(clientX, clientY) {
   measurePts.push(p);
   drawMeasure();
   if (measurePts.length === 1) announce('First point at X ' + fmt(p.x) + ', Y ' + fmt(p.y) + ', Z ' + fmt(p.z) + '. Click the second point.');
-  else announce('Distance ' + measureWords());
+  else if (measureLocked) announce('Distance ' + measureWords());
+  else leaveMeasure('Distance ' + measureWords() + '.');   // one measurement done: back to the tool before (the line stays)
 }
 function measureWords() {
   const [a, b] = measurePts;
@@ -13758,6 +13829,7 @@ async function makeZip(files) {
    ----------------------------------------------------------------------- */
 const SHORTCUTS = [
   ['Tools', [['Q', 'Select'], ['W', 'Move'], ['E', 'Turn'], ['R', 'Resize'], ['M', 'Measure: click two points (then Enter: measure between spots from lists)'],
+    ['M M / Shift+M', 'Keep Measure on for several measurements (or double-click its button); Escape goes back'],
     ['P', 'Put the selection on a face: then click the face'], ['L', 'Lay flat for printing (biggest flat face down)'],
     ['D', 'A hole through a face: then click the face (Enter: straight down through the selection)']]],
   ['Add a shape', SHAPE_ORDER.slice(0, 10).map((t, i) => [i < 9 ? 'Shift+' + (i + 1) : 'Shift+0', SHAPES[t].label])],
@@ -13938,6 +14010,8 @@ function setupKeyboard() {
       if (placeMode) { endPlaceMode(); announce('Put on a face cancelled'); return; }
       if (drillMode) { endDrillMode(); announce('Hole through a face cancelled'); return; }
       if (measurePts.length && (onStage || tool === 'measure')) { clearMeasure(); announce('Measurement cleared'); return; }
+      // Measure on (locked or waiting for its points): Escape goes back to the tool before it.
+      if (tool === 'measure' && (onStage || (e.target.closest && e.target.closest('#toolRail')))) { leaveMeasure(measureLocked ? 'Measure unlocked.' : ''); return; }
       // On a phone, Escape inside the Inspector sheet closes the sheet.
       if ($('sidePanel').classList.contains('open') && $('sidePanel').contains(e.target)) {
         openSheet(false); $('panelToggle').focus(); return;
@@ -14005,7 +14079,7 @@ function setupKeyboard() {
       case 'KeyW': if (e.shiftKey) setWire(!settings.wire); else { setTool('translate'); announce('Move tool'); } break;
       case 'KeyE': setTool('rotate'); announce('Turn tool'); break;
       case 'KeyR': setTool('scale'); announce('Resize tool'); break;
-      case 'KeyM': setTool('measure'); break;
+      case 'KeyM': pressMeasure(e.shiftKey); break;     // M M (quickly) or Shift+M: keep it on
       case 'KeyP': startPlaceOnFace(); break;
       case 'KeyL': layFlat(); break;
       case 'KeyD': startDrill(); break;
@@ -16454,7 +16528,8 @@ function wireSettings() {
 function wireApp() {
   wireSvgDialog();
   wireMeasureDialog();
-  for (const b of document.querySelectorAll('[data-tool]')) b.addEventListener('click', () => setTool(b.dataset.tool));
+  // Measure has the double-click lock (see pressMeasure); the others just switch.
+  for (const b of document.querySelectorAll('[data-tool]')) b.addEventListener('click', () => (b.dataset.tool === 'measure' ? pressMeasure() : setTool(b.dataset.tool)));
   for (const b of document.querySelectorAll('[data-view]')) b.addEventListener('click', () => setView(b.dataset.view));
   $('btnFlat').addEventListener('click', () => setFlat(!camera.isOrthographicCamera));
   $('btnMulti').addEventListener('click', () => setPickSeveral(!pickSeveral));
