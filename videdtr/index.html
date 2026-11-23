@@ -193,6 +193,7 @@
   --radius: 6px;
   --radius-sm: 4px;
   --track-h: 62px;            /* height of one timeline track row */
+  --group-h: 50px;            /* height of a track group's header row (3.38) */
   --ruler-h: 26px;            /* height of the time ruler */
   --header-h: 52px;            /* the family's top bar height (IMGEDTR's 52px) */
   --gutter: 10px;
@@ -1451,6 +1452,82 @@ body.resizing-pool * { cursor: col-resize !important; }
 .icon-btn svg { display: block; pointer-events: none; }
 .track-head .spacer { flex: 1 1 auto; }
 
+/* ---- Track groups (3.38) -------------------------------------------------
+   A group is drawn as a header row (.group-head on the left, .group-lane on
+   the right - the two MUST be the same height, or every row below them would
+   slide out of line with its clips), followed by its tracks. The tracks of a
+   group are indented a little and carry a thin line down their left edge, so
+   you can see at a glance where the group starts and stops. */
+.group-head {
+  height: var(--group-h);
+  border-bottom: 1px solid var(--line);
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  background: var(--panel-3);
+  position: relative;
+}
+.group-head .name-row { display: flex; align-items: center; gap: 3px; min-width: 0; }
+.group-head .name {
+  font-size: 11.5px; font-weight: 700; min-width: 0; flex: 1 1 auto;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* How many tracks are in the group: a small rounded count after the name. */
+.group-head .count {
+  flex: 0 0 auto; font-size: 10px; font-weight: 700; line-height: 1;
+  padding: 2px 5px; border-radius: 99px;
+  background: var(--panel); color: var(--text-dim);
+}
+.group-head .ctrls { display: flex; gap: 2px; align-items: center; }
+.group-head .spacer { flex: 1 1 auto; }
+.group-head .grip {
+  flex: 0 0 auto; color: var(--text-dim); cursor: grab;
+  display: grid; place-items: center; padding: 1px;
+}
+.group-head.dragging { opacity: .4; }
+.group-head.drop-above { box-shadow: inset 0 3px 0 var(--accent); }
+.group-head.drop-below { box-shadow: inset 0 -3px 0 var(--accent); }
+/* Folded: the header is all there is of the group, so give it the same
+   bottom line a track has. */
+.group-head.folded { border-bottom-color: var(--line); }
+
+/* A track inside a group: indented, with the group's line down the left. */
+.track-head.in-group { padding-left: 14px; }
+.track-head.in-group::before {
+  content: ""; position: absolute; left: 5px; top: 0; bottom: 0;
+  width: 2px; background: var(--accent); opacity: .55;
+}
+/* The kind label sits a little further in to line up with the name. */
+.track-head.in-group .kind-row { padding-left: 17px; }
+
+/* Tracks picked with Shift+click or Ctrl/Cmd+click, ready to be grouped. */
+.track-head.picked {
+  background: var(--accent-soft);
+  outline: 1px solid var(--accent); outline-offset: -1px;
+}
+
+/* The group's row on the timeline side: a little map of every clip in the
+   group, one thin bar per track, so a folded group still shows where its
+   clips are. */
+.group-lane {
+  height: var(--group-h);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  background-color: var(--panel-2);
+  background-image: linear-gradient(90deg, var(--lane-grid) 1px, transparent 1px);
+}
+.group-lane .group-bar {
+  position: absolute; min-height: 2px; border-radius: 2px;
+  background: var(--kind-video); opacity: .8; pointer-events: none;
+}
+.group-lane .group-bar.audio { background: var(--kind-audio); }
+.group-lane .group-bar.fx    { background: var(--kind-fx, #c2417f); }
+.group-lane .group-bar.text  { background: var(--kind-text); }
+.group-lane .group-bar.color { background: var(--kind-color); }
+.group-lane .group-bar.blur  { background: var(--kind-blur); }
+
 /* Scrolling clip area (right column) */
 #tl-scroll {
   overflow-x: auto;
@@ -2446,6 +2523,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
      cluster in the app, so they get the most help. */
   .track-head .icon-btn { width: 30px; height: 30px; }
   .track-head .ctrls { gap: 4px; }
+  .group-head .icon-btn { width: 30px; height: 28px; }
+  :root { --group-h: 62px; }
   .transport button { min-height: 38px; min-width: 38px; }
   .hdr-strip button { min-height: 34px; }
   input[type="range"] { height: 30px; }
@@ -2465,6 +2544,12 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
   .media-list li .corner-remove { opacity: 1; width: 26px; height: 26px; }
   .track-head .icon-btn { width: 30px; height: 30px; }
   .track-head .ctrls { gap: 4px; }
+  .group-head .icon-btn { width: 30px; height: 28px; }
+  :root { --group-h: 62px; }
+  /* Room for the name on a narrow header: the stack icon and the count are
+     extras (the screen reader already hears how many tracks there are). */
+  .group-head { padding: 4px; }
+  .group-head .name-row > svg, .group-head .count { display: none; }
   /* A range input's thumb is the smallest thing anyone is asked to grab. */
   input[type="range"] { height: 30px; }
   .sheet-close { width: 38px; height: 38px; }
@@ -2847,6 +2932,9 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
       </div>
       <!-- A flag at the playhead, for "come back to this". -->
       <button id="btn-marker" title="Add a marker at the playhead (M)">Marker</button>
+      <!-- Track groups (3.38): puts the picked tracks (Shift or Ctrl/Cmd+click
+           their names) in a group, or starts one from the active track. -->
+      <button id="btn-group" title="Group tracks (Ctrl+G). Pick them first: Shift+click or Ctrl/Cmd+click the track names on the left.">Group</button>
 
       <div class="toolbar-spacer"></div>
 
@@ -3417,6 +3505,8 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
         <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Save project</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Open project</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Export</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td><td>Group the picked tracks</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></td><td>Ungroup the active track's group</td></tr>
         <tr><td><kbd>?</kbd> or <kbd>F1</kbd></td><td>This help</td></tr>
       </tbody>
     </table>
@@ -3433,6 +3523,10 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
         <tr><td>Amber diamonds</td><td>When a clip animates, these are its two marks. <em>Click</em> one to choose which position you are setting - it turns white. <em>Drag</em> it to change when the move starts or finishes.</td></tr>
         <tr><td>Track order</td><td>Drag a header, or use its arrows. The top track draws in front.</td></tr>
         <tr><td>Duplicate a track</td><td>The copy button in the header. The copy lands directly below the original with all its clips, crops, filters and fades intact.</td></tr>
+        <tr><td>Pick tracks</td><td><kbd>Shift</kbd>+click a track's header to pick every track from the active one to it; <kbd>Ctrl</kbd>+click (<kbd>Cmd</kbd>+click on a Mac) picks one at a time. From the keyboard, <kbd>Space</kbd> on a track's name picks it. <kbd>Esc</kbd> lets go.</td></tr>
+        <tr><td>Group tracks</td><td>Pick them, then press <strong>Group</strong> in the timeline toolbar, or <kbd>Ctrl</kbd>+<kbd>G</kbd>. With nothing picked, the active track starts a group of its own. The group gets a header row: fold it away with the arrow, double-click its name to rename it, and its eye, speaker and arrows work on every track in it at once.</td></tr>
+        <tr><td>In and out of a group</td><td>Drag a track onto a track in the group, or onto the lower half of the group's header. Its arrows step it in and out one row at a time. Dragging the group's header moves the whole group. <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> or the ungroup button breaks it up; the tracks stay where they are.</td></tr>
+        <tr><td>Folded group</td><td>Its tracks are tucked away, but they still play and export. The group's row shows a thin bar for every clip in it, so you can still see where things are. Double-click the row to open it again.</td></tr>
       </tbody>
     </table>
 
@@ -3445,7 +3539,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <table class="shortcuts">
       <tbody>
         <tr><td>Inside the box</td><td>Drag to move. Hold <kbd>Shift</kbd> to snap back to center.</td></tr>
-        <tr><td>Corner square</td><td>Resize evenly. The clip keeps its proportions.</td></tr>
+        <tr><td>Corner square</td><td>Resize. The opposite corner stays put and the clip keeps its proportions. Hold Ctrl (Cmd on a Mac) to resize from the center instead, so every side moves.</td></tr>
         <tr><td>Mirror</td><td>Horizontal and vertical flips live in the Picture section. They are applied after any rotation, so flipping a tilted clip mirrors what you can see.</td></tr>
         <tr><td>Edge bar</td><td>Crop that edge. The opposite edge stays where it is.</td></tr>
         <tr><td>Stem handle</td><td>Rotate. Hold <kbd>Shift</kbd> for 15&deg; steps; it snaps to square on its own near 0, 90 and 180&deg;.</td></tr>
@@ -3480,6 +3574,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
         <tr><td>Rectangle</td><td>The whole picture, with a corner radius if you want one.</td></tr>
         <tr><td>Square / Circle</td><td>Takes the shorter side of the picture for both dimensions, so a circle is a true circle and never an oval. Move the picture underneath to choose what sits inside it.</td></tr>
         <tr><td>Drop shadow</td><td>Follows whatever shape you chose, corners and circles included. Softness and offsets are percentages of the frame, so they look the same at every export size.</td></tr>
+        <tr><td>Blurred background</td><td>For a phone video in a wide frame: the bars at the sides fill with an enlarged, blurred copy of the clip itself. Turn it on in the Inspector, under Opacity &amp; fades. It is part of the clip, so it follows every trim, split and fade.</td></tr>
       </tbody>
     </table>
 
@@ -4011,6 +4106,13 @@ const ICONS = {
   "trash-2": [["path","M10 11v6"],["path","M14 11v6"],["path","M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"],["path","M3 6h18"],["path","M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"]],
   "chevron-up": [["path","m18 15-6-6-6 6"]],
   "chevron-down": [["path","m6 9 6 6 6-6"]],
+  // Track groups (3.38): the stacked-sheets "layers" for a group, and
+  // Lucide's "group" and "ungroup" for the two buttons that make and break one.
+  "layers": [["path","m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"],["path","m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"],["path","m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"]],
+  "group": [["path","M3 7V5c0-1.1.9-2 2-2h2"],["path","M17 3h2c1.1 0 2 .9 2 2v2"],["path","M21 17v2c0 1.1-.9 2-2 2h-2"],["path","M7 21H5c-1.1 0-2-.9-2-2v-2"],["rect",{"width":"7","height":"5","x":"7","y":"7","rx":"1"}],["rect",{"width":"7","height":"5","x":"10","y":"12","rx":"1"}]],
+  "ungroup": [["rect",{"width":"8","height":"6","x":"5","y":"4","rx":"1"}],["rect",{"width":"8","height":"6","x":"11","y":"14","rx":"1"}]],
+  // The blurred background behind a tall clip (3.38).
+  "rectangle-vertical": [["rect",{"width":"12","height":"20","x":"6","y":"2","rx":"2"}]],
   "grip-vertical": [["circle",{"cx":"9","cy":"12","r":"1"}],["circle",{"cx":"9","cy":"5","r":"1"}],["circle",{"cx":"9","cy":"19","r":"1"}],["circle",{"cx":"15","cy":"12","r":"1"}],["circle",{"cx":"15","cy":"5","r":"1"}],["circle",{"cx":"15","cy":"19","r":"1"}]],
   "crop": [["path","M6 2v14a2 2 0 0 0 2 2h14"],["path","M18 22V8a2 2 0 0 0-2-2H2"]],
   "scissors": [["circle",{"cx":"6","cy":"6","r":"3"}],["path","M8.12 8.12 12 12"],["path","M20 4 8.12 15.88"],["circle",{"cx":"6","cy":"18","r":"3"}],["path","M14.8 14.8 20 20"]],
@@ -4331,6 +4433,7 @@ function waitForRoom(codec) {
  *     name, width, height, fps
  *     tracks[]                  ordered top to bottom as shown in the UI
  *       id, kind ("video"|"audio"), name, muted, hidden
+ *       groupId       which track group it is in (3.38), or left out
  *       clips[]                 unordered; we sort when we need to
  *         id            unique
  *         mediaId       which imported file this clip shows (null for text
@@ -4345,6 +4448,9 @@ function waitForRoom(codec) {
  *         transform     { x, y, scale, rotation }
  *         text          { content, size, color, font, align } for text clips
  *         solid         { color } for color clips ("#rrggbb")
+ *         backdrop      { enabled, blur, dim } - a blurred copy of the
+ *                       clip filling the frame behind it (3.38)
+ *     groups[]                  track groups (3.38): { id, name, collapsed }
  *
  * The distinction between "start" and "inPoint" is the heart of non-linear
  * editing. Trimming the left edge of a clip moves BOTH: the clip starts later
@@ -4360,6 +4466,7 @@ const state = {
   selectedMediaId: null,  // a tile in the pool, shown in the Inspector
   selectedFolderId: null, // a folder in the pool, shown in the Inspector (3.10)
   activeTrackId: null,    // the track new media lands on
+  pickedTrackIds: [],     // tracks picked with Shift/Ctrl+click, ready to group (3.38)
   motionPose: "from",     // which end of an animation the handles edit
   inspectorSection: "size",  // which Inspector accordion is open
   inspectorHelp: null,       // which section is showing its explanation
@@ -4403,6 +4510,9 @@ function makeEmptyProject() {
     // They belong to the project, so they are saved, backed up and undone
     // with everything else.
     markers: [],
+    // Track groups (3.38): { id, name, collapsed }. Each track that is in
+    // one carries its id as track.groupId. See TRACK GROUPS.
+    groups: [],
     // Media Pool folders, and which folder each file is in (3.10). In the
     // project for the same reasons: saved, backed up and undoable.
     folders: [],
@@ -6529,15 +6639,55 @@ function addTrack(kind) {
 function moveTrackBy(trackId, delta) {
   const tracks = state.project.tracks;
   const from = tracks.findIndex((t) => t.id === trackId);
-  const to = from + delta;
-  if (from === -1 || to < 0 || to >= tracks.length) return false;
+  if (from === -1) return false;
+  const track = tracks[from];
+
+  // Groups (3.38) add one extra kind of step. A track at the very edge of its
+  // group does not swap with anything on its first step out - it simply LEAVES
+  // the group, which on screen moves it out past the group's header (up) or
+  // out from under the group (down). In the same way, a track next to a group
+  // steps INTO it before it can step past it. So one press always moves the
+  // track exactly one row on screen, wherever groups are.
+  const group = findGroup(track.groupId);
+  let to = from;                       // its new place in the list
+  let joinsGroup = track.groupId || null;   // the group it ends up in
+
+  if (group) {
+    const members = groupMembers(group.id);
+    const edge = delta < 0 ? members[0] : members[members.length - 1];
+    if (edge === track) joinsGroup = null;           // step out of the group
+    else to = from + delta;                          // swap with a fellow member
+  } else {
+    const neighbour = tracks[from + delta];
+    if (!neighbour) return false;
+    const neighbourGroup = findGroup(neighbour.groupId);
+    if (!neighbourGroup) {
+      to = from + delta;                             // an ordinary swap
+    } else if (!neighbourGroup.collapsed) {
+      joinsGroup = neighbourGroup.id;                // step into the group
+    } else {
+      // A folded group's tracks are not on screen, so hop over the whole
+      // group in one go rather than vanishing inside it.
+      const members = groupMembers(neighbourGroup.id);
+      to = delta < 0 ? tracks.indexOf(members[0]) : tracks.indexOf(members[members.length - 1]);
+    }
+  }
+  if (to < 0 || to >= tracks.length) return false;
 
   pushUndo("reorder tracks");
   // Remove it, then put it back at the new index. Splice handles the shifting.
   const [moved] = tracks.splice(from, 1);
   tracks.splice(to, 0, moved);
+  const leftGroup = group && !joinsGroup ? group : null;
+  if (joinsGroup) moved.groupId = joinsGroup; else delete moved.groupId;
   renderAll();
-  announce(moved.name + " moved " + (delta < 0 ? "up" : "down") + ", now layer " + (to + 1) + " of " + tracks.length);
+
+  const into = joinsGroup && joinsGroup !== (group && group.id) ? findGroup(joinsGroup) : null;
+  announce(moved.name
+    + (into ? " moved into " + into.name
+       : leftGroup ? " moved out of " + leftGroup.name
+       : " moved " + (delta < 0 ? "up" : "down"))
+    + ", now layer " + (to + 1) + " of " + tracks.length);
   return true;
 }
 
@@ -6620,8 +6770,16 @@ function reorderTrack(draggedId, targetId, above) {
   if (!above) to += 1;
 
   tracks.splice(to, 0, moved);
+  // Dropped next to a track, it joins that track's group - or leaves its
+  // own, when the track it was dropped beside is in none (3.38). That is the
+  // whole rule, and it matches what you see: it lands among the tracks you
+  // dropped it on.
+  const target = tracks.find((t) => t.id === targetId);
+  if (target && target.groupId) moved.groupId = target.groupId; else delete moved.groupId;
   renderAll();
-  announce(moved.name + " moved to layer " + (to + 1) + " of " + tracks.length);
+  const group = findGroup(moved.groupId);
+  announce(moved.name + " moved to layer " + (to + 1) + " of " + tracks.length
+           + (group ? ", in " + group.name : ""));
 }
 
 function removeTrack(trackId) {
@@ -6636,6 +6794,485 @@ function removeTrack(trackId) {
     state.activeTrackId = state.project.tracks.length ? state.project.tracks[0].id : null;
   }
   renderAll();
+}
+
+
+/* =========================================================================
+ * TRACK GROUPS (3.38)
+ * -------------------------------------------------------------------------
+ * Tracks can be gathered into a named group, the way layers are grouped in
+ * IMGEDTR. A group only ORGANIZES the timeline - it never changes what you see
+ * or hear:
+ *
+ *   project.groups = [{ id, name, collapsed }]
+ *   track.groupId  = the id of the group the track is in (left out if none)
+ *
+ * The tracks of a group always sit next to each other in the track list, so
+ * the group can be drawn as one block: a header row, then its tracks, slightly
+ * indented. Folding a group (collapsed: true) hides its tracks' rows on the
+ * timeline, but they still play and export exactly as before.
+ *
+ * The buttons on a group header - hide, mute, move - work on each of its
+ * tracks in turn. There is no separate "the group is hidden" setting to keep
+ * in step with the tracks, so the two can never disagree.
+ *
+ * How a track gets into a group:
+ *   - pick some tracks (Shift+click or Ctrl/Cmd+click their headers) and press
+ *     Group in the timeline toolbar, or Ctrl/Cmd+G
+ *   - drag a track onto a track that is in a group, or onto the lower half of
+ *     a group's header
+ *   - step it in with its up and down arrows
+ * ====================================================================== */
+
+/** The project's list of groups. Older projects have none, so make one. */
+function trackGroups() {
+  if (!Array.isArray(state.project.groups)) state.project.groups = [];
+  return state.project.groups;
+}
+
+/** A group by its id, or null. */
+function findGroup(groupId) {
+  if (!groupId) return null;
+  return trackGroups().find((g) => g.id === groupId) || null;
+}
+
+/** The tracks in a group, top to bottom. */
+function groupMembers(groupId) {
+  return state.project.tracks.filter((t) => t.groupId === groupId);
+}
+
+/** True when a track is tucked away inside a folded group. */
+function isTrackFolded(track) {
+  const group = findGroup(track && track.groupId);
+  return !!(group && group.collapsed);
+}
+
+/**
+ * Put the groups right after any change, so the drawing code can trust them.
+ *
+ * Run by renderAll() every time, so no edit anywhere else in the app has to
+ * remember to keep groups tidy. In order:
+ *   1. A track pointing at a group that does not exist is in no group.
+ *   2. A track that has landed BETWEEN two tracks of the same group (a new
+ *      track added above one of them, say) joins that group - it is inside
+ *      the block on screen, so that is where it belongs.
+ *   3. A group's tracks are gathered together if anything still splits them,
+ *      at the place of the group's top track.
+ *   4. A group with no tracks left is removed.
+ */
+function normalizeTrackGroups() {
+  const tracks = state.project.tracks;
+  const groups = trackGroups();
+
+  for (const track of tracks) {                                   // 1
+    if (track.groupId && !findGroup(track.groupId)) delete track.groupId;
+  }
+
+  for (let i = 1; i < tracks.length - 1; i++) {                   // 2
+    const above = tracks[i - 1].groupId;
+    if (!tracks[i].groupId && above && above === tracks[i + 1].groupId) {
+      tracks[i].groupId = above;
+    }
+  }
+
+  const ordered = [];                                             // 3
+  const placed = new Set();
+  for (const track of tracks) {
+    if (placed.has(track)) continue;
+    const block = track.groupId ? tracks.filter((t) => t.groupId === track.groupId) : [track];
+    for (const member of block) { ordered.push(member); placed.add(member); }
+  }
+  // Refill the SAME array rather than swapping in a new one, so anything
+  // holding a reference to the track list still sees the real thing.
+  tracks.splice(0, tracks.length, ...ordered);
+
+  state.project.groups = groups.filter((g) => tracks.some((t) => t.groupId === g.id));  // 4
+
+  // Forget picked tracks that have been deleted, or folded out of sight.
+  state.pickedTrackIds = state.pickedTrackIds.filter((id) => {
+    const track = tracks.find((t) => t.id === id);
+    return track && !isTrackFolded(track);
+  });
+}
+
+/** "Group 1", "Group 2"... the first name not already taken. */
+function nextGroupName() {
+  const taken = new Set(trackGroups().map((g) => g.name));
+  let number = 1;
+  while (taken.has("Group " + number)) number++;
+  return "Group " + number;
+}
+
+/**
+ * Ctrl/Cmd+G, or the Group button: put the picked tracks in a new group.
+ *
+ * With nothing picked, the active track starts a group on its own - you can
+ * then drag or step other tracks into it. Picked tracks that were not next to
+ * each other are gathered together at the place of the topmost one, keeping
+ * their order. A picked track that was in another group moves to the new one
+ * (a group inside a group would be more confusing than useful on a timeline).
+ */
+function groupPickedTracks() {
+  const tracks = state.project.tracks;
+  let picked = tracks.filter((t) => state.pickedTrackIds.includes(t.id));
+  if (!picked.length) {
+    const active = tracks.find((t) => t.id === state.activeTrackId);
+    if (active) picked = [active];
+  }
+  if (!picked.length) {
+    toast("Pick the tracks to group first: click a track's name on the left, then "
+          + "Shift+click or Ctrl/Cmd+click to pick more.", "warn", 7000);
+    return;
+  }
+
+  pushUndo("group tracks");
+  const group = { id: uid("grp"), name: nextGroupName(), collapsed: false };
+  trackGroups().push(group);
+
+  // Gather them at the topmost picked track. `picked` is already in track
+  // order, because it was filtered out of the track list.
+  const at = tracks.indexOf(picked[0]);
+  const others = tracks.filter((t) => !picked.includes(t));
+  const before = tracks.slice(0, at).filter((t) => !picked.includes(t)).length;
+  others.splice(before, 0, ...picked);
+  const reordered = others.some((t, i) => t !== tracks[i]);
+  tracks.splice(0, tracks.length, ...others);
+  for (const track of picked) track.groupId = group.id;
+
+  state.pickedTrackIds = [];
+  renderAll();
+
+  const message = group.name + " made with " + picked.length
+    + (picked.length === 1 ? " track. Drag tracks onto it, or step them in with their arrows, to add more."
+                           : " tracks.")
+    + (reordered ? " They were not next to each other, so they have been moved together." : "")
+    + " Double-click its name to rename it.";
+  toast(message, "good", 7000);
+  announce(message);
+}
+
+/** Break a group up. Its tracks stay exactly where they are. */
+function ungroupGroup(groupId) {
+  const group = findGroup(groupId);
+  if (!group) return;
+  pushUndo("ungroup tracks");
+  for (const track of groupMembers(groupId)) delete track.groupId;
+  state.project.groups = trackGroups().filter((g) => g !== group);
+  renderAll();
+  announce(group.name + " ungrouped. Its tracks are where they were.");
+}
+
+/** Ctrl/Cmd+Shift+G: ungroup the group of the active track, or a picked one. */
+function ungroupActiveTrack() {
+  const tracks = state.project.tracks;
+  const candidates = [state.activeTrackId, ...state.pickedTrackIds];
+  for (const id of candidates) {
+    const track = tracks.find((t) => t.id === id);
+    if (track && track.groupId) { ungroupGroup(track.groupId); return; }
+  }
+  toast("The active track is not in a group.", "warn");
+}
+
+/**
+ * Fold a group away, or open it out again.
+ *
+ * No undo step for this: folding is about what you are LOOKING at, like
+ * scrolling, and Undo stepping back through folds would just get in the way
+ * of undoing real edits.
+ */
+function toggleGroupFolded(groupId) {
+  const group = findGroup(groupId);
+  if (!group) return;
+  group.collapsed = !group.collapsed;
+  renderAll();
+  scheduleBackup();
+  announce(group.name + (group.collapsed ? " folded. Its tracks still play." : " opened."));
+  // Keep keyboard focus on the button that was pressed, now rebuilt.
+  const button = document.querySelector('.group-head[data-group="' + CSS.escape(groupId) + '"] .fold');
+  if (button) button.focus();
+}
+
+/** The group's eye: hide every picture track in it, or show them all again. */
+function toggleGroupHidden(groupId) {
+  const tracks = groupMembers(groupId).filter((t) => t.kind !== "audio");
+  if (!tracks.length) return;
+  const allHidden = tracks.every((t) => t.hidden);
+  pushUndo(allHidden ? "show group" : "hide group");
+  for (const track of tracks) track.hidden = !allHidden;
+  renderAll();
+}
+
+/** The group's speaker: mute every track in it that has sound, or unmute them. */
+function toggleGroupMuted(groupId) {
+  const tracks = groupMembers(groupId).filter((t) => t.kind === "video" || t.kind === "audio");
+  if (!tracks.length) return;
+  const allMuted = tracks.every((t) => t.muted);
+  pushUndo(allMuted ? "unmute group" : "mute group");
+  for (const track of tracks) track.muted = !allMuted;
+  renderAll();
+}
+
+/**
+ * The block of tracks something would step past: a single track, or - when
+ * that track is in a group other than `ignoreGroupId` - its whole group.
+ */
+function trackUnit(track, ignoreGroupId) {
+  if (track.groupId && track.groupId !== ignoreGroupId) return groupMembers(track.groupId);
+  return [track];
+}
+
+/**
+ * Move a whole group (all its tracks together) to sit above or below a unit
+ * of tracks - a single track, or a whole other group.
+ */
+function placeGroupBeside(groupId, unit, above) {
+  const tracks = state.project.tracks;
+  const block = groupMembers(groupId);
+  if (!block.length || !unit.length || unit.some((t) => block.includes(t))) return false;
+  const others = tracks.filter((t) => !block.includes(t));
+  let at = others.indexOf(unit[0]);
+  if (!above) at += unit.length;
+  others.splice(at, 0, ...block);
+  if (others.every((t, i) => t === tracks[i])) return false;   // already there
+  pushUndo("reorder tracks");
+  tracks.splice(0, tracks.length, ...others);
+  renderAll();
+  const group = findGroup(groupId);
+  announce(group.name + " moved, now starting at layer " + (tracks.indexOf(block[0]) + 1)
+           + " of " + tracks.length);
+  return true;
+}
+
+/** The group's up and down arrows: hop past the next track, or next group. */
+function moveGroupBy(groupId, delta) {
+  const tracks = state.project.tracks;
+  const block = groupMembers(groupId);
+  if (!block.length) return false;
+  const first = tracks.indexOf(block[0]);
+  const neighbour = tracks[delta < 0 ? first - 1 : first + block.length];
+  if (!neighbour) return false;
+  return placeGroupBeside(groupId, trackUnit(neighbour, groupId), delta < 0);
+}
+
+/**
+ * Clicking a track header. A plain click makes it the active track and
+ * clears any picking; Shift+click picks every track from the active one to
+ * this one; Ctrl/Cmd+click adds or removes just this one. Picked tracks are
+ * what Group puts together.
+ */
+function pickTrack(trackId, event) {
+  const tracks = state.project.tracks;
+  if (event && event.shiftKey && state.activeTrackId) {
+    const a = tracks.findIndex((t) => t.id === state.activeTrackId);
+    const b = tracks.findIndex((t) => t.id === trackId);
+    if (a !== -1 && b !== -1) {
+      const low = Math.min(a, b), high = Math.max(a, b);
+      state.pickedTrackIds = tracks.slice(low, high + 1)
+        .filter((t) => !isTrackFolded(t)).map((t) => t.id);
+      syncPickedTracks();
+      return;                 // the active track stays the anchor of the range
+    }
+  }
+  if (event && (event.ctrlKey || event.metaKey)) {
+    togglePickTrack(trackId);
+    return;
+  }
+  if (state.pickedTrackIds.length) { state.pickedTrackIds = []; syncPickedTracks(); }
+  setActiveTrack(trackId);
+}
+
+/** Add one track to the picked set, or take it out. (Ctrl/Cmd+click, or Space.) */
+function togglePickTrack(trackId) {
+  // The first Ctrl+click also picks the active track: that is what you were
+  // looking at, and it is how every file manager works.
+  const picked = new Set(state.pickedTrackIds.length ? state.pickedTrackIds
+                         : (state.activeTrackId && state.activeTrackId !== trackId ? [state.activeTrackId] : []));
+  if (picked.has(trackId)) picked.delete(trackId); else picked.add(trackId);
+  state.pickedTrackIds = [...picked];
+  syncPickedTracks();
+}
+
+/** Show which tracks are picked, without rebuilding the whole timeline. */
+function syncPickedTracks() {
+  $$(".track-head").forEach((node) => {
+    const on = state.pickedTrackIds.includes(node.getAttribute("data-track"));
+    node.classList.toggle("picked", on);
+  });
+  const count = state.pickedTrackIds.length;
+  announce(count ? count + (count === 1 ? " track" : " tracks")
+                   + " picked. Press Group, or Ctrl+G, to put them in a group."
+                 : "No tracks picked.");
+}
+
+/** A group's header, in the left-hand column. */
+function buildGroupHead(group) {
+  const tracks = state.project.tracks;
+  const members = groupMembers(group.id);
+  const first = tracks.indexOf(members[0]);
+  const last = first + members.length - 1;
+  const pictures = members.filter((t) => t.kind !== "audio");
+  const sounds = members.filter((t) => t.kind === "video" || t.kind === "audio");
+  const allHidden = pictures.length > 0 && pictures.every((t) => t.hidden);
+  const allMuted = sounds.length > 0 && sounds.every((t) => t.muted);
+  const trackWord = members.length === 1 ? "1 track" : members.length + " tracks";
+
+  /* --- Row 1: drag handle, fold button, name and how many tracks --- */
+  const grip = el("span", { class: "grip", title: "Drag to move the whole group",
+    "aria-hidden": "true" }, [icon("grip-vertical", 13)]);
+
+  const fold = iconButton(group.collapsed ? "chevron-right" : "chevron-down",
+    (group.collapsed ? "Open " : "Fold ") + group.name
+      + (group.collapsed ? " to show its tracks" : " (its tracks still play)"),
+    () => toggleGroupFolded(group.id), { class: "fold" });
+  fold.setAttribute("aria-expanded", String(!group.collapsed));
+
+  const nameNode = el("div", {
+    class: "name", tabindex: "0", role: "button",
+    title: group.name + " - double-click to rename",
+    "aria-label": "Rename " + group.name + ", a group of " + trackWord
+                  + (group.collapsed ? ", folded" : ""),
+  }, [document.createTextNode(group.name)]);
+  nameNode.addEventListener("dblclick", () => beginTrackRename(nameNode, group, "group"));
+  nameNode.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === "F2") {
+      event.preventDefault();
+      beginTrackRename(nameNode, group, "group");
+    }
+  });
+
+  const count = el("span", { class: "count", title: trackWord, "aria-hidden": "true",
+    text: String(members.length) });
+
+  /* --- Row 2: the controls, which act on every track in the group --- */
+  const controls = [
+    iconButton("chevron-up", "Move " + group.name + " up (in front)",
+      () => moveGroupBy(group.id, -1), { disabled: first === 0 }),
+    iconButton("chevron-down", "Move " + group.name + " down (behind)",
+      () => moveGroupBy(group.id, 1), { disabled: last === tracks.length - 1 }),
+  ];
+  if (sounds.length) {
+    controls.push(iconButton(allMuted ? "volume-x" : "volume-2",
+      (allMuted ? "Unmute every track in " : "Mute every track in ") + group.name,
+      () => toggleGroupMuted(group.id), { pressed: allMuted }));
+  }
+  if (pictures.length) {
+    controls.push(iconButton(allHidden ? "eye-off" : "eye",
+      (allHidden ? "Show every track in " : "Hide every track in ") + group.name,
+      () => toggleGroupHidden(group.id), { pressed: allHidden }));
+  }
+  // Ungroup sits up on the name row, at the end: it is used least, and the
+  // controls row has to fit four finger-sized buttons on a phone.
+  const ungroup = iconButton("ungroup", "Ungroup " + group.name
+    + " (Ctrl+Shift+G) - its tracks stay where they are", () => ungroupGroup(group.id));
+
+  const head = el("div", {
+    class: "group-head" + (group.collapsed ? " folded" : ""),
+    draggable: "true",
+    "data-group": group.id,
+    role: "group",
+    "aria-label": group.name + ", a group of " + trackWord + (group.collapsed ? ", folded" : ""),
+  }, [
+    el("div", { class: "name-row" }, [grip, fold, icon("layers", 12), nameNode, count, ungroup]),
+    el("div", { class: "ctrls" }, controls),
+  ]);
+  attachGroupDragHandlers(head, group);
+  return head;
+}
+
+/**
+ * The group's row on the timeline side: one thin bar per clip, a row of bars
+ * per track, so even a folded group shows where its clips are.
+ * Double-click it to fold or open the group.
+ */
+function buildGroupLane(group, gridStep) {
+  const lane = el("div", {
+    class: "group-lane",
+    "data-group": group.id,
+    title: group.name + " - double-click to " + (group.collapsed ? "open" : "fold") + " it",
+    style: "background-size:" + gridStep.toFixed(2) + "px 100%",
+  });
+  const members = groupMembers(group.id);
+  // Each track gets an equal slice of the row, between a small top and
+  // bottom margin, so the bars line up with the order of the tracks.
+  const rows = Math.max(1, members.length);
+  members.forEach((track, row) => {
+    for (const clip of track.clips) {
+      lane.appendChild(el("div", {
+        class: "group-bar " + track.kind,
+        style: "left:" + timeToX(clip.start).toFixed(1) + "px;"
+             + "width:" + Math.max(2, timeToX(clip.duration)).toFixed(1) + "px;"
+             + "top:calc(6px + (100% - 12px) * " + row + " / " + rows + ");"
+             + "height:calc((100% - 12px) / " + rows + " - 2px)",
+      }));
+    }
+  });
+  lane.addEventListener("dblclick", () => toggleGroupFolded(group.id));
+  return lane;
+}
+
+/**
+ * Dragging a group header: the whole group moves. Dropping a TRACK on a group
+ * header puts it above the group (top half) or into it (bottom half).
+ */
+function attachGroupDragHandlers(head, group) {
+  head.addEventListener("dragstart", (event) => {
+    if (event.target.closest("button, input")) { event.preventDefault(); return; }
+    event.dataTransfer.setData("text/plain", "group:" + group.id);
+    event.dataTransfer.effectAllowed = "move";
+    head.classList.add("dragging");
+  });
+  head.addEventListener("dragend", () => {
+    head.classList.remove("dragging");
+    clearTrackDropMarkers();
+  });
+  head.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    const rect = head.getBoundingClientRect();
+    const above = event.clientY < rect.top + rect.height / 2;
+    clearTrackDropMarkers();
+    head.classList.add(above ? "drop-above" : "drop-below");
+  });
+  head.addEventListener("dragleave", () => head.classList.remove("drop-above", "drop-below"));
+  head.addEventListener("drop", (event) => {
+    const payload = event.dataTransfer.getData("text/plain") || "";
+    clearTrackDropMarkers();
+    const rect = head.getBoundingClientRect();
+    const above = event.clientY < rect.top + rect.height / 2;
+    const members = groupMembers(group.id);
+    if (!members.length) return;
+
+    if (payload.indexOf("group:") === 0) {
+      // Another group: above or below this whole one.
+      event.preventDefault();
+      placeGroupBeside(payload.slice(6), members, above);
+    } else if (payload.indexOf("track:") === 0) {
+      event.preventDefault();
+      const trackId = payload.slice(6);
+      if (above) {
+        // Above the header: just above the group, and in no group.
+        const tracks = state.project.tracks;
+        const track = tracks.find((t) => t.id === trackId);
+        if (!track) return;
+        pushUndo("reorder tracks");
+        const from = tracks.indexOf(track);
+        tracks.splice(from, 1);
+        // In front of the group's top track - or, if it WAS the group's only
+        // track, right back where it was.
+        const top = members.find((m) => m !== track);
+        tracks.splice(top ? tracks.indexOf(top) : from, 0, track);
+        delete track.groupId;
+        renderAll();
+        announce(track.name + " moved above " + group.name);
+      } else if (group.collapsed) {
+        // A folded group: the track goes in at the bottom, out of sight.
+        reorderTrack(trackId, members[members.length - 1].id, false);
+      } else {
+        // An open group: the track becomes its top track.
+        reorderTrack(trackId, members[0].id, true);
+      }
+    }
+  });
 }
 
 
@@ -9504,6 +10141,106 @@ function keyedSourceFor(clip, source, sourceW, sourceH) {
   }
 }
 
+/* ---- Blurred background (3.38) --------------------------------------------
+ * The look you see all over social media when a phone video is shown in a
+ * landscape frame: instead of black bars down the sides, the same video fills
+ * the whole frame behind itself, blown up and heavily blurred.
+ *
+ * It is drawn live, as part of the clip, rather than as a second clip on a
+ * track below. That way it can never drift out of step: trim, split, speed
+ * up, fade or move the clip and its background follows, frame for frame.
+ *
+ * How it is drawn, cheaply:
+ *   1. The clip (with its crop) is drawn small - up to 8 times smaller than
+ *      the frame - covering a little scratch canvas edge to edge.
+ *   2. It is blurred there. Blurring a small picture is far less work than
+ *      blurring a full-size one, and shrinking it is itself a kind of blur.
+ *   3. It is darkened a touch, so the real clip in front stands out.
+ *   4. The scratch canvas is stretched back up over the whole frame.
+ * ------------------------------------------------------------------------- */
+
+/** Where the sliders start when you first switch it on. */
+const BACKDROP_DEFAULTS = { blur: 60, dim: 0.25 };
+
+let backdropScratch = null;     // reused for every clip and every frame
+
+/** True when this clip should draw a blurred background behind itself. */
+function backdropActive(clip) {
+  return !!(clip.backdrop && clip.backdrop.enabled
+            && (clip.kind === "video" || clip.kind === "image"));
+}
+
+/**
+ * Paint the blurred background for one clip, over the whole frame.
+ *
+ * @param ctx           the canvas being drawn on (preview or export)
+ * @param clip          the clip, for its backdrop settings
+ * @param source        the picture: an <img>, a <video> or a VideoFrame
+ * @param geometry      from clipGeometry - only its crop (sx, sy, sw, sh) is used
+ * @param width, height the frame, in the units ctx is drawing in
+ * @param deviceScale   how many real pixels make one of those units
+ * @param filterString  the clip's Color settings, so the background matches
+ */
+function drawBackdrop(ctx, clip, source, geometry, width, height, deviceScale, filterString) {
+  const settings = clip.backdrop;
+  const realW = Math.max(1, Math.round(width * deviceScale));
+  const realH = Math.max(1, Math.round(height * deviceScale));
+
+  // The blur is a share of the frame's height, so it looks the same in a
+  // small preview and in a 4K export. 100% is a radius of 8% of the height.
+  const radius = (settings.blur / 100) * 0.08 * realH;
+  // How much smaller to work. A strong blur hides the lost detail completely;
+  // a weak one needs more of it, so it shrinks less.
+  const shrink = clamp(radius / 6, 1, 8);
+  const w = Math.max(8, Math.round(realW / shrink));
+  const h = Math.max(8, Math.round(realH / shrink));
+
+  if (!backdropScratch) backdropScratch = document.createElement("canvas");
+  if (backdropScratch.width !== w) backdropScratch.width = w;
+  if (backdropScratch.height !== h) backdropScratch.height = h;
+  const g = backdropScratch.getContext("2d");
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalAlpha = 1;
+  g.filter = "none";
+  g.clearRect(0, 0, w, h);
+
+  // "Cover": scale the (cropped) picture until it fills the scratch canvas
+  // both ways, and let the overflow fall off the edges.
+  const cover = Math.max(w / geometry.sw, h / geometry.sh);
+  const drawW = geometry.sw * cover;
+  const drawH = geometry.sh * cover;
+  const paint = () => g.drawImage(source,
+    geometry.sx, geometry.sy, geometry.sw, geometry.sh,
+    (w - drawW) / 2, (h - drawH) / 2, drawW, drawH);
+
+  try {
+    // A sharp copy first, then the blurred one over it. A blur pulls in
+    // empty space at the edges of the canvas; the sharp copy underneath
+    // fills that back in, so the background never fades out at the borders.
+    paint();
+    if (radius / shrink > 0.3) {
+      g.filter = "blur(" + (radius / shrink).toFixed(2) + "px)";
+      paint();
+      g.filter = "none";
+    }
+  } catch (_) {
+    return;   // the frame is not ready to be drawn yet; skip the background
+  }
+  if (settings.dim > 0) {
+    g.fillStyle = "rgba(0,0,0," + clamp(settings.dim, 0, 0.9).toFixed(3) + ")";
+    g.fillRect(0, 0, w, h);
+  }
+
+  // Stretch it back up over the whole frame. Smoothing on, so the
+  // enlargement is soft rather than blocky.
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  if (filterString) ctx.filter = filterString;
+  ctx.drawImage(backdropScratch, 0, 0, width, height);
+  ctx.restore();
+}
+
 function drawClip(ctx, clip, time, width, height, look) {
   // `look` is how a transition wants this clip drawn (see TRANSITIONS); left
   // out, the clip is drawn exactly as it always was.
@@ -9561,6 +10298,9 @@ function drawClip(ctx, clip, time, width, height, look) {
   // flips, masks, shadows, filters - works on whatever `source` is, so the
   // substitution is invisible to all of it.
   // (Keying a color clip would only ever remove all of it or none of it.)
+  // The blurred background (3.38) uses the picture as it was BEFORE keying:
+  // a green screen with its green taken out would blur to almost nothing.
+  const unkeyedSource = source;
   const keyed = isSolid ? { image: source, scale: 1 } : keyedSourceFor(clip, source, sourceW, sourceH);
   source = keyed.image;
 
@@ -9577,6 +10317,13 @@ function drawClip(ctx, clip, time, width, height, look) {
     clip.filters,
     (height / (state.project.height || height)) * deviceScale
   );
+
+  // The blurred background (3.38) goes down first, behind the clip, filling
+  // the whole frame whatever size and place the clip itself has.
+  if (backdropActive(clip)) {
+    drawBackdrop(ctx, clip, unkeyedSource, geometry, width, height, deviceScale, filterString);
+  }
+
   if (filterString) ctx.filter = filterString;
 
   // Position is stored as a fraction of the canvas so it survives a change of
@@ -10459,7 +11206,9 @@ function resetView() {
  * What each handle does:
  *
  *   inside the box   move          changes transform.x / transform.y
- *   corner           resize        changes transform.scale, evenly
+ *   corner           resize        changes transform.scale, evenly, with
+ *                                  the opposite corner pinned (3.38), or
+ *                                  about the center with Ctrl/Cmd held
  *   edge             crop          changes crop.left / right / top / bottom
  *   stem above       rotate        changes transform.rotation
  *
@@ -10870,6 +11619,7 @@ function setupOverlayInteraction() {
         clip.region.y = overlayDrag.startRegion.y
           + (now.y - overlayDrag.startPointer.y) / state.project.height;
       } else {
+        overlayDrag.fromCenter = fromCenter(event);
         applyRegionResize(clip, overlayDrag, now);
       }
       renderPreview();
@@ -10914,10 +11664,11 @@ function setupOverlayInteraction() {
       while (degrees < -180) degrees += 360;
       target.rotation = degrees;
 
-    } else if (overlayDrag.mode.length === 2) {
-      // A corner: scale evenly, using how much further the pointer is from the
-      // center than it started. Working from distances rather than from x and y
-      // separately means this behaves correctly on a rotated clip.
+    } else if (overlayDrag.mode.length === 2 && fromCenter(event)) {
+      // A corner with Ctrl/Cmd (or Alt/Option) held: scale evenly about the
+      // CENTER, so all four sides move. Uses how much further the pointer is
+      // from the center than it started; working from distances rather than
+      // from x and y separately means this behaves correctly on a rotated clip.
       const distanceNow = Math.hypot(now.x - startBox.cx, now.y - startBox.cy);
       const distanceStart = Math.hypot(
         overlayDrag.startPointer.x - startBox.cx,
@@ -10927,6 +11678,15 @@ function setupOverlayInteraction() {
         const factor = distanceNow / distanceStart;
         target.scale = clamp(overlayDrag.startTransform.scale * factor, 0.05, 4);
       }
+      // Back to where it started, in case the drag began without the key.
+      target.x = overlayDrag.startTransform.x;
+      target.y = overlayDrag.startTransform.y;
+
+    } else if (overlayDrag.mode.length === 2) {
+      // A corner, plain (3.38): the corner you grab moves and the OPPOSITE
+      // corner stays pinned, like resizing a picture in any document. The
+      // clip keeps its proportions.
+      resizeFromCorner(target, overlayDrag, now);
 
     } else {
       applyEdgeCrop(clip, overlayDrag, now);
@@ -10948,6 +11708,60 @@ function setupOverlayInteraction() {
   };
   svg.addEventListener("pointerup", finish);
   svg.addEventListener("pointercancel", finish);
+}
+
+/**
+ * Is the "resize from the center" key held? Ctrl on Windows and Linux, Cmd
+ * on a Mac - and Alt/Option too, which is what most design apps use for it.
+ */
+function fromCenter(event) {
+  return !!(event && (event.ctrlKey || event.metaKey || event.altKey));
+}
+
+/**
+ * Scale a clip by one corner, keeping the opposite corner where it is (3.38).
+ *
+ * The working is done in the clip's OWN space - turned so its edges are level
+ * - which is what makes this right for a rotated clip too:
+ *
+ *   1. The pinned corner and the grabbed corner are opposite ends of the
+ *      clip's diagonal.
+ *   2. How far the pointer has travelled ALONG that diagonal says how much
+ *      bigger or smaller the clip should be. (Movement across the diagonal is
+ *      ignored, so the clip keeps its proportions.)
+ *   3. The new center is halfway along the new, longer or shorter diagonal
+ *      from the pinned corner. That is turned back into the frame's space
+ *      and becomes the clip's position.
+ */
+function resizeFromCorner(target, drag, pointerNow) {
+  const box = drag.startBox;
+  // Which way the grabbed corner points from the center: +1 for east and
+  // south, -1 for west and north.
+  const sx = drag.mode.indexOf("e") !== -1 ? 1 : -1;
+  const sy = drag.mode.indexOf("s") !== -1 ? 1 : -1;
+  const pinned = { x: -sx * box.w / 2, y: -sy * box.h / 2 };   // the corner that stays
+  const diagonal = { x: sx * box.w, y: sy * box.h };            // pinned -> grabbed
+  const lengthSquared = diagonal.x * diagonal.x + diagonal.y * diagonal.y;
+  if (lengthSquared < 1) return;
+
+  // The pointer, in the clip's own space, measured from the pinned corner.
+  // Using the pointer's movement (rather than where it is) means grabbing a
+  // little inside the handle does not make the clip jump.
+  const localNow = toLocalSpace(pointerNow, box.cx, box.cy, box.rotation);
+  const moved = { x: localNow.x - drag.startLocal.x, y: localNow.y - drag.startLocal.y };
+  const along = (moved.x * diagonal.x + moved.y * diagonal.y) / lengthSquared;
+
+  const startScale = drag.startTransform.scale;
+  const scale = clamp(startScale * (1 + along), 0.05, 4);
+  const factor = scale / startScale;          // the real change, after the clamp
+
+  // The new center: halfway along the resized diagonal from the pinned corner.
+  const centerLocal = { x: pinned.x + diagonal.x * factor / 2, y: pinned.y + diagonal.y * factor / 2 };
+  const center = toProjectSpace(centerLocal, box.cx, box.cy, box.rotation);
+
+  target.scale = scale;
+  target.x = drag.startTransform.x + (center.x - box.cx) / state.project.width;
+  target.y = drag.startTransform.y + (center.y - box.cy) / state.project.height;
 }
 
 /**
@@ -10977,6 +11791,14 @@ function applyRegionResize(clip, drag, pointerNow) {
   if (mode.indexOf("e") !== -1) right += dx;
   if (mode.indexOf("n") !== -1) top += dy;
   if (mode.indexOf("s") !== -1) bottom += dy;
+  // Ctrl/Cmd (or Alt/Option) held: resize from the center (3.38) - the
+  // opposite side moves the same amount the other way, so the middle stays.
+  if (drag.fromCenter) {
+    if (mode.indexOf("w") !== -1) right -= dx;
+    if (mode.indexOf("e") !== -1) left -= dx;
+    if (mode.indexOf("n") !== -1) bottom -= dy;
+    if (mode.indexOf("s") !== -1) top -= dy;
+  }
 
   // Never let a region collapse to nothing - a zero-size blur hides nothing
   // while still looking like it is doing its job.
@@ -11085,6 +11907,7 @@ function applyEdgeCrop(clip, drag, pointerNow) {
  * ====================================================================== */
 
 function renderAll() {
+  normalizeTrackGroups();    // groups tidy before anything is drawn (3.38)
   pruneClipRuntime();
   renderMediaPool();
   renderTrackHeads();
@@ -11655,6 +12478,12 @@ function renderTrackHeads() {
   const tracks = state.project.tracks;
 
   tracks.forEach((track, index) => {
+    // A group's header goes in front of its top track, and a folded group's
+    // tracks are not drawn at all (3.38).
+    const group = findGroup(track.groupId);
+    if (group && groupMembers(group.id)[0] === track) container.appendChild(buildGroupHead(group));
+    if (group && group.collapsed) return;
+
     /* --- Row 1: a drag handle and the track name --- */
     const grip = el("span", {
       class: "grip",
@@ -11692,6 +12521,13 @@ function renderTrackHeads() {
         event.preventDefault();
         beginTrackRename(nameNode, track);
       }
+      // Space picks or unpicks the track for grouping - the keyboard's
+      // Ctrl+click. Stopped here so it does not also start playback.
+      if (event.key === " ") {
+        event.preventDefault();
+        event.stopPropagation();
+        togglePickTrack(track.id);
+      }
     });
 
     const nameRow = el("div", { class: "name-row" }, [grip, nameNode]);
@@ -11699,10 +12535,12 @@ function renderTrackHeads() {
     /* --- Row 2: the controls, all icon-only --- */
     const controls = [];
 
+    // In a group, the last step up or down takes the track out of the group
+    // rather than past another track, so the arrow is never dead there.
     controls.push(iconButton("chevron-up", "Move " + track.name + " up (in front)",
-      () => moveTrackBy(track.id, -1), { disabled: index === 0 }));
+      () => moveTrackBy(track.id, -1), { disabled: index === 0 && !group }));
     controls.push(iconButton("chevron-down", "Move " + track.name + " down (behind)",
-      () => moveTrackBy(track.id, 1), { disabled: index === tracks.length - 1 }));
+      () => moveTrackBy(track.id, 1), { disabled: index === tracks.length - 1 && !group }));
 
     // A blur track carries no sound at all, so a mute button on it is a
     // control that can never do anything.
@@ -11734,17 +12572,21 @@ function renderTrackHeads() {
 
     /* --- The header itself, which is also a drag source and a drop target --- */
     const head = el("div", {
-      class: "track-head" + (track.id === state.activeTrackId ? " active" : ""),
+      class: "track-head" + (track.id === state.activeTrackId ? " active" : "")
+           + (group ? " in-group" : "")
+           + (state.pickedTrackIds.includes(track.id) ? " picked" : ""),
       draggable: "true",
       "data-track": track.id,
-      "aria-label": track.name + ", layer " + (index + 1) + " of " + tracks.length,
+      "aria-label": track.name + ", layer " + (index + 1) + " of " + tracks.length
+                    + (group ? ", in " + group.name : ""),
     }, [kindRow, nameRow, el("div", { class: "ctrls" }, controls)]);
 
     // Clicking anywhere on the header that is not a control makes this the
-    // active track.
+    // active track. Shift+click and Ctrl/Cmd+click pick tracks to group
+    // instead (3.38) - see pickTrack.
     head.addEventListener("pointerdown", (event) => {
       if (event.target.closest("button, input")) return;
-      setActiveTrack(track.id);
+      pickTrack(track.id, event);
     });
 
     attachTrackDragHandlers(head, track);
@@ -11758,12 +12600,15 @@ function renderTrackHeads() {
  * Editing a name where it already sits is far less disruptive than opening a
  * dialog for it. Enter or clicking away commits; Escape abandons the change.
  */
-function beginTrackRename(nameNode, track) {
+function beginTrackRename(nameNode, track, what) {
+  // `track` can also be a track group (3.38): anything with a name. `what`
+  // says which, for the screen reader and the Undo list.
+  const kind = what === "group" ? "group" : "track";
   const input = el("input", {
     type: "text",
     value: track.name,
     maxlength: "40",
-    "aria-label": "Track name",
+    "aria-label": kind === "group" ? "Group name" : "Track name",
     style: "width:100%;font:inherit;font-size:11.5px;font-weight:600;padding:1px 4px;"
          + "background:var(--panel);color:var(--text);border:1px solid var(--accent);"
          + "border-radius:3px",
@@ -11775,7 +12620,7 @@ function beginTrackRename(nameNode, track) {
     finished = true;
     const wanted = safeString(input.value, 40, track.name).trim();
     if (keep && wanted && wanted !== track.name) {
-      pushUndo("rename track");
+      pushUndo("rename " + kind);
       track.name = wanted;
     }
     renderAll();
@@ -11833,17 +12678,26 @@ function attachTrackDragHandlers(head, track) {
   head.addEventListener("drop", (event) => {
     const payload = event.dataTransfer.getData("text/plain") || "";
     clearTrackDropMarkers();
+    const rect = head.getBoundingClientRect();
+    const above = event.clientY < rect.top + rect.height / 2;
+    // A whole group (3.38) lands above or below this track - or, when this
+    // track is in another group, above or below that whole group, because
+    // groups do not go inside groups.
+    if (payload.indexOf("group:") === 0) {
+      event.preventDefault();
+      const groupId = payload.slice(6);
+      placeGroupBeside(groupId, trackUnit(track, groupId), above);
+      return;
+    }
     // Ignore anything that is not a track - media dropped here is not for us.
     if (payload.indexOf("track:") !== 0) return;
     event.preventDefault();
-    const rect = head.getBoundingClientRect();
-    const above = event.clientY < rect.top + rect.height / 2;
     reorderTrack(payload.slice(6), track.id, above);
   });
 }
 
 function clearTrackDropMarkers() {
-  $$(".track-head").forEach((n) => n.classList.remove("drop-above", "drop-below"));
+  $$(".track-head, .group-head").forEach((n) => n.classList.remove("drop-above", "drop-below"));
 }
 
 /* ---- Timeline --------------------------------------------------------- */
@@ -12145,6 +12999,7 @@ function setupMarkers() {
   });
 
   $("#btn-marker").addEventListener("click", addMarkerAtPlayhead);
+  $("#btn-group").addEventListener("click", groupPickedTracks);    // 3.38
   $("#marker-done").addEventListener("click", () => $("#dlg-marker").close());
   $("#marker-delete").addEventListener("click", () => {
     const id = openMarkerId;
@@ -12209,6 +13064,12 @@ function renderTracks(width) {
   const gridStep = pps < 12 ? pps * 10 : pps;
 
   for (const track of state.project.tracks) {
+    // Same rows as the headers on the left (3.38): a group's own row first,
+    // and nothing at all for the tracks of a folded group.
+    const group = findGroup(track.groupId);
+    if (group && groupMembers(group.id)[0] === track) container.appendChild(buildGroupLane(group, gridStep));
+    if (group && group.collapsed) continue;
+
     const lane = el("div", {
       class: "track-lane" + (track.id === state.activeTrackId ? " active" : ""),
       "data-track": track.id,
@@ -12907,8 +13768,11 @@ function setupTimelineInteraction() {
       announce("Moved to " + timecode(found.clip.start, state.project.fps));
     } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault();
-      const index = state.project.tracks.indexOf(found.track);
-      const target = state.project.tracks[index + (event.key === "ArrowDown" ? 1 : -1)];
+      // The next track you can SEE: tracks in a folded group are skipped,
+      // or the clip would vanish into a row that is not on screen (3.38).
+      const onScreen = state.project.tracks.filter((t) => !isTrackFolded(t) || t === found.track);
+      const index = onScreen.indexOf(found.track);
+      const target = onScreen[index + (event.key === "ArrowDown" ? 1 : -1)];
       if (!target) return;
       pushUndo("move clip to track");
       if (moveClipToTrack(found.clip, found.track, target.id)) {
@@ -13295,6 +14159,7 @@ function renderInspector() {
   // never be the open one - the D key and the transition menu both open it.
   if (canTransition(clip)) sections.push("transitions");
   if (clip.kind !== "blur") sections.push("fades");
+  if ((clip.kind === "image" || clip.kind === "video") && media) sections.push("backdrop");
   sections.push("actions");
 
   state.inspectorSection = defaultInspectorSection(clip, sections);
@@ -13576,6 +14441,19 @@ function renderInspector() {
       "A fade ramps the picture and the sound together. You can set one here, "
       + "or drag the small squares in the clip's top corners on the timeline - "
       + "the white ramp drawn across the clip shows how long it is."));
+  }
+
+  /* --- BLURRED BACKGROUND (3.38) --- */
+  if ((clip.kind === "image" || clip.kind === "video") && media) {
+    body.appendChild(accordion("backdrop", "Blurred background", "rectangle-vertical",
+      (panel) => renderBackdropSection(panel, clip, media, beginEdit, commitEdit),
+      backdropActive(clip),
+      "Made for a phone video in a wide frame: instead of black bars at the "
+      + "sides, the clip itself fills the whole frame behind it - enlarged, "
+      + "cropped and blurred. It is part of the clip, not a copy on another "
+      + "track, so it follows every trim, split, speed change, fade and move. "
+      + "It uses the clip's Color settings too, but not its green screen. "
+      + "Darken keeps the background from competing with the real picture."));
   }
 
   /* --- ACTIONS --- */
@@ -14251,6 +15129,55 @@ function renderChromaSection(body, clip) {
       if (state.pickingChroma === clip.id) setChromaPicking(null);
       renderAll();
     },
+  }));
+}
+
+/**
+ * BLURRED BACKGROUND (3.38): fill the frame behind a clip with a blown-up,
+ * blurred copy of itself - the usual cure for a phone video in a wide frame.
+ * See drawBackdrop for how it is drawn.
+ */
+function renderBackdropSection(body, clip, media, beginEdit, commitEdit) {
+  if (!clip.backdrop) {
+    clip.backdrop = { enabled: false, blur: BACKDROP_DEFAULTS.blur, dim: BACKDROP_DEFAULTS.dim };
+  }
+  const backdrop = clip.backdrop;
+
+  // Say so when this clip is exactly the kind it is made for: taller, for
+  // its width, than the frame it sits in.
+  const frameShape = state.project.width / state.project.height;
+  const clipShape = media && media.width && media.height ? media.width / media.height : frameShape;
+  if (!backdrop.enabled && clipShape < frameShape * 0.9) {
+    body.appendChild(el("div", { class: "note",
+      text: "This clip is taller than the frame, so it has empty bars at the sides. "
+          + "A blurred background fills them with the clip itself." }));
+  }
+
+  body.appendChild(el("button", {
+    text: backdrop.enabled ? "Blurred background is on" : "Fill the frame with a blurred copy",
+    "aria-pressed": String(backdrop.enabled),
+    style: "width:100%;justify-content:center;margin-bottom:8px",
+    onclick: () => {
+      pushUndo(backdrop.enabled ? "remove blurred background" : "add blurred background");
+      backdrop.enabled = !backdrop.enabled;
+      renderAll();
+      announce(backdrop.enabled ? "Blurred background on" : "Blurred background off");
+    },
+  }));
+
+  if (!backdrop.enabled) return;
+
+  body.appendChild(sliderField("Blur", {
+    min: 0, max: 100, step: 1, value: backdrop.blur,
+    format: (v) => Math.round(v) + "%",
+    onInput: (v) => { beginEdit(); backdrop.blur = v; renderPreview(); },
+    onCommit: commitEdit,
+  }));
+  body.appendChild(sliderField("Darken", {
+    min: 0, max: 0.9, step: 0.01, value: backdrop.dim,
+    format: (v) => Math.round(v * 100) + "%",
+    onInput: (v) => { beginEdit(); backdrop.dim = v; renderPreview(); },
+    onCommit: commitEdit,
   }));
 }
 
@@ -15918,6 +16845,19 @@ function validateShadow(raw) {
 }
 
 /** Clean up an animation block from an untrusted file. */
+/**
+ * The blurred background behind a clip (3.38): on or off, how blurry, how
+ * dark. Numbers only, each held to its slider's range. Missing means off.
+ */
+function validateBackdrop(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    enabled: raw.enabled === true,
+    blur: safeNumber(raw.blur, 0, 100, BACKDROP_DEFAULTS.blur),
+    dim: safeNumber(raw.dim, 0, 0.9, BACKDROP_DEFAULTS.dim),
+  };
+}
+
 function validateMotion(raw) {
   if (!raw || typeof raw !== "object" || raw.enabled !== true) return null;
   const pose = (p) => {
@@ -15990,6 +16930,11 @@ function validateProject(raw) {
     };
     // A sound-effects track (3.20) is an audio track with this one flag.
     if (kind === "audio" && rawTrack.sfx === true) track.sfx = true;
+    // The group it is in (3.38): only a plain id is kept, and only if a group
+    // with that id turns up below.
+    if (typeof rawTrack.groupId === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(rawTrack.groupId)) {
+      track.groupId = rawTrack.groupId;
+    }
 
     const rawClips = Array.isArray(rawTrack.clips) ? rawTrack.clips.slice(0, MAX_CLIPS_PER_TRACK) : [];
     for (const rawClip of rawClips) {
@@ -16045,6 +16990,7 @@ function validateProject(raw) {
         flipY: rawClip.flipY === true,
         shape: validateShape(rawClip.shape),
         shadow: validateShadow(rawClip.shadow),
+        backdrop: validateBackdrop(rawClip.backdrop),
         text: null,
         solid: null,
         fx: clipKind === "fx" ? validateEffect(rawClip.fx) : null,
@@ -16106,6 +17052,22 @@ function validateProject(raw) {
   }
 
   if (!project.tracks.length) throw new Error("project has no usable tracks");
+
+  // Track groups (3.38). Older files have none. A name of sensible length, a
+  // yes/no for folded, and nothing else. A track whose group is not in this
+  // list is simply in no group.
+  project.groups = (Array.isArray(source.groups) ? source.groups.slice(0, MAX_TRACKS) : [])
+    .filter((g) => g && typeof g === "object" && typeof g.id === "string"
+                   && /^[A-Za-z0-9_-]{1,64}$/.test(g.id))
+    .map((g) => ({
+      id: g.id,
+      name: safeString(g.name, 40, "Group").trim() || "Group",
+      collapsed: g.collapsed === true,
+    }));
+  const groupIds = new Set(project.groups.map((g) => g.id));
+  for (const track of project.tracks) {
+    if (track.groupId && !groupIds.has(track.groupId)) delete track.groupId;
+  }
 
   // Markers, checked like everything else: a number that is a real time, a
   // note that is plain text of a sensible length, and a hard cap on how many.
@@ -19390,6 +20352,18 @@ function setupKeyboard() {
     if (isTyping(event.target)) return;
     if (document.querySelector("dialog[open]")) return;
 
+    // Track groups (3.38). Shift first, for the same reason as Split All.
+    if (meta && event.shiftKey && event.key.toLowerCase() === "g") {
+      event.preventDefault(); ungroupActiveTrack(); return;
+    }
+    if (meta && event.key.toLowerCase() === "g") {
+      event.preventDefault(); groupPickedTracks(); return;
+    }
+    // Escape lets go of picked tracks before it does anything else.
+    if (event.key === "Escape" && state.pickedTrackIds.length) {
+      event.preventDefault(); state.pickedTrackIds = []; syncPickedTracks(); return;
+    }
+
     // Escape dismisses a bottom sheet. This sits after the isTyping check on
     // purpose: while you are renaming a track inside the sheet, Escape belongs
     // to the rename (it cancels it), not to the sheet.
@@ -22670,6 +23644,11 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: "3.38", date: "2026-11-22", notes: [
+    "Track groups, like layer groups in IMGEDTR. Pick tracks (Shift+click or Ctrl/Cmd+click their headers, or Space on a track's name) and press Group in the timeline toolbar, or Ctrl+G. A group has a header row: fold it away, rename it, and hide, mute or move every track in it at once. Drag tracks in and out, or step them with their arrows; drag the header to move the whole group. Ctrl+Shift+G ungroups. A folded group still plays and exports, and its row shows a thin bar for every clip in it.",
+    "Blurred background, in the Inspector just under Opacity & fades: a phone video in a wide frame fills the bars at its sides with a blown-up, blurred copy of itself - the look you see all over social media. Blur and Darken sliders. It is part of the clip, so it follows every trim, split, speed change, fade and move.",
+    "Corner handles on the preview now resize from the opposite corner, which stays put - the way pictures resize everywhere else. Hold Ctrl (Cmd on a Mac) to resize from the center as before. On a blur region, the same key makes the opposite side move too."
+  ] },
   { version: "3.37", date: "2026-11-20", notes: [
     "Samples: two ready-made example projects to play with - a \"Course welcome video\" (a title card and three slides with transitions, a sliding lower-third caption, confetti and a music bed) and a \"Quick tip clip\" for a phone screen (a timer whose hand sweeps round a dial, changing captions, a spotlight and sound effects). VIDEDTR makes every picture and note of music itself, so nothing is downloaded and they work offline.",
     "Find them under Samples on the opening screen, in Help > Getting started, or in the empty Media Pool. Each opens as a new, unsaved project - play it, change anything, export it. If there is already work on the timeline, you are asked first."
@@ -23124,6 +24103,7 @@ function applyStaticIcons() {
     ["btn-zoom-in", "zoom-in", false],
     ["btn-snap", "magnet", true],
     ["btn-marker", "flag", true],
+    ["btn-group", "group", true],
   ];
 
   for (const entry of plan) {
@@ -23905,7 +24885,7 @@ function init() {
 /* The single source of truth for the version. The header, the help dialog and
    every saved project file read it from here, so there is exactly one line to
    change at release and no way for them to disagree. */
-const APP_VERSION = "3.37";
+const APP_VERSION = "3.38";
 const APP_BUILT = "2026-09-26";
 
 /* ===========================================================================

@@ -12,6 +12,17 @@ refreshes the page inside it, and Check for updates compares the server's
 Releases before 3.4 went out without notes. Rather than guess at them, this
 file starts at 3.4.
 
+## 3.38 - 2026-11-22 - Track groups, blurred background, corner resizing
+
+- Track groups, like layer groups in IMGEDTR. Pick tracks (Shift+click the header to pick a run from the active track, Ctrl/Cmd+click to pick one at a time, or Space on a track's name), then press Group in the timeline toolbar or Ctrl/Cmd+G. With nothing picked, the active track starts a group of one.
+- A group has its own header row: a fold arrow, its name (double-click or F2 to rename), how many tracks it holds, and arrows, a speaker and an eye that act on every track in it. The ungroup button, or Ctrl/Cmd+Shift+G, breaks it up and leaves the tracks where they are.
+- Getting tracks in and out: drag a track onto a track in a group (it joins), onto the top half of a group header (it goes above, out of the group) or the bottom half (it becomes the group's top track). A track's arrows step it into and out of a group one row at a time, and hop straight past a folded group. Dragging a group's header moves the whole group; groups never go inside groups.
+- A folded group hides its tracks' rows but they still play and export. The group's row on the timeline shows a thin bar for every clip in it, a row of bars per track, so you can see where things are; double-click it to open the group again.
+- Blurred background: a new Inspector section for video and picture clips, just under Opacity & fades. It fills the frame behind the clip with an enlarged, cropped, blurred copy of itself - the usual fix for a phone video in a wide frame - with Blur and Darken sliders. It is drawn as part of the clip rather than as a copy on another track, so it follows every trim, split, speed change, fade, transition and move, and the export matches the preview. It uses the clip's Color settings but not its green screen. The section says so when a clip is taller than the frame.
+- Corner handles on the preview now resize from the opposite corner, which stays where it is, like resizing a picture anywhere else; the clip still keeps its proportions, rotated or not. Hold Ctrl (Cmd on a Mac) - or Alt/Option - to resize from the center as before. On a blur region (and a spotlight or magnifier) the same key makes the opposite side mirror the one you drag.
+- Moving a clip to another track with the up and down arrow keys skips the tracks of a folded group.
+- Under the hood: `project.groups` ([{ id, name, collapsed }]) and `track.groupId`, kept tidy by `normalizeTrackGroups()` on every `renderAll()`; `clip.backdrop` ({ enabled, blur, dim }), drawn by `drawBackdrop()` at up to an eighth of the frame size and stretched back up; corners by `resizeFromCorner()`. Opening a project checks all three.
+
 ## 3.37 - 2026-11-20 - Samples
 
 - Samples: two ready-made example projects to play with - a "Course welcome video" (a title card and three slides with transitions, a sliding lower-third caption, confetti and a music bed) and a "Quick tip clip" for a phone screen (a timer whose hand sweeps round a dial, changing captions, a spotlight and sound effects). VIDEDTR makes every picture and note of music itself, so nothing is downloaded and they work offline.
