@@ -1,5 +1,17 @@
 # ANIMEDTR changelog
 
+## 0.25.0 - 2026-11-22 - Double-click a tool to lock it
+
+The family's shared "double-click to lock" behaviour (the Publisher/PowerPoint way).
+
+- **One click, one thing (no change):** Rectangle, Ellipse, Text box and the shapes in the gallery still draw one thing and then go back to Select.
+- **Double-click (or double-tap) to lock:** the tool stays on so you can draw as many as you like. The button stays pressed and wears a small padlock; its tooltip and name say "(locked - Esc to stop)", and screen readers hear "Rectangle locked. Press Esc to go back to the pointer."
+- **Keyboard:** R, O or T twice quickly (or Shift+R, O, T) locks that tool; Enter twice on a rail button does too. In the shapes gallery: double-click a shape, Shift+click it, or Enter twice. A single Enter on a rail button now waits a moment (400 ms, to see if a second one comes) before adding one in the middle; after a single click the gallery also closes a moment later.
+- **Stopping:** Esc unlocks and goes back to Select (from anywhere, not only the stage). Picking another tool switches to it, unlocked. Clicking the locked tool once more unlocks it and goes back to Select.
+- **Esc while dragging out a new shape** now stops just that drag (the tool, locked or not, stays on); Esc again goes back to Select.
+- **Tools that stay on anyway** (Pen, Pencil, Edit points, and the Pivot, Crop and Pose modes) are unchanged and are not locked. A quick second click on Pen, Pencil or Edit points no longer flicks them off again.
+- Help > Keyboard shortcuts and the stage's screen reader help explain it. Nothing is remembered between sessions.
+
 ## 0.24.2 - 2026-10-30
 
 - A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app's colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button's tooltip); and the family of apps underneath. The screenshot across the top made way.

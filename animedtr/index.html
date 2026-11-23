@@ -211,6 +211,14 @@ kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bottom-wid
   overflow-y: auto;
 }
 .rail .icon-btn { width: 40px; height: 40px; flex: none; }
+/* A locked drawing tool (0.25.0): the button stays pressed and wears a small padlock
+   in its top corner. The badge has its own light circle and gold outline, so it shows
+   on the pressed (gold) button in light and dark mode - and it is a shape, not colour alone. */
+.rail .icon-btn { position: relative; touch-action: manipulation; }   /* (no double-tap zoom on phones) */
+.lock-badge { position: absolute; top: -3px; right: -3px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--surface); border: 1.5px solid var(--brand); color: var(--brand);
+  display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.lock-badge svg { width: 10px; height: 10px; display: block; }
 .rail hr { width: 28px; border: 0; border-top: 1px solid var(--border); margin: 4px 0; flex: none; }
 
 /* The stage area (middle): the grey desk with the stage on it. */
@@ -1339,12 +1347,12 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <button class="icon-btn" id="toolSelect" title="Select and move (V)" aria-label="Select and move" aria-pressed="true"><span data-icon="pointer"></span></button>
     <button class="icon-btn" id="toolPoints" title="Edit points (A): move the points and curves of an outline" aria-label="Edit points" aria-pressed="false"><span data-icon="direct"></span></button>
     <hr>
-    <button class="icon-btn" id="addRect" title="Rectangle (R): drag on the stage to draw one" aria-label="Rectangle" aria-pressed="false"><span data-icon="square"></span></button>
-    <button class="icon-btn" id="addEllipse" title="Ellipse (O): drag on the stage to draw one" aria-label="Ellipse" aria-pressed="false"><span data-icon="circle"></span></button>
-    <button class="icon-btn" id="addText" title="Text box (T): drag on the stage to draw one" aria-label="Text box" aria-pressed="false"><span data-icon="text"></span></button>
+    <button class="icon-btn" id="addRect" title="Rectangle (R): drag on the stage to draw one. Double-click to keep it on" aria-label="Rectangle" aria-pressed="false"><span data-icon="square"></span></button>
+    <button class="icon-btn" id="addEllipse" title="Ellipse (O): drag on the stage to draw one. Double-click to keep it on" aria-label="Ellipse" aria-pressed="false"><span data-icon="circle"></span></button>
+    <button class="icon-btn" id="addText" title="Text box (T): drag on the stage to draw one. Double-click to keep it on" aria-label="Text box" aria-pressed="false"><span data-icon="text"></span></button>
     <button class="icon-btn" id="toolPen" title="Pen (P): click for corners, drag for curves" aria-label="Pen" aria-pressed="false"><span data-icon="penTool"></span></button>
     <button class="icon-btn" id="toolPencil" title="Pencil (B): draw freehand" aria-label="Pencil" aria-pressed="false"><span data-icon="pencil"></span></button>
-    <button class="icon-btn has-flyout" id="addShape" title="Shapes (U): stars, arrows, callouts and more" aria-label="Shapes" aria-pressed="false" aria-haspopup="dialog" aria-expanded="false" aria-controls="shapeGallery"><span data-icon="shapes"></span></button>
+    <button class="icon-btn has-flyout" id="addShape" title="Shapes (U): stars, arrows, callouts and more. Double-click a shape to keep it on" aria-label="Shapes" aria-pressed="false" aria-haspopup="dialog" aria-expanded="false" aria-controls="shapeGallery"><span data-icon="shapes"></span></button>
     <button class="icon-btn" id="addPicture" title="Picture (F): PNG, JPEG, WebP, GIF, or an SVG drawing (it comes in as shapes). You can also drop or paste one on the stage" aria-label="Add a picture"><span data-icon="image"></span></button>
     <button class="icon-btn" id="addFigure" title="Stick figure (Y): a figure you can pose (J)" aria-label="Stick figure"><span data-icon="figure"></span></button>
     <hr>
@@ -1366,7 +1374,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
     <div id="stageWrap" tabindex="0" role="group" aria-roledescription="stage" aria-label="Stage" aria-describedby="stageHelp"></div>
     <!-- Shown while the stage is previewed with less colour vision (Accessibility tab). -->
     <p class="cv-badge" id="cvBadge" hidden></p>
-    <p class="sr-only" id="stageHelp">Arrow keys move the picked objects one point (with Shift, ten). Delete removes them. Enter works on a picked group's parts, or adds one with a drawing tool. P is the Pen, A edits the points of a picked outline: there, N picks the next point and the arrow keys move it. Escape goes back to Select, leaves a group, or picks nothing. Shift+F10 opens the menu. Pick objects in the timeline's layers list.</p>
+    <p class="sr-only" id="stageHelp">Arrow keys move the picked objects one point (with Shift, ten). Delete removes them. Enter works on a picked group's parts, or adds one with a drawing tool. P is the Pen, A edits the points of a picked outline: there, N picks the next point and the arrow keys move it. Escape goes back to Select, leaves a group, or picks nothing. A drawing tool makes one thing, then it is Select again; double-click a tool, or press its key twice, to keep it on. Shift+F10 opens the menu. Pick objects in the timeline's layers list.</p>
     <p class="stage-hint" id="stageHint" aria-hidden="true"></p>
     <div class="zoom-bar" role="group" aria-label="Zoom">
       <button class="icon-btn" id="zoomOut" title="Zoom out (Ctrl+-)" aria-label="Zoom out"><span data-icon="minus"></span></button>
@@ -6798,7 +6806,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 /* =====================================================================
    1. BASICS
    ===================================================================== */
-const APP_VERSION = '0.24.2';
+const APP_VERSION = '0.25.0';
 const R = ANIRuntime;                 // short name for the shared runtime
 const SVGNS = 'http://www.w3.org/2000/svg';
 
@@ -7821,7 +7829,85 @@ let tool = 'select';             // 'select', 'rect', 'ellipse', 'text', 'path' 
 let currentShape = 'star';
 const TOOL_BUTTONS = { select: 'toolSelect', points: 'toolPoints', rect: 'addRect', ellipse: 'addEllipse', text: 'addText', path: 'addShape', pen: 'toolPen', pencil: 'toolPencil' };
 const toolWord = (t) => (t === 'path' ? SHAPES[currentShape].label : { rect: 'Rectangle', ellipse: 'Ellipse', text: 'Text box', pen: 'Pen', points: 'Edit points', pencil: 'Pencil' }[t] || 'Select');
+/* ----- Locking a drawing tool (the family's "double-click to lock", 0.25.0) -----
+   One click on Rectangle, Ellipse, Text box or a shape draws ONE thing, then it is
+   Select again (as before). A double-click (or double-tap, or the tool's key twice
+   quickly, or Shift + its key) LOCKS the tool: it stays on for as many as you like,
+   with a padlock on its button. Escape (or Select, or any other tool) unlocks it.
+   Clicking the locked tool once more unlocks it and goes back to Select.
+   The Pen, Pencil and Edit points already stay on, so they are not locked.
+   Nothing is remembered: a lock lasts until you stop it (never saved). */
+const LOCKABLE = ['rect', 'ellipse', 'text', 'path'];   // the tools that make one thing
+const LOCK_GAP = 400;            // two presses this close together (milliseconds) = a double
+let toolLocked = false;          // is the current drawing tool locked on?
+let lastPress = { key: '', at: 0 };   // the last tool press, to spot a quick second one
+let railAddTimer = 0;            // Enter on a rail button waits a moment for a second Enter
+let galleryTimer = 0;            // the shapes gallery waits a moment for a second click
+/** True when this press (key names the button or key) is the second of two quick ones. */
+function quickAgain(key) {
+  const now = performance.now();
+  const again = lastPress.key === key && now - lastPress.at <= LOCK_GAP;
+  lastPress = again ? { key: '', at: 0 } : { key, at: now };   // (a third press starts afresh)
+  return again;
+}
+/** Lock a drawing tool on (a tool that already stays on is simply picked). */
+function lockTool(t) {
+  if (!LOCKABLE.includes(t)) { setTool(t); return; }
+  setTool(t, true);
+  toolLocked = true;
+  showToolLock();
+  announce(toolWord(t) + ' locked. Press Esc to go back to the pointer.');
+  requestRender();
+}
+/** The padlock badge, tooltip and name on the rail buttons match toolLocked. */
+const LOCK_SVG = '<svg viewBox="0 0 10 10" aria-hidden="true" focusable="false">' +
+  '<path d="M3 4.5V3a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.4"/>' +
+  '<rect x="1.8" y="4.3" width="6.4" height="4.9" rx="1" fill="currentColor"/></svg>';
+function showToolLock() {
+  Object.entries(TOOL_BUTTONS).forEach(([k, id]) => {
+    const b = $(id);
+    if (!b) return;
+    // Remember the button's usual tooltip and name the first time through.
+    if (b.dataset.plainTitle === undefined) { b.dataset.plainTitle = b.title; b.dataset.plainLabel = b.getAttribute('aria-label') || ''; }
+    const on = toolLocked && k === tool;
+    const word = (k === 'path' ? 'Shapes: ' : '') + toolWord(k);
+    b.classList.toggle('tool-locked', on);
+    b.title = on ? word + ' (locked - Esc to stop)' : b.dataset.plainTitle;
+    b.setAttribute('aria-label', on ? word + ' (locked - Esc to stop)' : b.dataset.plainLabel);
+    const badge = b.querySelector('.lock-badge');
+    if (on && !badge) b.insertAdjacentHTML('beforeend', '<span class="lock-badge" aria-hidden="true">' + LOCK_SVG + '</span>');
+    else if (!on && badge) badge.remove();
+  });
+}
+/** A Rectangle, Ellipse or Text box button on the rail was clicked (or tapped, or Enter/Space). */
+function railToolClick(t, e) {
+  const again = quickAgain('rail:' + t);
+  if (e.detail === 0) {
+    // From the keyboard: Enter (or Space) adds one in the middle - after a moment,
+    // because a second quick Enter locks the tool instead (then draw with Enter on the stage).
+    if (again) { lockTool(t); stageWrap.focus(); return; }
+    clearTimeout(railAddTimer);
+    railAddTimer = setTimeout(() => { railAddTimer = 0; setTool('select', true); addObject(t); }, LOCK_GAP);
+    return;
+  }
+  if (again || e.shiftKey) { lockTool(t); return; }       // a double-click (or Shift+click): lock it
+  setTool(tool === t ? 'select' : t);                     // one click: arm it (or, on again, back to Select)
+}
+/** The R, O or T key: once arms the tool; twice quickly (or with Shift) locks it. */
+function keyTool(t, e) {
+  if (e.repeat) return;                                   // (a key held down is not a double press)
+  if (e.shiftKey || quickAgain('key:' + t)) lockTool(t);
+  else setTool(t);
+}
+/** The Pen, Pencil and Edit points stay on anyway: a quick second click keeps them on (no flicker off). */
+function railModeClick(t) {
+  if (quickAgain('rail:' + t)) setTool(t);
+  else setTool(tool === t ? 'select' : t);
+  stageWrap.focus();
+}
 function setTool(t, quiet) {
+  if (toolLocked) { toolLocked = false; showToolLock(); }   // picking any tool ends a lock (lockTool sets it again)
+  clearTimeout(railAddTimer); railAddTimer = 0;            // (and a waiting keyboard add is dropped)
   if (tool === 'pen' && t !== 'pen') finishPen();       // leaving the Pen finishes the outline being drawn
   if (tool === 'points' && t !== 'points') ptPicked.clear();
   tool = t;
@@ -8118,7 +8204,7 @@ function endStageDrag(e) {
       box = { x, y, w: Math.max(8, w), h: Math.max(8, h) };
     } else { const sz = defaultSize(tool, currentShape); box = { x: d.start.x - sz.w / 2, y: d.start.y - sz.h / 2, w: sz.w, h: sz.h }; }
     const t = tool;
-    setTool('select', true);
+    if (!toolLocked) setTool('select', true);           // one-shot: back to Select (a locked tool stays on, 0.25.0)
     addObject(t, box);
   } else if (d.kind === 'marquee') {
     if (d.moved) {
@@ -8207,7 +8293,8 @@ stageWrap.addEventListener('keydown', (e) => {
   } else if ((e.key === 'Delete' || e.key === 'Backspace') && sel.length) {
     e.preventDefault(); deleteSelected();
   } else if (e.key === 'Escape') {
-    if (tool !== 'select') { setTool('select', true); announce('Select tool.'); }
+    if (drag && drag.kind === 'draw') { drag = null; rubber = null; guides = []; requestRender(); announce('Drawing stopped.'); }   // mid-drag: just stop that one (0.25.0)
+    else if (tool !== 'select') { const was = toolLocked; setTool('select', true); announce(was ? 'Unlocked. Select tool.' : 'Select tool.'); }
     else if (entered) exitGroup();
     else if (sel.length) { setSelection([]); announce('Nothing picked.'); }
     else if (inClip()) leaveClip();                     // nothing else to undo: back from the clip to the lesson
@@ -8215,7 +8302,7 @@ stageWrap.addEventListener('keydown', (e) => {
     e.preventDefault();
   } else if (e.key === 'Enter') {
     e.preventDefault();
-    if (tool !== 'select') { const t = tool; setTool('select', true); addObject(t); }
+    if (tool !== 'select') { const t = tool; if (!toolLocked) setTool('select', true); addObject(t); }   // (a locked tool stays on)
     else { const o = pickedObj(); if (o && o.type === 'group') enterGroup(o.id); else if (o && o.type === 'clip') enterClip(o.clip); }
   } else if (e.key === 'ContextMenu' || (e.key === 'F10' && e.shiftKey)) {
     e.preventDefault(); openContextMenu();
@@ -8371,9 +8458,17 @@ function buildGallery() {
       b.append(s);
       b.addEventListener('click', (e) => {
         currentShape = k;
-        closeGallery(true);
-        if (e.detail === 0) addObject('path');                          // from the keyboard: add one in the middle now
-        else setTool('path');
+        const again = quickAgain('shape:' + k);
+        clearTimeout(galleryTimer); galleryTimer = 0;
+        // A double-click, a second quick Enter, or Shift: lock this shape on (0.25.0).
+        if (again || e.shiftKey) { closeGallery(true); lockTool('path'); stageWrap.focus(); return; }
+        if (e.detail === 0) {
+          // From the keyboard: add one in the middle, after a moment (a second Enter locks instead).
+          galleryTimer = setTimeout(() => { galleryTimer = 0; closeGallery(true); addObject('path'); }, LOCK_GAP);
+          return;
+        }
+        setTool('path');                                                  // armed at once...
+        galleryTimer = setTimeout(() => { galleryTimer = 0; closeGallery(true); }, LOCK_GAP);   // ...the gallery closes a moment later
       });
       row.append(b);
     });
@@ -8405,6 +8500,7 @@ function openGallery() {
   if (btn) { btn.focus(); btn.scrollIntoView({ block: 'nearest' }); }
 }
 function closeGallery(keepFocusAway) {
+  clearTimeout(galleryTimer); galleryTimer = 0;      // (anything the gallery was waiting to do is dropped)
   const box = $('shapeGallery');
   if (box.hidden) return;
   box.hidden = true;
@@ -10883,7 +10979,8 @@ $('exGo').addEventListener('click', () => runExport());    // whichever kind is 
    Every tab is filled with createElement and textContent. */
 const HELP_KEYS = [
   ['V', 'Select (and move)'],
-  ['R, O, T, U', 'Rectangle, ellipse, text box, shapes gallery: drag on the stage to draw (Enter on the stage adds one in the middle)'],
+  ['R, O, T, U', 'Rectangle, ellipse, text box, shapes gallery: drag on the stage to draw (Enter on the stage adds one in the middle). After one, it is Select again'],
+  ['Double-click a tool (or R, O, T twice, or Shift+R, O, T)', 'Keep it on (locked) to draw several in a row: a padlock shows on its button. In the shapes gallery, double-click a shape (or Shift+click, or Enter twice). Esc goes back to the pointer'],
   ['P', 'Pen: click for corners, drag for curves; click the first point to close; Enter, Escape or a double-click ends an open line; Backspace takes back a point; Shift keeps to 45\u00b0. Enter on the stage with nothing drawn adds a straight line to shape'],
   ['A', 'Edit points of the picked outline (or double-click it): drag points and curve handles; Shift+click picks more; drag on empty stage picks by box'],
   ['N / Shift+N (Edit points)', 'Pick the next / previous point (it is read out)'],
@@ -11065,6 +11162,8 @@ function cycleRegion(dir) {
 document.addEventListener('keydown', (e) => {
   if (dialogOpen()) return;
   if (!$('ctxMenu').hidden || !$('shapeGallery').hidden) return;       // the menu and the gallery have their own keys
+  // A locked tool: Escape from anywhere unlocks it (unless something else already used the Escape).
+  if (e.key === 'Escape' && toolLocked && !e.defaultPrevented) { e.preventDefault(); setTool('select', true); stageWrap.focus(); announce('Unlocked. Select tool.'); return; }
   const typing = isTyping(e.target);
   const mod = e.ctrlKey || e.metaKey;
   if (mod && !e.altKey) {
@@ -11104,9 +11203,9 @@ document.addEventListener('keydown', (e) => {
     case 'K': removeKeyframe(); break;
     case 'm': case 'M': addMarker(); break;
     case 'v': case 'V': setTool('select', true); stageWrap.focus(); announce('Select tool.'); break;
-    case 'r': case 'R': setTool('rect'); break;
-    case 'o': case 'O': setTool('ellipse'); break;
-    case 't': case 'T': setTool('text'); break;
+    case 'r': case 'R': keyTool('rect', e); break;      // twice quickly, or Shift+R: locked (0.25.0)
+    case 'o': case 'O': keyTool('ellipse', e); break;
+    case 't': case 'T': keyTool('text', e); break;
     case 'u': case 'U': openGallery(); break;
     case 'f': case 'F': choosePicture(); break;
     case 'w': case 'W': openPreview(); break;
@@ -11169,7 +11268,7 @@ function renderStatus() {
   if (tool === 'pencil') words = 'Pencil: draw on the stage. Escape goes back to Select.' + (openClip() && openClip().flip ? ' Comma and full stop turn the pages.' : '');
   else if (tool === 'pen') words = pen ? 'Pen: click for a corner, drag for a curve. Click the first point to close; Enter or a double-click ends the line.' : 'Pen: click for a corner, drag for a curve. Escape goes back to Select.';
   else if (tool === 'points') words = o && o.type === 'path' ? 'Edit points: drag a point or a handle. Alt+click: corner or smooth. Double-click the outline: a new point. Escape: Select.' : 'Edit points: click an outline to see its points. Escape goes back to Select.';
-  else if (tool !== 'select') words = toolWord(tool) + ': drag on the stage to draw it. Escape goes back to Select.';
+  else if (tool !== 'select') words = toolWord(tool) + (toolLocked ? ' (locked): draw as many as you like. Escape goes back to Select.' : ': drag on the stage to draw it. Escape goes back to Select.');
   else if (inClip() && !project.objects.length) words = openClip().flip ? 'An empty page: draw on it with the Pencil (B). Escape goes back to the lesson.' : 'This clip is empty: draw in it. Escape goes back to the lesson.';
   else if (entered) words = 'Inside ' + whereWords(obj(entered)) + ': click its parts' + (obj(entered).type === 'group' && partsOf(obj(entered)).some((k) => k.type === 'group') ? ' (double-click a group in it to go further in)' : '') + '. Escape goes out one level; a click outside goes out to it.';
   else if (!project.objects.length) words = 'Draw a shape, text or picture from the tool rail, or open the sample lesson (the sparkle button).';
@@ -11189,13 +11288,15 @@ function wireButtons() {
   $('btnExport').addEventListener('click', openExport);
   $('toolSelect').addEventListener('click', () => { setTool('select', true); stageWrap.focus(); });
   // The Pen and Edit points (0.7.0): a click arms them; then work on the stage (focus goes there).
-  $('toolPen').addEventListener('click', () => { setTool(tool === 'pen' ? 'select' : 'pen'); stageWrap.focus(); });
-  $('toolPoints').addEventListener('click', () => { setTool(tool === 'points' ? 'select' : 'points'); stageWrap.focus(); });
-  $('toolPencil').addEventListener('click', () => { setTool(tool === 'pencil' ? 'select' : 'pencil'); stageWrap.focus(); });
+  // (A quick second click keeps them on rather than flicking them off again, 0.25.0.)
+  $('toolPen').addEventListener('click', () => railModeClick('pen'));
+  $('toolPoints').addEventListener('click', () => railModeClick('points'));
+  $('toolPencil').addEventListener('click', () => railModeClick('pencil'));
   // A drawing tool: a click arms it (then drag on the stage). From the keyboard (detail 0),
   // Enter or Space on the button adds one in the middle right away.
   [['addRect', 'rect'], ['addEllipse', 'ellipse'], ['addText', 'text']].forEach(([id, t]) => {
-    $(id).addEventListener('click', (e) => { if (e.detail === 0) { setTool('select', true); addObject(t); } else setTool(tool === t ? 'select' : t); });
+    // A double-click (or double-tap, or Enter twice) locks it on: railToolClick, 0.25.0.
+    $(id).addEventListener('click', (e) => railToolClick(t, e));
   });
   $('addShape').addEventListener('click', () => { if ($('shapeGallery').hidden) openGallery(); else closeGallery(); });
   $('addPicture').addEventListener('click', () => choosePicture());
@@ -20349,6 +20450,11 @@ const APP_FEATURES = [
    straight off a disk. The long form is CHANGELOG.md beside index.html.
    Newest first; the first entry is the version that is running. */
 const CHANGELOG = [
+  { version: '0.25.0', date: '2026-11-22', notes: [
+    'Double-click a tool to lock it, the same in every app in the family: Rectangle, Ellipse, Text box and the shapes in the gallery still draw one thing and go back to Select, but a double-click (or double-tap) keeps the tool on, so you can draw as many as you like. A small padlock shows on its button. Esc (or Select, or another tool) goes back to the pointer; clicking the locked tool again does too.',
+    'From the keyboard: press R, O or T twice quickly (or Shift+R, O, T) to lock that tool; on a rail button, Enter twice. In the shapes gallery, double-click a shape, Shift+click it, or press Enter twice. A single Enter on a rail button now waits a moment (to see if a second one comes) before adding one in the middle.',
+    'Escape while dragging out a new shape now stops just that drag. The Pen, Pencil and Edit points already stay on, so they are not locked - a quick second click no longer flicks them off again.'
+  ] },
   { version: '0.24.2', date: '2026-10-30', notes: [
     'A new splash screen, the family look IMGEDTR started: no white box, just splashes of paint in this app\'s colour around three panels - a dark card with the icon, the name and the version; big buttons to begin (their small print is now each button\'s tooltip); and the family of apps underneath. The screenshot across the top made way.'
   ] },
