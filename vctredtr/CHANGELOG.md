@@ -2,6 +2,16 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Help > Changelog tab). Add new releases to both.
 
+## 0.18.0 - 2026-11-22 - Lock a tool
+
+- Double-click (or double-tap) a drawing tool to lock it on: Rectangle, Ellipse, Polygon, Star, Shield, Shapes, Line and Text. It then stays on for as many shapes as you like, and a small padlock shows in the corner of its button (the tooltip and screen-reader label say "locked - Esc to stop").
+- From the keyboard: press the tool's key twice quickly (R R, L L...), or Shift and its key, to lock it. Enter or Space twice on a focused tool button works too.
+- Esc unlocks and goes back to Select (after first cancelling a drag or finishing a pen path, as before). Clicking the locked tool again also unlocks and goes back to Select. Clicking a different tool switches to it, one shape at a time.
+- A single click still draws one shape and goes back to Select, just as before, and the Keep tool after drawing setting still keeps every tool on. Pen, Pencil, Eyedropper, Hand, Edit points and Shape builder already stay on, so they are not lockable.
+- Shield and Shapes: a double-click locks the tool and leaves the styles flyout open, so you can pick a style and keep stamping. Pressing D (or U) again later still opens the styles; pressing it twice quickly now locks instead.
+- Text locked: clicking away from the text you are typing finishes it and starts the next text box right where you clicked.
+- The lock is only for now - nothing is remembered between visits.
+
 ## 0.17.0 - 2026-11-20 - Samples
 
 - Samples: three ready-made drawings to open and pull apart. **Club badge** - a seal, ring, star and ribbon made with Union, Subtract, Combine and Intersect, with text. **Infographic icons** - a book, a lightbulb and a calendar on a 16:9 slide, each icon and card in its own group. **Shapes to merge** - a practice sheet with one pair of loose shapes for each Merge Shapes button, plus a faded example of what each button makes.

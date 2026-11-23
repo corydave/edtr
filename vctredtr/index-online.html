@@ -177,6 +177,20 @@ kbd, .kbd { font: 12px var(--mono); border: 1px solid var(--border); border-bott
   overflow-y: auto;
 }
 .rail .icon-btn { width: 40px; height: 40px; flex: none; }
+/* Locked tool (double-click a drawing tool): a small padlock in the top-right
+   corner of its button. It sits on a light/dark "surface" circle with a
+   brand-coloured outline, so it shows on the pressed (brand-coloured)
+   button in both light and dark mode - and it is a shape, not just colour.
+   touch-action: manipulation stops a quick double-tap from zooming the page. */
+.rail .icon-btn { position: relative; touch-action: manipulation; }
+.rail .tool-lock-badge {
+  position: absolute; top: -4px; right: -4px; width: 15px; height: 15px;   /* just outside the icon */
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--brand);
+  border: 1.5px solid var(--brand); border-radius: 50%;
+  pointer-events: none;            /* clicks go to the button underneath */
+}
+.rail .tool-lock-badge svg { width: 9px; height: 9px; display: block; }
 .rail hr { width: 28px; border: 0; border-top: 1px solid var(--border); margin: 4px 0; flex: none; }
 /* A rail button with more inside (the shield styles): a small triangle in
    its bottom-right corner, as in PowerPoint and Illustrator. */
@@ -1428,7 +1442,7 @@ input[type="number"].suite-num-active { outline: 3px solid var(--suite-accent, #
 // Bump this for every release. The service worker uses it to refresh its cache,
 // and the splash's update check reads it straight out of this file, so keep
 // the line below written exactly the way it is (name, equals sign, quoted number).
-const APP_VERSION = '0.17.0';
+const APP_VERSION = '0.18.0';
 
 // Short changelog shown in the Help panel (newest first). The long form lives in CHANGELOG.md.
 /* The picture across the top of the splash: the app's icon beside a screenshot
@@ -1483,6 +1497,10 @@ const APP_FEATURES = [
 ];
 
 const CHANGELOG = [
+  { version: '0.18.0', date: '2026-11-22', notes: [
+    'Lock a tool: double-click (or double-tap) a drawing tool - Rectangle, Ellipse, Polygon, Star, Shield, Shapes, Line or Text - to keep it on for as many shapes as you like. A small padlock shows on the button. Pressing the tool\'s key twice quickly, or Shift and its key, locks it too.',
+    'Esc (or clicking the locked tool again) unlocks it and goes back to Select. Clicking another tool switches to that one as usual. A single click still draws one shape and then goes back to Select, as before; the Keep tool after drawing setting still works too.'
+  ] },
   { version: '0.17.0', date: '2026-11-20', notes: [
     'Samples: three ready-made drawings to open and pull apart - a Club badge (a seal, ring, star and ribbon made with Union, Subtract, Combine and Intersect), Infographic icons (a book, a lightbulb and a calendar on a 16:9 slide) and Shapes to merge (a practice sheet with one pair of shapes for each Merge Shapes button, plus a faded example of what each makes).',
     'Find them on the splash screen, on the empty start screen, and in Help (the Features tab, and the Merge Shapes tab for the practice sheet). The app builds each one itself, so they work offline. Opening a sample over your drawing can be undone, and you are asked first if your drawing has unsaved changes.'
@@ -2032,7 +2050,8 @@ const state = {
   counters: {},          // "Rectangle 3": how many of each kind have been made
   lastPointer: null,     // last pointer position in drawing coordinates (for the status bar)
   spaceDown: false,      // Space held: drag to pan
-  multi: false           // "Pick several" is on: taps add to / take out of the selection
+  multi: false,          // "Pick several" is on: taps add to / take out of the selection
+  lockTool: null         // a drawing tool locked on with a double-click (null = none). Not saved between visits.
 };
 
 /* The style new shapes get. The Inspector edits this when nothing is selected. */
@@ -2942,6 +2961,8 @@ function setMulti(on) {
 
 function setTool(name) {
   if (!TOOL_NAMES[name]) return;
+  // Picking any OTHER tool ends a lock (picking the locked tool itself keeps it).
+  if (name !== state.lockTool) state.lockTool = null;
   if (state.pen && name !== 'pen') finishPen();
   if (state.editingText) endTextEdit();
   const wasDirect = state.tool === 'direct';
@@ -2953,10 +2974,100 @@ function setTool(name) {
   setCursor();
   drawSelectionUI();
   renderProps();
+  refreshLockUI();                                   // padlock badge on the locked tool (if any)
 }
 function setCursor(c) { stage.style.cursor = c || (state.spaceDown ? 'grab' : TOOL_CURSORS[state.tool] || 'crosshair'); }
-/** After drawing a shape: back to Select, unless the user asked to keep the tool. */
-function afterDrawTool() { if (!settings.stayInTool) setTool('select'); }
+/** After drawing a shape: back to Select, unless the tool is locked (double-click)
+    or the user asked to keep the tool (Settings). */
+function afterDrawTool() {
+  if (settings.stayInTool || state.lockTool === state.tool) return;
+  setTool('select');
+}
+
+/* ---- Locking a tool (double-click it, or press its key twice) ----
+   Like PowerPoint and Publisher: one click on a drawing tool draws ONE
+   shape and then goes back to Select. A double-click (or double-tap, or
+   Enter/Space twice on the focused button) LOCKS the tool so it stays on.
+   Its key pressed twice quickly, or Shift + its key, does the same.
+   Esc, or clicking the locked tool again, unlocks it and goes back to
+   Select. The lock is only for now: nothing is saved.
+   Continuous tools (Select, Edit points, Pen, Pencil, Eyedropper, Hand,
+   Shape builder) already stay on, so they are not lockable.            */
+const LOCKABLE_TOOLS = ['rect', 'ellipse', 'polygon', 'star', 'shield', 'symbol', 'line', 'text'];
+const LOCK_GAP = 400;                       // ms: two clicks/keys closer than this count as "twice"
+const LOCK_SUFFIX = ' (locked - Esc to stop)';
+let lastToolClick = { tool: null, time: 0 };   // the last rail click, to spot a double-click
+let lastToolKey = { tool: null, time: 0 };     // the last tool key, to spot "pressed twice"
+let lockClickHandled = false;                  // tells the flyout buttons to skip their own toggle
+
+/** Lock a drawing tool on, and say so (toast = seen and read by screen readers). */
+function lockTool(name) {
+  if (!LOCKABLE_TOOLS.includes(name)) { setTool(name); return; }
+  state.lockTool = name;                   // set first, so setTool keeps it
+  setTool(name);
+  toast(TOOL_NAMES[name] + ' locked. Press Esc to go back to the pointer.');
+}
+/** Unlock and go back to the Select tool. */
+function unlockTool() {
+  state.lockTool = null;
+  setTool('select');
+  announce('Tool unlocked. Select tool.');
+}
+/** Show the lock on the rail: a padlock badge, plus the tooltip and label say so. */
+function refreshLockUI() {
+  document.querySelectorAll('#toolRail [data-tool]').forEach((b) => {
+    const locked = b.dataset.tool === state.lockTool;
+    let badge = b.querySelector('.tool-lock-badge');
+    if (locked && !badge) {
+      // A tiny padlock, drawn in the brand colour (currentColor).
+      badge = document.createElement('span');
+      badge.className = 'tool-lock-badge';
+      badge.setAttribute('aria-hidden', 'true');
+      badge.innerHTML = '<svg viewBox="0 0 12 12" focusable="false"><rect x="2" y="5.2" width="8" height="5.8" rx="1.2" fill="currentColor"/>'
+        + '<path d="M3.9 5.4V3.9a2.1 2.1 0 0 1 4.2 0v1.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+      b.append(badge);
+    } else if (!locked && badge) badge.remove();
+    // Tooltip text and the name screen readers hear: add or take off the suffix.
+    if (b.dataset.tip) b.dataset.tip = b.dataset.tip.replace(LOCK_SUFFIX, '') + (locked ? LOCK_SUFFIX : '');
+    const label = b.getAttribute('aria-label');
+    if (label) b.setAttribute('aria-label', label.replace(LOCK_SUFFIX, '') + (locked ? LOCK_SUFFIX : ''));
+  });
+}
+/** A click (or tap, or Enter/Space) on a rail tool button. */
+function railToolClick(name) {
+  const now = performance.now();
+  const twice = lastToolClick.tool === name && now - lastToolClick.time < LOCK_GAP;
+  lockClickHandled = false;
+  if (twice && LOCKABLE_TOOLS.includes(name) && state.lockTool !== name) {
+    lockTool(name);                                  // the second click of a double-click: lock
+    lastToolClick = { tool: null, time: 0 };
+    lockClickHandled = true;
+    return;
+  }
+  if (state.lockTool === name) {
+    unlockTool();                                    // clicking the locked tool again: unlock, back to Select
+    lastToolClick = { tool: null, time: 0 };
+    lockClickHandled = true;
+    return;
+  }
+  setTool(name);                                     // an ordinary click: this tool, once
+  lastToolClick = { tool: name, time: now };
+}
+/** A tool's shortcut key. Pressed twice quickly, or with Shift, it locks the tool.
+    `again` (Shield, Shapes): what a later, slower second press does instead. */
+function toolKey(name, e, again) {
+  if (e && e.repeat) return;                         // holding the key down is not "pressing it twice"
+  const now = performance.now();
+  const twice = lastToolKey.tool === name && now - lastToolKey.time < LOCK_GAP;
+  if (LOCKABLE_TOOLS.includes(name) && ((e && e.shiftKey) || twice)) {
+    if (state.lockTool !== name) lockTool(name);
+    lastToolKey = { tool: null, time: 0 };
+    return;
+  }
+  lastToolKey = { tool: name, time: now };
+  if (again && state.tool === name) { again(); return; }
+  setTool(name);
+}
 
 /* ---- Styles: reading them from an item, and putting them on one ----
    A "style" is a plain object like `defaults` (section 4). Gradients run
@@ -3338,7 +3449,11 @@ function snapAngle(from, to) {
 
 stage.addEventListener('pointerdown', (e) => {
   if (!doc || !ENGINE_OK) return;
-  if (state.editingText) { endTextEdit(); return; }       // a click away finishes the text
+  if (state.editingText) {                                 // a click away finishes the text...
+    endTextEdit();
+    // ...and with the Text tool LOCKED, the same click starts the next text box right there.
+    if (!(state.lockTool === 'text' && state.tool === 'text')) return;
+  }
   if (document.activeElement !== stage) stage.focus({ preventScroll: true });
   pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
   // Two fingers: pinch to zoom, drag to pan. Whatever one finger started is undone.
@@ -6584,6 +6699,7 @@ function updateGalleryButton(type) {
   if (old) old.replaceWith(pic); else btn.prepend(pic);
   btn.setAttribute('aria-label', (type === 'shield' ? 'Shield tool, ' : 'Shapes tool, ') + label + '. Opens the ' + (type === 'shield' ? 'shield styles' : 'shapes'));
   btn.dataset.tip = (type === 'shield' ? 'Shield: ' + label + ' - click for more styles' : 'Shapes: ' + label + ' - click for more shapes');
+  refreshLockUI();                                   // keep the "(locked - Esc to stop)" if it is locked
 }
 const updateShieldButton = () => updateGalleryButton('shield');
 
@@ -7252,32 +7368,34 @@ $('codeCopy').addEventListener('click', async () => {
    (e.code), because on a Mac Alt changes which letter a key types.
    ----------------------------------------------------------------------- */
 const plain = (e, key) => !mod(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === key;
+// A tool key, with or without Shift (Shift + the key locks the tool).
+const toolLetter = (e, key) => !mod(e) && !e.altKey && e.key.toLowerCase() === key;
 const altShift = (e, letter) => e.altKey && e.shiftKey && !mod(e) && e.code === 'Key' + letter;
 const SHORTCUTS = [
   { group: 'Tools' },
   { id: 'tool-select', keys: 'V', label: 'Select tool', test: (e) => plain(e, 'v'), run: () => setTool('select') },
   { id: 'tool-direct', keys: 'A', label: 'Edit points tool', test: (e) => plain(e, 'a'), run: () => setTool('direct') },
-  { id: 'tool-rect', keys: 'R', label: 'Rectangle', test: (e) => plain(e, 'r'), run: () => setTool('rect') },
-  { id: 'tool-ellipse', keys: 'O', label: 'Ellipse', test: (e) => plain(e, 'o'), run: () => setTool('ellipse') },
-  { id: 'tool-polygon', keys: 'Y', label: 'Polygon', test: (e) => plain(e, 'y'), run: () => setTool('polygon') },
-  { id: 'tool-star', keys: 'S', label: 'Star', test: (e) => plain(e, 's'), run: () => setTool('star') },
+  { id: 'tool-rect', keys: 'R', label: 'Rectangle', test: (e) => toolLetter(e, 'r'), run: (e) => toolKey('rect', e) },
+  { id: 'tool-ellipse', keys: 'O', label: 'Ellipse', test: (e) => toolLetter(e, 'o'), run: (e) => toolKey('ellipse', e) },
+  { id: 'tool-polygon', keys: 'Y', label: 'Polygon', test: (e) => toolLetter(e, 'y'), run: (e) => toolKey('polygon', e) },
+  { id: 'tool-star', keys: 'S', label: 'Star', test: (e) => toolLetter(e, 's'), run: (e) => toolKey('star', e) },
   // D picks the Shield tool; pressed again (already on Shield) it opens the styles.
-  { id: 'tool-shield', keys: 'D', label: 'Shield (press again for the styles)', test: (e) => plain(e, 'd'),
-    run: () => { if (state.tool === 'shield') openShieldPicker(); else setTool('shield'); } },
+  { id: 'tool-shield', keys: 'D', label: 'Shield (press again for the styles)', test: (e) => toolLetter(e, 'd'),
+    run: (e) => toolKey('shield', e, openShieldPicker) },
   // U picks the Shapes tool (hearts, arrows...); pressed again it opens the shapes.
-  { id: 'tool-symbol', keys: 'U', label: 'Shapes: heart, arrow, speech bubble... (press again for the shapes)', test: (e) => plain(e, 'u'),
-    run: () => { if (state.tool === 'symbol') openGallery('symbol'); else setTool('symbol'); } },
-  { id: 'tool-line', keys: 'L', label: 'Line', test: (e) => plain(e, 'l'), run: () => setTool('line') },
+  { id: 'tool-symbol', keys: 'U', label: 'Shapes: heart, arrow, speech bubble... (press again for the shapes)', test: (e) => toolLetter(e, 'u'),
+    run: (e) => toolKey('symbol', e, () => openGallery('symbol')) },
+  { id: 'tool-line', keys: 'L', label: 'Line', test: (e) => toolLetter(e, 'l'), run: (e) => toolKey('line', e) },
   { id: 'tool-pen', keys: 'P', label: 'Pen', test: (e) => plain(e, 'p'), run: () => setTool('pen') },
   { id: 'tool-pencil', keys: 'B', label: 'Pencil (freehand)', test: (e) => plain(e, 'b'), run: () => setTool('pencil') },
-  { id: 'tool-text', keys: 'T', label: 'Text', test: (e) => plain(e, 't'), run: () => setTool('text') },
+  { id: 'tool-text', keys: 'T', label: 'Text', test: (e) => toolLetter(e, 't'), run: (e) => toolKey('text', e) },
   { id: 'tool-eyedropper', keys: 'I', label: 'Eyedropper (copy a style)', test: (e) => plain(e, 'i'), run: () => setTool('eyedropper') },
   { id: 'tool-hand', keys: 'H', label: 'Hand (pan)', test: (e) => plain(e, 'h'), run: () => setTool('hand') },
   { id: 'tool-builder', keys: 'K', label: 'Shape builder (drag across pieces of overlapping shapes to join them)', test: (e) => plain(e, 'k'), run: () => setTool('builder') },
   { id: 'multi', keys: 'M', label: 'Pick several on/off (taps add or remove shapes)', test: (e) => plain(e, 'm'), run: () => setMulti(!state.multi) },
   { id: 'enter', keys: 'Enter', label: 'On the canvas: add a shape in the middle, edit points or text, finish a pen path',
     test: (e) => e.key === 'Enter' && e.target === stage, run: () => enterOnCanvas() },
-  { id: 'escape', keys: 'Esc', label: 'Finish the pen path, or deselect, then back to Select', test: (e) => e.key === 'Escape', run: escapeKey },
+  { id: 'escape', keys: 'Esc', label: 'Finish the pen path, unlock a locked tool, or deselect, then back to Select', test: (e) => e.key === 'Escape', run: escapeKey },
   { group: 'Merge Shapes' },
   { id: 'merge-union', keys: 'Alt+Shift+U', label: 'Union', test: (e) => altShift(e, 'U'), run: () => mergeShapes('union') },
   { id: 'merge-combine', keys: 'Alt+Shift+C', label: 'Combine', test: (e) => altShift(e, 'C'), run: () => mergeShapes('combine') },
@@ -7356,6 +7474,7 @@ function escapeKey() {
     return;
   }
   if (state.pen) { finishPen(); return; }
+  if (state.lockTool) { unlockTool(); return; }     // a locked tool: unlock, back to Select
   if (state.tool === 'builder') { setTool('select'); announce('Select tool'); return; }
   // Edit points: first let go of the picked points, then back to Select (the shape stays picked).
   if (state.tool === 'direct' && pickedSegments().length) { pickedSegments().forEach((s) => { s.selected = false; }); drawSelectionUI(); return; }
@@ -9637,6 +9756,7 @@ function renderShortcutRows() {
     ['Pan (hold, then drag)', 'Space'], ['Add to / take out of the selection', 'Shift+click'],
     ['Keep proportions, straight lines, 15° turns', 'Shift'], ['Draw or stretch from the middle; move without snapping (press it after you start dragging)', 'Alt'],
     ['Resize from the middle (on a corner or side handle)', 'Ctrl+drag (Cmd on a Mac) or Alt+drag'],
+    ['Keep a drawing tool on (lock it); Esc goes back to Select', 'Double-click the tool, or press its key twice'],
     ['Edit the points of a shape', 'Double-click it'], ['Add a point (Edit points)', 'Double-click the outline'],
     ['Smooth or corner point (Edit points)', 'Alt+click a point'], ['Paste shapes, or SVG code', 'Ctrl+V'],
     ['Copy a shape and drag the copy', 'Ctrl+drag or Alt+drag (Option on a Mac)'], ['Pick several on a touch screen', 'the two-squares button'], ['Rename a layer (in the list)', 'F2'], ['Move a layer up or down (in the list)', 'Alt+Up / Alt+Down']
@@ -9809,11 +9929,17 @@ fadeTopbarEdges();
 $('topScroll').addEventListener('focusin', () => requestAnimationFrame(fadeTopbarEdges));
 $('btnMulti').addEventListener('click', () => setMulti(!state.multi));
 $('btnMultiLayers').addEventListener('click', () => setMulti(!state.multi));
-document.querySelectorAll('#toolRail [data-tool]').forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));
+// Rail buttons: one click = the tool once, double-click (or double-tap, or Enter/Space twice) = locked.
+document.querySelectorAll('#toolRail [data-tool]').forEach((b) => b.addEventListener('click', () => railToolClick(b.dataset.tool)));
 // The shield button also opens (or closes) its flyout of styles. setTool
 // above has already run, so the tool is Shield either way.
 for (const type of Object.keys(GALLERIES)) {
-  $(GALLERIES[type].btn).addEventListener('click', () => { if (galleryOpen(type)) closeGallery(type, false); else openGallery(type); });
+  $(GALLERIES[type].btn).addEventListener('click', () => {
+    // The click that locked (or unlocked) the tool leaves the flyout as it is: a
+    // double-click would otherwise open it and shut it again straight away.
+    if (lockClickHandled) { lockClickHandled = false; if (state.tool === 'select') closeGallery(type, false); return; }
+    if (galleryOpen(type)) closeGallery(type, false); else openGallery(type);
+  });
 }
 const LAYER_ACTIONS = { duplicate: duplicateSelected, top: () => moveOrder('top'), up: () => moveOrder(1),
   down: () => moveOrder(-1), bottom: () => moveOrder('bottom'), delete: deleteSelected,
