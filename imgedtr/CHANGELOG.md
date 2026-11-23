@@ -2,6 +2,18 @@
 
 Newest first. The short form of each entry also lives in the `CHANGELOG` table inside `index.html` (shown in the app's Info > Changelog tab). Add new releases to both.
 
+## 1.28.0 - 2026-11-22 - Double-click a tool to lock it
+
+- **Double-click a tool to lock it** (the same in every EDTR app). A single click on a tool that makes one thing - arrow, line, any shape, text, sticky note, step marker, circle it, cursor stamp, spotlight hole, redact box, magnifier - uses it **once**, then IMGEDTR goes back to the pointer. **Double-click** (or double-tap) it and it **stays on** for as many as you like.
+  - Keyboard: press the tool's key **twice quickly** (or **Shift+the key**), or press Enter/Space twice on the focused rail button.
+  - A locked tool looks pressed **and** shows a small **padlock badge** in its corner. Its label and tooltip say "(locked - Esc to stop)", and screen readers hear "Rectangle locked. Press Esc to go back to the pointer."
+  - **Esc** unlocks and goes back to the pointer (a drag or crop in progress is cancelled first, as before). **Clicking the locked tool again** also unlocks it and goes back to the pointer. Picking another tool ends the lock.
+  - **Shapes:** double-click the Shapes button to lock the shape shown on it, or double-click (or Shift+click) a shape in the Shapes panel. Press **U** twice to lock the current shape.
+  - Pen, highlighter, eraser and magic wand keep staying on, as before. Crop is not lockable.
+  - The lock is not remembered: it lasts until you stop it. The "Keep tool after drawing" setting still works as before.
+- **Behaviour change: step markers** used to stay on after each click. They now go back to the pointer after one marker, like the other tools. Double-click the Step marker tool (or press **N** twice) to click 1, 2, 3 in a row.
+- Help > Shortcuts lists the new double-click / key-twice lock.
+
 ## 1.27.1 - 2026-11-22 - Circles start where you started
 
 - **Circle it:** the smooth circle now opens and closes **about where you started your loop**, and goes round **the same way you drew it** (clockwise or anticlockwise), instead of always starting low on the left and going clockwise.
